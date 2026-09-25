@@ -90,6 +90,14 @@ INSIDELABEL_DB=… python tools/repro.py close 12 fixed --note "…"
 An exception no handler caught returns `500 {error: "server_error", request_id}`
 and is stored as a `server` report with its traceback.
 
+**Setup alarms.** When Gemini refuses for a reason only we can fix (no key, key
+rejected 401/403, prepaid credit used up 402, model not available 404),
+`/scan` answers `503 {error: "vision_not_configured", retryable: false}` with a plain
+message, logs `SETUP ALARM vision_config:<status>`, and files a `server` report at
+most once an hour. A busy model (429/5xx) is still retried and answers
+`503 vision_unavailable`. Cloud Vision setup failures don't fail the scan (it falls
+back to Tesseract) but file `ocr_config:<status>` the same way.
+
 ## Scans and the catalogue (D-024, D-028)
 
 Set `INSIDELABEL_DB` to store scans; without it the API stores nothing and

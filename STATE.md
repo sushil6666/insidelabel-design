@@ -1,6 +1,6 @@
 # STATE.md — where InsideLabel is, and how to pick it up
 
-**Last updated:** 2026-09-25 (PWA + D-092) · **Owner:** Sushil · **Tests:** 193 passing, 1 skipped · **Release gate:** `python tools/release_check.py` — NOT READY (2 failing; 4 with `INSIDELABEL_DB` set)
+**Last updated:** 2026-09-25, end of day · **Owner:** Sushil · **Tests:** 193 passing, 1 skipped · **Release gate:** `python tools/release_check.py` — NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 6.9 s, Gemini + Cloud Vision, correct
 
 This is the living status document. Read it first in any new session, then
 `DECISIONS.md` for the *why*. Update the "Last updated" line, the numbers and
@@ -33,13 +33,15 @@ over our data tables make every judgement** (D-004), and every judgement uses
 | INS parsing — 3–4 digit numbers, `()[]{}` brackets, `&` separators, unit guard | ✅ reads every printed INS on all 6 gold labels | `core/tokenize.py` (the only INS parser) |
 | Additive table — 66 additives, 35 verified against FSSAI + Codex on 2026-09-25, none left `verify:true` | ✅ | `data/additives.json` |
 | Vision read (Gemini `gemini-3.6-flash`) + independent OCR cross-check: Google Cloud Vision when `GOOGLE_VISION_KEY` is set, Tesseract otherwise (D-093: 3.6 s vs 22.7 s, recall 50/52 vs 27/52, 0 wrong additions) | ✅ | `extraction/providers/` (`cloud_vision.py`, `ocr_check.py`) |
+| Scan speed: Cloud Vision reads **alongside** Gemini; `/scan` runs the slow calls on worker threads so one scan never freezes the server | ✅ real scan 6.9 s (was 15.7 s); Gemini itself varies 7–28 s with Google's load | `api/main.py` |
+| Setup alarms: out of credit (402), key rejected (401/403), no key, Cloud Vision billing → plain "not available" to the user, `SETUP ALARM` in the log, a `server` problem report once an hour | ✅ checked against a real 402 | `gemini.VisionConfigError`, `cloud_vision.take_alarm` |
 | Reliability gate (never shows "clean" on a partial read) | ✅ | `reliability/gates.py` |
 | Claim checker (no added sugar / no preservatives / made with real X) | ✅ built; **in shadow for the beta (D-051)**: stored for reviewers, shown to users only with `INSIDELABEL_CLAIMS_TO_USERS=on` | `claims/checker.py` |
 | Allergen check, five states, stricter 0.95 gate, first key in every result | ✅ | `lenses/allergens.py` |
 | Shelf comparison (2–4 packs, best pick for a child) | ✅ `/compare` | `lenses/compare.py` |
 | India vs EU vs US comparison — optional, information only | ✅ 12 additives | `lenses/regulators.py`, `data/regulatory_status.json` |
 | Wording lint (no "misleading/illegal/toxic/safe/free from…") on tables **and** live output | ✅ in the test suite | `tests/test_wording.py` |
-| Postgres schema with rules enforced by the DB | ✅ 5 migrations | `migrations/` |
+| Postgres schema with rules enforced by the DB | ✅ 6 migrations | `migrations/` |
 | Marketplace leads → physical label → record (D-089); only `physical_label` versions can publish | ✅ | `db/leads.py`, `tools/leads.py`, migration 005 |
 | Scan persistence: barcode lookup, review queue, findings + evidence, photos | ✅ when `INSIDELABEL_DB` is set | `db/store.py`, `media.py` |
 | Reviewer screen (`/review`) — the only path into the catalogue; FSSAI food category required on approve | ✅ | `review/` |
@@ -55,8 +57,9 @@ F1 0.883. Gold scores: Britannia 48, Limca 80 (×2), Maliban 56, Patanjali 48,
 Ziggy 28. **The set is 6 labels; the RUNBOOK target is 20–30** — the accuracy
 question the README asks is not answered yet.
 
-**Catalogue:** 0 published products. 6 real packs (the gold labels) are waiting
-in the review queue on the local database.
+**Catalogue:** 0 published products. 7 items wait in the review queue on the local
+database: the 6 gold packs, and **#7, a duplicate Ziggy from Sushil's `/docs` test —
+reject it** ("duplicate of #6"). 8 scans stored, 0 problem reports.
 
 ---
 
@@ -95,8 +98,18 @@ pytest -q                                    # 193 pass, 1 skipped; DB tests use
 **This machine right now:** PostgreSQL **19beta4 on 5432** (default) and
 **18.6 on 5433** (fallback, holds an older copy of the empty schema). Role
 `insightstack` with CREATEDB, peer auth (no password). Databases `insidelabel`
-(migrations 001–006, 6 items queued, no leads yet) and `insidelabel_test` (only used to
+(migrations 001–006, 7 items queued, no leads yet) and `insidelabel_test` (only used to
 create/drop per-module test databases). PostgreSQL 16 was removed.
+
+**Keys (in `~/.bashrc` only — never in the repo):**
+- `GOOGLE_VISION_KEY` — restricted to the Cloud Vision API; billing on in Google Cloud
+  project **797275767015**.
+- `GEMINI_API_KEY` — `~/.bashrc` has **three** lines (126–128); only the last one counts.
+  It belongs to an AI Studio project on **prepaid** credit: it ran out once today (402)
+  and was topped up. Delete lines 126–127 (`sed -i '126,127d' ~/.bashrc`), restrict the
+  key to the Generative Language API, and consider auto top-up or post-paid billing.
+- The dev server runs with `--reload`, so code changes apply at once, but a **new key
+  needs a restart** (Ctrl+C, then start it again from a terminal that has the key).
 
 ---
 
@@ -146,6 +159,17 @@ What was done, in order, with the result. Decisions D-085 → D-089 were added; 
 17. **PWA (§8 item 6)** — see the entry below the list. ✅ built; phone test pending.
 
 ---
+
+### Commits pushed today (github.com/sushil6666/InsideLabel, `main`)
+
+| Commit | What |
+|---|---|
+| `e46b30e` | Everything up to the PWA: engine, API, review screen, PWA (D-090, D-091) |
+| `a0b109b` | D-092: every problem can be reproduced |
+| `0b89527` | D-093: Cloud Vision as the independent OCR reader |
+| `2839bce` | `/docs` no longer pre-fills "string" into `/scan` fields (the 422 Sushil hit) |
+| `dfc91a7` | Cloud Vision alongside Gemini; `/scan` no longer blocks the server |
+| `1cc7585` | Setup alarms for credit, key and billing errors |
 
 ### PWA session (later on 2026-09-25)
 
@@ -264,6 +288,8 @@ Keep this list — it is the cheapest way to not repeat a mistake.
 | Cloud Vision "missed" 5 Ziggy additives it had read perfectly — a newline sat between "Acidity Regulators" and "(330, 270)" | When a reader misses something, look at its raw text before blaming the reader. |
 | A test for "the server stays responsive during a scan" passed on the old, blocking code: a blocked event loop also froze the test's own `sleep`, so it timed the wrong thing | Run every new test against the old code once. A test that can't fail proves nothing. |
 | `/docs` answered 422: Swagger's Try it out fills every text box with "string" (avoid=string → unknown allergen) | Give form fields empty examples; treat "" as absent. Check the real `/docs` page, not just the JSON schema. |
+| Three failure types from Google in one afternoon: 503 "high demand" (theirs, retried), 402 "prepayment credits are depleted" (ours, billing), text pings fine while image scans failed | Read Google's message before touching code. A "busy" is not a bug; an "out of credit" is a setup alarm, not a retry. |
+| Prepaid Gemini credit ran out silently: every scan would have failed with a vague error | Setup failures must alarm the developer, not just fail the user (`vision_config:*`, `ocr_config:*`). |
 | Headless Chromium on this box lacks `libnss3`/`libnspr4`/`libasound2` | `apt-get download` + `dpkg -x` into a scratch dir + `LD_LIBRARY_PATH` — no sudo needed. |
 
 ---
@@ -274,44 +300,66 @@ Keep this list — it is the cheapest way to not repeat a mistake.
 - **D-054** the "100% ATTA" ruling on Patanjali — decide before any rule fires.
 - **D-082** what Premium is for — interviews only.
 - Concern levels on the 35 verified rows are judgement calls (e.g. sorbitol `low`) — review before launch.
+- **Gemini billing**: prepaid credit (can run out, as it did today) vs post-paid / auto top-up.
+- **A fallback model** for when `gemini-3.6-flash` is busy — only after `gemini-3.5-flash`
+  passes the gold set (comparison couldn't run today: it was busy too). Decide from the
+  `timings.vision_retries` data real scans now record.
 
 ---
 
 ## 8. Next steps — the road to the closed beta (in order)
 
 Run `python tools/release_check.py` (add `INSIDELABEL_DB=…` for catalogue gates)
-to see where each gate stands. §11 has the full list.
+to see where each gate stands. §11 has the full list. Done today: D-051/52/55 decided,
+food categories, PWA built, D-092 reproduction, D-093 Cloud Vision, scan speed,
+setup alarms.
 
-1. ~~Decide D-051, D-052, D-055~~ — done 2026-09-25 (shadow claims; allergy + parents; 30 % / 20 % stop rule).
-2. **Grow the gold set to ≥ 20 labels** (RUNBOOK) — a third in bad conditions, and
-   include packs whose front says "no added sugar" / "no preservatives" / "made with
-   real X", or the false-contradiction gate stays unmeasured. Only Sushil can do this.
-3. **Lift ingredient match from 0.945 to ≥ 0.95** — look at the per-label misses in
-   `eval_vision.py` once the gold set is bigger (Britannia is the weakest at 0.80).
-4. ~~Product category in the reviewer screen~~ — done: 271 FSSAI categories
-   (`data/food_categories.json`) loaded on every migrate; `/review` requires one.
-5. **Seed and review 50 SKUs**, 15 kids' biscuits first (D-058); start with the 6 queued.
-   Use the D-089 flow: `tools/leads.py add` for each product spotted online →
-   buy the pack → `obtained` → scan front + back with its barcode → `link --barcode` →
-   publish on `/review` (the lead closes itself).
-6. **PWA front end** — built (`web/`, `/app/`). D-090 (stack) and D-091 (server-built screen)
-   accepted 2026-09-25. Left: **test on a low-end Android phone** — the camera
-   needs HTTPS (or `localhost` via `adb reverse tcp:8000 tcp:8000`); PNG icons (192/512) for
-   the Play build — Bubblewrap can generate them from `web/icon.svg`. Share target stays
-   after W4 (D-077/D-083; when built, a shared listing becomes a lead, never a record — D-089).
-7. **"Send it to us" endpoint** (D-070) — the queue kind exists; nothing creates it yet.
-8. **Individual reviewer logins**; **D-080 photo retention** (must skip `scans.evidence_hold`, D-092);
-   rate limit on `/scan` and `/problem`; Sentry optional now that D-092 covers reproduction;
-   ~~28 s OCR cross-check~~ — fixed by D-093 (4 s). **Deploy needs `GOOGLE_VISION_KEY` as a secret**
-   (without it the server quietly falls back to Tesseract); **store Cloud Vision's text on the
-   scan row** so D-092 replays don't call Google again; name Cloud Vision in the privacy policy.
-9. **Trust pages** (D-076): privacy policy (DPDP, parental consent), COI policy, methodology,
-   who is behind it.
-10. **Deploy** (week 10): host with PostgreSQL 19, HTTPS, R2 with a 30-day lifecycle rule, backups.
-11. **Play closed testing** (D-011) — check the current tester requirement in Play Console.
+**This week — only Sushil can do these (they unblock the most):**
 
-Later / not blocking the beta: D-073 cheap Tesseract re-check; refresh EU rows from a
-current EUR-Lex text and check cyclamate's US status; drop PG18 after PG19 GA.
+1. **Housekeeping (10 minutes):** delete the two old Gemini key lines in `~/.bashrc`;
+   restrict the Gemini key to the Generative Language API; set a budget alert and
+   decide prepaid vs post-paid (§7); reject review item #7 on `/review`.
+2. **Try the PWA on a low-end Android phone** — the one manual gate that only a real
+   phone answers (camera, barcode, photo, result, profiles, compare, report). Easiest:
+   USB debugging + `adb reverse tcp:8000 tcp:8000`, then open `http://localhost:8000/app/`
+   in Chrome on the phone. Use "Report a problem" for anything odd — it's traced (D-092).
+3. **Grow the gold set to ≥ 20 labels** (RUNBOOK) — a third in bad conditions, and packs
+   whose front says "no added sugar" / "no preservatives" / "made with real X" (otherwise
+   the false-contradiction gate stays unmeasured). Unblocks 2 failing gates.
+4. **Publish the 6 queued packs on `/review`** and start the 50-SKU seed, 15 kids'
+   biscuits first (D-058), via the D-089 flow (`tools/leads.py add` → buy → scan front +
+   back with barcode → `link --barcode` → publish). Unblocks the 2 catalogue gates.
+
+**Code — Claude can build these next (in this order):**
+
+5. **Store Cloud Vision's text on the scan row** (migration 007) so a D-092 replay is
+   exact and doesn't call Google again.
+6. **Rate limits on `/scan` and `/problem`** (per device and per IP) — needed before any
+   public URL.
+7. **"Send it to us"** (D-070): after two failed retakes, queue the photos for a reviewer;
+   `/updates` already tells the app when it's ready.
+8. **Individual reviewer logins** (one shared token today) and **D-080 photo retention**
+   (30 days, skipping `scans.evidence_hold`).
+9. **One INS parser, for real:** `lenses/compare.py` still has its own `INS_RE` (found
+   while building the PWA) — route it through `core/tokenize.py`.
+10. **Lift ingredient match 0.945 → ≥ 0.95** once the gold set is bigger (Britannia is the
+    weakest at 0.80).
+11. **Fallback-model comparison** (`gemini-3.5-flash` on the gold set, ~₹3) when Google is
+    quieter, if the retry data shows "busy" is common.
+
+**Then, towards week 10:**
+
+12. **Trust pages** (D-076): privacy policy (DPDP, parental consent; name Gemini **and**
+    Cloud Vision as processors), COI policy, methodology, who is behind it.
+13. **Deploy**: host with PostgreSQL 19, HTTPS, R2 with a 30-day lifecycle rule, backups
+    tested by a restore; `GEMINI_API_KEY`, `GOOGLE_VISION_KEY`, `INSIDELABEL_BUILD` as
+    secrets (without the Vision key the server quietly falls back to slow Tesseract).
+14. **Play closed testing** (D-011): PNG icons 192/512 (Bubblewrap can make them from
+    `web/icon.svg`), check the current tester requirement in Play Console.
+
+Later / not blocking the beta: share target (D-077, after W4); D-073 cheap Tesseract
+re-check; refresh EU rows from a current EUR-Lex text and check cyclamate's US status;
+drop PG18 after PG19 GA.
 
 ---
 
@@ -334,11 +382,11 @@ current EUR-Lex text and check cyclamate's US status; drop PG18 after PG19 GA.
 | `API_README.md` | endpoints, database, reviewer screen, regulator comparison |
 | `RUNBOOK.md` | how to photograph, transcribe and score a gold batch |
 | `CLAUDE.md` | working rules for AI coding sessions |
-| `src/insidelabel/` | the package (core, extraction, reliability, claims, lenses, db, review, api) |
+| `src/insidelabel/` | the package (core, extraction, reliability, claims, lenses, db, review, api) + `trace.py` / `repro.py` (D-092); OCR readers in `extraction/providers/` (`cloud_vision.py`, `ocr_check.py`) |
 | `data/` | the knowledge tables — the moat |
 | `migrations/` | Postgres schema, plain SQL, applied in order |
 | `tests/` | 193 tests (+ `regression/problems/`, D-092); `conftest.py` gives each DB test module its own database |
-| `tools/` | release gate, leads (D-089), eval, batch scan, gold stubs, queue predictions, PG19 installer |
+| `tools/` | release gate, leads (D-089), `repro.py` (D-092), `compare_ocr.py` (D-093), eval, batch scan, gold stubs, queue predictions, PG19 installer |
 | `gold/`, `photos/`, `predictions/` | 6 real labels: hand transcription, photos, recorded model output |
 | `research/` | private marketplace screenshots behind leads (git-ignored; never published — D-089) |
 | `archive/prototype/` | the pre-package prototype, kept for history |
@@ -365,7 +413,7 @@ retention test. Public launch comes after the W4 number (D-083).
 | Every gold INS has a table row | all | ✅ |
 | Additive rows still `verify:true` | 0 | ✅ 0 |
 | D-051, D-052, D-055 decided | locked | ✅ locked 2026-09-25 |
-| Published catalogue | ≥ 50 SKUs | ❌ 0 (6 waiting) |
+| Published catalogue | ≥ 50 SKUs | ❌ 0 (7 waiting; #7 is a duplicate) |
 | Kids' biscuits published (D-058) | ≥ 15 in 7.2.1 / 7.2.2 | ❌ 0 (category picker ready) |
 | Test suite (`--with-tests`) | green | ✅ 193 |
 
@@ -376,7 +424,7 @@ retention test. Public launch comes after the W4 number (D-083).
 - [ ] "Send it to us" endpoint
 - [ ] Individual reviewer logins
 - [ ] Photo retention 30 days (D-080)
-- [ ] Rate limit on `/scan` and `/problem`; error monitoring ✅ built in (D-092), Sentry optional
+- [ ] Rate limit on `/scan` and `/problem`; error monitoring ✅ built in (D-092 reports + setup alarms), Sentry optional
 - [ ] Privacy policy (DPDP; children's data; parental consent at profile creation)
 - [ ] COI policy, methodology, who is behind the app, "last verified" dates (D-076)
 - [ ] Deployed: PostgreSQL 19, HTTPS, R2, backups tested by restoring one
