@@ -1,6 +1,6 @@
 # STATE.md — where InsideLabel is, and how to pick it up
 
-**Last updated:** 2026-09-25 evening (branch `front-photo-flow` = overnight work + D-100/D-101, not merged) · **Owner:** Sushil · **Tests:** 252 passing, 1 skipped · **Release gate:** `python tools/release_check.py` — NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 6.9 s, Gemini + Cloud Vision, correct
+**Last updated:** 2026-09-25 evening (branch `front-photo-flow` = overnight work + D-100/D-101, not merged) · **Owner:** Sushil · **Tests:** 253 passing, 1 skipped · **Release gate:** `python tools/release_check.py` — NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 6.9 s, Gemini + Cloud Vision, correct
 
 This is the living status document. Read it first in any new session, then
 `DECISIONS.md` for the *why*. Update the "Last updated" line, the numbers and
@@ -81,7 +81,7 @@ sudo PG19_PORT=5432 bash tools/install_pg19.sh   # adds apt.postgresql.org, crea
 createdb insidelabel && createdb insidelabel_test
 python -m insidelabel.db.migrate "postgresql:///insidelabel?host=/var/run/postgresql"
 
-pytest -q                                    # 252 pass, 1 skipped; DB tests use embedded Postgres
+pytest -q                                    # 253 pass, 1 skipped; DB tests use embedded Postgres
 ```
 
 **Environment variables**
@@ -364,7 +364,7 @@ Nothing was blocked; all five items were built. These need you:
 ## 7. Open decisions (need Sushil)
 
 - **D-053** premium pricing — ₹399–499/year recommended.
-- **D-054** the "100% ATTA" ruling on Patanjali — decide before any rule fires.
+- ~~**D-054** the "100% ATTA" ruling~~ ✅ decided 2026-09-25: about the flour, no finding.
 - **D-082** what Premium is for — interviews only.
 - Concern levels on the 35 verified rows are judgement calls (e.g. sorbitol `low`) — review before launch.
 - **Gemini billing**: prepaid credit (can run out, as it did today) vs post-paid / auto top-up.

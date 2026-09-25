@@ -891,11 +891,20 @@ consumer utilities convert far better on annual, and matches a product used a fe
 times a month rather than daily. Also: scans stay uncapped and free forever
 (throttling scans starves the catalogue, which is the asset). **Not yet decided.**
 
-### D-054 · The "100% ATTA" ruling `OPEN`
+### D-054 · The "100% ATTA" ruling `LOCKED` (2026-09-25): the claim is about the flour; no finding
 Patanjali Doodh Biscuits declares `Wheat flour (Atta) 58.3%` while the front says
 `100% ATTA`. Likely manufacturer intent is "the flour is atta, not maida" rather than
 "the product is 100% atta". Must be decided deliberately before any rule fires,
 because it names a brand with active advertising-claim litigation history.
+~~**Not yet decided.**~~
+
+**Decided 2026-09-25 by Sushil** (reviewing the pack): atta is the only flour on the
+label, so "100% ATTA" describes the flour and is true. InsideLabel says nothing about it.
+- `100% <flour>` is stored as printed (the claims database) and produces **no finding**:
+  not a contradiction, not an R4 note, not a side-by-side quote.
+- A rule may speak only if the ingredient list shows **another flour** besides the named
+  one (e.g. maida next to "100% atta"), and then only by quoting both (D-042).
+- `tests/test_claim_rulings.py` holds this: the Doodh label gives no claim finding.
 
 ### D-055 · Stop rule for the beta `LOCKED` (2026-09-25)
 Gate is W4 retention ≥30% with ≥2.5 scans per returning user. The failure mode is
