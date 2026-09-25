@@ -271,7 +271,7 @@ once an hour. Cloud Vision setup failures (billing, key restriction) raise
 
 ### Overnight session — 2026-09-26 (Claude, unattended; STATE §8 items 5–9)
 
-Branch `overnight-2026-09-26` (also pushed as `claude_code`); PR to `main` open. Every
+Branch `overnight-2026-09-26` (also pushed as `claude_code`). No PR yet: `gh` isn't installed here — open one at github.com/sushil6666/InsideLabel/pull/new/overnight-2026-09-26. Every
 new test was run against the old code first and failed; the suite was green before
 each commit. No paid calls (Google's HTTP answers faked, model answers replayed); the
 local `insidelabel` database, `photos/`, `media/`, `research/`, `predictions/` and
