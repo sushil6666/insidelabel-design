@@ -1,0 +1,35 @@
+{
+  "front_status": "read",
+  "back_status": "read",
+  "ingredients_status": "read",
+  "product": {
+    "brand": "Limca",
+    "name": "Limca",
+    "variant": "LIME 'N' LEMONI",
+    "net_quantity": null,
+    "veg_mark": "veg"
+  },
+  "ingredients": [
+    "CARBONATED WATER",
+    "SUGAR",
+    "ACIDITY REGULATORS (330, 331(iii))",
+    "STABILIZERS (414,471)",
+    "PRESERVATIVE (211)",
+    "FLAVOURS (NATURAL, NATURE-IDENTICAL & ARTIFICIAL (LEMON) FLAVOURING SUBSTANCES)"
+  ],
+  "allergen_statement": null,
+  "front_claims": [],
+  "front_claim_footnotes": [],
+  "extraction_notes": [
+    "CORRECTED: product.name was 'Limca Lime n Lemoni', a string assembled from the wordmark and the separate descriptor pill. Split into name + variant, as printed. Same error as was corrected in limca-pet-2250 and not back-ported here at the time.",
+    "Net quantity is not printed as a single value; the pack states only 'SERVING = 200ml : 10 SERVINGS IN THIS PACK'. Not derived, per prompt rule 2.",
+    "Front-of-pack label visible on the bottle in image 1 but too small to read claim text; only the brand wordmark and 'Lime n Lemoni' descriptor are legible, neither of which is a claim.",
+    "Image 3 carries manufacturer addresses and FSSAI Lic. No. 10012022000261 — not ingredients, discarded per prompt rule 3.",
+    "Nutrition panel present in image 1 (44 kcal, 10.7g total and added sugars per 100ml, 42.8% RDA added sugar per 200ml serve). Recorded here only; the engine has no nutrition logic and this schema has no field for it."
+  ],
+  "confidence": {
+    "ingredients": 1.0,
+    "front_claims": 1.0,
+    "product_identity": 0.95
+  }
+}

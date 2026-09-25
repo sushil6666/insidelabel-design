@@ -1,0 +1,63 @@
+{
+  "front_status": "read",
+  "back_status": "read",
+  "ingredients_status": "read",
+  "product": {
+    "brand": "Limca",
+    "name": "Carbonated Water",
+    "variant": "Lime 'N' Lemon",
+    "net_quantity": null,
+    "veg_mark": "veg"
+  },
+  "product_match": {
+    "status": "match",
+    "evidence": [
+      "Brand name 'Limca' visible on both front and back (small text at bottom)",
+      "Product type (Carbonated Water, Lime 'N' Lemon) consistent across both images (small text at bottom)"
+    ]
+  },
+  "front_identity": {
+    "brand": "Limca",
+    "name": "Lime 'N' Lemon",
+    "manufacturer": null
+  },
+  "back_identity": {
+    "brand": "Limca",
+    "name": "Lime 'N' Lemon",
+    "manufacturer": null,
+    "fssai_licence": null
+  },
+  "ingredient_lines": [
+    "INGREDIENTS:",
+    "CARBONATED WATER, SUGAR, ACIDITY REGULATORS (330, 331(iii)),",
+    "STABILIZERS (414,471), FLAVOURS (NATURAL,",
+    "NATURE-IDENTICAL & ARTIFICIAL (LEMON) FLAVOURING",
+    "SUBSTANCES)."
+  ],
+  "ingredient_count": 5,
+  "ingredients": [
+    "CARBONATED WATER",
+    "SUGAR",
+    "ACIDITY REGULATORS (330, 331(iii))",
+    "STABILIZERS (414,471)",
+    "FLAVOURS (NATURAL, NATURE-IDENTICAL & ARTIFICIAL (LEMON) FLAVOURING SUBSTANCES)"
+  ],
+  "allergen_statement": null,
+  "front_claims": [
+    "Lime 'N' Lemon"
+  ],
+  "front_claim_footnotes": [],
+  "extraction_notes": [
+    "Net quantity not visible on either image.",
+    "Manufacturer and FSSAI licence not visible on either image."
+  ],
+  "confidence": {
+    "ingredients": 1.0,
+    "front_claims": 0.9,
+    "product_identity": 0.9
+  },
+  "verified_anchors": [
+    "brand matches on both faces: 'limca'",
+    "name matches on both faces: \"lime 'n' lemon\""
+  ]
+}

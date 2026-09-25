@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Queue{% endblock %}
+{% block body %}
+{% set labels = {"new_product": "New product", "reformulation": "Reformulation",
+                 "correction": "Reported mistake", "send_to_us": "Sent to us"} %}
+<div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:12px">
+  <h1 style="margin:0">Review queue</h1>
+  <form method="post" action="/review/claim-next" style="margin-left:auto">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <button class="primary" type="submit">Take the next item</button>
+  </form>
+</div>
+
+{% if request.query_params.get("empty") %}
+  <div class="notice">Nothing waiting. The queue is empty.</div>
+{% endif %}
+
+<div class="stats">
+  {% for kind, label in labels.items() %}
+    {% set s = summary.get(kind, {"open": 0, "claimed": 0}) %}
+    <div class="stat"><b>{{ s.open }}</b><span class="chip {{ kind }}">{{ label }}</span>
+      {% if s.claimed %}<div class="muted" style="font-size:12px;margin-top:4px">{{ s.claimed }} in progress</div>{% endif %}
+    </div>
+  {% endfor %}
+</div>
+
+{% macro rows(items) %}
+<table>
+  <thead><tr><th>#</th><th>Type</th><th>Product</th><th class="hide-sm">Barcode</th><th class="hide-sm">Waiting since</th></tr></thead>
+  <tbody>
+  {% for i in items %}
+    <tr>
+      <td><a href="/review/item/{{ i.id }}">{{ i.id }}</a></td>
+      <td><span class="chip {{ i.kind }}">{{ labels.get(i.kind, i.kind) }}</span></td>
+      <td>{{ i.brand ~ " " if i.brand }}{{ i.product_name or "— (no read)" }}</td>
+      <td class="hide-sm mono">{{ i.barcode or "" }}</td>
+      <td class="hide-sm muted">{{ i.created_at.strftime("%d %b %H:%M") }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="5" class="muted">None.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endmacro %}
+
+{% if mine %}
+  <h2>Yours, in progress</h2>
+  <div class="panel">{{ rows(mine) }}</div>
+{% endif %}
+
+<h2>Waiting (oldest first)</h2>
+<div class="panel">{{ rows(open_items) }}</div>
+{% endblock %}

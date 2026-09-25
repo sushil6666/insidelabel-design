@@ -1,0 +1,70 @@
+{
+  "front_status": "read",
+  "back_status": "read",
+  "ingredients_status": "read",
+  "product": {
+    "brand": "Britannia",
+    "name": "Treat",
+    "variant": "CROISSANT COCOA CRÈME",
+    "net_quantity": null,
+    "veg_mark": "not_visible"
+  },
+  "product_match": {
+    "status": "match",
+    "evidence": [
+      "'Treat' logo on the front and the trademark line on the back: \"'Britannia' and 'Treat' logo are registered trademarks of 'Britannia Industries Ltd'\"",
+      "the word CROISSANT is printed on both faces"
+    ]
+  },
+  "front_identity": { "brand": "Britannia", "name": "Treat", "manufacturer": null },
+  "back_identity": {
+    "brand": "Treat",
+    "name": null,
+    "manufacturer": "Britchip Foods Ltd., Plot No. B-28, Five Star MIDC, Ranjangaon, Tal. Shirur, Dist. Pune-412220, Maharashtra",
+    "fssai_licence": "10018031002739"
+  },
+  "ingredient_lines": [
+    "INGREDIENTS: REFINED WHEAT FLOUR (MAIDA), WATER, SUGAR,",
+    "REFINED PALM OIL & INTERESTERIFIED VEGETABLE FAT, MARGARINE,",
+    "LIQUID GLUCOSE, BAKERY IMPROVER MIX {EMULSIFIERS [481(i) & 471],",
+    "ANTICAKING AGENT [170(i)], FLOUR TREATMENT AGENTS [1100(i) &",
+    "1101(i)] & ANTIOXIDANT (300)}, MILK SOLIDS, COCOA SOLIDS (1%),",
+    "YEAST, VITAL GLUTEN, HUMECTANT [420(ii)], EMULSIFIERS (471 & 475),",
+    "IODISED SALT, PRESERVATIVES (282 & 202), NATURE IDENTICAL &",
+    "ARTIFICIAL (CHOCOLATE & VANILLA) FLAVOURING SUBSTANCES AND",
+    "RAISING AGENTS [450(i) & 338]."
+  ],
+  "ingredient_count": 17,
+  "ingredients": [
+    "REFINED WHEAT FLOUR (MAIDA)",
+    "WATER",
+    "SUGAR",
+    "REFINED PALM OIL & INTERESTERIFIED VEGETABLE FAT",
+    "MARGARINE",
+    "LIQUID GLUCOSE",
+    "BAKERY IMPROVER MIX {EMULSIFIERS [481(i) & 471], ANTICAKING AGENT [170(i)], FLOUR TREATMENT AGENTS [1100(i) & 1101(i)] & ANTIOXIDANT (300)}",
+    "MILK SOLIDS",
+    "COCOA SOLIDS (1%)",
+    "YEAST",
+    "VITAL GLUTEN",
+    "HUMECTANT [420(ii)]",
+    "EMULSIFIERS (471 & 475)",
+    "IODISED SALT",
+    "PRESERVATIVES (282 & 202)",
+    "NATURE IDENTICAL & ARTIFICIAL (CHOCOLATE & VANILLA) FLAVOURING SUBSTANCES",
+    "RAISING AGENTS [450(i) & 338]"
+  ],
+  "allergen_statement": "CONTAINS WHEAT GLUTEN AND MILK.",
+  "front_claims": [],
+  "front_claim_footnotes": [],
+  "extraction_notes": [
+    "Front carries only brand, product name and the descriptor 'CROISSANT / COCOA CRÈME'. No marketing claims printed, so front_claims is empty.",
+    "Net quantity not visible in either photo.",
+    "Veg mark not visible in either photo.",
+    "Declared as PROPRIETARY FOOD (CROISSANT, CATEGORY - 7.2.2). Not an ingredient; recorded here only.",
+    "Second FSSAI licence 10018022008231 printed for the Maharashtra manufacturing site; the marketed-by licence is recorded above.",
+    "Nutrition panel (from the second back photo): per 100g Energy 459 kcal, Protein 6.3g, Carbohydrate 50g, Total Sugars 20.3g, Added Sugars 19.6g, Total Fat 24.7g, Saturated 13.2g, Trans 0.2g, Sodium 150.4mg. Serving 45g (1 croissant). Engine has no nutrition logic; recorded here only.",
+    "TRANS FAT 0.2g per 100g is declared — relevant because the list contains INTERESTERIFIED VEGETABLE FAT and MARGARINE."
+  ],
+  "confidence": { "ingredients": 1.0, "front_claims": 1.0, "product_identity": 0.95 }
+}

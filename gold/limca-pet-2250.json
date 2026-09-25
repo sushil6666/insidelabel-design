@@ -1,0 +1,63 @@
+{
+  "front_status": "read",
+  "back_status": "read",
+  "ingredients_status": "read",
+  "product": {
+    "brand": "Limca",
+    "name": "Limca",
+    "variant": "LIME 'N' LEMONI",
+    "net_quantity": "2.25 L",
+    "veg_mark": "not_visible"
+  },
+  "product_match": {
+    "status": "indeterminate",
+    "evidence": [
+      "back label carries no brand wordmark — only 'A PRODUCT OF THE COCA-COLA COMPANY', a parent-company attribution, which is not an identity anchor",
+      "green label artwork is continuous around the bottle, but that is not independently verifiable from two still photos"
+    ]
+  },
+  "front_identity": {
+    "brand": "Limca",
+    "name": "Limca",
+    "manufacturer": null
+  },
+  "back_identity": {
+    "brand": null,
+    "name": null,
+    "manufacturer": "HINDUSTAN COCA-COLA BEVERAGES PVT. LTD., GURUGRAM, HARYANA",
+    "fssai_licence": "10012011000620"
+  },
+  "ingredient_lines": [
+    "INGREDIENTS: CARBONATED WATER, SUGAR, ACIDITY",
+    "REGULATORS (330, 331(iii)), STABILIZERS (414,471),",
+    "PRESERVATIVE (211), FLAVOURS (NATURAL, NATURE",
+    "-IDENTICAL & ARTIFICIAL (LEMON) FLAVOURING SUBSTANCES)."
+  ],
+  "ingredient_count": 6,
+  "ingredients": [
+    "CARBONATED WATER",
+    "SUGAR",
+    "ACIDITY REGULATORS (330, 331(iii))",
+    "STABILIZERS (414,471)",
+    "PRESERVATIVE (211)",
+    "FLAVOURS (NATURAL, NATURE-IDENTICAL & ARTIFICIAL (LEMON) FLAVOURING SUBSTANCES)"
+  ],
+  "allergen_statement": null,
+  "front_claims": [],
+  "front_claim_footnotes": [],
+  "extraction_notes": [
+    "CORRECTED: an earlier version of this gold file recorded back_identity.brand as 'Limca' and product_match as 'match'. Neither is supported by the photo — the back label shows no Limca wordmark, only a parent-company attribution. The model read this correctly and was scored against a wrong reference.",
+    "CORRECTED: product.name was 'Limca Lime N Lemoni', a string assembled from two separate pieces of print. The pack shows the wordmark 'Limca' and, below it, 'LIME N LEMONI' in a yellow pill. Recorded as name + variant, as printed.",
+    "Manufacturer address is legible only in part (curvature and glare); recorded to city level rather than guessing the street line.",
+    "Different pack from gold/limca-pet-1l.json: 2.25 L, FSSAI Lic. 10012011000620, 11.3 servings per pack.",
+    "Front carries a retailer price sticker (Rs 100 struck through, Rs 90). Not a manufacturer claim; excluded from front_claims.",
+    "Front text reading 'LEMON FLAVOURED' is partly occluded by a thumb. NOT transcribed: the correct behaviour for occluded text is to omit it, per prompt rule 2.",
+    "Veg mark not visible in either photo.",
+    "Nutrition panel on the back: 44 kcal, 10.7 g total and added sugars per 100 ml, 42.8% RDA added sugar per 200 ml serve. Recorded here only; the engine has no nutrition logic."
+  ],
+  "confidence": {
+    "ingredients": 1.0,
+    "front_claims": 1.0,
+    "product_identity": 1.0
+  }
+}

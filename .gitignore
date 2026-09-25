@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+venv/
+
+# Regenerable output — never commit
+predictions/
+runs/
+reports/
+fixtures/off_*.jsonl
+
+# Source images: large, and may carry EXIF location from the shop you
+# photographed in. Keep them out of the repo; back them up separately.
+photos/
+
+# Secrets
+.env
+*.key
+
+# COMMIT THESE — they are hand-written and not reproducible:
+#   gold/        the transcriptions everything is measured against
+#   data/*.json  the additive tables, the moat
+#   app/ tools/ tests/
+
+# scan photos (local media store)
+media/
+
+# Marketplace screenshots (D-089): private research evidence for leads only.
+# Never commit, publish or read into a catalogue record.
+research/

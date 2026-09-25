@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% block title %}Item {{ d.item.id }}{% endblock %}
+{% block body %}
+{% set labels = {"new_product": "New product", "reformulation": "Reformulation",
+                 "correction": "Reported mistake", "send_to_us": "Sent to us"} %}
+{% set q = d.item %}
+<style>
+  .grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+  .photos img { width: 100%; border-radius: 6px; border: 1px solid var(--line); background: #fff; display: block; }
+  .photos figure { margin: 0 0 12px; } .photos figcaption { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  .sticky { position: sticky; top: 12px; }
+  .diff li { font-family: var(--mono); font-size: 13px; list-style: none; padding: 2px 6px; border-radius: 4px; }
+  .diff ul { padding: 0; margin: 0; }
+  .diff .added { background: var(--ok-bg); color: var(--ok); } .diff .added::before { content: "+ "; }
+  .diff .removed { background: var(--bad-bg); color: var(--bad); text-decoration: line-through; }
+  .diff .removed::before { content: "− "; }
+  .finding { padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+  .finding:last-child { border-bottom: 0; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+  details summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } .sticky { position: static; } }
+</style>
+
+<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+  <a href="/review">← Queue</a>
+  <h1 style="margin:0">#{{ q.id }}</h1>
+  <span class="chip {{ q.kind }}">{{ labels.get(q.kind, q.kind) }}</span>
+  <span class="muted">{{ q.status }}{% if q.claimed_by %} · {{ q.claimed_by }}{% endif %}</span>
+</div>
+
+{% if error %}<div class="error">{{ error }}</div>{% endif %}
+{% if q.status in ("done", "rejected") %}
+  <div class="notice">Decided: <b>{{ q.resolution }}</b>{% if q.resolution_note %} — {{ q.resolution_note }}{% endif %}</div>
+{% elif not mine %}
+  <div class="notice" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    {% if q.status == "open" %}Claim this item to decide it.{% else %}{{ q.claimed_by }} is working on this item.{% endif %}
+    {% if q.status == "open" %}
+    <form method="post" action="/review/item/{{ q.id }}/claim" style="margin-left:auto">
+      <input type="hidden" name="csrf" value="{{ csrf }}"><button type="submit">Claim</button>
+    </form>{% endif %}
+  </div>
+{% endif %}
+
+<div class="grid">
+  <!-- LEFT: the pack itself. Everything on the right must be checkable against these pixels. -->
+  <div class="photos sticky">
+    {% for role in ("back", "front") %}
+      {% if d.images[role] %}
+        <figure>
+          <figcaption>{{ role|capitalize }} of pack · <a href="/review/media/{{ d.images[role] }}" target="_blank">open full size</a></figcaption>
+          <a href="/review/media/{{ d.images[role] }}" target="_blank"><img src="/review/media/{{ d.images[role] }}" alt="{{ role }} of pack"></a>
+        </figure>
+      {% endif %}
+    {% endfor %}
+    {% if not d.images.back and not d.images.front %}
+      <div class="notice">No photo stored for this item. Don't publish anything you can't check against a photo.</div>
+    {% endif %}
+  </div>
+
+  <!-- RIGHT: what was read, and the decision -->
+  <div>
+    {% if correction %}
+      <div class="panel" style="margin-bottom:12px">
+        <b>Reported mistake</b> in <span class="mono">{{ correction.field }}</span>
+        {% if correction.proposed_value %}<div style="margin-top:6px">Suggested: <span class="mono">{{ correction.proposed_value }}</span></div>{% endif %}
+        {% if correction.note %}<div class="muted" style="margin-top:4px">“{{ correction.note }}”</div>{% endif %}
+      </div>
+    {% endif %}
+
+    {% if diff %}
+      <div class="panel diff" style="margin-bottom:12px">
+        <b>Changed from the published version</b>
+        <ul style="margin-top:8px">{% for tag, line in diff %}<li class="{{ tag }}">{{ line }}</li>{% endfor %}</ul>
+      </div>
+    {% endif %}
+
+    {% if reliability.caveats or raw.extraction_notes %}
+      <div class="panel" style="margin-bottom:12px">
+        <b>Check carefully</b>
+        <ul style="margin:6px 0 0 18px;padding:0">
+          {% for c in reliability.caveats %}<li>{{ c.detail }}</li>{% endfor %}
+          {% for n in raw.extraction_notes %}<li class="muted">Model note: {{ n }}</li>{% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+
+    <form method="post" action="/review/item/{{ q.id }}/approve" class="panel">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <fieldset {% if not mine %}disabled{% endif %} style="border:0;padding:0;margin:0">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px">
+          <div><label for="brand">Brand (as printed)</label><input type="text" id="brand" name="brand" value="{{ form.brand }}"></div>
+          <div><label for="name">Product name (as printed)</label><input type="text" id="name" name="name" value="{{ form.name }}" required></div>
+          <div><label for="variant">Variant</label><input type="text" id="variant" name="variant" value="{{ form.variant }}"></div>
+          <div><label for="barcode">Barcode</label><input type="text" id="barcode" name="barcode" value="{{ form.barcode }}" inputmode="numeric"></div>
+        </div>
+        <label for="category">FSSAI food category (Appendix A) — required</label>
+        <select id="category" name="category" required>
+          <option value="">— choose —</option>
+          <optgroup label="Common">
+            {% for code, hint in common %}<option value="{{ code }}" {% if form.category == code %}selected{% endif %}>{{ code }} · {{ hint }}</option>{% endfor %}
+          </optgroup>
+          <optgroup label="All categories">
+            {% set common_codes = common|map("first")|list %}{% for code, cname, depth in categories %}<option value="{{ code }}" {% if form.category == code and code not in common_codes %}selected{% endif %}>{{ "  " * depth }}{{ code }} {{ cname|truncate(90) }}</option>{% endfor %}
+          </optgroup>
+        </select>
+        <label for="ingredients">Ingredients — one entry per line, in printed order, spelled as printed</label>
+        <textarea id="ingredients" name="ingredients" rows="12" required>{{ form.ingredients }}</textarea>
+        <label for="allergen_statement">Allergen line (“Contains… / May contain…”), exactly as printed</label>
+        <input type="text" id="allergen_statement" name="allergen_statement" value="{{ form.allergen_statement }}">
+        <label for="front_claims">Front-of-pack claims — one per line (only if the front photo is this pack)</label>
+        <textarea id="front_claims" name="front_claims" rows="3">{{ form.front_claims }}</textarea>
+        <label for="note">Note (optional, kept with the decision)</label>
+        <input type="text" id="note" name="note">
+        <div class="actions">
+          <button class="primary" type="submit">Publish to catalogue</button>
+        </div>
+      </fieldset>
+    </form>
+
+    {% if mine %}
+    <div class="panel" style="margin-top:12px">
+      <form method="post" action="/review/item/{{ q.id }}/reject">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <label for="reason">Reject — why? (photo unusable, not food, duplicate…)</label>
+        <div style="display:flex;gap:8px"><input type="text" id="reason" name="reason" required>
+          <button class="danger" type="submit">Reject</button></div>
+      </form>
+      <form method="post" action="/review/item/{{ q.id }}/release" style="margin-top:10px">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <button type="submit">Put back in the queue</button>
+      </form>
+    </div>
+    {% endif %}
+
+    {% if verdict %}
+      <h2>What users will see (from the list above, before your edits)</h2>
+      <div class="panel">
+        <div class="muted" style="margin-bottom:6px">{{ verdict.binary }} · {{ verdict.flags|length }} flagged</div>
+        {% for f in d.findings %}
+          <div class="finding">{{ f.rendered_text }}
+            <div class="muted mono">{{ f.tier }} · from: {{ f.quotes|join(" · ") }}</div></div>
+        {% else %}
+          <div class="muted">No stored findings.</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    {% if d.version %}
+      <div class="muted" style="margin-top:12px">
+        Read from: <b>{{ "the physical label" if d.version.production_source == "physical_label" else "an online listing — can't be published; scan the pack" }}</b>
+        {% for l in d.leads %}<br>Lead #{{ l.id }}: seen on {{ l.source_platform or l.source_type }} {{ l.captured_on }} ({{ l.evidence_status }}) — research only; check against the photos, not the listing.{% endfor %}
+      </div>
+    {% endif %}
+
+    <details style="margin-top:12px"><summary>Trace: model, prompt, engine</summary>
+      <div class="mono muted" style="margin-top:6px">
+        {% if d.version %}version #{{ d.version.id }} (v{{ d.version.version_no }}, {{ d.version.source }}) ·
+        model {{ d.version.model_name or "—" }} · prompt {{ d.version.prompt_version or "—" }} ·
+        engine {{ d.version.engine_version }}{% endif %}
+        {% if d.scan %}<br>scan {{ d.scan.id }} · {{ d.scan.outcome }}{% if d.scan.error_code %} ({{ d.scan.error_code }}){% endif %}{% endif %}
+      </div>
+    </details>
+  </div>
+</div>
+{% endblock %}

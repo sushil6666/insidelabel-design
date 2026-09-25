@@ -1,0 +1,30 @@
+{
+  "front_status": "read",
+  "back_status": "read",
+  "ingredients_status": "read",
+  "product": {
+    "brand": "Limca",
+    "name": "Limca",
+    "variant": "LIME 'N' LEMONI",
+    "net_quantity": null,
+    "veg_mark": "veg"
+  },
+  "ingredients": [
+    "CARBONATED WATER",
+    "SUGAR",
+    "ACIDITY REGULATORS (330, 331(iii))",
+    "STABILIZERS (414,471)",
+    "FLAVOURS (NATURAL, NATURE-IDENTICAL & ARTIFICIAL (LEMON) FLAVOURING SUBSTANCES)."
+  ],
+  "allergen_statement": null,
+  "front_claims": [],
+  "front_claim_footnotes": [],
+  "extraction_notes": [
+    "Net quantity not explicitly stated on pack; 2000ml can be inferred from serving information."
+  ],
+  "confidence": {
+    "ingredients": 1.0,
+    "front_claims": 1.0,
+    "product_identity": 0.9
+  }
+}

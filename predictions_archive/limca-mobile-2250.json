@@ -1,0 +1,57 @@
+{
+  "front_status": "read",
+  "back_status": "read",
+  "ingredients_status": "read",
+  "product": {
+    "brand": "Limca",
+    "name": "Lime 'n' Lemoni",
+    "variant": null,
+    "net_quantity": "2.25 L",
+    "veg_mark": "not_visible"
+  },
+  "product_match": {
+    "status": "indeterminate",
+    "evidence": [
+      "Brand 'Limca' on front, and 'A PRODUCT OF THE Coca-Cola COMPANY' on back, which is the parent company of Limca.",
+      "FSSAI license for Hindustan Coca-Cola Beverages Pvt. Ltd. is consistent with the brand."
+    ]
+  },
+  "front_identity": {
+    "brand": "Limca",
+    "name": "Lime 'n' Lemoni",
+    "manufacturer": null
+  },
+  "back_identity": {
+    "brand": null,
+    "name": null,
+    "manufacturer": "HINDUSTAN COCA-COLA BEVERAGES PVT. LTD. MFG. AT HINDUSTAN COCA-COLA BEVERAGES PVT. LTD. GURUGRAM-122016, HARYANA, GOLF CRS NO. SEC-38,",
+    "fssai_licence": "10012011000620"
+  },
+  "ingredient_lines": [
+    "INGREDIENTS: CARBONATED WATER, SUGAR, ACIDITY",
+    "REGULATORS (330, 331(iii)), STABILIZERS (414,471),",
+    "PRESERVATIVE (211), FLAVOURS (NATURAL, NATURE",
+    "-IDENTICAL & ARTIFICIAL (LEMON) FLAVOURING SUBSTANCES)."
+  ],
+  "ingredient_count": 6,
+  "ingredients": [
+    "CARBONATED WATER",
+    "SUGAR",
+    "ACIDITY REGULATORS (330, 331(iii))",
+    "STABILIZERS (414,471)",
+    "PRESERVATIVE (211)",
+    "FLAVOURS (NATURAL, NATURE -IDENTICAL & ARTIFICIAL (LEMON) FLAVOURING SUBSTANCES)"
+  ],
+  "allergen_statement": null,
+  "front_claims": [
+    "LEMON ADDED"
+  ],
+  "front_claim_footnotes": [],
+  "extraction_notes": [],
+  "confidence": {
+    "ingredients": 1.0,
+    "front_claims": 0.8,
+    "product_identity": 1.0
+  },
+  "verified_anchors": []
+}

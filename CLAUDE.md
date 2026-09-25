@@ -1,0 +1,83 @@
+# CLAUDE.md
+
+InsideLabel: an Indian packaged-food label checker. Python 3.12 + FastAPI +
+PostgreSQL 19. Solo founder: Sushil.
+
+## Start here
+
+1. Read `STATE.md` (status, setup, open items, lessons) and skim `DECISIONS.md`.
+2. `source .venv/bin/activate && pytest -q` — expect 151 passing before you change anything.
+   `python tools/release_check.py` shows how far the beta is from release.
+3. The "Next" list in `STATE.md` §8 is the default work queue.
+
+## Rules that are easy to break
+
+- **AI reads, rules judge (D-004).** Never let a model output become a verdict,
+  score or concern level directly.
+- **FSSAI basis only (D-086).** EU/US status is information-only
+  (`data/regulatory_status.json`); it must never change a score, verdict or
+  `concern`. A test enforces this.
+- **Wording (D-042/D-071).** User-facing text never says misleading, false,
+  illegal, violation, toxic, dangerous, poison, safe, free from, healthy — and
+  never judges the brand. `tests/test_wording.py` checks tables and live output.
+  Quote the label; don't characterise it.
+- **Legal facts come from primary documents, never memory (D-046).** For an
+  additive: Codex CAC/GL 36 for name/class; FSSAI compendium **Appendix A** for
+  permission (GMP table or a numeric limit). A number that appears only in the
+  FSSAI INS *reference list* is **not permitted**. Record `fssai_basis` and
+  `verified_on` on the row.
+- **One INS parser:** `core/tokenize.py` (`INS_RE`, `prefix_bare_ins`,
+  `extract_ins`). Don't write another regex for INS numbers anywhere.
+- **Claim check is in shadow (D-051).** `/scan` computes and stores it; users get
+  `reason: "claims_not_released"` unless `INSIDELABEL_CLAIMS_TO_USERS=on`. Don't route
+  around `_user_claim_check()` in `api/main.py`.
+- **Allergens are the first key** of every `/scan` response (D-060); never output
+  "free from"/"safe"; below confidence 0.95 or on a partial read → `cannot_confirm`.
+- **The catalogue is reviewed data.** Scans create `pending_review` versions; only
+  `/review` (→ `publish_version()`) publishes. Don't add another path.
+- **Result-screen text is built in `lenses/screen.py` (D-091).** The PWA (`web/`)
+  renders `/scan`'s `screen` block; don't compose findings in JS, never read `score`
+  there, and never send a profile nickname (`profiles` = ref/age/avoid only, D-074).
+- **`DECISIONS.md` is append-only.** New decision = new `D-0xx` entry; reversal =
+  mark `SUPERSEDED` and add a new one. Record who accepted it.
+- **No scraping or copying retailer listings** (Amazon, Flipkart, Blinkit, Zepto, Swiggy) —
+  their terms forbid it (D-088). A listing screenshot is a **lead** (`product_leads`,
+  `tools/leads.py`), never a source: the record is read from the physical pack (D-089),
+  and the DB refuses to publish a version whose `production_source` isn't `physical_label`. Open Food Facts is ODbL: test input and prioritisation only, not catalogue rows.
+- **A gate with no data is TODO, never PASS** (`tools/release_check.py`).
+- **Don't overwrite `reports/`** when re-running eval — write to a scratch path unless asked.
+
+## Commands
+
+```bash
+pytest -q                                   # all tests, embedded Postgres (pgserver)
+INSIDELABEL_TEST_PG="postgresql:///insidelabel_test?host=/var/run/postgresql" pytest -q
+python -m insidelabel.db.migrate "postgresql:///insidelabel?host=/var/run/postgresql"
+INSIDELABEL_DB="postgresql:///insidelabel?host=/var/run/postgresql" INSIDELABEL_REVIEW_TOKEN=… \
+  uvicorn insidelabel.api.main:app --reload
+python tools/eval_vision.py --gold gold/ --pred predictions/ --csv <scratch>/eval.csv
+INSIDELABEL_DB=… python tools/release_check.py --with-tests     # beta release gate
+```
+
+## Code conventions
+
+- Match the surrounding style: explanatory module docstrings that say *why*,
+  comments citing decision numbers (`# D-043: …`).
+- Data changes go in `data/*.json`, not code. New additive rows copy the existing
+  row shape and include `fssai_basis` + `verified_on`.
+- Schema changes are a new `migrations/NNN_*.sql` file — never edit an applied one.
+  A file needing an extension starts with `-- requires-extension: <name>`.
+- DB tests use the `fresh_db` fixture (`tests/conftest.py`); they refuse to run on
+  any database not named `*_test`.
+- Storage is optional: code paths that touch the DB go through `_persist()` in
+  `api/main.py` so a DB failure never costs the user their result.
+
+## Environment gotchas (this WSL box)
+
+- Postgres: 19beta4 on **5432** (default), 18 on 5433 (fallback). Peer auth as
+  `insightstack`; no password. Check `pg_lsclusters` before/after any apt Postgres work.
+- Admin commands need `sudo` — ask Sushil to run them (suggest the `!` prefix).
+- EUR-Lex blocks scripted downloads; use the FSAI consolidated PDF or ask for a
+  manual download. eCFR API needs `curl --compressed`.
+- `pkill -f` can match its own shell — kill by PID.
+- Another `uvicorn --reload` may already be running (Sushil's); don't kill it.

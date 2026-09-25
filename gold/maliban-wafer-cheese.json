@@ -1,0 +1,57 @@
+{
+  "front_status": "read",
+  "back_status": "read",
+  "ingredients_status": "read",
+  "product": {
+    "brand": "Maliban",
+    "name": "Wafer",
+    "variant": "CHEESE FLAVOUR",
+    "net_quantity": null,
+    "veg_mark": "veg"
+  },
+  "product_match": {
+    "status": "indeterminate",
+    "evidence": [
+      "back label shows no Maliban wordmark in the photographed area; the visible corporate name is Reliance Consumer Products Limited",
+      "the front's yellow wafer illustration appears at the left edge of the back photo, but a partial image is not an identity anchor"
+    ]
+  },
+  "front_identity": { "brand": "Maliban", "name": "Wafer", "manufacturer": null },
+  "back_identity": {
+    "brand": null,
+    "name": null,
+    "manufacturer": "Reliance Consumer Products Limited, Floor-4, Plot 298/302, Court House, Lokmanya Tilak Marg, Kalbadevi, Greater Mumbai, Maharashtra-400002",
+    "fssai_licence": "11523998000578"
+  },
+  "ingredient_lines": [
+    "INGREDIENTS: REFINED WHEAT FLOUR (MAIDA), SUGAR, REFINED PALM OIL, MILK SOLIDS, WHEY,",
+    "MALTODEXTRIN, IODIZED SALT, EMULSIFIER (322 (i)), RAISING AGENT (500 (ii)), COLOURS (160 a(ii), 129),",
+    "ACIDITY REGULATOR (270), NATURAL & NATURE IDENTICAL FLAVOURING SUBSTANCES."
+  ],
+  "ingredient_count": 12,
+  "ingredients": [
+    "REFINED WHEAT FLOUR (MAIDA)",
+    "SUGAR",
+    "REFINED PALM OIL",
+    "MILK SOLIDS",
+    "WHEY",
+    "MALTODEXTRIN",
+    "IODIZED SALT",
+    "EMULSIFIER (322 (i))",
+    "RAISING AGENT (500 (ii))",
+    "COLOURS (160 a(ii), 129)",
+    "ACIDITY REGULATOR (270)",
+    "NATURAL & NATURE IDENTICAL FLAVOURING SUBSTANCES"
+  ],
+  "allergen_statement": "CONTAINS WHEAT, SOY, MILK.",
+  "front_claims": [],
+  "front_claim_footnotes": [],
+  "extraction_notes": [
+    "Front carries brand, product name and the descriptor 'CHEESE FLAVOUR' only. No marketing claims printed.",
+    "Note for the engine: COLOUR 129 is Allura Red AC, a Southampton-Six azo dye already in additives.json at 'moderate'. This is the first label in the set carrying a synthetic colour, and it is a cheese-flavour wafer marketed at children.",
+    "Net quantity partly obscured by a thumb; reads '67.5 g' but the leading digits are not fully legible. Left null rather than guessed.",
+    "Nutrition panel: per 100g Energy 473.8 kcal, Protein 6.5g, Carbohydrate 75.5g, Total Sugars 30.4g, Added Sugars 30.2g, Total Fat 16.2g, Saturated 9.6g, Trans 0g, Sodium 391.5mg. Recorded here only.",
+    "Maliban is a Sri Lankan brand; this pack is marketed in India by Reliance Consumer Products."
+  ],
+  "confidence": { "ingredients": 1.0, "front_claims": 1.0, "product_identity": 0.9 }
+}

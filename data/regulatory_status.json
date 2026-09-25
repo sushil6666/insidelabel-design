@@ -1,0 +1,156 @@
+{
+  "_meta": {
+    "table": "regulatory_status",
+    "version": "0.1",
+    "purpose": "Information-only comparison of how India (FSSAI), the EU and the US treat an additive. Shown only when the user asks for it. It never changes a verdict, a score or a concern level: those use FSSAI rules only (D-086).",
+    "rules": [
+      "Only rows checked against the regulation text go in. A jurisdiction that has not been checked is left out and shown as 'not yet checked'.",
+      "status is one of the enum values below; display text is built from status_text, never written per row, so every row passes the D-042 wording lint.",
+      "A 'limit depends on the food type' status is used when the regulation sets different limits per food category; the product's category is not known yet, so no single number is quoted."
+    ],
+    "status_text": {
+      "permitted": "Permitted",
+      "permitted_gmp": "Permitted in all food types, in the amount needed (GMP)",
+      "permitted_with_limits": "Permitted, with a limit that depends on the food type",
+      "permitted_max": "Permitted up to {max}",
+      "permitted_only_in": "Permitted only in {only}",
+      "permitted_with_warning": "Permitted, but the pack must carry a warning: \"{warning}\"",
+      "not_permitted": "Not permitted as a food additive",
+      "not_permitted_since": "Not permitted as a food additive since {since}",
+      "revoked": "Permission withdrawn on {since}; must be out of food by {deadline}"
+    },
+    "jurisdictions": {
+      "IN": "India (FSSAI)",
+      "EU": "European Union",
+      "US": "United States (FDA)"
+    },
+    "documents": {
+      "FSSAI_FA_XXVI": {
+        "title": "FSS (Food Products Standards and Food Additives) Regulations 2011, compendium Version XXVI (20.12.2022), Appendix A",
+        "url": "https://www.fssai.gov.in/upload/uploadfiles/files/Compendium_Food_Additives_Regulations_20_12_2022.pdf",
+        "note": "Checked with the First Amendment Regulations 2025 (in force 01.02.2026), which changes none of these rows. An INS number that appears only in the regulation's INS reference list, with no Appendix A provision, is recorded as not_permitted."
+      },
+      "EU_1333_2008": {
+        "title": "Regulation (EC) No 1333/2008, Annex II (Union list) and Annex V",
+        "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A02008R1333-20250702",
+        "note": "Checked against the FSAI consolidated text (amendments to M82, 2018). Replace with the current EUR-Lex consolidation when available."
+      },
+      "EU_2022_63": {
+        "title": "Commission Regulation (EU) 2022/63 (titanium dioxide, E 171)",
+        "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/PDF/?uri=CELEX:32022R0063"
+      },
+      "US_CFR_74A": {
+        "title": "21 CFR part 74 subpart A — colour additives subject to certification, for food",
+        "url": "https://www.ecfr.gov/current/title-21/chapter-I/subchapter-A/part-74/subpart-A"
+      },
+      "US_CFR_73_575": {
+        "title": "21 CFR 73.575 — Titanium dioxide",
+        "url": "https://www.ecfr.gov/current/title-21/chapter-I/subchapter-A/part-73/subpart-A/section-73.575"
+      },
+      "US_RED3_2025": {
+        "title": "FDA final order revoking FD&C Red No. 3 for food and ingested drugs (Federal Register, 16.01.2025)",
+        "url": "https://www.federalregister.gov/documents/2025/01/16/2025-00830/color-additive-petition-from-center-for-science-in-the-public-interest-et-al-request-to-revoke-color"
+      },
+      "US_CFR_184_1157": {
+        "title": "21 CFR 184.1157 — Benzoyl peroxide (GRAS)",
+        "url": "https://www.ecfr.gov/current/title-21/chapter-I/subchapter-B/part-184/subpart-B/section-184.1157"
+      },
+      "US_CFR_172_806": {
+        "title": "21 CFR 172.806 — Azodicarbonamide",
+        "url": "https://www.ecfr.gov/current/title-21/chapter-I/subchapter-B/part-172/subpart-I/section-172.806"
+      },
+      "US_CFR_172_730": {
+        "title": "21 CFR 172.730 — Potassium bromate",
+        "url": "https://www.ecfr.gov/current/title-21/chapter-I/subchapter-B/part-172/subpart-I/section-172.730"
+      }
+    }
+  },
+
+  "additives": [
+    {
+      "ins": "171", "name": "Titanium dioxide",
+      "IN": {"status": "permitted_gmp", "doc": "FSSAI_FA_XXVI"},
+      "EU": {"status": "not_permitted_since", "since": "7 August 2022", "doc": "EU_2022_63",
+             "reason": "EFSA concluded in 2021 that a concern for genotoxicity (damage to DNA) could not be ruled out, so the EU withdrew its authorisation as a food additive."},
+      "US": {"status": "permitted_max", "max": "1% of the food's weight", "doc": "US_CFR_73_575"},
+      "verified_on": "2026-09-25"
+    },
+    {
+      "ins": "127", "name": "Erythrosine",
+      "IN": {"status": "permitted_with_limits", "doc": "FSSAI_FA_XXVI"},
+      "EU": {"status": "permitted_only_in", "only": "cocktail cherries, candied cherries and bigarreaux cherries", "doc": "EU_1333_2008"},
+      "US": {"status": "revoked", "since": "15 January 2025", "deadline": "15 January 2027", "doc": "US_RED3_2025",
+             "reason": "FDA revoked it under the Delaney Clause, because it caused cancer in male rats at high doses."},
+      "verified_on": "2026-09-25"
+    },
+    {
+      "ins": "122", "name": "Carmoisine (Azorubine)",
+      "IN": {"status": "permitted_with_limits", "doc": "FSSAI_FA_XXVI"},
+      "EU": {"status": "permitted_with_warning", "warning": "may have an adverse effect on activity and attention in children", "doc": "EU_1333_2008"},
+      "US": {"status": "not_permitted", "doc": "US_CFR_74A"},
+      "verified_on": "2026-09-25"
+    },
+    {
+      "ins": "124", "name": "Ponceau 4R",
+      "IN": {"status": "permitted_with_limits", "doc": "FSSAI_FA_XXVI"},
+      "EU": {"status": "permitted_with_warning", "warning": "may have an adverse effect on activity and attention in children", "doc": "EU_1333_2008"},
+      "US": {"status": "not_permitted", "doc": "US_CFR_74A"},
+      "verified_on": "2026-09-25"
+    },
+    {
+      "ins": "143", "name": "Fast Green FCF",
+      "IN": {"status": "permitted_with_limits", "doc": "FSSAI_FA_XXVI"},
+      "EU": {"status": "not_permitted", "doc": "EU_1333_2008"},
+      "US": {"status": "permitted", "doc": "US_CFR_74A"},
+      "verified_on": "2026-09-25"
+    },
+    {
+      "ins": "102", "name": "Tartrazine",
+      "IN": {"status": "permitted_with_limits", "doc": "FSSAI_FA_XXVI"},
+      "EU": {"status": "permitted_with_warning", "warning": "may have an adverse effect on activity and attention in children", "doc": "EU_1333_2008"},
+      "US": {"status": "permitted", "doc": "US_CFR_74A"},
+      "verified_on": "2026-09-25"
+    },
+    {
+      "ins": "110", "name": "Sunset Yellow FCF",
+      "IN": {"status": "permitted_with_limits", "doc": "FSSAI_FA_XXVI"},
+      "EU": {"status": "permitted_with_warning", "warning": "may have an adverse effect on activity and attention in children", "doc": "EU_1333_2008"},
+      "US": {"status": "permitted", "doc": "US_CFR_74A"},
+      "verified_on": "2026-09-25"
+    },
+    {
+      "ins": "129", "name": "Allura Red AC",
+      "IN": {"status": "permitted_with_limits", "doc": "FSSAI_FA_XXVI"},
+      "EU": {"status": "permitted_with_warning", "warning": "may have an adverse effect on activity and attention in children", "doc": "EU_1333_2008"},
+      "US": {"status": "permitted", "doc": "US_CFR_74A"},
+      "verified_on": "2026-09-25"
+    },
+    {
+      "ins": "928", "name": "Benzoyl peroxide",
+      "IN": {"status": "permitted_with_limits", "doc": "FSSAI_FA_XXVI"},
+      "EU": {"status": "not_permitted", "doc": "EU_1333_2008"},
+      "US": {"status": "permitted", "doc": "US_CFR_184_1157"},
+      "verified_on": "2026-09-25"
+    },
+    {
+      "ins": "927a", "name": "Azodicarbonamide",
+      "IN": {"status": "not_permitted", "doc": "FSSAI_FA_XXVI"},
+      "EU": {"status": "not_permitted", "doc": "EU_1333_2008"},
+      "US": {"status": "permitted_max", "max": "45 ppm of the flour, in flour and bread dough", "doc": "US_CFR_172_806"},
+      "verified_on": "2026-09-25"
+    },
+    {
+      "ins": "924a", "name": "Potassium bromate",
+      "IN": {"status": "not_permitted", "doc": "FSSAI_FA_XXVI"},
+      "EU": {"status": "not_permitted", "doc": "EU_1333_2008"},
+      "US": {"status": "permitted_only_in", "only": "barley malting for beer and spirits (flour use not yet checked)", "doc": "US_CFR_172_730"},
+      "verified_on": "2026-09-25"
+    },
+    {
+      "ins": "952", "name": "Cyclamate",
+      "IN": {"status": "not_permitted", "doc": "FSSAI_FA_XXVI"},
+      "EU": {"status": "permitted_with_limits", "doc": "EU_1333_2008"},
+      "verified_on": "2026-09-25"
+    }
+  ]
+}

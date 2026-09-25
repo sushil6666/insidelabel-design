@@ -1,0 +1,10 @@
+Metadata-Version: 2.4
+Name: insidelabel
+Version: 0.1.0
+Summary: Ingredient label analysis and validation engine
+Requires-Python: >=3.12
+Requires-Dist: fastapi
+Requires-Dist: uvicorn
+Requires-Dist: python-multipart
+Requires-Dist: google-genai
+Requires-Dist: Pillow

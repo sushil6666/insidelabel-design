@@ -1,0 +1,31 @@
+{
+  "front_status": "read",
+  "back_status": "read",
+  "ingredients_status": "read",
+  "product": {
+    "brand": "Limca",
+    "name": "Limca",
+    "variant": "Lime 'N' Lemoni",
+    "net_quantity": null,
+    "veg_mark": "veg"
+  },
+  "ingredients": [
+    "CARBONATED WATER",
+    "SUGAR",
+    "ACIDITY REGULATORS (330, 331(iii))",
+    "STABILIZERS (414,471)",
+    "PRESERVATIVE (211)",
+    "FLAVOURS (NATURAL, NATURE-IDENTICAL & ARTIFICIAL (LEMON) FLAVOURING SUBSTANCES)"
+  ],
+  "allergen_statement": null,
+  "front_claims": [],
+  "front_claim_footnotes": [],
+  "extraction_notes": [
+    "Net quantity not explicitly stated in a single value on the pack, only implied by serving size and number of servings."
+  ],
+  "confidence": {
+    "ingredients": 1.0,
+    "front_claims": 1.0,
+    "product_identity": 0.9
+  }
+}

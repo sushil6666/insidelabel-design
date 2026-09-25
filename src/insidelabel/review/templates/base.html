@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Review{% endblock %} · InsideLabel</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --panel: #ffffff; --ink: #16181d; --muted: #5d6573; --line: #dfe3ea;
+    --accent: #1f5fd6; --ok: #177245; --ok-bg: #e5f4ec; --bad: #b3261e; --bad-bg: #fbe9e7;
+    --warn: #8a5a00; --warn-bg: #fff4d6; --chip: #eef1f6; --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #111317; --panel: #1a1d23; --ink: #e8eaee; --muted: #9aa3b2; --line: #2d323c;
+      --accent: #7aa7ff; --ok: #6fd39c; --ok-bg: #16301f; --bad: #ff8a80; --bad-bg: #3a1a18;
+      --warn: #ffcf66; --warn-bg: #362a0c; --chip: #252a33;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  header { display: flex; align-items: center; gap: 16px; padding: 10px 16px;
+           background: var(--panel); border-bottom: 1px solid var(--line); }
+  header a.home { font-weight: 650; color: var(--ink); text-decoration: none; }
+  header .who { margin-left: auto; color: var(--muted); font-size: 13px; }
+  main { padding: 16px; max-width: 1400px; margin: 0 auto; }
+  h1 { font-size: 20px; margin: 0 0 12px; } h2 { font-size: 16px; margin: 20px 0 8px; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .03em; }
+  a { color: var(--accent); }
+  .chip { display: inline-block; padding: 1px 8px; border-radius: 99px; background: var(--chip);
+          font-size: 12px; white-space: nowrap; }
+  .chip.new_product { background: var(--ok-bg); color: var(--ok); }
+  .chip.reformulation { background: var(--warn-bg); color: var(--warn); }
+  .chip.correction, .chip.send_to_us { background: var(--bad-bg); color: var(--bad); }
+  .muted { color: var(--muted); } .mono { font-family: var(--mono); font-size: 13px; }
+  button, .btn { font: inherit; padding: 8px 14px; border-radius: 6px; border: 1px solid var(--line);
+                 background: var(--panel); color: var(--ink); cursor: pointer; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.danger { color: var(--bad); border-color: var(--bad); }
+  input[type=text], textarea { width: 100%; font: inherit; padding: 7px 9px; border-radius: 6px;
+                               border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+  textarea { font-family: var(--mono); font-size: 13px; }
+  label { display: block; font-size: 12px; color: var(--muted); margin: 10px 0 4px; font-weight: 600; }
+  .error { background: var(--bad-bg); color: var(--bad); padding: 10px 12px; border-radius: 6px; margin-bottom: 12px; }
+  .notice { background: var(--warn-bg); color: var(--warn); padding: 10px 12px; border-radius: 6px; margin-bottom: 12px; }
+  .stats { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+  .stat { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; min-width: 150px; }
+  .stat b { font-size: 22px; display: block; }
+  @media (max-width: 640px) { main { padding: 12px 16px; } .hide-sm { display: none; } }
+</style>
+</head>
+<body>
+<header>
+  <a class="home" href="/review">InsideLabel review</a>
+  <span class="who">Signed in as <b>{{ reviewer }}</b></span>
+</header>
+<main>
+{% block body %}{% endblock %}
+</main>
+</body>
+</html>

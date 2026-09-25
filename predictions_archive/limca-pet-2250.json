@@ -1,0 +1,69 @@
+{
+  "front_status": "read",
+  "back_status": "read",
+  "ingredients_status": "read",
+  "product": {
+    "brand": "Limca",
+    "name": "Limca",
+    "variant": "LIME 'N' LEMONI",
+    "net_quantity": "2.25 L",
+    "veg_mark": "veg"
+  },
+  "product_match": {
+    "status": "match",
+    "evidence": [
+      "Brand name 'Limca' on both faces",
+      "Consistent product type (lemon drink)"
+    ],
+    "evidence_rejected": [
+      "Consistent product type (lemon drink)"
+    ],
+    "verified_anchors": [
+      "brand matches on both faces: 'limca'",
+      "name matches on both faces: 'limca'"
+    ]
+  },
+  "front_identity": {
+    "brand": "Limca",
+    "name": "Limca",
+    "manufacturer": null
+  },
+  "back_identity": {
+    "brand": "Limca",
+    "name": "Limca",
+    "manufacturer": "HINDUSTAN COCA-COLA BEVERAGES PVT. LTD. SURVEY NO. 284/1, CHANDRAPURA, KANAKPURA, GOLF CRS RD, SEC-38, GURUGRAM-122001, HARYANA.",
+    "fssai_licence": "10012011000620"
+  },
+  "ingredient_lines": [
+    "INGREDIENTS: CARBONATED WATER, SUGAR, ACIDITY",
+    "REGULATORS (330, 331(iii)), STABILIZERS (414,471),",
+    "PRESERVATIVE (211), FLAVOURS (NATURAL, NATURE",
+    "-IDENTICAL & ARTIFICIAL (LEMON) FLAVOURING SUBSTANCES)."
+  ],
+  "ingredient_count": 6,
+  "ingredients": [
+    "CARBONATED WATER",
+    "SUGAR",
+    "ACIDITY REGULATORS (330, 331(iii))",
+    "STABILIZERS (414,471)",
+    "PRESERVATIVE (211)",
+    "FLAVOURS (NATURAL, NATURE -IDENTICAL & ARTIFICIAL (LEMON) FLAVOURING SUBSTANCES)"
+  ],
+  "allergen_statement": null,
+  "front_claims": [],
+  "front_claim_footnotes": [],
+  "extraction_notes": [
+    "Some text on the top left of the front label is partially obscured/cut off.",
+    "The green veg mark on the back is partially obscured by the FSSAI logo."
+  ],
+  "confidence": {
+    "ingredients": 0.9,
+    "front_claims": 0.9,
+    "product_identity": 0.95
+  },
+  "_model": "gemini-2.5-flash",
+  "verified_anchors": [
+    "brand matches on both faces: 'limca'",
+    "name matches on both faces: 'limca'"
+  ]
+}

@@ -1,0 +1,314 @@
+"""
+Persistence for the scan path (D-020, D-024, D-026, D-028, D-043, D-076).
+
+The API calls this only when INSIDELABEL_DB is set; without it the API works
+exactly as before and nothing is stored.
+
+Rules this module follows (the database enforces the hard ones too):
+  * A scan result becomes a product version waiting for review, never a public
+    catalogue entry by itself (D-028). An identical version already waiting is
+    reused, so one pack scanned by many people is reviewed once.
+  * A new ingredient list on a product that already has a published version is
+    a reformulation (D-026) and is queued as such.
+  * Every finding is stored with at least one evidence row pointing at the
+    label's own words (D-043).
+  * Front-of-pack claims are stored only when the claim check actually ran on a
+    confirmed pairing (D-035); otherwise they may belong to a different pack.
+"""
+
+import hashlib
+import re
+import uuid
+
+import psycopg
+from psycopg.rows import dict_row
+from psycopg.types.json import Jsonb
+
+from insidelabel.core import engine
+from insidelabel.core.tokenize import extract_ins
+
+# ---------------------------------------------------------------- fingerprints
+
+
+def _norm(s):
+    return re.sub(r"\s+", " ", (s or "").strip().lower())
+
+
+def ingredients_hash(ingredients):
+    """Stable fingerprint of an ingredient list: order matters, case and spacing don't."""
+    return hashlib.sha256("|".join(_norm(i) for i in ingredients).encode()).hexdigest()
+
+
+def claims_hash(claims):
+    if not claims:
+        return None
+    return hashlib.sha256("|".join(sorted(_norm(c) for c in claims)).encode()).hexdigest()
+
+
+# ---------------------------------------------------------------- findings
+
+_CLAIM_TIER = {"made_with_real": "R4"}      # unregulated marketing; the rest are non-addition (R2)
+_INS_IN_TEXT = re.compile(r"\bINS (\w+)")
+
+
+def _ins_of_entry(entry):
+    return {extract_ins(t) for t in engine.tokenize(entry)} - {None}
+
+
+def _position(ingredients, ins=None, text=None):
+    """1-based position of the ingredient entry holding an INS number or text."""
+    for i, entry in enumerate(ingredients, start=1):
+        if ins and ins in _ins_of_entry(entry):
+            return i
+    if text:
+        t = _norm(re.sub(r"[()\[\]{}]", " ", text))
+        for i, entry in enumerate(ingredients, start=1):
+            if t and t in _norm(entry):
+                return i
+    return None
+
+
+def _ingredient_evidence(ingredients, ins=None, text=None):
+    pos = _position(ingredients, ins=ins, text=text)
+    if pos:
+        return {"kind": "ingredient", "pointer": {"ingredient_position": pos},
+                "quoted_text": ingredients[pos - 1]}
+    return {"kind": "ingredient", "pointer": {"token": text or ins}, "quoted_text": text or ins}
+
+
+def build_findings(ingredients, verdict, claim_check, engine_version):
+    """
+    Turn one analysed label into finding rows, each with its evidence.
+    Pure: no database. Every row returned has at least one evidence item.
+    """
+    rule_version = f"engine {engine_version} / additives.json {engine.ADDITIVES['_meta']['version']}"
+    out = []
+
+    for f in verdict.get("flags", []):
+        m = _INS_IN_TEXT.search(f.get("matched_as", ""))
+        if f["type"] == "nova_marker":
+            tier, kind, code = "R3", "fact", "NOVA:" + f["matched_as"].split(": ", 1)[-1]
+        else:
+            tier = "ING"
+            kind = "potential_concern" if f["concern"] in ("moderate", "high") else "fact"
+            code = f"ADDITIVE:INS {m.group(1)}" if m else "ADDITIVE:" + f["matched_as"]
+        out.append({
+            "rule_code": code, "rule_version": rule_version, "tier": tier, "kind": kind,
+            "severity": f["concern"],
+            "rendered_text": f"{f['matched_as']}. {f['why']}",
+            "evidence": [_ingredient_evidence(ingredients, ins=m.group(1) if m else None,
+                                              text=f.get("ingredient"))],
+        })
+
+    if (claim_check or {}).get("status") == "checked":
+        for idx, ch in enumerate(claim_check["checked"]):
+            if not ch["contradicted"]:
+                continue
+            ev = [{"kind": "claim", "pointer": {"claim_index": idx}, "quoted_text": ch["claim"]}]
+            facts = []
+            for c in ch["contradicted_by"]:
+                facts.append(c["fact"])
+                src = c.get("evidence")
+                if src:
+                    m = _INS_IN_TEXT.search(src)
+                    ev.append(_ingredient_evidence(ingredients, ins=m.group(1) if m else None, text=src))
+            out.append({
+                "rule_code": "CLAIM:" + ch["rule_id"], "rule_version": rule_version,
+                "tier": _CLAIM_TIER.get(ch["rule_id"], "R2"), "kind": "fact",
+                "severity": "contradiction",
+                # D-042 template: "The label claims X. The declaration says Y."
+                "rendered_text": f"The label claims \"{ch['claim']}\". " + " ".join(facts),
+                "evidence": ev,
+            })
+    return out
+
+
+# ---------------------------------------------------------------- store
+
+
+class Store:
+    def __init__(self, conninfo):
+        self.conninfo = conninfo
+
+    def _connect(self):
+        return psycopg.connect(self.conninfo, row_factory=dict_row)
+
+    # -- users ---------------------------------------------------------
+
+    @staticmethod
+    def _user(conn, device_id):
+        """The anonymous install id, created on first sight. Invalid ids are ignored."""
+        if not device_id:
+            return None
+        try:
+            uid = str(uuid.UUID(str(device_id)))
+        except ValueError:
+            return None
+        conn.execute("INSERT INTO users (id) VALUES (%s) ON CONFLICT (id) DO NOTHING", (uid,))
+        return uid
+
+    # -- reads ---------------------------------------------------------
+
+    def find_current(self, barcode):
+        """The published, current version for a barcode, or None (D-024)."""
+        with self._connect() as conn:
+            return conn.execute(
+                """SELECT p.id AS product_id, p.barcode, p.name, p.variant, b.name AS brand,
+                          p.net_qty_value, p.net_qty_unit,
+                          v.id AS product_version_id, v.version_no, v.ingredients,
+                          v.allergen_statement, v.front_claims, v.verified_at
+                     FROM products p
+                     JOIN product_versions v ON v.product_id = p.id AND v.is_current
+                     LEFT JOIN brands b ON b.id = p.brand_id
+                    WHERE p.barcode = %s""", (barcode,)).fetchone()
+
+    # -- writes --------------------------------------------------------
+
+    def record_cache_hit(self, hit, device_id=None, latency_ms=None):
+        with self._connect() as conn:
+            uid = self._user(conn, device_id)
+            conn.execute("UPDATE products SET scan_count = scan_count + 1 WHERE id = %s",
+                         (hit["product_id"],))
+            return conn.execute(
+                """INSERT INTO scans (user_id, product_version_id, resolved_via, cache_hit, outcome,
+                                      latency_ms, ai_cost_paise)
+                   VALUES (%s, %s, 'barcode', true, 'verdict', %s, 0) RETURNING id""",
+                (uid, hit["product_version_id"], latency_ms)).fetchone()["id"]
+
+    def record_failed_scan(self, outcome, error_code=None, device_id=None, latency_ms=None,
+                           front_key=None, back_key=None):
+        with self._connect() as conn:
+            uid = self._user(conn, device_id)
+            return conn.execute(
+                """INSERT INTO scans (user_id, resolved_via, cache_hit, outcome, error_code, latency_ms,
+                                      front_image_key, back_image_key)
+                   VALUES (%s, 'failed', false, %s, %s, %s, %s, %s) RETURNING id""",
+                (uid, outcome, error_code, latency_ms, front_key, back_key)).fetchone()["id"]
+
+    def save_scan(self, *, vision, verdict, claim_check, claims_trusted, reliability,
+                  barcode=None, device_id=None, latency_ms=None,
+                  model_name=None, prompt_version=None, engine_version=None,
+                  front_key=None, back_key=None):
+        """
+        Store a vision-path scan: product (found or created), a version waiting
+        for review (new, or an identical one already waiting), its findings and
+        evidence, a review-queue item, and the scan row. One transaction.
+        """
+        ingredients = vision["ingredients"]
+        ihash = ingredients_hash(ingredients)
+        product_meta = vision.get("product") or {}
+        front_claims = vision.get("front_claims", []) if claims_trusted else []
+
+        with self._connect() as conn:
+            uid = self._user(conn, device_id)
+            product = None
+            if barcode:
+                product = conn.execute("SELECT id FROM products WHERE barcode = %s FOR UPDATE",
+                                       (barcode,)).fetchone()
+            if product is None:
+                brand_id = None
+                if product_meta.get("brand"):
+                    brand_id = conn.execute(
+                        """INSERT INTO brands (name) VALUES (%s)
+                           ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name RETURNING id""",
+                        (product_meta["brand"].strip(),)).fetchone()["id"]
+                product = conn.execute(
+                    """INSERT INTO products (barcode, brand_id, name, variant)
+                       VALUES (%s, %s, %s, %s) RETURNING id""",
+                    (barcode or None, brand_id,
+                     (product_meta.get("name") or "Unknown product").strip(),
+                     product_meta.get("variant"))).fetchone()
+            pid = product["id"]
+            conn.execute("UPDATE products SET scan_count = scan_count + 1 WHERE id = %s", (pid,))
+
+            current = conn.execute(
+                "SELECT id, ingredients_hash FROM product_versions WHERE product_id = %s AND is_current",
+                (pid,)).fetchone()
+            pending = conn.execute(
+                """SELECT id FROM product_versions
+                    WHERE product_id = %s AND status = 'pending_review' AND ingredients_hash = %s""",
+                (pid, ihash)).fetchone()
+
+            queued = None
+            if current and current["ingredients_hash"] == ihash:
+                # A re-read of a published pack (e.g. the D-073 allergy
+                # re-check) found the same label. Nothing new to review.
+                vid, vstatus = current["id"], "published"
+            elif pending:
+                vid, vstatus = pending["id"], "pending_review"
+            else:
+                n = conn.execute("SELECT COALESCE(max(version_no), 0) + 1 AS n FROM product_versions "
+                                 "WHERE product_id = %s", (pid,)).fetchone()["n"]
+                raw = {k: v for k, v in vision.items() if k != "_ocr_cross_check"}
+                raw["_reliability"] = reliability
+                vid = conn.execute(
+                    """INSERT INTO product_versions
+                         (product_id, version_no, ingredient_lines, ingredients, allergen_statement,
+                          front_claims, raw_extraction, ingredients_hash, claims_hash,
+                          model_name, prompt_version, engine_version, source, status,
+                          front_image_key, back_image_key)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'scan', 'pending_review', %s, %s)
+                       RETURNING id""",
+                    (pid, n, Jsonb(vision.get("ingredient_lines") or ingredients), Jsonb(ingredients),
+                     vision.get("allergen_statement"), Jsonb(front_claims), Jsonb(raw), ihash,
+                     claims_hash(front_claims), model_name, prompt_version, engine_version,
+                     front_key if claims_trusted else None, back_key)).fetchone()["id"]
+                vstatus = "pending_review"
+                self._insert_findings(conn, vid, engine_version, build_findings(
+                    ingredients, verdict, claim_check if claims_trusted else None, engine_version))
+                queued = "reformulation" if current else "new_product"
+
+            sid = conn.execute(
+                """INSERT INTO scans (user_id, product_version_id, resolved_via, cache_hit, outcome,
+                                      latency_ms, front_image_key, back_image_key)
+                   VALUES (%s, %s, %s, false, 'verdict', %s, %s, %s) RETURNING id""",
+                (uid, vid, "new_product" if vstatus == "pending_review" else "barcode",
+                 latency_ms, front_key, back_key)).fetchone()["id"]
+            if queued:
+                conn.execute(
+                    """INSERT INTO review_queue (kind, scan_id, product_version_id, notify_user_id)
+                       VALUES (%s, %s, %s, %s)""", (queued, sid, vid, uid))
+            return {"scan_id": str(sid), "product_id": pid, "product_version_id": vid,
+                    "version_status": vstatus, "queued": queued}
+
+    @staticmethod
+    def _insert_findings(conn, vid, engine_version, findings):
+        for f in findings:
+            fid = conn.execute(
+                """INSERT INTO findings (product_version_id, rule_code, rule_version, tier, kind,
+                                         severity, rendered_text, engine_version)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s) RETURNING id""",
+                (vid, f["rule_code"], f["rule_version"], f["tier"], f["kind"], f["severity"],
+                 f["rendered_text"], engine_version)).fetchone()["id"]
+            for e in f["evidence"]:
+                eid = conn.execute(
+                    """INSERT INTO evidence (product_version_id, kind, pointer, quoted_text)
+                       VALUES (%s, %s, %s, %s) RETURNING id""",
+                    (vid, e["kind"], Jsonb(e["pointer"]), e.get("quoted_text"))).fetchone()["id"]
+                conn.execute("INSERT INTO finding_evidence VALUES (%s, %s) ON CONFLICT DO NOTHING",
+                             (fid, eid))
+
+    def report(self, *, scan_id=None, product_version_id=None, device_id=None,
+               field, proposed_value=None, note=None):
+        """D-076 'Report a mistake': a correction plus a review-queue item. None if unknown scan."""
+        with self._connect() as conn:
+            uid = self._user(conn, device_id)
+            if scan_id:
+                row = conn.execute("SELECT product_version_id FROM scans WHERE id = %s",
+                                   (scan_id,)).fetchone()
+                if row is None:
+                    return None
+                product_version_id = product_version_id or row["product_version_id"]
+            elif product_version_id:
+                if conn.execute("SELECT 1 FROM product_versions WHERE id = %s",
+                                (product_version_id,)).fetchone() is None:
+                    return None
+            cid = conn.execute(
+                """INSERT INTO corrections (scan_id, product_version_id, user_id, field, proposed_value, note)
+                   VALUES (%s, %s, %s, %s, %s, %s) RETURNING id""",
+                (scan_id, product_version_id, uid, field, proposed_value, note)).fetchone()["id"]
+            rid = conn.execute(
+                """INSERT INTO review_queue (kind, scan_id, product_version_id, correction_id, notify_user_id)
+                   VALUES ('correction', %s, %s, %s, %s) RETURNING id""",
+                (scan_id, product_version_id, cid, uid)).fetchone()["id"]
+            return {"correction_id": cid, "review_id": rid}

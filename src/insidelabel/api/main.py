@@ -1,0 +1,785 @@
+"""
+Inside Label — API (v0.1)
+
+    POST /analyze      raw ingredient text  -> layered verdict (engine verbatim)
+    POST /claim-check  text + front claims  -> verdict + claim contradictions
+    POST /allergen-check  ingredients + avoid list -> five-state allergen result
+    POST /compare      2-4 scanned packs    -> best pick of these, with reasons
+    GET  /regulators/{ins}                  -> India vs EU vs US, information only
+    GET  /health
+
+    POST /scan         one or two images   -> verdict + identity + claim check
+                       (+ barcode: a reviewed catalogue entry skips the vision call)
+    POST /report       "Report a mistake" on a scan (D-076)
+
+THE GUARD THAT MATTERS
+----------------------
+engine.analyze("") returns score 100, grade A, binary "clean". That is correct
+behaviour for the engine — no flagged ingredients means no penalties — but it
+is the single most dangerous output this API can emit, because "we could not
+read the label" and "this product is clean" become indistinguishable to the
+user. Every path into the engine therefore refuses input that yields no usable
+ingredient tokens, rather than passing an empty list through and letting a
+false CLEAN out the door.
+"""
+
+import hashlib  # noqa: E402
+import json  # noqa: E402
+import logging  # noqa: E402
+import mimetypes  # noqa: E402
+import os  # noqa: E402
+import re  # noqa: E402
+import time  # noqa: E402
+import uuid  # noqa: E402
+from typing import Optional  # noqa: E402
+
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile  # noqa: E402
+from fastapi.responses import JSONResponse, RedirectResponse  # noqa: E402
+from fastapi.staticfiles import StaticFiles  # noqa: E402
+
+from insidelabel.core import engine  # noqa: E402
+from insidelabel.claims import checker as claim_checker  # noqa: E402
+from insidelabel.lenses import allergens as allergen_checker  # noqa: E402
+from insidelabel.lenses import compare as shelf  # noqa: E402
+from insidelabel.lenses import regulators  # noqa: E402
+from insidelabel.lenses import screen as result_screen  # noqa: E402
+from insidelabel.reliability import gates as rel  # noqa: E402
+from insidelabel.extraction.providers import gemini  # noqa: E402
+from insidelabel.extraction.providers import ocr_check  # noqa: E402
+from insidelabel.extraction.providers.prompt import MODEL, VISION_PROMPT  # noqa: E402
+from insidelabel.extraction.schemas import (  # noqa: E402
+    AllergenCheckRequest,
+    AnalyzeRequest,
+    CompareRequest,
+    ReportRequest,
+    AnalyzeResponse,
+    ClaimCheckRequest,
+    ClaimCheckResponse,
+)
+
+ENGINE_VERSION = "0.1"
+# D-031: pinned on every stored version. Any edit to the prompt changes it.
+PROMPT_VERSION = hashlib.sha256(VISION_PROMPT.encode()).hexdigest()[:12]
+
+log = logging.getLogger("insidelabel.api")
+
+# Persistence is optional: set INSIDELABEL_DB to a Postgres URI to store scans.
+# Without it the API behaves exactly as before and stores nothing.
+STORE = None
+MEDIA = None
+if os.environ.get("INSIDELABEL_DB"):
+    from insidelabel.db.store import Store
+    from insidelabel.media import LocalMedia
+    STORE = Store(os.environ["INSIDELABEL_DB"])
+    # D-028: scan photos are kept as evidence for review. Local dir until R2.
+    MEDIA = LocalMedia(os.environ.get("INSIDELABEL_MEDIA", "media"))
+
+
+# D-051: the front-vs-back claim check runs in shadow until it has been measured
+# on real claim-bearing packs (≥ 5, 0 false contradictions). It is still
+# computed and stored for reviewers; users see it only when this is "on".
+CLAIMS_TO_USERS = os.environ.get("INSIDELABEL_CLAIMS_TO_USERS", "off").lower() == "on"
+
+
+def _user_claim_check(cc, front_claims):
+    """What a user sees of the claim check: the real result, or 'not released yet'."""
+    if CLAIMS_TO_USERS:
+        return cc
+    return {"status": "not_checked", "reason": "claims_not_released", "claims_examined": 0,
+            "checked": [], "unmatched_claims": list(front_claims or [])}
+
+
+def _save_images(images):
+    """{"front": key, "back": key} for the photos sent, or {} when not storing."""
+    if MEDIA is None:
+        return {}
+    try:
+        return {role: MEDIA.put(data, mime) for data, mime, role in images}
+    except OSError:
+        log.exception("photo storage failed")
+        return {}
+
+
+def _persist(fn, *args, **kwargs):
+    """
+    Run a store call. A database failure is logged loudly but never costs the
+    user their result: the verdict was already computed from their photo.
+    """
+    if STORE is None:
+        return None
+    try:
+        return fn(*args, **kwargs)
+    except Exception:  # noqa: BLE001 — any storage failure, logged with traceback
+        log.exception("scan persistence failed")
+        return None
+
+app = FastAPI(
+    title="Inside Label API",
+    version="0.1.0",
+    description=(
+        "Ingredient-list analysis. The engine states ingredient facts only — "
+        "it never says a product is safe for any person or condition. Segment "
+        "lenses sit above this API, not inside it."
+    ),
+)
+
+# Reviewer screen (D-028). Active only when the database is configured.
+from insidelabel.review import routes as review_routes  # noqa: E402
+from insidelabel.review.service import ReviewService  # noqa: E402
+
+app.include_router(review_routes.router)
+if STORE is not None:
+    review_routes.SERVICE = ReviewService(STORE.conninfo, ENGINE_VERSION)
+    review_routes.MEDIA = MEDIA
+
+# The PWA (D-010), served from the same origin as the API so the phone needs no
+# CORS and the service worker's scope is /app/. Static files only; it renders
+# the `screen` block of /scan and makes no judgements of its own.
+WEB_DIR = os.environ.get("INSIDELABEL_WEB", os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "..", "..", "web")))
+mimetypes.add_type("application/manifest+json", ".webmanifest")
+mimetypes.add_type("text/javascript", ".js")        # module scripts refuse other types
+if os.path.isdir(WEB_DIR):
+    app.mount("/app", StaticFiles(directory=WEB_DIR, html=True), name="app")
+
+    @app.get("/", include_in_schema=False)
+    def root():
+        return RedirectResponse("/app/")
+
+
+# ---------------------------------------------------------------------------
+def guard_ingredients(raw: str) -> None:
+    """
+    Refuse input the engine would score as a perfect 100 for the wrong reason.
+    Raises HTTPException(422). Does not touch the engine or its thresholds.
+    """
+    if not raw or not raw.strip():
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "error": "empty_ingredients",
+                "detail": "raw_ingredients is empty.",
+                "hint": "An empty list scores 100/100 CLEAN. Refused rather than returned.",
+            },
+        )
+    if not engine.tokenize(raw):
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "error": "no_ingredient_tokens",
+                "detail": "No ingredient tokens could be parsed from the input.",
+                "hint": "An unparseable list scores 100/100 CLEAN. Refused rather than returned.",
+            },
+        )
+
+
+# ---------------------------------------------------------------------------
+@app.get("/health")
+def health():
+    return {
+        "status": "ok",
+        "engine_version": ENGINE_VERSION,
+        "additives_loaded": len(engine._ADDITIVE_BY_INS),
+        "nova_markers_loaded": len(engine.NOVA["markers"]),
+    }
+
+
+@app.post("/analyze", response_model=AnalyzeResponse)
+def analyze(req: AnalyzeRequest):
+    """Wrap engine.analyze(). The verdict is returned exactly as the engine built it."""
+    guard_ingredients(req.raw_ingredients)
+    verdict = engine.analyze(req.raw_ingredients)
+    return {
+        "verdict": verdict,
+        "engine_version": ENGINE_VERSION,
+        # D-086: optional and information only. Built from the verdict; never feeds it.
+        "regulators": regulators.compare(verdict) if req.compare_regulators else None,
+    }
+
+
+@app.post("/claim-check", response_model=ClaimCheckResponse)
+def claim_check(req: ClaimCheckRequest):
+    """
+    Text-only claim checking. Exists so the claim rules can be exercised
+    against real labels without spending a vision call per iteration; /scan
+    will call the same claim_checker.check_claims().
+    """
+    guard_ingredients(req.raw_ingredients)
+    if req.front_status not in ("read", "not_provided", "unreadable"):
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "error": "bad_front_status",
+                "detail": 'front_status must be "read", "not_provided", or "unreadable".',
+            },
+        )
+    verdict = engine.analyze(req.raw_ingredients)
+    return {
+        "verdict": verdict,
+        "claim_check": claim_checker.check_claims(
+            req.front_claims, req.raw_ingredients, verdict, req.front_status
+        ),
+        "engine_version": ENGINE_VERSION,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Allergens (D-060, D-071, D-072)
+# ---------------------------------------------------------------------------
+def parse_avoid(avoid):
+    """Accept a list or a comma-separated string of allergen codes. 422 on unknown codes."""
+    if avoid is None:
+        return []
+    items = avoid.split(",") if isinstance(avoid, str) else avoid
+    codes = list(dict.fromkeys(c.strip().lower() for c in items if c and c.strip()))
+    unknown = [c for c in codes if c not in allergen_checker.ALLERGENS]
+    if unknown:
+        raise HTTPException(status_code=422, detail={
+            "error": "unknown_allergen",
+            "detail": f"Unknown allergen code(s): {', '.join(unknown)}.",
+            "hint": "Valid codes: " + ", ".join(allergen_checker.ALLERGENS) + ".",
+        })
+    return codes
+
+
+def parse_profiles(raw):
+    """The /scan `profiles` form field: JSON [{ref, age, avoid}], no names (D-074)."""
+    if raw is None or not raw.strip():
+        return []
+    try:
+        return result_screen.parse_profiles(json.loads(raw))
+    except (ValueError, TypeError) as e:          # JSONDecodeError and ProfileError are ValueErrors
+        raise HTTPException(status_code=422, detail={"error": "bad_profiles", "detail": str(e)})
+
+
+def allergen_block(codes, ingredients, statement, confidence=1.0, reliable=True, who=None):
+    """
+    The first thing a client renders when the profile has an avoid list (D-060).
+    Results are sorted strongest state first, so results[0] is the headline.
+    """
+    if not codes:
+        return None
+    results = allergen_checker.check(
+        ingredients or [], statement, codes, confidence=confidence, reliable=reliable)
+    order = {"contains": 0, "may_contain": 1, "cannot_confirm": 2, "uncertain": 3, "not_listed": 4}
+    rows = sorted(results.values(), key=lambda r: order[r.state])
+    return {
+        "avoid": codes,
+        "min_confidence": allergen_checker.ALLERGEN_MIN_CONFIDENCE,
+        "results": [
+            {
+                "code": r.code,
+                "state": r.state,
+                "evidence": r.evidence or None,
+                "statement_seen": r.statement_seen,
+                "text": r.parent_text(who) if who else r.parent_text(),
+            }
+            for r in rows
+        ],
+    }
+
+
+@app.get("/allergens")
+def list_allergens():
+    """Codes a client may put on an avoid list, with display labels."""
+    return {
+        "allergens": [
+            {"code": a["code"], "label": a["label"],
+             "fssai_mandatory": a.get("fssai_mandatory", True)}
+            for a in allergen_checker.ALLERGENS.values()
+        ]
+    }
+
+
+@app.post("/allergen-check")
+def allergen_check(req: AllergenCheckRequest):
+    """
+    Text-only allergen check, for exercising the tables without a vision call.
+    Input is taken as fully read and reliable; /scan applies the real gate.
+    """
+    codes = parse_avoid(req.avoid)
+    return {"allergens": allergen_block(codes, req.ingredients, req.allergen_statement, who=req.who)}
+
+
+# ---------------------------------------------------------------------------
+# Shelf comparison (D-057)
+# ---------------------------------------------------------------------------
+def _pack_out(p, who):
+    return {
+        "id": p.id,
+        "name": p.name,
+        "fully_checked": p.fully_checked,
+        "unknown_ins": p.unknown_ins,
+        "facts": [
+            {"key": f.key, "tier": f.tier, "text": f.parent_text,
+             "technical": f.technical, "positive": f.positive}
+            for f in p.facts
+        ],
+        "allergens": [
+            {"code": r.code, "state": r.state, "evidence": r.evidence or None,
+             "text": r.parent_text(who)}
+            for r in p.allergens.values()
+        ],
+    }
+
+
+@app.post("/compare")
+def compare_packs(req: CompareRequest):
+    """
+    Names the best pick of the packs scanned, never of the category. Ranked by
+    concern tiers, never by score. A pack that fails the avoid list, can't be
+    fully checked, or has an unknown additive is never the best pick.
+    """
+    if req.age not in shelf.AGE_BANDS:
+        raise HTTPException(status_code=422, detail={
+            "error": "bad_age",
+            "detail": f"age must be one of {', '.join(shelf.AGE_BANDS)}.",
+        })
+    codes = parse_avoid(req.avoid)
+    packs = [shelf.Product(p.id, p.name, p.ingredients, reliable=p.reliable,
+                           allergen_statement=p.allergen_statement, confidence=p.confidence)
+             for p in req.packs]
+    if len({p.id for p in packs}) != len(packs):
+        raise HTTPException(status_code=422, detail={
+            "error": "duplicate_pack", "detail": "Each pack needs a distinct id.",
+        })
+    r = shelf.compare(packs, age=req.age, avoid=codes, who=req.who,
+                      strict_may_contain=req.strict_may_contain)
+    who = r["who"]
+    if r["best"]:
+        outcome = "best"
+    elif r["tie"]:
+        outcome = "tie"
+    elif r["blocked"] or r["allergen_unsure"]:
+        outcome = "no_clear_pick"
+    elif any(p.unknown_ins for p in r["not_checked"]):
+        outcome = "unknown_additives"
+    else:
+        outcome = "unreadable"
+    ids = lambda group: [p.id for p in group]  # noqa: E731
+    return {
+        "outcome": outcome,
+        "who": who,
+        "age": r["age"],
+        "avoid": r["avoid"],
+        "best": r["best"].id if r["best"] else None,
+        "why_best": r["why_best"],
+        "allergen_lines": r["allergen_lines"],
+        "tie": ids(r["tie"]),
+        "others": ids(r["others"]),
+        "blocked": ids(r["blocked"]),
+        "allergen_unsure": ids(r["allergen_unsure"]),
+        "not_checked": ids(r["not_checked"]),
+        "packs": [_pack_out(p, who) for p in packs],
+        "summary": shelf.render(r),
+    }
+
+
+# ---------------------------------------------------------------------------
+# India vs EU vs US (D-086) — information only
+# ---------------------------------------------------------------------------
+@app.get("/regulators")
+def list_regulators():
+    """Every additive with a checked comparison, regulators-differ first."""
+    rows = [regulators.row(i) for i in regulators.ROWS]
+    rows.sort(key=lambda r: not r["differs"])
+    return {"basis": regulators.BASIS, "additives": rows}
+
+
+@app.get("/regulators/{ins}")
+def regulator_row(ins: str):
+    r = regulators.row(ins.strip().lower())
+    if r is None:
+        raise HTTPException(status_code=404, detail={
+            "error": "not_compared",
+            "detail": f"INS {ins} has not been compared across regulators yet.",
+        })
+    return {"basis": regulators.BASIS, **r}
+
+
+@app.exception_handler(HTTPException)
+def http_exception_handler(request, exc):
+    detail = exc.detail
+    if isinstance(detail, dict):
+        return JSONResponse(status_code=exc.status_code, content=detail)
+    return JSONResponse(
+        status_code=exc.status_code, content={"error": "request_error", "detail": str(detail)}
+    )
+
+
+# ---------------------------------------------------------------------------
+# Scan helpers: barcode, timing, catalogue results (D-024, D-073)
+# ---------------------------------------------------------------------------
+_BARCODE = re.compile(r"^\d{8}$|^\d{12,14}$")      # EAN-8, UPC-A, EAN-13, GTIN-14
+
+
+def _clean_barcode(barcode):
+    if barcode is None or not barcode.strip():
+        return None
+    b = re.sub(r"[\s-]", "", barcode)
+    if not _BARCODE.match(b):
+        raise HTTPException(status_code=422, detail={
+            "error": "bad_barcode",
+            "detail": "barcode must be 8, 12, 13 or 14 digits (EAN/UPC).",
+        })
+    return b
+
+
+def _ms(t0):
+    return int((time.monotonic() - t0) * 1000)
+
+
+def _str(v):
+    return str(v) if v is not None else None
+
+
+def _catalogue_result(hit, avoid_codes, who, compare_regulators, profiles=()):
+    """
+    A result built from a reviewed catalogue version. The engine re-runs on the
+    stored ingredient list, so the verdict always reflects the current rules and
+    tables, not the ones in force when the pack was first reviewed.
+    """
+    ingredients = hit["ingredients"]
+    raw = ", ".join(ingredients)
+    verdict = engine.analyze(raw)
+    front_claims = hit["front_claims"] or []
+    verified = hit["verified_at"].date().isoformat()
+    reliability = {
+        "error": None, "ingredients_complete": True, "verdict_safe_to_display": True,
+        "caveats": [], "source": "catalogue",
+    }
+    catalogue = {
+        "source": "catalogue",
+        "product_version_id": hit["product_version_id"],
+        "last_verified": verified,
+        # D-073: barcodes often survive reformulation. A profile with an
+        # avoid list is asked for one back photo before relying on this.
+        "allergen_recheck_suggested": bool(avoid_codes),
+    }
+    display = rel.apply_display_rule(verdict, reliability)
+    claim_check = _user_claim_check(claim_checker.check_claims(
+        front_claims, raw, verdict, "read" if front_claims else "not_provided"), front_claims)
+    extracted = {
+        "ingredients": ingredients,
+        "front_claims": front_claims,
+        "allergen_statement": hit["allergen_statement"],
+        "raw_text_sent_to_engine": raw,
+    }
+    return {
+        # Reviewed data: read in full by a person, so the allergen gate is met.
+        "allergens": allergen_block(avoid_codes, ingredients, hit["allergen_statement"], who=who),
+        "screen": result_screen.build(
+            verdict=verdict, display=display, claim_check=claim_check, extracted=extracted,
+            reliability=reliability, profiles=profiles, allergen_confidence=1.0,
+            allergen_reliable=True, catalogue=catalogue),
+        "catalogue": catalogue,
+        "product": {"brand": hit["brand"], "name": hit["name"], "variant": hit["variant"]},
+        "verdict": verdict,
+        "display": display,
+        "claim_check": claim_check,
+        "extracted": extracted,
+        "reliability": reliability,
+        "disclosures": [
+            f"Our team last checked this label on {verified}. Packs change; if yours "
+            "looks different, scan the back of the pack.",
+        ] + rel.disclosures(reliability),
+        "regulators": regulators.compare(verdict) if compare_regulators else None,
+        "engine_version": ENGINE_VERSION,
+    }
+
+
+@app.get("/updates")
+def updates(device_id: str):
+    """
+    D-070: packs this install sent for review, once decided. The app polls this
+    on open ("we'll tell you when it's ready"); push notifications come later.
+    """
+    if review_routes.SERVICE is None:
+        return {"updates": []}
+    try:
+        uid = str(uuid.UUID(device_id))
+    except ValueError:
+        raise HTTPException(status_code=422, detail={"error": "bad_device_id"})
+    rows = review_routes.SERVICE.updates_for(uid)
+    return {"updates": [
+        {**r, "resolved_at": r["resolved_at"].isoformat(),
+         "ready": r["resolution"] in ("published", "published_new_version", "no_change")}
+        for r in rows]}
+
+
+@app.post("/report")
+def report(req: ReportRequest):
+    """D-076: "Report a mistake" on any result. Goes to the review queue."""
+    if STORE is None:
+        raise HTTPException(status_code=503, detail={
+            "error": "storage_unavailable",
+            "detail": "Reports need the database (INSIDELABEL_DB is not set).",
+        })
+    if not (req.scan_id or req.product_version_id):
+        raise HTTPException(status_code=422, detail={
+            "error": "no_subject", "detail": "Send the scan_id (or product_version_id) being reported.",
+        })
+    out = STORE.report(scan_id=req.scan_id, product_version_id=req.product_version_id,
+                       device_id=req.device_id, field=req.field,
+                       proposed_value=req.proposed_value, note=req.note)
+    if out is None:
+        raise HTTPException(status_code=404, detail={
+            "error": "not_found", "detail": "No such scan or product version.",
+        })
+    return {"status": "received", **out}
+
+
+# ---------------------------------------------------------------------------
+MAX_IMAGE_BYTES = 12 * 1024 * 1024
+ALLOWED_MIME = {"image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"}
+
+
+async def _read_image(upload, role):
+    if upload is None:
+        return None
+    data = await upload.read()
+    if not data:
+        return None
+    if len(data) > MAX_IMAGE_BYTES:
+        raise HTTPException(status_code=413, detail={
+            "error": "image_too_large",
+            "detail": f"{role} image is {len(data)} bytes; limit is {MAX_IMAGE_BYTES}.",
+        })
+    mime = upload.content_type or "image/jpeg"
+    if mime not in ALLOWED_MIME:
+        raise HTTPException(status_code=415, detail={
+            "error": "unsupported_image_type",
+            "detail": f"{role} image content_type {mime!r} is not supported.",
+        })
+    return (data, mime, role)
+
+
+@app.post("/scan")
+async def scan(
+    back: Optional[UploadFile] = File(None, description="Back of pack — the ingredient list."),
+    front: Optional[UploadFile] = File(None, description="Front of pack — marketing claims."),
+    pairing_confirmed: bool = Form(False, description="User confirms both images show the same pack."),
+    replay: Optional[str] = Form(None, description="Recorded model JSON, for testing without an API call."),
+    avoid: Optional[str] = Form(None, description="Comma-separated allergen codes, e.g. 'milk,gluten'."),
+    who: Optional[str] = Form(None, description="Name used in allergen text."),
+    compare_regulators: bool = Form(False, description="Also return EU and US status. Information only."),
+    barcode: Optional[str] = Form(None, description="EAN/UPC digits from the pack, if the camera read one."),
+    device_id: Optional[str] = Form(None, description="Anonymous install id (UUID). No personal data."),
+    profiles: Optional[str] = Form(None, description='JSON [{"ref","age","avoid"}], up to 3. No names (D-074).'),
+):
+    """
+    barcode -> reviewed catalogue entry, else images -> Gemini -> engine -> claim check.
+
+    The back of pack is the only required input: it carries the ingredient
+    list, which is the only thing the engine can reason about. The front is
+    optional and only enables the claim check.
+    """
+    t0 = time.monotonic()
+    avoid_codes = parse_avoid(avoid)
+    people = parse_profiles(profiles)
+    if avoid is None:
+        # D-060: the top-level allergen block covers every profile's avoid list.
+        avoid_codes = list(dict.fromkeys(c for p in people for c in p["avoid"]))
+    barcode = _clean_barcode(barcode)
+
+    images = []
+    for upload, role in ((back, "back"), (front, "front")):
+        img = await _read_image(upload, role)
+        if img:
+            images.append(img)
+
+    # D-024: a barcode alone is a catalogue lookup — no vision call, ~₹0.
+    # Photos, when sent, are always read: that is how a reformulation under an
+    # unchanged barcode gets noticed, and how the D-073 allergy re-check works.
+    if barcode and not images and replay is None:
+        hit = _persist(STORE.find_current, barcode) if STORE else None
+        if hit is None:
+            raise HTTPException(status_code=404, detail={
+                "error": "not_in_catalogue",
+                "detail": "We haven't checked this pack yet.",
+                "hint": "Photograph the back of the pack (the ingredient list).",
+            })
+        result = _catalogue_result(hit, avoid_codes, who, compare_regulators, people)
+        result["scan_id"] = _str(_persist(STORE.record_cache_hit, hit, device_id=device_id,
+                                          latency_ms=_ms(t0)))
+        return result
+
+    keys = _save_images(images)
+
+    if not images and replay is None:
+        raise HTTPException(status_code=422, detail={
+            "error": "no_images",
+            "detail": "Supply at least a back-of-pack image.",
+        })
+
+    try:
+        vision, corrections = gemini.analyze_images(images, raw_response=replay)
+    except gemini.VisionUnavailable as e:
+        _persist(STORE and STORE.record_failed_scan, "vision_unavailable",
+                 device_id=device_id, latency_ms=_ms(t0),
+                 front_key=keys.get("front"), back_key=keys.get("back"))
+        # 503 with Retry-After, not 502. The images were fine and the request
+        # was fine; the upstream model was busy. A client should retry this,
+        # and a user should not be told their photo failed.
+        raise HTTPException(status_code=503, detail={
+            "error": "vision_unavailable",
+            "detail": str(e),
+            "retryable": True,
+            "hint": "Model overloaded upstream. Already retried with backoff; try again shortly.",
+        })
+    except gemini.VisionError as e:
+        _persist(STORE and STORE.record_failed_scan, "vision_failed",
+                 device_id=device_id, latency_ms=_ms(t0),
+                 front_key=keys.get("front"), back_key=keys.get("back"))
+        raise HTTPException(status_code=502, detail={
+            "error": "vision_failed", "detail": str(e), "retryable": False,
+        })
+
+    # Independent OCR cross-check on the back of pack. This is the only check
+    # in the pipeline that is not the model grading itself, and it is the only
+    # one that has ever caught a silent omission.
+    back_bytes = next((d for d, _m, r in images if r == "back"), None)
+    ocr_result = {"available": False, "reason": "no back image"}
+    if back_bytes and vision.get("ingredients"):
+        fixed, ocr_result, recovered = ocr_check.recover_entries(
+            back_bytes, vision["ingredients"])
+        if recovered:
+            corrections.append(
+                "independent OCR found additive(s) the model omitted: "
+                + ", ".join(f"INS {i}" for i in ocr_result["missing"])
+                + " — recovered as: " + "; ".join(recovered)
+            )
+            vision["ingredients"] = fixed
+
+    # Corroborate the identity anchors product_match rests on against an
+    # independent reader. A brand the model reports on a face where OCR read
+    # the text well and found no such string was invented, and must not be
+    # allowed to unlock the claim check.
+    front_bytes = next((d for d, _m, r in images if r == "front"), None)
+    _dg, _idrep = ocr_check.check_identity_anchors(vision, front_bytes, back_bytes)
+    vision["_identity_corroboration"] = _idrep
+    if _dg and (vision.get("product_match") or {}).get("status") == "match":
+        bad = [f"{f}:{v['brand']!r}" for f, v in _idrep.items()
+               if v["status"] == ocr_check.NOT_FOUND]
+        corrections.append(
+            "product_match downgraded to indeterminate — independent OCR read "
+            "the face but found no such brand: " + ", ".join(bad)
+        )
+        vision["product_match"]["status"] = "indeterminate"
+        vision["product_match"]["uncorroborated"] = bad
+        # The anchors were computed from identity fields this check just
+        # showed to be fabricated. Leaving them under verified_anchors would
+        # display evidence supporting a match on a run downgraded precisely
+        # because that evidence is not on the pack.
+        vision["product_match"]["invalidated_anchors"] = \
+            vision["product_match"].pop("verified_anchors", [])
+        vision["verified_anchors"] = []
+    vision["_ocr_cross_check"] = ocr_result
+
+    vision["_pairing_attested_by_user"] = pairing_confirmed
+    proceed, reliability = rel.assess(vision)
+    reliability["client_corrections"] = corrections
+    reliability["ocr_cross_check"] = {
+        k: v for k, v in ocr_result.items() if k != "ocr_text"
+    }
+    if ocr_result.get("missing"):
+        reliability["caveats"].append({
+            "code": "model_omitted_additive",
+            "detail": (
+                "A second, independent OCR pass found "
+                + ", ".join(f"INS {i}" for i in ocr_result["missing"])
+                + " on the label that the vision model did not return. "
+                "Recovered and included in the verdict."
+            ),
+        })
+
+    if not proceed:
+        scan_id = _persist(STORE and STORE.record_failed_scan, "refused",
+                           error_code=reliability.get("error"), device_id=device_id,
+                           latency_ms=_ms(t0), front_key=keys.get("front"), back_key=keys.get("back"))
+        return JSONResponse(status_code=422, content={
+            # A refused scan still answers the allergy question: "couldn't
+            # confirm", never silence (D-037, D-072).
+            "allergens": allergen_block(avoid_codes, [], None, reliable=False, who=who),
+            "screen": result_screen.build(
+                verdict=None, display=None, claim_check=None, extracted=None,
+                reliability=reliability, profiles=people, allergen_confidence=0.0,
+                allergen_reliable=False),
+            "scan_id": _str(scan_id),
+            "verdict": None,
+            "product": vision.get("product"),
+            "reliability": reliability,
+            "engine_version": ENGINE_VERSION,
+        })
+
+    # The engine takes label-shaped text, and its tokenizer already handles
+    # commas and brackets. Rejoining is deliberate: it keeps a single parsing
+    # path for /analyze and /scan, so the two endpoints can never disagree.
+    raw = ", ".join(vision["ingredients"])
+    guard_ingredients(raw)
+    verdict = engine.analyze(raw)
+
+    # D-072: allergen output needs a reliable scan AND a complete list AND
+    # ingredient confidence >= 0.95. The general gate's reasoning about
+    # self-reported confidence applies here too; this is an extra bar, not
+    # the only one.
+    allergen_confidence = (vision.get("confidence") or {}).get("ingredients", 0.0)
+    allergen_reliable = (reliability.get("verdict_safe_to_display", False)
+                         and reliability.get("ingredients_complete", False))
+    allergens = allergen_block(
+        avoid_codes,
+        vision["ingredients"],
+        vision.get("allergen_statement"),
+        confidence=allergen_confidence,
+        reliable=allergen_reliable,
+        who=who,
+    )
+
+    claims_trusted = reliability.get("claims_permitted", True) and vision["front_status"] == "read"
+    claim_check = claim_checker.check_claims(
+        vision.get("front_claims", []), raw, verdict,
+        # An unverified pairing suppresses the claim check the same way an
+        # unread front does: in both cases we cannot say these claims
+        # belong to this ingredient list.
+        vision["front_status"] if reliability.get("claims_permitted", True)
+        else "pairing_unverified",
+    )
+
+    saved = _persist(
+        STORE and STORE.save_scan, vision=vision, verdict=verdict, claim_check=claim_check,
+        claims_trusted=claims_trusted, reliability=reliability, barcode=barcode,
+        device_id=device_id, latency_ms=_ms(t0), model_name=vision.get("_model") or MODEL,
+        prompt_version=PROMPT_VERSION, engine_version=ENGINE_VERSION,
+        front_key=keys.get("front"), back_key=keys.get("back"))
+
+    display = rel.apply_display_rule(verdict, reliability)
+    user_claims = _user_claim_check(claim_check, vision.get("front_claims", []))
+    extracted = {
+        "ingredients": vision["ingredients"],
+        "ingredients_status": vision["ingredients_status"],
+        "front_claims": vision.get("front_claims", []),
+        "front_claim_footnotes": vision.get("front_claim_footnotes", []),
+        "allergen_statement": vision.get("allergen_statement"),
+        "raw_text_sent_to_engine": raw,
+    }
+    return {
+        "allergens": allergens,           # D-060: always the first thing a client reads
+        # What the app renders, in order (D-060-D-066). Built from the fields below.
+        "screen": result_screen.build(
+            verdict=verdict, display=display, claim_check=user_claims, extracted=extracted,
+            reliability=reliability, profiles=people, allergen_confidence=allergen_confidence,
+            allergen_reliable=allergen_reliable),
+        "scan_id": saved["scan_id"] if saved else None,
+        "catalogue": ({"source": "scan", "product_version_id": saved["product_version_id"],
+                       "status": saved["version_status"], "queued_for_review": saved["queued"]}
+                      if saved else None),
+        "product": vision.get("product"),
+        "verdict": verdict,
+        "display": display,
+        "claim_check": user_claims,
+        "extracted": extracted,
+        "reliability": reliability,
+        "disclosures": rel.disclosures(reliability),
+        "regulators": regulators.compare(verdict) if compare_regulators else None,
+        "engine_version": ENGINE_VERSION,
+    }

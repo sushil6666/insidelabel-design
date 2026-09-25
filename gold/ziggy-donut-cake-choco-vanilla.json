@@ -1,0 +1,84 @@
+{
+  "front_status": "read",
+  "back_status": "read",
+  "ingredients_status": "read",
+  "product": {
+    "brand": "Ziggy",
+    "name": "DONUT CAKE",
+    "variant": "Choco Vanilla",
+    "net_quantity": "102 g (2 packs x 51 g)",
+    "veg_mark": "veg"
+  },
+  "product_match": {
+    "status": "match",
+    "evidence": [
+      "Ziggy wordmark printed on both the front and the back of the carton",
+      "'DONUT CAKE / Choco Vanilla' printed on both faces"
+    ]
+  },
+  "front_identity": { "brand": "Ziggy", "name": "DONUT CAKE", "manufacturer": null },
+  "back_identity": {
+    "brand": "Ziggy",
+    "name": "DONUT CAKE",
+    "manufacturer": "WonderWorks Private Ltd., Plot Number 2A, Sector-31, Ecotech-1, Greater Noida, Gautam Buddha Nagar (U.P.) - 201310",
+    "fssai_licence": "12722999000276"
+  },
+  "ingredient_lines": [
+    "Ingredients: Refined Wheat Flour",
+    "(Maida), Sugar, Edible Vegetable Oil",
+    "(Palmolein, Palm), Humectants (420,",
+    "422, 1520), Liquid Glucose, Milk Solids",
+    "(3.6%), Invert Syrup, Dextrose, Maize",
+    "Starch, Cocoa Solids (1.02%), Baking",
+    "Powder, Emulsifiers (471, 475, 466),",
+    "Modified Starches (1422, 1412, 1440,",
+    "1442), Thickeners and Stabilizer (401,",
+    "339(ii), 516, 440), Nature Identical and",
+    "Artificial Flavoring Substances –",
+    "Chocolate & Vanilla, Acidity Regulators",
+    "(330, 270), Iodized Salt, Preservative",
+    "(202), Colours (150c, 150d), Enzyme",
+    "(1100(iii), 1104)"
+  ],
+  "ingredient_count": 20,
+  "ingredients": [
+    "Refined Wheat Flour (Maida)",
+    "Sugar",
+    "Edible Vegetable Oil (Palmolein, Palm)",
+    "Humectants (420, 422, 1520)",
+    "Liquid Glucose",
+    "Milk Solids (3.6%)",
+    "Invert Syrup",
+    "Dextrose",
+    "Maize Starch",
+    "Cocoa Solids (1.02%)",
+    "Baking Powder",
+    "Emulsifiers (471, 475, 466)",
+    "Modified Starches (1422, 1412, 1440, 1442)",
+    "Thickeners and Stabilizer (401, 339(ii), 516, 440)",
+    "Nature Identical and Artificial Flavoring Substances – Chocolate & Vanilla",
+    "Acidity Regulators (330, 270)",
+    "Iodized Salt",
+    "Preservative (202)",
+    "Colours (150c, 150d)",
+    "Enzyme (1100(iii), 1104)"
+  ],
+  "allergen_statement": "ALLERGEN INFORMATION: CONTAINS WHEAT, MILK & SOY",
+  "front_claims": [
+    "33% EXTRA CHOCO FILLING#",
+    "PREMIUM"
+  ],
+  "front_claim_footnotes": [
+    "#Each Pack Inside this Box contains 33% Extra Choco Filling compared to Ziggy Donut Cake (Choco Vanilla Cake) available in Standard 48g Single Pack."
+  ],
+  "extraction_notes": [
+    "'2 PACKS INSIDE' is pack information, not a marketing claim.",
+    "The '33% EXTRA CHOCO FILLING' claim is comparative and its footnote makes the comparison explicit — against Ziggy's own 48g single pack, not against any competitor. Nothing in the ingredient list can verify or contradict it, which is a useful limit case for the claim checker: a claim it should recognise and decline to rule on.",
+    "Longest ingredient list in the set: 20 entries with roughly 24 distinct INS numbers, most of which are not in additives.json.",
+    "Declared as PROPRIETARY FOOD – CAKE (7.2.1), CHOCO VANILLA CAKE WITH CREAM FILLING.",
+    "'POLYOLS MAY HAVE LAXATIVE EFFECT' is printed on the back — a mandatory warning triggered by the humectants/polyols, not a claim.",
+    "MRP Rs 60.00 and unit sale price Rs 0.59 per g are printed; both are price information.",
+    "Nutrition panel: per 100g Energy 398.64 kcal, Protein 5.66g, Carbohydrates 55.93g, Total Sugars 27.85g, Added Sugars 20.26g, Total Fat 16.92g, Saturated 7.45g, Trans 0.03g, Cholesterol 0.82mg, Sodium 331.55mg. Serve size 51g. Recorded here only."
+  ],
+  "confidence": { "ingredients": 1.0, "front_claims": 0.9, "product_identity": 1.0 }
+}

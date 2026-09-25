@@ -1,0 +1,54 @@
+{
+  "_meta": {
+    "table": "normalization",
+    "version": "0.1",
+    "purpose": "Resolve raw ingredient tokens (from OCR) to canonical forms. Handles INS/E-number prefixes, common misspellings, and 'hidden sugar' aliases. In production the LLM layer does fuzzy normalization; this table handles the deterministic, high-frequency cases.",
+    "how_to_use": "1) strip INS/E prefixes to bare numbers. 2) lowercase, trim. 3) apply synonym map. 4) apply sugar-alias grouping."
+  },
+  "ins_prefixes_to_strip": ["ins", "e", "e-", "ins.", "int. no.", "int no", "additive"],
+  "additive_class_words": {
+    "_note": "A bracket after one of these words holds additive numbers, so bare numbers inside it are read as INS numbers. Without a class word a number stays a quantity ('250 g' is not sodium nitrite). Add words as real labels show them.",
+    "words": [
+      "emulsifier", "emulsifiers", "preservative", "preservatives",
+      "stabiliser", "stabilisers", "stabilizer", "stabilizers",
+      "acidity regulator", "acidity regulators", "raising agent", "raising agents",
+      "leavening agent", "leavening agents",
+      "colour", "colours", "color", "colors", "flavour enhancer", "flavour enhancers",
+      "flavor enhancer", "flavor enhancers",
+      "sweetener", "sweeteners", "antioxidant", "antioxidants", "thickener", "thickeners",
+      "thickening agent", "thickening agents",
+      "humectant", "humectants", "anticaking agent", "anticaking agents",
+      "anti-caking agent", "anti-caking agents", "anti caking agent", "anti caking agents",
+      "modified starch", "modified starches", "enzyme", "enzymes",
+      "flour treatment agent", "flour treatment agents", "dough conditioner", "dough conditioners",
+      "improver", "improvers", "glazing agent", "glazing agents", "firming agent", "firming agents",
+      "gelling agent", "gelling agents", "bulking agent", "bulking agents",
+      "sequestrant", "sequestrants", "foaming agent", "antifoaming agent", "carbonating agent"
+    ]
+  },
+  "sugar_aliases": {
+    "_note": "All of these are 'added sugar' for the sugar-count heuristic. Marketing hides sugar behind many names; counting them together is a key user-trust feature.",
+    "added_sugar": [
+      "sugar", "sucrose", "cane sugar", "brown sugar", "caster sugar", "icing sugar",
+      "invert sugar", "invert syrup", "glucose", "glucose syrup", "liquid glucose",
+      "dextrose", "fructose", "high fructose corn syrup", "hfcs", "corn syrup",
+      "maltose", "maltodextrin", "honey", "molasses", "malt extract", "barley malt",
+      "jaggery", "gur", "date syrup", "fruit juice concentrate", "cane juice",
+      "demerara", "treacle", "golden syrup", "rice syrup", "agave syrup", "palm sugar"
+    ]
+  },
+  "synonyms": {
+    "monosodium glutamate": ["msg", "mono sodium glutamate", "monosodium glutamate", "flavour enhancer 621", "flavor enhancer 621", "aji no moto", "ajinomoto"],
+    "high-fructose corn syrup": ["hfcs", "high fructose corn syrup", "glucose-fructose syrup", "isoglucose"],
+    "hydrogenated oil": ["hydrogenated vegetable oil", "partially hydrogenated oil", "vanaspati", "hydrogenated fat", "pho"],
+    "tartrazine": ["tartrazine", "yellow 5", "fd&c yellow 5", "colour 102", "color 102"],
+    "sunset yellow fcf": ["sunset yellow", "yellow 6", "fd&c yellow 6", "colour 110", "color 110"],
+    "sodium benzoate": ["sodium benzoate", "benzoate of soda", "preservative 211"],
+    "potassium sorbate": ["potassium sorbate", "preservative 202"],
+    "aspartame": ["aspartame", "sweetener 951"],
+    "sucralose": ["sucralose", "sweetener 955"],
+    "acesulfame potassium": ["acesulfame potassium", "acesulfame k", "ace-k", "acesulfame-k", "sweetener 950"],
+    "palm oil": ["palm oil", "palmolein", "palm olein", "rbd palmolein", "vegetable oil (palm)"],
+    "iodised salt": ["iodised salt", "iodized salt", "salt", "common salt", "edible salt"]
+  }
+}

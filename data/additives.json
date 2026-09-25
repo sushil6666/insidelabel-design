@@ -1,0 +1,411 @@
+{
+  "_meta": {
+    "table": "additives",
+    "version": "0.1",
+    "purpose": "Starter database of INS-numbered additives commonly found on Indian packaged food, with functional class, concern level, and citable basis. This is the SCORING layer (distinct from NOVA definitional markers).",
+    "concern_scale": {
+      "none": "Permitted, no notable safety signal. 0 penalty.",
+      "low": "Permitted; minor or context-dependent concerns. Small penalty.",
+      "moderate": "Permitted in India but carries real concerns (evidence such as ADI limits, sensitivity reactions, or a regulator's published safety opinion). Medium penalty.",
+      "high": "Not permitted in India, OR a strong health signal. Large penalty. Another country's legal status never sets concern: that is information-only context in regulatory_status.json (D-086)."
+    },
+    "CRITICAL_VERIFY_NOTICE": "Every 'fssai_status' and 'banned_*' field below MUST be verified against current FSSAI (FSS Food Additives Regulations & amendments) before ANY public 'banned/permitted' claim. Fields are marked with 'confidence' and 'verify: true' where they carry legal exposure. Do not ship 'banned in India' claims on 'verify: true' rows without checking live FSSAI notifications.",
+    "scoring": {
+      "rule": "A 'low' additive takes the low penalty only if it carries one of low_penalty_flags. A 'low' additive whose flags only name its class (emulsifier, preservative, modified_starch, ...) scores 0: long lists of ordinary baking additives should not sink a score on their own. NOVA markers are scored separately and are unaffected; the flag still appears in the verdict, and the claim checker still reads the class. Decided 2026-09-25.",
+      "low_penalty_flags": ["4mei_trace", "phosphate_load", "possible_transfat_source", "gut_microbiome_research", "polyol", "synthetic_colour", "flavour_enhancer", "sweetener_natural"]
+    },
+    "verification_log": "Rows with verified_on were checked on that date: name against Codex CAC/GL 36-1989 (INS list); permission against the FSS (Food Products Standards and Food Additives) Regulations 2011 compendium Version XXVI (20.12.2022) — fssai_basis says whether it is in the GMP table for all food categories or has numeric limits; and the First Amendment Regulations 2025 (gazette 14.07.2025, in force 01.02.2026), which changes none of them. Concern levels are a scoring judgement, not a regulatory fact.",
+    "sources_key": {
+      "FSSAI": "FSS (Food Products Standards and Food Additives) Regulations, India",
+      "EFSA": "European Food Safety Authority scientific opinion",
+      "SOUTHAMPTON": "McCann et al., Lancet 2007 — colours linked to hyperactivity in children (the 'Southampton Six')",
+      "WHO": "WHO / JECFA position or IARC classification",
+      "EU": "EU food additive regulation status",
+      "CODEX": "Codex CAC/GL 36-1989, Class Names and the International Numbering System for Food Additives (names and functional classes)",
+      "NOVA": "Monteiro et al., NOVA classification (see nova_markers.json)"
+    }
+  },
+  "additives": [
+    {
+      "ins": "102", "name": "Tartrazine", "class": "colour", "concern": "moderate",
+      "why": "Synthetic azo dye. Linked to hyperactivity in sensitive children (Southampton study).",
+      "sources": ["SOUTHAMPTON", "EU", "FSSAI"], "fssai_status": "permitted_with_limits",
+      "flags": ["southampton_six", "child_sensitivity"], "confidence": "high", "verify": false
+    },
+    {
+      "ins": "110", "name": "Sunset Yellow FCF", "class": "colour", "concern": "moderate",
+      "why": "Synthetic azo dye. Linked to hyperactivity in sensitive children (Southampton study).",
+      "sources": ["SOUTHAMPTON", "EU", "FSSAI"], "fssai_status": "permitted_with_limits",
+      "flags": ["southampton_six", "child_sensitivity"], "confidence": "high", "verify": false
+    },
+    {
+      "ins": "122", "name": "Carmoisine / Azorubine", "class": "colour", "concern": "moderate",
+      "why": "Synthetic azo dye. Linked to hyperactivity in sensitive children (Southampton study).",
+      "sources": ["SOUTHAMPTON", "EU"], "fssai_status": "permitted_with_limits",
+      "flags": ["southampton_six", "child_sensitivity"], "confidence": "high", "verify": false
+    },
+    {
+      "ins": "124", "name": "Ponceau 4R", "class": "colour", "concern": "moderate",
+      "why": "Synthetic azo dye. Linked to hyperactivity in sensitive children (Southampton study).",
+      "sources": ["SOUTHAMPTON", "FSSAI"], "fssai_status": "permitted_with_limits",
+      "flags": ["southampton_six", "child_sensitivity"], "confidence": "high", "verify": false,
+      "fssai_basis": "numeric limits per food category (Appendix A)", "verified_on": "2026-09-25"
+    },
+    {
+      "ins": "129", "name": "Allura Red AC", "class": "colour", "concern": "moderate",
+      "why": "Synthetic azo dye. Linked to hyperactivity in sensitive children (Southampton study).",
+      "sources": ["SOUTHAMPTON", "FSSAI"], "fssai_status": "permitted_with_limits",
+      "flags": ["southampton_six", "child_sensitivity"], "confidence": "high", "verify": false,
+      "fssai_basis": "numeric limits per food category (Appendix A)", "verified_on": "2026-09-25"
+    },
+    {
+      "ins": "133", "name": "Brilliant Blue FCF", "class": "colour", "concern": "low",
+      "why": "Synthetic colour. Generally permitted; some avoid synthetic dyes.",
+      "sources": ["FSSAI", "EU"], "fssai_status": "permitted", "flags": ["synthetic_colour"],
+      "confidence": "medium", "verify": false
+    },
+    {
+      "ins": "150d", "name": "Sulphite ammonia caramel", "class": "colour", "concern": "low",
+      "why": "Caramel colour class IV. Contains 4-MEI (IARC 2B) at high exposure. Common in colas.",
+      "sources": ["WHO", "FSSAI"], "fssai_status": "permitted", "flags": ["4mei_trace"],
+      "confidence": "medium", "verify": false
+    },
+    {
+      "ins": "171", "name": "Titanium dioxide", "class": "colour", "concern": "moderate",
+      "why": "White colour. Permitted in India. EFSA's 2021 safety opinion could not rule out a genotoxicity concern.",
+      "sources": ["FSSAI", "EFSA"], "fssai_status": "permitted", "flags": ["regulators_differ"],
+      "confidence": "high", "verify": false,
+      "fssai_basis": "GMP, all food categories (Appendix A GMP table); also double fortified salt", "verified_on": "2026-09-25"
+    },
+    {
+      "ins": "200", "name": "Sorbic acid", "class": "preservative", "concern": "low",
+      "why": "Preservative. Generally regarded as low-concern.",
+      "sources": ["FSSAI"], "fssai_status": "permitted", "flags": [], "confidence": "high", "verify": false
+    },
+    {
+      "ins": "202", "name": "Potassium sorbate", "class": "preservative", "concern": "low",
+      "why": "Common preservative. Low concern; invalidates 'no preservatives' claims.",
+      "sources": ["FSSAI"], "fssai_status": "permitted", "flags": ["preservative"], "confidence": "high", "verify": false
+    },
+    {
+      "ins": "211", "name": "Sodium benzoate", "class": "preservative", "concern": "moderate",
+      "why": "Preservative. With ascorbic acid (C) can form benzene. Southampton study pairing.",
+      "sources": ["SOUTHAMPTON", "FSSAI"], "fssai_status": "permitted_with_limits",
+      "flags": ["benzene_risk_with_vitc", "child_sensitivity"], "confidence": "high", "verify": false
+    },
+    {
+      "ins": "223", "name": "Sodium metabisulphite", "class": "preservative", "concern": "moderate",
+      "why": "Sulphite preservative. Can trigger asthma/allergic reactions; mandatory allergen-style declaration in many regions.",
+      "sources": ["FSSAI", "EU"], "fssai_status": "permitted_with_limits", "flags": ["sulphite", "asthma_sensitivity"],
+      "confidence": "high", "verify": false
+    },
+    {
+      "ins": "250", "name": "Sodium nitrite", "class": "preservative", "concern": "high",
+      "why": "Curing agent in processed meats. Nitrosamine formation; processed meat is IARC Group 1 (carcinogenic to humans).",
+      "sources": ["WHO", "FSSAI"], "fssai_status": "permitted_with_limits", "flags": ["nitrosamine", "iarc_group1_context"],
+      "confidence": "high", "verify": false
+    },
+    {
+      "ins": "300", "name": "Ascorbic acid (Vitamin C)", "class": "antioxidant", "concern": "none",
+      "why": "Vitamin C used as antioxidant. No concern.",
+      "sources": ["FSSAI"], "fssai_status": "permitted", "flags": [], "confidence": "high", "verify": false
+    },
+    {
+      "ins": "322", "name": "Lecithin", "class": "emulsifier", "concern": "low",
+      "why": "Common emulsifier (often soy). NOVA cosmetic-additive marker but low safety concern.",
+      "sources": ["FSSAI"], "fssai_status": "permitted", "flags": ["emulsifier"], "confidence": "high", "verify": false
+    },
+    {
+      "ins": "330", "name": "Citric acid", "class": "acidity_regulator", "concern": "none",
+      "why": "Ubiquitous acidity regulator. No safety concern.",
+      "sources": ["FSSAI"], "fssai_status": "permitted", "flags": [], "confidence": "high", "verify": false
+    },
+    {
+      "ins": "339", "name": "Sodium phosphates", "class": "acidity_regulator", "concern": "low",
+      "why": "Phosphate additive. High dietary phosphate additives flagged for kidney/cardiovascular load.",
+      "sources": ["FSSAI"], "fssai_status": "permitted", "flags": ["phosphate_load"], "confidence": "medium", "verify": false
+    },
+    {
+      "ins": "407", "name": "Carrageenan", "class": "thickener", "concern": "moderate",
+      "why": "Seaweed thickener. Some studies suggest gut inflammation (contested). NOVA cosmetic marker.",
+      "sources": ["WHO"], "fssai_status": "permitted", "flags": ["gut_inflammation_contested"], "confidence": "medium", "verify": false
+    },
+    {
+      "ins": "412", "name": "Guar gum", "class": "thickener", "concern": "low",
+      "why": "Thickener. Low concern.",
+      "sources": ["FSSAI"], "fssai_status": "permitted", "flags": [], "confidence": "high", "verify": false
+    },
+    {
+      "ins": "415", "name": "Xanthan gum", "class": "thickener", "concern": "low",
+      "why": "Thickener. Low concern.",
+      "sources": ["FSSAI"], "fssai_status": "permitted", "flags": [], "confidence": "high", "verify": false
+    },
+    {
+      "ins": "621", "name": "Monosodium glutamate (MSG)", "class": "flavour_enhancer", "concern": "moderate",
+      "why": "Flavour enhancer. Permitted; some report sensitivity. Signals ultra-processed formulation. Not permitted in foods for infants.",
+      "sources": ["FSSAI", "WHO"], "fssai_status": "permitted_with_limits", "flags": ["flavour_enhancer", "not_for_infants"],
+      "confidence": "high", "verify": false
+    },
+    {
+      "ins": "627", "name": "Disodium guanylate", "class": "flavour_enhancer", "concern": "low",
+      "why": "Flavour enhancer, usually paired with MSG. Signals ultra-processed formulation.",
+      "sources": ["FSSAI"], "fssai_status": "permitted", "flags": ["flavour_enhancer"], "confidence": "high", "verify": false
+    },
+    {
+      "ins": "631", "name": "Disodium inosinate", "class": "flavour_enhancer", "concern": "low",
+      "why": "Flavour enhancer, paired with MSG. Signals ultra-processed formulation.",
+      "sources": ["FSSAI"], "fssai_status": "permitted", "flags": ["flavour_enhancer"], "confidence": "high", "verify": false
+    },
+    {
+      "ins": "635", "name": "Disodium 5'-ribonucleotides", "class": "flavour_enhancer", "concern": "low",
+      "why": "Flavour enhancer blend. Signals ultra-processed formulation.",
+      "sources": ["FSSAI"], "fssai_status": "permitted", "flags": ["flavour_enhancer"], "confidence": "high", "verify": false
+    },
+    {
+      "ins": "466", "name": "Sodium carboxymethyl cellulose (CMC)", "class": "thickener", "concern": "low",
+      "why": "Cellulose thickener. NOVA cosmetic marker; low safety concern but recent emulsifier-gut research ongoing.",
+      "sources": ["WHO"], "fssai_status": "permitted", "flags": ["emulsifier", "gut_microbiome_research"], "confidence": "medium", "verify": false
+    },
+    {
+      "ins": "471", "name": "Mono- and diglycerides of fatty acids", "class": "emulsifier", "concern": "low",
+      "why": "Very common emulsifier. NOVA cosmetic marker. May contain trans fats depending on source.",
+      "sources": ["FSSAI"], "fssai_status": "permitted", "flags": ["emulsifier", "possible_transfat_source"], "confidence": "high", "verify": false
+    },
+    {
+      "ins": "476", "name": "Polyglycerol polyricinoleate (PGPR)", "class": "emulsifier", "concern": "low",
+      "why": "Emulsifier common in chocolate. NOVA cosmetic marker.",
+      "sources": ["FSSAI"], "fssai_status": "permitted", "flags": ["emulsifier"], "confidence": "medium", "verify": false
+    },
+    {
+      "ins": "500", "name": "Sodium bicarbonate", "class": "raising_agent", "concern": "none",
+      "why": "Baking soda. No concern.",
+      "sources": ["FSSAI"], "fssai_status": "permitted", "flags": [], "confidence": "high", "verify": false
+    },
+    {
+      "ins": "551", "name": "Silicon dioxide", "class": "anticaking", "concern": "low",
+      "why": "Anti-caking agent. Generally low concern; nanoparticle form under review.",
+      "sources": ["EU"], "fssai_status": "permitted", "flags": ["anticaking"], "confidence": "medium", "verify": false
+    },
+    {
+      "ins": "621_note", "name": "(reserved)", "class": "note", "concern": "none",
+      "why": "placeholder to keep list extensible", "sources": [], "fssai_status": "n/a", "flags": [], "confidence": "high", "verify": false
+    },
+    {
+      "ins": "950", "name": "Acesulfame potassium (Ace-K)", "class": "sweetener", "concern": "moderate",
+      "why": "Artificial sweetener. NOVA cosmetic marker. Relevant for diabetic and children lenses.",
+      "sources": ["WHO", "FSSAI"], "fssai_status": "permitted_with_limits", "flags": ["artificial_sweetener"], "confidence": "high", "verify": false
+    },
+    {
+      "ins": "951", "name": "Aspartame", "class": "sweetener", "concern": "moderate",
+      "why": "Artificial sweetener. IARC classified 'possibly carcinogenic' (2B) in 2023; JECFA retained ADI. Not for PKU. NOVA marker.",
+      "sources": ["WHO"], "fssai_status": "permitted_with_limits", "flags": ["artificial_sweetener", "iarc_2b", "pku_warning"], "confidence": "high", "verify": false
+    },
+    {
+      "ins": "952", "name": "Cyclamate", "class": "sweetener", "concern": "high",
+      "why": "Artificial sweetener. Not permitted as a food additive in India.",
+      "sources": ["FSSAI"], "fssai_status": "not_permitted", "flags": ["artificial_sweetener", "not_permitted_in_india"], "confidence": "high", "verify": false,
+      "fssai_basis": "listed only in the regulation's INS reference list; no Appendix A provision", "verified_on": "2026-09-25"
+    },
+    {
+      "ins": "954", "name": "Saccharin", "class": "sweetener", "concern": "moderate",
+      "why": "Artificial sweetener. Historical carcinogen concern (delisted). NOVA marker.",
+      "sources": ["WHO"], "fssai_status": "permitted_with_limits", "flags": ["artificial_sweetener"], "confidence": "medium", "verify": false
+    },
+    {
+      "ins": "955", "name": "Sucralose", "class": "sweetener", "concern": "moderate",
+      "why": "Artificial sweetener. NOVA marker. WHO 2023 advises against non-sugar sweeteners for weight control. Key for diabetic lens.",
+      "sources": ["WHO"], "fssai_status": "permitted_with_limits", "flags": ["artificial_sweetener", "who_nss_advisory"], "confidence": "high", "verify": false
+    },
+    {
+      "ins": "960", "name": "Steviol glycosides (Stevia)", "class": "sweetener", "concern": "low",
+      "why": "Plant-derived sweetener. Lower concern than synthetic sweeteners but still a NOVA cosmetic marker.",
+      "sources": ["FSSAI"], "fssai_status": "permitted", "flags": ["sweetener_natural"], "confidence": "high", "verify": false
+    },
+    {
+      "ins": "150c", "name": "Caramel III - ammonia caramel", "class": "colour", "concern": "low",
+      "why": "Caramel colour class III. Like class IV, can contain 4-MEI (IARC 2B) as a by-product.",
+      "sources": ["WHO", "FSSAI"], "fssai_status": "permitted_with_limits", "flags": ["4mei_trace"], "confidence": "high", "verify": false,
+      "fssai_basis": "numeric limits per food category (Appendix A)", "verified_on": "2026-09-25"
+    },
+    {
+      "ins": "160a", "name": "Carotenes (beta-carotene)", "class": "colour", "concern": "none",
+      "why": "Beta-carotene colour, the pigment in carrots; provitamin A.",
+      "sources": ["CODEX", "FSSAI"], "fssai_status": "permitted_with_limits", "flags": [], "confidence": "high", "verify": false,
+      "fssai_basis": "numeric limits per food category (Appendix A)", "verified_on": "2026-09-25"
+    },
+    {
+      "ins": "170", "name": "Calcium carbonate", "class": "anticaking", "concern": "none",
+      "why": "Chalk / calcium source; also used as a colour and raising agent. No concern.",
+      "sources": ["CODEX", "FSSAI"], "fssai_status": "permitted", "flags": [], "confidence": "high", "verify": false,
+      "fssai_basis": "GMP, all food categories (Appendix A GMP table)", "verified_on": "2026-09-25"
+    },
+    {
+      "ins": "270", "name": "Lactic acid", "class": "acidity_regulator", "concern": "none",
+      "why": "Acidity regulator, the same acid made in curd. No concern.",
+      "sources": ["CODEX", "FSSAI"], "fssai_status": "permitted", "flags": [], "confidence": "high", "verify": false,
+      "fssai_basis": "GMP, all food categories (Appendix A GMP table)", "verified_on": "2026-09-25"
+    },
+    {
+      "ins": "282", "name": "Calcium propionate", "class": "preservative", "concern": "low",
+      "why": "Preservative common in bread and bakery. Low concern; its presence contradicts a 'no preservatives' claim.",
+      "sources": ["CODEX", "FSSAI"], "fssai_status": "permitted", "flags": ["preservative"], "confidence": "high", "verify": false,
+      "fssai_basis": "GMP, all food categories (Appendix A GMP table)", "verified_on": "2026-09-25"
+    },
+    {
+      "ins": "331", "name": "Sodium citrates", "class": "acidity_regulator", "concern": "none",
+      "why": "Sodium salts of citric acid. Acidity regulator. No concern.",
+      "sources": ["CODEX", "FSSAI"], "fssai_status": "permitted", "flags": [], "confidence": "high", "verify": false,
+      "fssai_basis": "GMP, all food categories (Appendix A GMP table)", "verified_on": "2026-09-25"
+    },
+    {
+      "ins": "338", "name": "Phosphoric acid", "class": "acidity_regulator", "concern": "low",
+      "why": "Acidulant typical of colas. Phosphate additive; high intake from additives is flagged for kidney and bone load.",
+      "sources": ["CODEX", "FSSAI"], "fssai_status": "permitted_with_limits", "flags": ["phosphate_load"], "confidence": "high", "verify": false,
+      "fssai_basis": "numeric limits per food category (Appendix A)", "verified_on": "2026-09-25"
+    },
+    {
+      "ins": "341", "name": "Calcium phosphates", "class": "raising_agent", "concern": "low",
+      "why": "Raising agent / anticaking agent. Phosphate additive.",
+      "sources": ["CODEX", "FSSAI"], "fssai_status": "permitted_with_limits", "flags": ["phosphate_load"], "confidence": "high", "verify": false,
+      "fssai_basis": "numeric limits per food category (Appendix A)", "verified_on": "2026-09-25"
+    },
+    {
+      "ins": "401", "name": "Sodium alginate", "class": "thickener", "concern": "low",
+      "why": "Seaweed-derived thickener. Low concern.",
+      "sources": ["CODEX", "FSSAI"], "fssai_status": "permitted", "flags": [], "confidence": "high", "verify": false,
+      "fssai_basis": "GMP, all food categories (Appendix A GMP table)", "verified_on": "2026-09-25"
+    },
+    {
+      "ins": "414", "name": "Gum arabic (Acacia gum)", "class": "thickener", "concern": "low",
+      "why": "Tree-gum stabiliser. Low concern.",
+      "sources": ["CODEX", "FSSAI"], "fssai_status": "permitted", "flags": [], "confidence": "high", "verify": false,
+      "fssai_basis": "GMP, all food categories (Appendix A GMP table)", "verified_on": "2026-09-25"
+    },
+    {
+      "ins": "420", "name": "Sorbitol", "class": "humectant", "concern": "low",
+      "why": "Sugar alcohol used to keep products moist, or as a sweetener. Can have a laxative effect in large amounts.",
+      "sources": ["CODEX", "FSSAI"], "fssai_status": "permitted", "flags": ["polyol"], "confidence": "high", "verify": false,
+      "fssai_basis": "GMP, all food categories (Appendix A GMP table)", "verified_on": "2026-09-25"
+    },
+    {
+      "ins": "422", "name": "Glycerol", "class": "humectant", "concern": "none",
+      "why": "Humectant that keeps baked goods soft. No concern.",
+      "sources": ["CODEX", "FSSAI"], "fssai_status": "permitted", "flags": [], "confidence": "high", "verify": false,
+      "fssai_basis": "GMP, all food categories (Appendix A GMP table)", "verified_on": "2026-09-25"
+    },
+    {
+      "ins": "440", "name": "Pectins", "class": "thickener", "concern": "none",
+      "why": "Fruit-derived gelling agent. No concern.",
+      "sources": ["CODEX", "FSSAI"], "fssai_status": "permitted", "flags": [], "confidence": "high", "verify": false,
+      "fssai_basis": "GMP, all food categories (Appendix A GMP table)", "verified_on": "2026-09-25"
+    },
+    {
+      "ins": "450", "name": "Diphosphates", "class": "raising_agent", "concern": "low",
+      "why": "Raising agent in baking powder. Phosphate additive.",
+      "sources": ["CODEX", "FSSAI"], "fssai_status": "permitted_with_limits", "flags": ["phosphate_load"], "confidence": "high", "verify": false,
+      "fssai_basis": "numeric limits per food category (Appendix A)", "verified_on": "2026-09-25"
+    },
+    {
+      "ins": "475", "name": "Polyglycerol esters of fatty acids", "class": "emulsifier", "concern": "low",
+      "why": "Emulsifier used in cakes and bakery. NOVA cosmetic marker.",
+      "sources": ["CODEX", "FSSAI"], "fssai_status": "permitted_with_limits", "flags": ["emulsifier"], "confidence": "high", "verify": false,
+      "fssai_basis": "numeric limits per food category (Appendix A)", "verified_on": "2026-09-25"
+    },
+    {
+      "ins": "481", "name": "Sodium stearoyl lactylate", "class": "emulsifier", "concern": "low",
+      "why": "Dough strengthener and emulsifier in bread and bakery. NOVA cosmetic marker.",
+      "sources": ["CODEX", "FSSAI"], "fssai_status": "permitted_with_limits", "flags": ["emulsifier"], "confidence": "high", "verify": false,
+      "fssai_basis": "numeric limits per food category (Appendix A)", "verified_on": "2026-09-25"
+    },
+    {
+      "ins": "503", "name": "Ammonium carbonates", "class": "raising_agent", "concern": "none",
+      "why": "Traditional raising agent (baker's ammonia); gas escapes during baking. No concern.",
+      "sources": ["CODEX", "FSSAI"], "fssai_status": "permitted", "flags": [], "confidence": "high", "verify": false,
+      "fssai_basis": "GMP, all food categories (Appendix A GMP table)", "verified_on": "2026-09-25"
+    },
+    {
+      "ins": "516", "name": "Calcium sulfate", "class": "firming_agent", "concern": "none",
+      "why": "Firming agent and flour treatment; used to set tofu. No concern.",
+      "sources": ["CODEX", "FSSAI"], "fssai_status": "permitted", "flags": [], "confidence": "high", "verify": false,
+      "fssai_basis": "GMP, all food categories (Appendix A GMP table)", "verified_on": "2026-09-25"
+    },
+    {
+      "ins": "1100", "name": "Amylases", "class": "enzyme", "concern": "none",
+      "why": "Enzyme that breaks down starch; used in flour and baking. No concern.",
+      "sources": ["CODEX", "FSSAI"], "fssai_status": "permitted", "flags": ["enzyme"], "confidence": "high", "verify": false,
+      "fssai_basis": "GMP, all food categories (Appendix A GMP table)", "verified_on": "2026-09-25"
+    },
+    {
+      "ins": "1101", "name": "Proteases", "class": "enzyme", "concern": "none",
+      "why": "Protein-splitting enzymes (e.g. papain, bromelain); used in flour and baking. No concern.",
+      "sources": ["CODEX", "FSSAI"], "fssai_status": "permitted", "flags": ["enzyme"], "confidence": "high", "verify": false,
+      "fssai_basis": "GMP, all food categories (Appendix A GMP table)", "verified_on": "2026-09-25"
+    },
+    {
+      "ins": "1104", "name": "Lipases", "class": "enzyme", "concern": "none",
+      "why": "Fat-splitting enzyme; used in baking and dairy. No concern.",
+      "sources": ["CODEX", "FSSAI"], "fssai_status": "permitted", "flags": ["enzyme"], "confidence": "high", "verify": false,
+      "fssai_basis": "GMP, all food categories (Appendix A GMP table)", "verified_on": "2026-09-25"
+    },
+    {
+      "ins": "1412", "name": "Distarch phosphate", "class": "modified_starch", "concern": "low",
+      "why": "Chemically modified starch (thickener). NOVA ultra-processing marker.",
+      "sources": ["CODEX", "FSSAI", "NOVA"], "fssai_status": "permitted", "flags": ["modified_starch"], "confidence": "high", "verify": false,
+      "fssai_basis": "GMP, all food categories (Appendix A GMP table)", "verified_on": "2026-09-25"
+    },
+    {
+      "ins": "1422", "name": "Acetylated distarch adipate", "class": "modified_starch", "concern": "low",
+      "why": "Chemically modified starch (thickener). NOVA ultra-processing marker.",
+      "sources": ["CODEX", "FSSAI", "NOVA"], "fssai_status": "permitted", "flags": ["modified_starch"], "confidence": "high", "verify": false,
+      "fssai_basis": "GMP, all food categories (Appendix A GMP table)", "verified_on": "2026-09-25"
+    },
+    {
+      "ins": "1440", "name": "Hydroxypropyl starch", "class": "modified_starch", "concern": "low",
+      "why": "Chemically modified starch (thickener). NOVA ultra-processing marker.",
+      "sources": ["CODEX", "FSSAI", "NOVA"], "fssai_status": "permitted", "flags": ["modified_starch"], "confidence": "high", "verify": false,
+      "fssai_basis": "GMP, all food categories (Appendix A GMP table)", "verified_on": "2026-09-25"
+    },
+    {
+      "ins": "1442", "name": "Hydroxypropyl distarch phosphate", "class": "modified_starch", "concern": "low",
+      "why": "Chemically modified starch (thickener). NOVA ultra-processing marker.",
+      "sources": ["CODEX", "FSSAI", "NOVA"], "fssai_status": "permitted", "flags": ["modified_starch"], "confidence": "high", "verify": false,
+      "fssai_basis": "GMP, all food categories (Appendix A GMP table)", "verified_on": "2026-09-25"
+    },
+    {
+      "ins": "1520", "name": "Propylene glycol", "class": "humectant", "concern": "low",
+      "why": "Humectant and carrier for flavours. Has an acceptable daily intake; low concern at permitted levels.",
+      "sources": ["CODEX", "FSSAI", "WHO"], "fssai_status": "permitted_with_limits", "flags": ["carrier_solvent"], "confidence": "high", "verify": false,
+      "fssai_basis": "numeric limits per food category (Appendix A; e.g. fine bakery wares 1,500 mg/kg)", "verified_on": "2026-09-25"
+    },
+    {
+      "ins": "127", "name": "Erythrosine", "class": "colour", "concern": "moderate",
+      "why": "Synthetic red colour. Caused thyroid tumours in male rats at high doses.",
+      "sources": ["FSSAI", "WHO"], "fssai_status": "permitted_with_limits", "flags": ["synthetic_colour", "regulators_differ"], "confidence": "high", "verify": false,
+      "fssai_basis": "numeric limits per food category (Appendix A)", "verified_on": "2026-09-25"
+    },
+    {
+      "ins": "143", "name": "Fast Green FCF", "class": "colour", "concern": "low",
+      "why": "Synthetic green colour.",
+      "sources": ["FSSAI"], "fssai_status": "permitted_with_limits", "flags": ["synthetic_colour", "regulators_differ"], "confidence": "high", "verify": false,
+      "fssai_basis": "numeric limits per food category (Appendix A)", "verified_on": "2026-09-25"
+    },
+    {
+      "ins": "928", "name": "Benzoyl peroxide", "class": "flour_treatment", "concern": "low",
+      "why": "Flour bleaching agent; breaks down to benzoic acid in the flour. Rarely printed on labels because it treats the flour before use.",
+      "sources": ["FSSAI"], "fssai_status": "permitted_with_limits", "flags": ["flour_treatment", "regulators_differ"], "confidence": "high", "verify": false,
+      "fssai_basis": "numeric limits (flours and starches; whey) (Appendix A)", "verified_on": "2026-09-25"
+    },
+    {
+      "ins": "927a", "name": "Azodicarbonamide", "class": "flour_treatment", "concern": "high",
+      "why": "Flour treatment agent. Not permitted as a food additive in India.",
+      "sources": ["FSSAI"], "fssai_status": "not_permitted", "flags": ["not_permitted_in_india", "regulators_differ"], "confidence": "high", "verify": false,
+      "fssai_basis": "listed only in the regulation's INS reference list; no Appendix A provision", "verified_on": "2026-09-25"
+    },
+    {
+      "ins": "924a", "name": "Potassium bromate", "class": "flour_treatment", "concern": "high",
+      "why": "Flour treatment agent. Not permitted as a food additive in India.",
+      "sources": ["FSSAI"], "fssai_status": "not_permitted", "flags": ["not_permitted_in_india", "regulators_differ"], "confidence": "high", "verify": false,
+      "fssai_basis": "listed only in the regulation's INS reference list; no Appendix A provision", "verified_on": "2026-09-25"
+    }
+  ]
+}

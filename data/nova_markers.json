@@ -1,0 +1,30 @@
+{
+  "_meta": {
+    "table": "nova_markers",
+    "version": "0.1",
+    "purpose": "NOVA Group 4 (ultra-processed) marker ingredients. Presence of ANY of these is strong evidence a product is ultra-processed, per Monteiro et al. NOVA classification.",
+    "basis": "Monteiro CA et al., 'Ultra-processed foods: what they are and how to identify them', Public Health Nutrition (2019); NOVA classification.",
+    "how_to_use": "Match normalized ingredient tokens against 'aliases'. A single Group-4 marker => product is NOVA Group 4 (ultra-processed). This is a definitional rule, not a scored penalty.",
+    "verify_before_public_claims": false,
+    "confidence": "high — NOVA markers are academically defined and stable"
+  },
+  "markers": [
+    { "id": "nova_hfcs", "name": "High-fructose corn syrup", "category": "industrial_sweetener", "aliases": ["high fructose corn syrup", "hfcs", "corn syrup", "glucose-fructose syrup", "isoglucose", "fructose syrup"] },
+    { "id": "nova_invert_sugar", "name": "Invert sugar", "category": "industrial_sweetener", "aliases": ["invert sugar", "invert syrup", "inverted sugar syrup"] },
+    { "id": "nova_maltodextrin", "name": "Maltodextrin", "category": "industrial_carb", "aliases": ["maltodextrin", "malto dextrin"] },
+    { "id": "nova_dextrose", "name": "Dextrose", "category": "industrial_sweetener", "aliases": ["dextrose", "dextrose monohydrate"] },
+    { "id": "nova_glucose_syrup", "name": "Glucose syrup", "category": "industrial_sweetener", "aliases": ["glucose syrup", "liquid glucose", "glucose solids", "dried glucose syrup"] },
+    { "id": "nova_lactose_added", "name": "Added lactose", "category": "industrial_sweetener", "aliases": ["added lactose"] },
+    { "id": "nova_hydrolysed_protein", "name": "Hydrolysed protein", "category": "protein_isolate", "aliases": ["hydrolysed protein", "hydrolyzed protein", "hydrolysed vegetable protein", "hydrolyzed vegetable protein", "hvp", "hydrolysed soy protein", "soy protein hydrolysate", "protein hydrolysate"] },
+    { "id": "nova_soy_protein_isolate", "name": "Soy protein isolate", "category": "protein_isolate", "aliases": ["soy protein isolate", "soya protein isolate", "isolated soy protein", "soy protein concentrate", "textured vegetable protein", "textured soy protein", "tvp"] },
+    { "id": "nova_whey_isolate_added", "name": "Whey protein isolate (as additive)", "category": "protein_isolate", "aliases": ["whey protein isolate", "whey protein concentrate", "milk protein isolate", "milk protein concentrate", "casein", "caseinate", "sodium caseinate", "calcium caseinate"] },
+    { "id": "nova_hydrogenated_oil", "name": "Hydrogenated / interesterified oil", "category": "modified_fat", "aliases": ["hydrogenated oil", "hydrogenated vegetable oil", "partially hydrogenated oil", "partially hydrogenated vegetable oil", "interesterified fat", "interesterified oil", "vanaspati", "hydrogenated fat"] },
+    { "id": "nova_modified_starch", "name": "Modified starch", "category": "modified_carb", "aliases": ["modified starch", "modified corn starch", "modified maize starch", "modified tapioca starch", "modified food starch", "acetylated starch", "distarch phosphate", "hydroxypropyl starch"] },
+    { "id": "nova_flavour", "name": "Added flavour (natural/artificial/nature-identical)", "category": "cosmetic_additive", "aliases": ["flavour", "flavor", "artificial flavour", "artificial flavor", "natural flavour", "natural flavor", "nature-identical flavour", "nature identical flavouring", "added flavour", "flavouring", "flavoring", "flavour enhancer"] },
+    { "id": "nova_emulsifier", "name": "Emulsifier", "category": "cosmetic_additive", "aliases": ["emulsifier", "emulsifiers"] },
+    { "id": "nova_colour", "name": "Added colour", "category": "cosmetic_additive", "aliases": ["colour", "color", "added colour", "artificial colour", "artificial color", "food colour", "food color", "colouring", "coloring"] },
+    { "id": "nova_artificial_sweetener", "name": "Artificial / non-sugar sweetener", "category": "cosmetic_additive", "aliases": ["artificial sweetener", "non-nutritive sweetener", "sweetener", "aspartame", "sucralose", "acesulfame", "acesulfame k", "acesulfame potassium", "saccharin", "neotame"] },
+    { "id": "nova_bulking_anticaking", "name": "Bulking / anti-caking / glazing agents", "category": "cosmetic_additive", "aliases": ["bulking agent", "anti-caking agent", "anticaking agent", "glazing agent", "firming agent", "carrier"] },
+    { "id": "nova_stabiliser_thickener_cosmetic", "name": "Stabiliser / thickener / humectant (cosmetic use)", "category": "cosmetic_additive", "aliases": ["stabiliser", "stabilizer", "thickener", "humectant", "sequestrant"] }
+  ]
+}
