@@ -74,6 +74,24 @@ class VisionUnavailable(VisionError):
     retryable = True
 
 
+class VisionConfigError(VisionError):
+    """
+    Our setup, not the label and not a busy moment: no key, key rejected (401/
+    403), prepaid credit used up (402), model not available to this key (404).
+    Nothing a retry or the user can fix, so the API raises an alarm for the
+    developer (a 'server' problem report) instead of a generic failure. Seen for
+    real on 2026-09-25: "Your prepayment credits are depleted" (402).
+    """
+    retryable = False
+
+
+CONFIG_STATUS = {401, 402, 403, 404}
+
+
+def _config_problem(status, text):
+    return status in CONFIG_STATUS or (status == 400 and "api key" in text.lower())
+
+
 # Statuses where the request itself was acceptable and the service was not.
 # 400/401/403/404 are excluded on purpose: retrying a malformed request or a
 # rejected credential just burns the user's time and Google's quota.
@@ -156,7 +174,7 @@ def call_gemini_sdk(images, api_key=None):
     """Preferred path. The SDK handles both AIza and AQ. credential types."""
     api_key = api_key or os.environ.get("GEMINI_API_KEY")
     if not api_key:
-        raise VisionError("GEMINI_API_KEY is not set.")
+        raise VisionConfigError("GEMINI_API_KEY is not set.")
 
     try:
         client = genai.Client(
@@ -191,6 +209,10 @@ def call_gemini_sdk(images, api_key=None):
             raise VisionUnavailable(
                 f"Gemini unavailable ({status}): {type(e).__name__}: {e}"
             ) from e
+        if _config_problem(status, str(e)):
+            err = VisionConfigError(f"Gemini setup problem ({status}): {type(e).__name__}: {e}")
+            err.status = status
+            raise err from e
         raise VisionError(f"Gemini call failed: {type(e).__name__}: {e}") from e
 
     um = getattr(resp, "usage_metadata", None)
@@ -217,7 +239,7 @@ def call_gemini_rest(images, api_key=None, timeout=90):
     """
     api_key = api_key or os.environ.get("GEMINI_API_KEY")
     if not api_key:
-        raise VisionError("GEMINI_API_KEY is not set.")
+        raise VisionConfigError("GEMINI_API_KEY is not set.")
 
     body = json.dumps(build_request(images)).encode("utf-8")
     url = f"{API_BASE}/{MODEL}:generateContent"
@@ -235,12 +257,16 @@ def call_gemini_rest(images, api_key=None, timeout=90):
         if e.code in RETRYABLE_STATUS:
             raise VisionUnavailable(f"Gemini unavailable ({e.code}): {detail}") from e
         if e.code == 401:
-            raise VisionError(
+            raise VisionConfigError(
                 "401 from the REST endpoint. If your key starts with 'AQ.', this "
                 "is the known incompatibility between the new Authentication Key "
                 "format and raw REST auth — install google-genai and use "
                 f"call_gemini_sdk() instead. Server said: {detail}"
             ) from e
+        if _config_problem(e.code, detail):
+            err = VisionConfigError(f"Gemini setup problem ({e.code}): {detail}")
+            err.status = e.code
+            raise err from e
         raise VisionError(f"HTTP {e.code}: {detail}") from e
 
     try:

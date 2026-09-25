@@ -245,3 +245,79 @@ def test_model_retries_are_on_the_trace(db, monkeypatch):
     assert scan(rid, replay=vision()).status_code == 200
     t = row(db, "SELECT timings FROM scans WHERE request_id = %s", rid)["timings"]
     assert t["vision_retries"] == [{"attempt": 1, "wait_s": 2.0, "error": "RuntimeError"}]
+
+
+# ---------------------------------------------------------------- setup alarms
+
+class _SdkError(Exception):
+    def __init__(self, code, msg):
+        super().__init__(f"{code} {msg}")
+        self.code = code
+
+
+@pytest.mark.parametrize("code,msg,kind", [
+    (402, "RESOURCE_EXHAUSTED. Your prepayment credits are depleted.", "config"),
+    (403, "PERMISSION_DENIED", "config"),
+    (401, "UNAUTHENTICATED", "config"),
+    (400, "API key not valid. Please pass a valid API key.", "config"),
+    (503, "UNAVAILABLE high demand", "busy"),
+    (429, "RESOURCE_EXHAUSTED rate limit", "busy"),
+    (400, "Invalid JSON payload", "other"),
+])
+def test_google_errors_are_sorted_by_who_can_fix_them(monkeypatch, code, msg, kind):
+    from insidelabel.extraction.providers import gemini
+
+    class FakeModels:
+        def generate_content(self, **kw):
+            raise _SdkError(code, msg)
+
+    class FakeClient:
+        def __init__(self, **kw):
+            self.models = FakeModels()
+    monkeypatch.setattr(gemini.genai, "Client", FakeClient)
+    with pytest.raises(gemini.VisionError) as e:
+        gemini.call_gemini_sdk([(PNG, "image/png", "back")], api_key="k")
+    got = ("config" if isinstance(e.value, gemini.VisionConfigError)
+           else "busy" if isinstance(e.value, gemini.VisionUnavailable) else "other")
+    assert got == kind
+
+
+def test_out_of_credit_alarms_once_and_tells_the_user_plainly(db, monkeypatch):
+    from insidelabel.extraction.providers import gemini
+
+    def no_credit(images, raw_response=None, **kw):
+        err = gemini.VisionConfigError("Gemini setup problem (402): Your prepayment credits are depleted.")
+        err.status = 402
+        raise err
+    monkeypatch.setattr(main.gemini, "analyze_images", no_credit)
+    with psycopg.connect(db) as conn:
+        conn.execute("DELETE FROM problem_reports WHERE signature = 'vision_config:402'")
+    rids = [str(uuid.uuid4()) for _ in range(3)]
+    for rid in rids:
+        r = scan(rid)
+        assert r.status_code == 503 and r.json()["error"] == "vision_not_configured"
+        assert "credit" not in r.json()["detail"]             # the user isn't told about our billing
+    n = row(db, "SELECT count(*) AS n FROM problem_reports WHERE kind = 'server' AND signature = 'vision_config:402'")
+    assert n["n"] == 1                                         # three failed scans, one alarm
+    rep = row(db, "SELECT * FROM problem_reports WHERE signature = 'vision_config:402'")
+    assert "prepayment credits" in rep["server_error"]
+    s = row(db, "SELECT outcome, error_code FROM scans WHERE request_id = %s", rids[0])
+    assert s == {"outcome": "vision_failed", "error_code": "vision_config:402"}
+
+
+def test_cloud_vision_setup_failure_raises_an_alarm(db, monkeypatch):
+    import io
+    import urllib.error
+    from insidelabel.extraction.providers import cloud_vision as cv
+
+    def refused(req, timeout=None):
+        raise urllib.error.HTTPError(cv.ENDPOINT, 403, "Forbidden", {}, io.BytesIO(b'{"error":"billing"}'))
+    monkeypatch.setenv("GOOGLE_VISION_KEY", "test-key")
+    monkeypatch.setattr(cv.urllib.request, "urlopen", refused)
+    monkeypatch.setattr(cv, "_down_until", 0.0)
+    cv._CACHE.clear()
+    rid = str(uuid.uuid4())
+    assert scan(rid, replay=vision()).status_code == 200        # the scan still works, on Tesseract
+    rep = row(db, "SELECT * FROM problem_reports WHERE signature = 'ocr_config:http_403'")
+    assert rep and rep["kind"] == "server" and "Tesseract" in rep["server_error"]
+    assert cv.take_alarm() is None                             # taken once

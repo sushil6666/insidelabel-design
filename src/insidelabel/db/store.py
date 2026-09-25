@@ -359,11 +359,12 @@ class Store:
             uid = self._user(conn, device_id)
             # One crash can fire on every screen; an automatic report of the same
             # error from the same phone within an hour is counted once.
-            if kind == "auto" and signature:
+            # A setup alarm ('server') fires on every scan until fixed: once an hour is enough.
+            if kind in ("auto", "server") and signature:
                 dup = conn.execute(
-                    """SELECT id FROM problem_reports WHERE kind = 'auto' AND signature = %s
+                    """SELECT id FROM problem_reports WHERE kind = %s AND signature = %s
                           AND user_id IS NOT DISTINCT FROM %s AND created_at > now() - interval '1 hour'
-                        LIMIT 1""", (signature, uid)).fetchone()
+                        LIMIT 1""", (kind, signature, uid)).fetchone()
                 if dup:
                     return {"problem_id": dup["id"], "scan_id": None, "duplicate": True}
             if scan_id is None and request_id:

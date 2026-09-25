@@ -1,6 +1,6 @@
 # STATE.md — where InsideLabel is, and how to pick it up
 
-**Last updated:** 2026-09-25 (PWA + D-092) · **Owner:** Sushil · **Tests:** 184 passing, 1 skipped · **Release gate:** `python tools/release_check.py` — NOT READY (2 failing; 4 with `INSIDELABEL_DB` set)
+**Last updated:** 2026-09-25 (PWA + D-092) · **Owner:** Sushil · **Tests:** 193 passing, 1 skipped · **Release gate:** `python tools/release_check.py` — NOT READY (2 failing; 4 with `INSIDELABEL_DB` set)
 
 This is the living status document. Read it first in any new session, then
 `DECISIONS.md` for the *why*. Update the "Last updated" line, the numbers and
@@ -73,7 +73,7 @@ sudo PG19_PORT=5432 bash tools/install_pg19.sh   # adds apt.postgresql.org, crea
 createdb insidelabel && createdb insidelabel_test
 python -m insidelabel.db.migrate "postgresql:///insidelabel?host=/var/run/postgresql"
 
-pytest -q                                    # 184 pass, 1 skipped; DB tests use embedded Postgres
+pytest -q                                    # 193 pass, 1 skipped; DB tests use embedded Postgres
 ```
 
 **Environment variables**
@@ -221,6 +221,22 @@ Every scan now records `timings.vision_retries` (attempt, wait, error), so the b
 data will show whether that's the model being busy (retries) or slow (none). Don't
 tune anything until there are numbers from real scans.
 
+### Gemini keys and setup alarms (later on 2026-09-25)
+
+Three Gemini keys tried in one afternoon (`~/.bashrc` lines 126–128; only the last
+counts): the first two worked but `gemini-3.6-flash` and `gemini-3.5-flash` both
+answered **503 "high demand"** to our label request (text-only pings got through);
+the third answers **402 "prepayment credits are depleted"** — its AI Studio project
+needs a top-up. The `gemini-3.5-flash` fallback comparison couldn't run (every call
+refused); retry it when Google is quieter.
+
+New: `VisionConfigError` for setup failures (no key, 401/402/403/404, "API key not
+valid"). `/scan` answers `503 vision_not_configured` ("isn't available right now"),
+logs `SETUP ALARM`, and files a `server` problem report (`vision_config:402`) at most
+once an hour. Cloud Vision setup failures (billing, key restriction) raise
+`ocr_config:http_403` the same way, since they silently cost ~20 s per scan.
+`tools/repro.py list` shows both. Checked against the real 402.
+
 ## 6. What went wrong, and what we learned
 
 Keep this list — it is the cheapest way to not repeat a mistake.
@@ -321,7 +337,7 @@ current EUR-Lex text and check cyclamate's US status; drop PG18 after PG19 GA.
 | `src/insidelabel/` | the package (core, extraction, reliability, claims, lenses, db, review, api) |
 | `data/` | the knowledge tables — the moat |
 | `migrations/` | Postgres schema, plain SQL, applied in order |
-| `tests/` | 184 tests (+ `regression/problems/`, D-092); `conftest.py` gives each DB test module its own database |
+| `tests/` | 193 tests (+ `regression/problems/`, D-092); `conftest.py` gives each DB test module its own database |
 | `tools/` | release gate, leads (D-089), eval, batch scan, gold stubs, queue predictions, PG19 installer |
 | `gold/`, `photos/`, `predictions/` | 6 real labels: hand transcription, photos, recorded model output |
 | `research/` | private marketplace screenshots behind leads (git-ignored; never published — D-089) |
@@ -351,7 +367,7 @@ retention test. Public launch comes after the W4 number (D-083).
 | D-051, D-052, D-055 decided | locked | ✅ locked 2026-09-25 |
 | Published catalogue | ≥ 50 SKUs | ❌ 0 (6 waiting) |
 | Kids' biscuits published (D-058) | ≥ 15 in 7.2.1 / 7.2.2 | ❌ 0 (category picker ready) |
-| Test suite (`--with-tests`) | green | ✅ 184 |
+| Test suite (`--with-tests`) | green | ✅ 193 |
 
 ### Manual gates — tick when done
 

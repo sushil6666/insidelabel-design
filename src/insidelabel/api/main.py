@@ -106,6 +106,17 @@ def _save_images(images):
         return {}
 
 
+def _setup_alarm(signature, message):
+    """
+    A setup problem (key, billing, credit) as a 'server' problem report, at most
+    once an hour per kind, so `tools/repro.py list` shows it first thing (D-092).
+    """
+    log.error("SETUP ALARM %s: %s", signature, message)
+    _persist(STORE and STORE.save_problem, kind="server", request_id=trace.current_request_id(),
+             build=trace.BUILD, data_version=trace.DATA_VERSION,
+             client={"source": "setup_alarm"}, server_error=message, signature=signature)
+
+
 def _persist(fn, *args, **kwargs):
     """
     Run a store call. A database failure is logged loudly but never costs the
@@ -745,6 +756,21 @@ async def scan(
     try:
         vision, corrections = await run_in_threadpool(gemini.analyze_images, images, raw_response=replay,
                                                       on_attempt=on_retry)
+    except gemini.VisionConfigError as e:
+        # Our setup (key, credit, billing), not the label and not a busy moment.
+        # The user is told it's unavailable; the developer gets an alarm.
+        tr["timings"]["vision_ms"] = _ms(t_vision)
+        status = getattr(e, "status", None) or "no_key"
+        log.error("model setup problem: %s", e)
+        _persist(STORE and STORE.record_failed_scan, "vision_failed", error_code=f"vision_config:{status}",
+                 device_id=device_id, latency_ms=_ms(t0),
+                 front_key=keys.get("front"), back_key=keys.get("back"), trace=tr)
+        _setup_alarm(f"vision_config:{status}", str(e))
+        raise HTTPException(status_code=503, detail={
+            "error": "vision_not_configured",
+            "detail": "The label reader isn't available right now.",
+            "retryable": False,
+        })
     except gemini.VisionUnavailable as e:
         tr["timings"]["vision_ms"] = _ms(t_vision)
         _persist(STORE and STORE.record_failed_scan, "vision_unavailable",
@@ -817,6 +843,10 @@ async def scan(
     vision["_ocr_cross_check"] = ocr_result
 
     tr["timings"]["ocr_ms"] = _ms(t_ocr)
+    alarm = cloud_vision.take_alarm()
+    if alarm:
+        _setup_alarm(f"ocr_config:{alarm}", "Cloud Vision refused the call; scans fall back to Tesseract "
+                     f"(~20 s slower) until fixed. Status: {alarm}. See the server log for Google's message.")
     vision["_pairing_attested_by_user"] = pairing_confirmed
     proceed, reliability = rel.assess(vision)
     reliability["client_corrections"] = corrections

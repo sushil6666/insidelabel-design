@@ -620,6 +620,8 @@ function compareResult(r, ref) {
 function apiMessage(e) {
   if (!(e instanceof ApiError)) return "Something went wrong. Try again.";
   if (e.status === 0) return "No connection. Check your internet and try again.";
+  // Our setup (key, credit), not a busy moment: "in a minute" would be untrue.
+  if (e.body?.error === "vision_not_configured") return "The label reader isn't available right now. Please try again later today.";
   if (e.status === 503) return "The label reader is busy right now. Try again in a minute.";
   if (e.status === 413) return "That photo is too large. Take it again a little further away.";
   if (e.status === 415) return "That file isn't a photo we can read. Use the camera instead.";

@@ -50,12 +50,25 @@ LAST = {}          # the last call's outcome, for diagnostics: {ms, status, cach
 DOWN_CONFIG_S = 600
 DOWN_TRANSIENT_S = 60
 _down_until = 0.0
+# A configuration failure (billing off, key restricted…) silently costs every
+# scan the slow Tesseract fallback. The API takes this alarm once per trip and
+# files it as a 'server' problem report (D-092) so it doesn't go unnoticed.
+_alarm = None
 
 
-def _trip(seconds, status):
-    global _down_until
+def _trip(seconds, status, config=False):
+    global _down_until, _alarm
     _down_until = time.monotonic() + seconds
     LAST["status"] = status
+    if config:
+        _alarm = status
+
+
+def take_alarm():
+    """The configuration failure since the last call, once, or None."""
+    global _alarm
+    alarm, _alarm = _alarm, None
+    return alarm
 
 
 def configured():
@@ -108,7 +121,7 @@ def read_text(image_bytes):
         detail = e.read()[:300].decode(errors="replace")
         LAST.update(ms=int((time.monotonic() - t0) * 1000), cached=False, skipped=False)
         transient = e.code == 429 or e.code >= 500
-        _trip(DOWN_TRANSIENT_S if transient else DOWN_CONFIG_S, f"http_{e.code}")
+        _trip(DOWN_TRANSIENT_S if transient else DOWN_CONFIG_S, f"http_{e.code}", config=not transient)
         log.warning("Cloud Vision HTTP %s: %s", e.code, detail)
         return None
     except (urllib.error.URLError, TimeoutError, OSError, ValueError) as e:
