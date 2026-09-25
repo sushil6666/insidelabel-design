@@ -1,6 +1,6 @@
 # STATE.md — where InsideLabel is, and how to pick it up
 
-**Last updated:** 2026-09-25, end of day · **Owner:** Sushil · **Tests:** 193 passing, 1 skipped · **Release gate:** `python tools/release_check.py` — NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 6.9 s, Gemini + Cloud Vision, correct
+**Last updated:** 2026-09-26, overnight session (branch `overnight-2026-09-26`, not merged) · **Owner:** Sushil · **Tests:** 245 passing, 1 skipped · **Release gate:** `python tools/release_check.py` — NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 6.9 s, Gemini + Cloud Vision, correct
 
 This is the living status document. Read it first in any new session, then
 `DECISIONS.md` for the *why*. Update the "Last updated" line, the numbers and
@@ -41,7 +41,7 @@ over our data tables make every judgement** (D-004), and every judgement uses
 | Shelf comparison (2–4 packs, best pick for a child) | ✅ `/compare` | `lenses/compare.py` |
 | India vs EU vs US comparison — optional, information only | ✅ 12 additives | `lenses/regulators.py`, `data/regulatory_status.json` |
 | Wording lint (no "misleading/illegal/toxic/safe/free from…") on tables **and** live output | ✅ in the test suite | `tests/test_wording.py` |
-| Postgres schema with rules enforced by the DB | ✅ 6 migrations | `migrations/` |
+| Postgres schema with rules enforced by the DB | ✅ 10 migrations (007–010 on the overnight branch; not applied to the local DB yet) | `migrations/` |
 | Marketplace leads → physical label → record (D-089); only `physical_label` versions can publish | ✅ | `db/leads.py`, `tools/leads.py`, migration 005 |
 | Scan persistence: barcode lookup, review queue, findings + evidence, photos | ✅ when `INSIDELABEL_DB` is set | `db/store.py`, `media.py` |
 | Reviewer screen (`/review`) — the only path into the catalogue; FSSAI food category required on approve | ✅ | `review/` |
@@ -49,6 +49,11 @@ over our data tables make every judgement** (D-004), and every judgement uses
 | "Report a mistake" `/report`, "ready?" `/updates` | ✅ | `api/main.py` |
 | Result-screen block (`screen` in `/scan`): people first, headline from a finding, D-063 names, grouped ordinary items, no score; `profiles` with names kept on the device | ✅ D-091 | `lenses/screen.py` |
 | Reproducing problems (D-092): request ids, a replayable trace on every scan row, "Report a problem" + automatic crash and server-error reports, `tools/repro.py` | ✅ proved end to end (app → server → report → replay "same as what the user saw") | `trace.py`, `repro.py`, migration 006, `tools/repro.py` |
+| Exact replays (D-094): Cloud Vision's text stored on every scan row; `repro.py` replays it and never calls Google | ✅ overnight | migration 007, `cloud_vision.replaying()` |
+| Rate limits on `/scan`, `/problem`, `/send-to-us` per install and per IP (D-095) | ✅ overnight; in memory, one process | `ratelimit.py` |
+| "Send it to us" after two refused scans (D-070, D-096) | ✅ overnight; walked in headless Chromium against a faked API, not on a phone | `POST /send-to-us`, migration 008, `web/app.js` |
+| One login per reviewer (D-097); shared token only until the first account | ✅ overnight | migration 009, `review/accounts.py`, `tools/reviewers.py` |
+| Photo retention job, 30 days, holds respected (D-080, D-098) | ✅ overnight; runs nowhere yet (cron at deploy) | migration 010, `retention.py`, `tools/retention.py` |
 | Web app / PWA: barcode → back photo on 404 → result; household profiles + consent; compare; report a mistake; `/updates` on open; offline shell | ✅ built, **not yet tried on a real phone**; stack is D-090 | `web/`, served at `/app/` |
 
 **Accuracy on the gold set (6 real labels, `tools/eval_vision.py`):** 0 verdict
@@ -76,7 +81,7 @@ sudo PG19_PORT=5432 bash tools/install_pg19.sh   # adds apt.postgresql.org, crea
 createdb insidelabel && createdb insidelabel_test
 python -m insidelabel.db.migrate "postgresql:///insidelabel?host=/var/run/postgresql"
 
-pytest -q                                    # 193 pass, 1 skipped; DB tests use embedded Postgres
+pytest -q                                    # 245 pass, 1 skipped; DB tests use embedded Postgres
 ```
 
 **Environment variables**
@@ -86,7 +91,8 @@ pytest -q                                    # 193 pass, 1 skipped; DB tests use
 | `GEMINI_API_KEY` | real `/scan` vision calls | tests replay recorded JSON, no key needed |
 | `INSIDELABEL_DB` | storing scans, catalogue, `/review`, `/report`, `/updates` | unset → API stores nothing, behaves as before |
 | `INSIDELABEL_MEDIA` | where scan photos go | default `./media` (git-ignored) |
-| `INSIDELABEL_REVIEW_TOKEN` | reviewer login password | username = reviewer's name |
+| `INSIDELABEL_REVIEW_TOKEN` | reviewer screen **until the first account exists** (D-097) | then refused; accounts via `tools/reviewers.py` |
+| `INSIDELABEL_PROXY_HOPS` | rate limits behind a reverse proxy (D-095) | number of proxies; unset → the socket address, `X-Forwarded-For` ignored |
 | `INSIDELABEL_TEST_PG` | run DB tests on a real server | must name a `*_test` database |
 | `INSIDELABEL_CLAIMS_TO_USERS` | show the claim check to users (D-051) | default `off`; turn on only after ≥ 5 claim packs with 0 false contradictions |
 | `INSIDELABEL_DATA` | alternate `data/` dir | rarely needed |
@@ -131,6 +137,8 @@ python tools/eval_vision.py --gold gold/ --pred predictions/ --csv /tmp/eval.csv
 INSIDELABEL_DB=… python tools/queue_predictions.py           # queue recorded scans for review, free
 INSIDELABEL_DB=… python tools/leads.py list                  # products seen online, waiting for a real pack (D-089)
 INSIDELABEL_DB=… python tools/repro.py list                  # problem reports (D-092); `show <id>` replays one
+INSIDELABEL_DB=… python tools/reviewers.py add <name>         # reviewer login (D-097); list / reset / disable
+INSIDELABEL_DB=… python tools/retention.py                    # photos due for deletion (D-098); --apply deletes
 python tools/compare_ocr.py --csv /tmp/ocr.csv                 # Tesseract vs Cloud Vision on the gold photos (D-093)
 ```
 
@@ -261,6 +269,25 @@ once an hour. Cloud Vision setup failures (billing, key restriction) raise
 `ocr_config:http_403` the same way, since they silently cost ~20 s per scan.
 `tools/repro.py list` shows both. Checked against the real 402.
 
+### Overnight session — 2026-09-26 (Claude, unattended; STATE §8 items 5–9)
+
+Branch `overnight-2026-09-26` (also pushed as `claude_code`); PR to `main` open. Every
+new test was run against the old code first and failed; the suite was green before
+each commit. No paid calls (Google's HTTP answers faked, model answers replayed); the
+local `insidelabel` database, `photos/`, `media/`, `research/`, `predictions/` and
+`reports/` untouched; migrations tested on the embedded test Postgres only.
+
+| Commit | Item | What |
+|---|---|---|
+| `be4348f` | 5 | Cloud Vision's text on the scan row (migration 007); replays use it and never call Google, even without the photo; saved regressions carry it. **Found:** a refused read where OCR found an additive crashed `/scan` with a 500 (`KeyError 'caveats'`) — fixed. D-094. 5 tests |
+| `ea3f308` | 6 | Rate limits per install + per IP, before any photo is read; separate budgets for photo scans, barcode lookups, problem reports; 429 + `Retry-After`; PWA shows the server's message. D-095. 11 tests |
+| `e2044f4` | 7 | "Send it to us": `POST /send-to-us` (server checks: own scans, all refused, ≥ 2), one review item with every attempt (migration 008), photos held, reviewer page shows all attempts + the barcode; PWA button after the 2nd refusal. D-096. 10 tests |
+| `a980caf` | 8 | Reviewer accounts (migration 009, scrypt, `tools/reviewers.py`, per-reviewer CSRF, login throttling) and the retention job (migration 010, `tools/retention.py`). D-097, D-098. 21 tests |
+| `10c3eb0` | 9 | One INS parser: `compare.py` **and** four more private patterns (claim checker, eval_vision, stability_check, coverage_report) now use `core/tokenize.py`. **Found:** `/compare` missed Maliban's "160 a(ii)" and read "Raisins (150gm)" as an unknown additive. Test forbids new patterns. D-099. 5 tests |
+
+Tests 193 → 245 (+52), 1 skipped. Release gate unchanged: 2 computed gates failing
+(gold set size, ingredient match), both data, not code.
+
 ## 6. What went wrong, and what we learned
 
 Keep this list — it is the cheapest way to not repeat a mistake.
@@ -290,9 +317,36 @@ Keep this list — it is the cheapest way to not repeat a mistake.
 | `/docs` answered 422: Swagger's Try it out fills every text box with "string" (avoid=string → unknown allergen) | Give form fields empty examples; treat "" as absent. Check the real `/docs` page, not just the JSON schema. |
 | Three failure types from Google in one afternoon: 503 "high demand" (theirs, retried), 402 "prepayment credits are depleted" (ours, billing), text pings fine while image scans failed | Read Google's message before touching code. A "busy" is not a bug; an "out of credit" is a setup alarm, not a retry. |
 | Prepaid Gemini credit ran out silently: every scan would have failed with a vague error | Setup failures must alarm the developer, not just fail the user (`vision_config:*`, `ocr_config:*`). |
-| Headless Chromium on this box lacks `libnss3`/`libnspr4`/`libasound2` | `apt-get download` + `dpkg -x` into a scratch dir + `LD_LIBRARY_PATH` — no sudo needed. |
+| Headless Chromium on this box lacks `libnss3`/`libnspr4`/`libasound2` | `apt-get download` + `dpkg -x` into a scratch dir + `LD_LIBRARY_PATH` — no sudo needed. (Scratch dirs don't survive sessions: redo it each time.) |
+| Item 9 named one private INS regex; a search found five, most reading 3 digits (1422 → 142) | Search for the *shape* of a thing, not its name. A test now fails on any INS-shaped pattern outside `tokenize.py`. |
+| The eval showed INS F1 = 1.0 with a parser that truncated 4-digit numbers | Same lesson as the first row, again: gold and prediction shared the blind spot. |
+| A refused scan crashed with a 500 only when OCR also found an additive; no test had combined the two | Found while testing something else (OCR text on refused scans). Combine outcomes in tests, not just features. |
+| A retention job run between "list" and "delete" could remove a photo a user had just re-sent (keys are content hashes) | Re-check each key right before deleting it; test the race with the check switched off. |
 
 ---
+
+## Waiting for Sushil (from the overnight session, 2026-09-26)
+
+Nothing was blocked; all five items were built. These need you:
+
+1. **Accept or change D-094 – D-099** (all `RECOMMENDED` in `DECISIONS.md`), then review and
+   merge the PR. Two points inside them are explicitly yours:
+   - **D-095:** a rate-limited request is *not* stored as a scan row (nothing to replay,
+     and a flood mustn't become DB writes). CLAUDE.md says every new `/scan` outcome is
+     stored with its trace — confirm this exception or say otherwise.
+   - **D-097:** the shared token keeps working until the first account exists (so you
+     can't be locked out). Alternative: drop it outright.
+2. **After merging, on the local DB:** `python -m insidelabel.db.migrate "postgresql:///insidelabel?host=/var/run/postgresql"`
+   (applies 007–010), then `INSIDELABEL_DB=… python tools/reviewers.py add sushil` — it
+   prints your password once; from then on `/review` wants it, not the token. Until 007 is
+   applied, a merged server can't store scans (the new `ocr` column is missing; the user still
+   gets the result, the log says "scan persistence failed").
+3. **Try "Send it to us" on the phone** with the PWA test (§8 item 2): two unreadable photos
+   → the button → publish it on `/review` → reopen the app. Only a faked API walked it.
+4. **Not done, noticed:** `/scan` still accepts the testing-only `replay` field from anyone:
+   a client can submit an invented model answer, which lands in the review queue as a
+   pending version. Harmless while every version is reviewed, but switch it off on the
+   public deploy (e.g. only with an env flag). Not changed overnight — it's a product call.
 
 ## 7. Open decisions (need Sushil)
 
@@ -332,16 +386,14 @@ setup alarms.
 
 **Code — Claude can build these next (in this order):**
 
-5. **Store Cloud Vision's text on the scan row** (migration 007) so a D-092 replay is
-   exact and doesn't call Google again.
-6. **Rate limits on `/scan` and `/problem`** (per device and per IP) — needed before any
-   public URL.
-7. **"Send it to us"** (D-070): after two failed retakes, queue the photos for a reviewer;
-   `/updates` already tells the app when it's ready.
-8. **Individual reviewer logins** (one shared token today) and **D-080 photo retention**
-   (30 days, skipping `scans.evidence_hold`).
-9. **One INS parser, for real:** `lenses/compare.py` still has its own `INS_RE` (found
-   while building the PWA) — route it through `core/tokenize.py`.
+5. ~~Store Cloud Vision's text on the scan row~~ ✅ overnight 2026-09-26 (D-094).
+6. ~~Rate limits on `/scan` and `/problem`~~ ✅ overnight (D-095). Move the counters to
+   Postgres/Redis before running more than one server process.
+7. ~~"Send it to us"~~ ✅ overnight (D-096); phone test pending (Waiting for Sushil, 3).
+8. ~~Individual reviewer logins and D-080 photo retention~~ ✅ overnight (D-097, D-098);
+   retention needs a daily cron at deploy (item 13).
+9. ~~One INS parser, for real~~ ✅ overnight (D-099), five private patterns removed.
+9a. **Gate the `replay` form field** on `/scan` before a public URL (Waiting for Sushil, 4).
 10. **Lift ingredient match 0.945 → ≥ 0.95** once the gold set is bigger (Britannia is the
     weakest at 0.80).
 11. **Fallback-model comparison** (`gemini-3.5-flash` on the gold set, ~₹3) when Google is
@@ -385,8 +437,8 @@ drop PG18 after PG19 GA.
 | `src/insidelabel/` | the package (core, extraction, reliability, claims, lenses, db, review, api) + `trace.py` / `repro.py` (D-092); OCR readers in `extraction/providers/` (`cloud_vision.py`, `ocr_check.py`) |
 | `data/` | the knowledge tables — the moat |
 | `migrations/` | Postgres schema, plain SQL, applied in order |
-| `tests/` | 193 tests (+ `regression/problems/`, D-092); `conftest.py` gives each DB test module its own database |
-| `tools/` | release gate, leads (D-089), `repro.py` (D-092), `compare_ocr.py` (D-093), eval, batch scan, gold stubs, queue predictions, PG19 installer |
+| `tests/` | 245 tests (+ `regression/problems/`, D-092); `conftest.py` gives each DB test module its own database and resets the rate limits (D-095) |
+| `tools/` | release gate, leads (D-089), `repro.py` (D-092), `compare_ocr.py` (D-093), `reviewers.py` (D-097), `retention.py` (D-098), eval, batch scan, gold stubs, queue predictions, PG19 installer |
 | `gold/`, `photos/`, `predictions/` | 6 real labels: hand transcription, photos, recorded model output |
 | `research/` | private marketplace screenshots behind leads (git-ignored; never published — D-089) |
 | `archive/prototype/` | the pre-package prototype, kept for history |
@@ -415,16 +467,16 @@ retention test. Public launch comes after the W4 number (D-083).
 | D-051, D-052, D-055 decided | locked | ✅ locked 2026-09-25 |
 | Published catalogue | ≥ 50 SKUs | ❌ 0 (7 waiting; #7 is a duplicate) |
 | Kids' biscuits published (D-058) | ≥ 15 in 7.2.1 / 7.2.2 | ❌ 0 (category picker ready) |
-| Test suite (`--with-tests`) | green | ✅ 193 |
+| Test suite (`--with-tests`) | green | ✅ 245 (overnight branch) |
 
 ### Manual gates — tick when done
 
 - [ ] PWA built ✅ (`web/`) and tested on a low-end Android phone ⏳ (camera, barcode, result, profiles, compare, report)
 - [ ] Share target (if D-088 accepted)
-- [ ] "Send it to us" endpoint
-- [ ] Individual reviewer logins
-- [ ] Photo retention 30 days (D-080)
-- [ ] Rate limit on `/scan` and `/problem`; error monitoring ✅ built in (D-092 reports + setup alarms), Sentry optional
+- [ ] "Send it to us" — built ✅ (D-096); tried on a phone ⏳
+- [ ] Individual reviewer logins — built ✅ (D-097); accounts created on the deployed server ⏳
+- [ ] Photo retention 30 days (D-080) — job built ✅ (D-098); daily cron at deploy ⏳
+- [ ] Rate limit on `/scan` and `/problem` — built ✅ (D-095); proxy hops set, one process at deploy ⏳; error monitoring ✅ built in (D-092 reports + setup alarms), Sentry optional
 - [ ] Privacy policy (DPDP; children's data; parental consent at profile creation)
 - [ ] COI policy, methodology, who is behind the app, "last verified" dates (D-076)
 - [ ] Deployed: PostgreSQL 19, HTTPS, R2, backups tested by restoring one
