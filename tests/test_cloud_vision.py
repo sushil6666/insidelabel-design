@@ -118,3 +118,71 @@ def test_a_line_break_between_class_word_and_bracket_still_counts():
     assert {"330", "270", "202"} <= ocr_check._ins_numbers(text)
     # …while a bracketed number after a nutrition value is still not an additive.
     assert ocr_check._ins_numbers("Saturated Fat g 7.45 17.27 g 0.03 0.77 (1100(iii), 1104) mg") == set()
+
+
+# ---------------------------------------------------------------- /scan: in parallel, off the event loop
+
+def _slow_scan_setup(monkeypatch, gemini_s, google_s):
+    import time as _t
+    from insidelabel.api import main
+    from insidelabel.extraction.providers import gemini
+    g = FakeGoogle(text="Preservative (211), Emulsifier (322)")
+
+    def slow_google(req, timeout=None):
+        _t.sleep(google_s)
+        return g(req, timeout)
+    monkeypatch.setattr(cv.urllib.request, "urlopen", slow_google)
+    real = gemini.analyze_images
+
+    def slow_gemini(images, raw_response=None, **kw):
+        _t.sleep(gemini_s)
+        return real(images, raw_response=raw_response, **kw)
+    monkeypatch.setattr(main.gemini, "analyze_images", slow_gemini)
+    return main, g
+
+
+VISION = json.dumps({
+    "front_status": "not_provided", "back_status": "read", "ingredients_status": "read",
+    "product": {"brand": None, "name": None, "variant": None, "net_quantity": None, "veg_mark": "veg"},
+    "product_match": {"status": "single_image", "evidence": []}, "front_identity": None,
+    "back_identity": {"brand": None, "name": None, "manufacturer": None, "fssai_licence": None},
+    "ingredient_lines": ["Sugar, Preservative (211), Emulsifier (322)"], "ingredient_count": 3,
+    "ingredients": ["Sugar", "Preservative (211)", "Emulsifier (322)"], "allergen_statement": None,
+    "front_claims": [], "front_claim_footnotes": [], "extraction_notes": [],
+    "confidence": {"ingredients": 0.98, "front_claims": 0.0, "product_identity": 0.5}})
+
+
+def test_cloud_vision_reads_while_gemini_does(monkeypatch):
+    import time as _t
+    from fastapi.testclient import TestClient
+    main, g = _slow_scan_setup(monkeypatch, gemini_s=0.6, google_s=0.6)
+    t0 = _t.monotonic()
+    r = TestClient(main.app).post("/scan", data={"replay": VISION},
+                                  files={"back": ("b.jpg", PHOTO, "image/jpeg")})
+    took = _t.monotonic() - t0
+    assert r.status_code == 200
+    assert r.json()["reliability"]["ocr_cross_check"]["reader"] == "cloud_vision"
+    assert len(g.calls) == 1                     # the prefetch; the cross-check used the cache
+    assert took < 1.0, f"{took:.2f}s: reads ran one after the other"
+
+
+def test_the_server_answers_others_during_a_scan(monkeypatch):
+    import asyncio
+    import time as _t
+    import httpx
+    main, _g = _slow_scan_setup(monkeypatch, gemini_s=1.0, google_s=0.1)
+
+    async def both():
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=main.app), base_url="http://t") as client:
+            # Timed from the scan's start: a blocked event loop would also freeze
+            # this test's own sleep, so timing only the /health call proves nothing.
+            t0 = _t.monotonic()
+            scan = asyncio.create_task(client.post("/scan", data={"replay": VISION},
+                                                   files={"back": ("b.jpg", PHOTO, "image/jpeg")}))
+            await asyncio.sleep(0.2)             # the scan is now waiting on "Gemini" (1 s)
+            health = await client.get("/health")
+            waited = _t.monotonic() - t0
+            assert (await scan).status_code == 200
+            return health.status_code, waited
+    status, waited = asyncio.run(both())
+    assert status == 200 and waited < 0.7, f"/health answered {waited:.2f}s after the scan began"

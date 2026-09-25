@@ -1,6 +1,6 @@
 # STATE.md — where InsideLabel is, and how to pick it up
 
-**Last updated:** 2026-09-25 (PWA + D-092) · **Owner:** Sushil · **Tests:** 181 passing, 1 skipped · **Release gate:** `python tools/release_check.py` — NOT READY (2 failing; 4 with `INSIDELABEL_DB` set)
+**Last updated:** 2026-09-25 (PWA + D-092) · **Owner:** Sushil · **Tests:** 184 passing, 1 skipped · **Release gate:** `python tools/release_check.py` — NOT READY (2 failing; 4 with `INSIDELABEL_DB` set)
 
 This is the living status document. Read it first in any new session, then
 `DECISIONS.md` for the *why*. Update the "Last updated" line, the numbers and
@@ -73,7 +73,7 @@ sudo PG19_PORT=5432 bash tools/install_pg19.sh   # adds apt.postgresql.org, crea
 createdb insidelabel && createdb insidelabel_test
 python -m insidelabel.db.migrate "postgresql:///insidelabel?host=/var/run/postgresql"
 
-pytest -q                                    # 181 pass, 1 skipped; DB tests use embedded Postgres
+pytest -q                                    # 184 pass, 1 skipped; DB tests use embedded Postgres
 ```
 
 **Environment variables**
@@ -203,6 +203,24 @@ label, 50/52 vs 27/52 printed INS, 49/51 simulated omissions put back, 0 wrong
 additions**; the full Ziggy scan went from 28.6 s to 4.0 s. A line-break bug in the
 context rule (5 of Ziggy's numbers) was found and fixed on the way.
 
+### Scan speed (later on 2026-09-25)
+
+Sushil's first real scan through `/docs` (Ziggy, front + back) took 15.7 s: Gemini
+10.4 s, then Cloud Vision 5.3 s. Two changes:
+
+- **Cloud Vision starts with Gemini**, not after it; the cross-check finds the text in
+  its cache. Measured: the OCR now adds ~0.1 s to a scan.
+- **`/scan` no longer blocks the server.** Gemini and OCR ran directly inside an
+  `async` endpoint, so one 10–15 s scan froze every other request (two parents
+  scanning at once would have queued). They now run on worker threads. Both
+  properties have tests that fail on the old code.
+
+**Now the only slow step is Gemini, and it varies a lot:** 10.4 s, ~16 s and 28.4 s
+on three real calls of the same pack today; app-sized photos (1600 px) didn't help.
+Every scan now records `timings.vision_retries` (attempt, wait, error), so the beta
+data will show whether that's the model being busy (retries) or slow (none). Don't
+tune anything until there are numbers from real scans.
+
 ## 6. What went wrong, and what we learned
 
 Keep this list — it is the cheapest way to not repeat a mistake.
@@ -228,6 +246,8 @@ Keep this list — it is the cheapest way to not repeat a mistake.
 | An e2e step "failed" because the test's barcode had a wrong check digit — the app was right to refuse it | When a test fails, read the screen before touching code. |
 | The trail's photo events showed as `image/jpeg` — `record("photo", {type: …})` overwrote the event type | Spread the caller's data first, then the fixed keys: `{...data, t, type}`. |
 | Cloud Vision "missed" 5 Ziggy additives it had read perfectly — a newline sat between "Acidity Regulators" and "(330, 270)" | When a reader misses something, look at its raw text before blaming the reader. |
+| A test for "the server stays responsive during a scan" passed on the old, blocking code: a blocked event loop also froze the test's own `sleep`, so it timed the wrong thing | Run every new test against the old code once. A test that can't fail proves nothing. |
+| `/docs` answered 422: Swagger's Try it out fills every text box with "string" (avoid=string → unknown allergen) | Give form fields empty examples; treat "" as absent. Check the real `/docs` page, not just the JSON schema. |
 | Headless Chromium on this box lacks `libnss3`/`libnspr4`/`libasound2` | `apt-get download` + `dpkg -x` into a scratch dir + `LD_LIBRARY_PATH` — no sudo needed. |
 
 ---
@@ -301,7 +321,7 @@ current EUR-Lex text and check cyclamate's US status; drop PG18 after PG19 GA.
 | `src/insidelabel/` | the package (core, extraction, reliability, claims, lenses, db, review, api) |
 | `data/` | the knowledge tables — the moat |
 | `migrations/` | Postgres schema, plain SQL, applied in order |
-| `tests/` | 181 tests (+ `regression/problems/`, D-092); `conftest.py` gives each DB test module its own database |
+| `tests/` | 184 tests (+ `regression/problems/`, D-092); `conftest.py` gives each DB test module its own database |
 | `tools/` | release gate, leads (D-089), eval, batch scan, gold stubs, queue predictions, PG19 installer |
 | `gold/`, `photos/`, `predictions/` | 6 real labels: hand transcription, photos, recorded model output |
 | `research/` | private marketplace screenshots behind leads (git-ignored; never published — D-089) |
@@ -331,7 +351,7 @@ retention test. Public launch comes after the W4 number (D-083).
 | D-051, D-052, D-055 decided | locked | ✅ locked 2026-09-25 |
 | Published catalogue | ≥ 50 SKUs | ❌ 0 (6 waiting) |
 | Kids' biscuits published (D-058) | ≥ 15 in 7.2.1 / 7.2.2 | ❌ 0 (category picker ready) |
-| Test suite (`--with-tests`) | green | ✅ 181 |
+| Test suite (`--with-tests`) | green | ✅ 184 |
 
 ### Manual gates — tick when done
 

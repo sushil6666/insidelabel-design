@@ -231,3 +231,17 @@ def test_a_model_that_never_answered_is_not_replayed(db):
     from insidelabel import repro
     out = repro.replay_scan({"outcome": "vision_unavailable", "model_raw": None, "request": {}})
     assert out["status"] is None and "never answered" in out["notes"][-1]
+
+
+def test_model_retries_are_on_the_trace(db, monkeypatch):
+    from insidelabel.extraction.providers import gemini
+    real = gemini.analyze_images
+
+    def busy_then_ok(images, raw_response=None, on_attempt=None, **kw):
+        on_attempt(1, 2.04, RuntimeError("503 overloaded"))     # what _with_retries reports
+        return real(images, raw_response=raw_response, **kw)
+    monkeypatch.setattr(main.gemini, "analyze_images", busy_then_ok)
+    rid = str(uuid.uuid4())
+    assert scan(rid, replay=vision()).status_code == 200
+    t = row(db, "SELECT timings FROM scans WHERE request_id = %s", rid)["timings"]
+    assert t["vision_retries"] == [{"attempt": 1, "wait_s": 2.0, "error": "RuntimeError"}]

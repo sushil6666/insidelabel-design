@@ -23,6 +23,7 @@ ingredient tokens, rather than passing an empty list through and letting a
 false CLEAN out the door.
 """
 
+import asyncio  # noqa: E402
 import hashlib  # noqa: E402
 import json  # noqa: E402
 import logging  # noqa: E402
@@ -37,6 +38,7 @@ from typing import Optional  # noqa: E402
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile  # noqa: E402
 from fastapi.responses import JSONResponse, RedirectResponse  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
+from starlette.concurrency import run_in_threadpool  # noqa: E402
 
 from insidelabel import trace  # noqa: E402
 from insidelabel.core import engine  # noqa: E402
@@ -46,6 +48,7 @@ from insidelabel.lenses import compare as shelf  # noqa: E402
 from insidelabel.lenses import regulators  # noqa: E402
 from insidelabel.lenses import screen as result_screen  # noqa: E402
 from insidelabel.reliability import gates as rel  # noqa: E402
+from insidelabel.extraction.providers import cloud_vision  # noqa: E402
 from insidelabel.extraction.providers import gemini  # noqa: E402
 from insidelabel.extraction.providers import ocr_check  # noqa: E402
 from insidelabel.extraction.providers.prompt import MODEL, VISION_PROMPT  # noqa: E402
@@ -721,9 +724,27 @@ async def scan(
             "detail": "Supply at least a back-of-pack image.",
         })
 
+    # The model call and the OCR are blocking; on worker threads they don't freeze
+    # every other request for 10-15 s. Cloud Vision doesn't need the model's
+    # answer to read the photo, so it starts now, alongside Gemini; the cross-check
+    # below then finds the text in its cache (D-093). If the model fails, that
+    # read (~13 paise) was spent for nothing: rare, and cheaper than the wait.
+    back_bytes = next((d for d, _m, r in images if r == "back"), None)
+    ocr_prefetch = None
+    if back_bytes and ocr_check.cloud_first():
+        ocr_prefetch = asyncio.ensure_future(run_in_threadpool(cloud_vision.read_text, back_bytes))
+    # D-092: how long we waited on retries, so a slow scan can be told apart as
+    # "the model was busy" (retries) or "the model was slow" (none).
+    retries = tr["timings"].setdefault("vision_retries", [])
+
+    def on_retry(attempt, delay, err):
+        retries.append({"attempt": attempt, "wait_s": round(delay, 1), "error": type(err).__name__})
+        log.warning("model retry %s after %s, waiting %.1fs", attempt, type(err).__name__, delay)
+
     t_vision = time.monotonic()
     try:
-        vision, corrections = gemini.analyze_images(images, raw_response=replay)
+        vision, corrections = await run_in_threadpool(gemini.analyze_images, images, raw_response=replay,
+                                                      on_attempt=on_retry)
     except gemini.VisionUnavailable as e:
         tr["timings"]["vision_ms"] = _ms(t_vision)
         _persist(STORE and STORE.record_failed_scan, "vision_unavailable",
@@ -751,15 +772,17 @@ async def scan(
     tr["timings"]["vision_ms"] = _ms(t_vision)
     tr["model_raw"] = vision.pop("_raw_text", None)
     t_ocr = time.monotonic()
+    if ocr_prefetch is not None:
+        await ocr_prefetch                       # usually done already; never raises
+        tr["timings"]["ocr_parallel"] = True
 
     # Independent OCR cross-check on the back of pack. This is the only check
     # in the pipeline that is not the model grading itself, and it is the only
     # one that has ever caught a silent omission.
-    back_bytes = next((d for d, _m, r in images if r == "back"), None)
     ocr_result = {"available": False, "reason": "no back image"}
     if back_bytes and vision.get("ingredients"):
-        fixed, ocr_result, recovered = ocr_check.recover_entries(
-            back_bytes, vision["ingredients"])
+        fixed, ocr_result, recovered = await run_in_threadpool(
+            ocr_check.recover_entries, back_bytes, vision["ingredients"])
         if recovered:
             corrections.append(
                 "independent OCR found additive(s) the model omitted: "
@@ -773,7 +796,7 @@ async def scan(
     # the text well and found no such string was invented, and must not be
     # allowed to unlock the claim check.
     front_bytes = next((d for d, _m, r in images if r == "front"), None)
-    _dg, _idrep = ocr_check.check_identity_anchors(vision, front_bytes, back_bytes)
+    _dg, _idrep = await run_in_threadpool(ocr_check.check_identity_anchors, vision, front_bytes, back_bytes)
     vision["_identity_corroboration"] = _idrep
     if _dg and (vision.get("product_match") or {}).get("status") == "match":
         bad = [f"{f}:{v['brand']!r}" for f, v in _idrep.items()

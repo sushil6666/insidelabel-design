@@ -104,6 +104,11 @@ def _cloud():
     return os.environ.get("INSIDELABEL_OCR", "auto") != "tesseract" and cloud_vision.configured()
 
 
+def cloud_first():
+    """Will the next read go to Cloud Vision? The API uses this to start it early."""
+    return _cloud()
+
+
 def _ins_numbers(text):
     """INS numbers in class-bracket context, by the engine's own rule."""
     # OCR line breaks are layout, not content. On the Ziggy pack the class word
