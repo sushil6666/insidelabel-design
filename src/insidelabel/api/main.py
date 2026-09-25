@@ -533,6 +533,8 @@ def _catalogue_result(hit, avoid_codes, who, compare_regulators, profiles=()):
         # D-073: barcodes often survive reformulation. A profile with an
         # avoid list is asked for one back photo before relying on this.
         "allergen_recheck_suggested": bool(avoid_codes),
+        # D-100: no front on file and none waiting for review; the app offers to add one.
+        "front_wanted": bool(hit.get("front_wanted")),
     }
     display = rel.apply_display_rule(verdict, reliability)
     claim_check = _user_claim_check(claim_checker.check_claims(
@@ -796,6 +798,27 @@ async def scan(
         result = _catalogue_result(hit, avoid_codes, who, compare_regulators, people)
         result["scan_id"] = _str(_persist(STORE.record_cache_hit, hit, device_id=device_id,
                                           latency_ms=_ms(t0), trace=tr))
+        return result
+
+    # D-100: the front alone, for a pack the catalogue already has. The answer
+    # is still the reviewed record; the photo goes to a reviewer, who reads the
+    # claims from it. No model call: a front on its own can't change a verdict.
+    if barcode and replay is None and [r for _d, _m, r in images] == ["front"]:
+        hit = _persist(STORE.find_current, barcode) if STORE else None
+        if hit is None:
+            raise HTTPException(status_code=422, detail={
+                "error": "back_required",
+                "detail": "We haven't checked this pack yet, so we need the ingredient list first.",
+                "hint": "Photograph the back of the pack (the ingredient list).",
+            })
+        keys = _save_images(images)
+        result = _catalogue_result(hit, avoid_codes, who, compare_regulators, people)
+        saved = _persist(STORE.add_front, hit, front_key=keys.get("front"), device_id=device_id,
+                         latency_ms=_ms(t0), trace=tr) if keys.get("front") else None
+        result["scan_id"] = saved["scan_id"] if saved else None
+        # Received means a reviewer has it, now or already; the app stops asking.
+        result["catalogue"]["front_received"] = bool(saved)
+        result["catalogue"]["front_wanted"] = not saved
         return result
 
     keys = _save_images(images)

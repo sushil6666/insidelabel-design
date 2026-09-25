@@ -17,6 +17,9 @@ Rules this module follows (the database enforces the hard ones too):
   * Every scan row carries its own trace (D-092): request id, build, data
     version, the model's raw answer, the independent reader's text (007) and
     the request options, so any scan can be replayed later (tools/repro.py).
+  * A front photo for a published version that has none is queued for a
+    reviewer as 'front_photo' (D-100), once per version: the claims database is
+    built from real packs, one front per version, never one per scan.
 """
 
 import hashlib
@@ -152,6 +155,13 @@ class Store:
 
     # -- reads ---------------------------------------------------------
 
+    # D-100: the app asks for the front only when this version has none and no
+    # front photo is already waiting for a reviewer.
+    _FRONT_WANTED = """v.front_image_key IS NULL AND NOT EXISTS (
+                          SELECT 1 FROM review_queue fq
+                           WHERE fq.kind = 'front_photo' AND fq.product_version_id = v.id
+                             AND fq.status IN ('open', 'claimed')) AS front_wanted"""
+
     def find_current(self, barcode):
         """The published, current version for a barcode, or None (D-024)."""
         with self._connect() as conn:
@@ -159,7 +169,7 @@ class Store:
                 """SELECT p.id AS product_id, p.barcode, p.name, p.variant, b.name AS brand,
                           p.net_qty_value, p.net_qty_unit,
                           v.id AS product_version_id, v.version_no, v.ingredients,
-                          v.allergen_statement, v.front_claims, v.verified_at
+                          v.allergen_statement, v.front_claims, v.verified_at, """ + self._FRONT_WANTED + """
                      FROM products p
                      JOIN product_versions v ON v.product_id = p.id AND v.is_current
                      LEFT JOIN brands b ON b.id = p.brand_id
@@ -172,7 +182,7 @@ class Store:
                 """SELECT p.id AS product_id, p.barcode, p.name, p.variant, b.name AS brand,
                           p.net_qty_value, p.net_qty_unit,
                           v.id AS product_version_id, v.version_no, v.ingredients,
-                          v.allergen_statement, v.front_claims, v.verified_at
+                          v.allergen_statement, v.front_claims, v.verified_at, """ + self._FRONT_WANTED + """
                      FROM product_versions v
                      JOIN products p ON p.id = v.product_id
                      LEFT JOIN brands b ON b.id = p.brand_id
@@ -192,6 +202,42 @@ class Store:
                 (uid, hit["product_version_id"], latency_ms)).fetchone()["id"]
             self._set_trace(conn, sid, trace)
             return sid
+
+    def add_front(self, hit, *, front_key, device_id=None, latency_ms=None, trace=None):
+        """
+        D-100: a front photo for a catalogue product, sent with its barcode and
+        nothing else. No model call: a reviewer reads the claims off the photo,
+        against the back photo already on file. Queued once per version.
+        Returns {"scan_id", "queued"}: queued is None when one is already waiting.
+        """
+        with self._connect() as conn:
+            uid = self._user(conn, device_id)
+            conn.execute("UPDATE products SET scan_count = scan_count + 1 WHERE id = %s",
+                         (hit["product_id"],))
+            sid = conn.execute(
+                """INSERT INTO scans (user_id, product_version_id, resolved_via, cache_hit, outcome,
+                                      latency_ms, ai_cost_paise, front_image_key)
+                   VALUES (%s, %s, 'barcode', true, 'verdict', %s, 0, %s) RETURNING id""",
+                (uid, hit["product_version_id"], latency_ms, front_key)).fetchone()["id"]
+            self._set_trace(conn, sid, trace)
+            queued = self._queue_front(conn, hit["product_version_id"], sid, uid)
+            return {"scan_id": str(sid), "queued": queued}
+
+    @staticmethod
+    def _queue_front(conn, vid, sid, uid):
+        """'front_photo' for a version without a front, unless one is waiting. Locks the version row."""
+        v = conn.execute("SELECT front_image_key FROM product_versions WHERE id = %s FOR UPDATE",
+                         (vid,)).fetchone()
+        if v is None or v["front_image_key"]:
+            return None
+        waiting = conn.execute(
+            """SELECT 1 FROM review_queue WHERE kind = 'front_photo' AND product_version_id = %s
+                  AND status IN ('open', 'claimed')""", (vid,)).fetchone()
+        if waiting:
+            return None
+        conn.execute("""INSERT INTO review_queue (kind, scan_id, product_version_id, notify_user_id)
+                        VALUES ('front_photo', %s, %s, %s)""", (sid, vid, uid))
+        return "front_photo"
 
     def record_failed_scan(self, outcome, error_code=None, device_id=None, latency_ms=None,
                            front_key=None, back_key=None, trace=None):
@@ -250,12 +296,19 @@ class Store:
                 (pid, ihash)).fetchone()
 
             queued = None
+            front_for_review = False
             if current and current["ingredients_hash"] == ihash:
                 # A re-read of a published pack (e.g. the D-073 allergy
-                # re-check) found the same label. Nothing new to review.
+                # re-check) found the same label. Nothing new to review,
+                # unless it brought the front this version lacks (D-100).
                 vid, vstatus = current["id"], "published"
+                front_for_review = bool(front_key and claims_trusted)
             elif pending:
                 vid, vstatus = pending["id"], "pending_review"
+                if front_key and claims_trusted:
+                    # The reviewer of the waiting version gets the front too (D-100).
+                    conn.execute("""UPDATE product_versions SET front_image_key = %s
+                                     WHERE id = %s AND front_image_key IS NULL""", (front_key, vid))
             else:
                 n = conn.execute("SELECT COALESCE(max(version_no), 0) + 1 AS n FROM product_versions "
                                  "WHERE product_id = %s", (pid,)).fetchone()["n"]
@@ -285,7 +338,9 @@ class Store:
                 (uid, vid, "new_product" if vstatus == "pending_review" else "barcode",
                  latency_ms, front_key, back_key)).fetchone()["id"]
             self._set_trace(conn, sid, trace)
-            if queued:
+            if front_for_review:
+                queued = self._queue_front(conn, vid, sid, uid)
+            if queued and queued != "front_photo":
                 conn.execute(
                     """INSERT INTO review_queue (kind, scan_id, product_version_id, notify_user_id)
                        VALUES (%s, %s, %s, %s)""", (queued, sid, vid, uid))

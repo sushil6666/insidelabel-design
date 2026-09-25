@@ -19,11 +19,13 @@ let stopCamera = null;
 let navSeq = 0;               // async views check this so a late result can't replace a newer page
 // The scan in progress: barcode (if read), photos, and how many times it was refused
 // (with the refused scans' ids, for "Send it to us", D-070).
-let pending = { barcode: null, back: null, front: null, pairing: false, attempts: 0, refused: [] };
+// frontWanted: offer the front photo (D-100); off for a re-check of a pack whose front is on file.
+let pending = { barcode: null, back: null, front: null, pairing: false, attempts: 0, refused: [],
+                frontWanted: true };
 
 // ------------------------------------------------------------------ navigation
 const routes = {
-  "": home, welcome, household, person, scan, photo, result, report, compare, problem, send,
+  "": home, welcome, household, person, scan, photo, front, result, report, compare, problem, send,
 };
 
 function go(path) { location.hash = "#/" + path; }
@@ -120,14 +122,23 @@ async function loadUpdates(slot) {
   if (!fresh.length) return;
   slot.replaceChildren(el("div", { class: "card note", role: "status" },
     el("h2", {}, "News on packs you sent"),
-    el("ul", { class: "plain" }, fresh.map(r => el("li", {},
-      r.ready
-        ? `Checked by our team: ${r.product_name || r.barcode || "a pack you scanned"}. Scan its barcode for the result.`
-        : `Our team looked at ${r.product_name || "a pack you sent"} and couldn't add it yet.`))),
+    el("ul", { class: "plain" }, fresh.map(r => el("li", {}, updateLine(r)))),
     button("Got it", () => {
       store.set("seenUpdates", [...seen, ...fresh.map(r => r.review_id)]);
       slot.replaceChildren();
     })));
+}
+
+function updateLine(r) {
+  const name = r.product_name || r.barcode;
+  if (r.kind === "front_photo") {                                   // D-100
+    return r.ready
+      ? `Thanks: the front of ${name || "a pack you scanned"} is now on file.`
+      : `Our team couldn't use the front photo of ${name || "a pack you scanned"}.`;
+  }
+  return r.ready
+    ? `Checked by our team: ${name || "a pack you scanned"}. Scan its barcode for the result.`
+    : `Our team looked at ${r.product_name || "a pack you sent"} and couldn't add it yet.`;
 }
 
 // ------------------------------------------------------------------ household (D-074)
@@ -224,7 +235,8 @@ function nextRef(list) {
 
 // ------------------------------------------------------------------ scan: barcode first (D-024)
 function resetPending() {
-  pending = { barcode: null, back: null, front: null, pairing: false, attempts: 0, refused: [] };
+  pending = { barcode: null, back: null, front: null, pairing: false, attempts: 0, refused: [],
+              frontWanted: true };
 }
 
 async function scan() {
@@ -307,35 +319,66 @@ function photo() {
   const go_ = el("button", { type: "button", class: "btn primary", disabled: !pending.back,
                              onclick: () => sendPhotos() }, "Check this pack");
 
-  const picker = (role, label, preview, onPick) => {
-    const input = el("input", { type: "file", accept: "image/*", capture: "environment", class: "sr",
-                                id: "pick-" + role });
-    input.addEventListener("change", async () => {
-      const file = input.files && input.files[0];
-      if (!file) return;
-      preview.replaceChildren(el("p", { class: "muted" }, "Preparing photo…"));
-      const blob = await prepareImage(file);
-      onPick(blob);
-      const url = URL.createObjectURL(blob);
-      preview.replaceChildren(el("img", { src: url, alt: `Your ${role} photo` }));
-    });
-    return el("div", {}, input, el("label", { for: "pick-" + role, class: "btn" }, label));
-  };
-
   return el("section", { class: "stack" },
     el("h1", {}, "Photograph the ingredients"),
     firstTime,
     el("figure", { class: "sample" }, sampleBack(),
       el("figcaption", { class: "muted" }, "Fill the frame with the ingredient list. Hold steady and avoid glare.")),
-    picker("back", pending.back ? "Retake the ingredients photo" : "Take the ingredients photo", backPreview,
-           b => { pending.back = b; go_.disabled = false; }),
+    photoPicker("back", pending.back ? "Retake the ingredients photo" : "Take the ingredients photo", backPreview,
+                b => { pending.back = b; go_.disabled = false; }),
     backPreview,
-    el("details", {},
-      el("summary", {}, "Add the front of the pack (optional)"),
-      el("p", { class: "muted" }, "Helps our team name the product."),
-      picker("front", "Take the front photo", frontPreview, b => { pending.front = b; pairRow.hidden = false; }),
+    // D-100: asked for once per pack, not once per scan. A re-check of a pack
+    // whose front is already on file doesn't ask again.
+    pending.frontWanted && el("div", { class: "card" },
+      el("h2", {}, "The front of the pack"),
+      el("p", { class: "muted" }, "Optional. The front shows the pack's name and what it promises. " +
+                                  "Our team records it once for each pack."),
+      photoPicker("front", "Take the front photo", frontPreview, b => { pending.front = b; pairRow.hidden = false; }),
       frontPreview, pairRow),
     go_);
+}
+
+function photoPicker(role, label, preview, onPick) {
+  const input = el("input", { type: "file", accept: "image/*", capture: "environment", class: "sr",
+                              id: "pick-" + role });
+  input.addEventListener("change", async () => {
+    const file = input.files && input.files[0];
+    if (!file) return;
+    preview.replaceChildren(el("p", { class: "muted" }, "Preparing photo…"));
+    const blob = await prepareImage(file);
+    onPick(blob);
+    const url = URL.createObjectURL(blob);
+    preview.replaceChildren(el("img", { src: url, alt: `Your ${role} photo` }));
+  });
+  return el("div", {}, input, el("label", { for: "pick-" + role, class: "btn" }, label));
+}
+
+// ------------------------------------------------------------------ the front alone (D-100)
+// For a pack the catalogue has without its front: one photo, no model call.
+function front(id) {
+  const h = historyItem(id);
+  if (!h || !h.barcode) return errorView("We couldn't find that pack on this phone.");
+  const preview = el("div", { class: "thumb" });
+  let blob = null;
+  const send = el("button", { type: "button", class: "btn primary", disabled: true, onclick: async () => {
+    resetPending();
+    pending.barcode = h.barcode;
+    show(working("Sending the photo…", false));
+    try {
+      const { body } = await scanRequest({ barcode: h.barcode, front: blob });
+      finish(body);
+    } catch (e) {
+      show(apiErrorView(e, () => go("front/" + encodeURIComponent(id))));
+    }
+  } }, "Send the front photo");
+  return el("section", { class: "stack" },
+    el("h1", {}, "Photograph the front"),
+    el("p", { class: "product" }, productName(h.product)),
+    el("p", { class: "lead" }, "Fill the frame with the front of the pack, including any words printed on it."),
+    photoPicker("front", "Take the front photo", preview, b => { blob = b; send.disabled = false; }),
+    preview,
+    send,
+    button("Not now", () => go("result/" + encodeURIComponent(id)), "link"));
 }
 
 async function sendPhotos() {
@@ -428,7 +471,12 @@ function result(id) {
     button("Retake the ingredients photo", () => { pending = { ...pending, back: null, barcode: h.barcode }; go("photo"); })));
   if (s.last_verified) put(el("p", { class: "muted" }, s.last_verified));
   if (s.recheck) put(el("div", { class: "card note" }, el("p", {}, s.recheck),
-    button("Photograph the back", () => { resetPending(); pending.barcode = h.barcode; go("photo"); })));
+    button("Photograph the back", () => {
+      resetPending();
+      pending.barcode = h.barcode;
+      pending.frontWanted = !!h.catalogue?.front_wanted;           // D-100
+      go("photo");
+    })));
 
   // 4. Claim check, once released (D-051).
   if (s.claims?.length) {
@@ -457,9 +505,21 @@ function result(id) {
     el("summary", {}, "The ingredient list as read"),
     el("ol", {}, s.ingredients.map(i => el("li", {}, i)))));
 
-  if (h.catalogue?.queued_for_review) {
+  // D-100: a front photo for the catalogue goes to our team; the result above
+  // is still the reviewed record.
+  const frontSent = h.catalogue?.front_received || h.catalogue?.queued_for_review === "front_photo";
+  if (frontSent) {
+    put(el("p", { class: "muted" }, "Thanks. Our team has the front photo and will record what the pack says."));
+  } else if (h.catalogue?.queued_for_review) {
     put(el("p", { class: "muted" },
       "Our team will check this pack. After that, scanning its barcode gives the result straight away."));
+  }
+  if (h.catalogue?.front_wanted && h.barcode && !frontSent) {
+    put(el("div", { class: "card note" },
+      el("h2", {}, "Add the front of the pack?"),
+      el("p", {}, "We have this pack's ingredients but not its front. One photo lets our team record " +
+                  "its name and what it promises, for everyone who scans it."),
+      button("Photograph the front", () => go("front/" + encodeURIComponent(h.id)))));
   }
 
   // 7. What this covers — stated, never silent (D-037).

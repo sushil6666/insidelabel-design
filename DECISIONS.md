@@ -791,6 +791,32 @@ What the private copies got wrong, found by tests that fail on the old code:
 `tests/test_ins_parsing.py` now fails on any `\d{3…}` pattern in `src/` or `tools/`
 outside `core/tokenize.py` (migration file names in `db/migrate.py` excepted).
 
+### D-100 · The front photo: asked for once per pack, read by a reviewer `RECOMMENDED` (2026-09-25)
+Proposed by Claude from Sushil's direction ("front photo is for company claims, and we
+keep the database of which brand claims what"); awaiting Sushil's acceptance.
+
+The front carries the brand's claims and the product's name as sold. The catalogue
+wants one per version: it is the claims database, and the claim check (D-051) needs
+it once released. But a user shouldn't be asked on every scan, and before this the
+front was lost whenever a pack was already in the catalogue (a re-read that found
+the same ingredients queued nothing).
+
+- `/scan`'s catalogue block says `front_wanted`: the current version has no front
+  photo and none is waiting for review.
+- Barcode **+ front only**, for a catalogue product: the reviewed result as usual, the
+  photo stored, a `front_photo` review item (migration 011). **No model call** (₹0):
+  a front alone can't change a verdict, and a reviewer reads the claims against the
+  back photo already on file. Unknown barcode → 422 `back_required`.
+- A re-check with back + front and a trusted pairing (D-035) queues the same item; a
+  waiting version gets the front attached for its reviewer.
+- One waiting item per version; approving it publishes a new version with the photo
+  **even when the front makes no claims**, so the app stops asking.
+- The app: on a first scan the front is a visible, skippable card (it was folded
+  away); on a catalogue hit with `front_wanted`, one "Add the front of the pack?"
+  card below the result; a thank-you on `/updates` once reviewed.
+
+Photo retention needs nothing new: open review items already hold their scans (D-098).
+
 ---
 
 ## Open and pending

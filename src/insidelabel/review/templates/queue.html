@@ -2,7 +2,8 @@
 {% block title %}Queue{% endblock %}
 {% block body %}
 {% set labels = {"new_product": "New product", "reformulation": "Reformulation",
-                 "correction": "Reported mistake", "send_to_us": "Sent to us"} %}
+                 "correction": "Reported mistake", "send_to_us": "Sent to us",
+                 "front_photo": "Front photo"} %}
 <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:12px">
   <h1 style="margin:0">Review queue</h1>
   <form method="post" action="/review/claim-next" style="margin-left:auto">
