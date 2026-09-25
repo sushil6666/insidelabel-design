@@ -101,3 +101,66 @@ def test_no_unknown_ins_on_gold_labels():
             raw = ", ".join(json.load(fh)["ingredients"])
         unknown = [i for i in ins_of(raw) if i not in engine._ADDITIVE_BY_INS]
         assert not unknown, f"{os.path.basename(f)}: no additives.json row for {unknown}"
+
+
+# ---------------------------------------------------------------- one parser, for real (D-099)
+
+def _gold():
+    import glob, json, os
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    for f in sorted(glob.glob(os.path.join(root, "gold", "*.json"))):
+        with open(f, encoding="utf-8") as fh:
+            yield os.path.basename(f), json.load(fh)["ingredients"]
+
+
+def _engine_ins(ingredients):
+    v = engine.analyze(", ".join(ingredients))
+    return {tk.extract_ins(f["matched_as"]) for f in v["flags"] if f["type"] == "additive"}
+
+
+def test_ins_numbers_is_what_the_engine_reads():
+    assert tk.ins_numbers("Stabiliser (INS 1422), Colours (160 a(ii), 129), Raisins 150gm") == {"1422", "160a", "129"}
+    assert tk.ins_numbers(["Emulsifier (471)", "Tomato paste 250 g"]) == {"471"}
+
+
+def test_shelf_comparison_reads_additives_like_the_engine():
+    from insidelabel.lenses import compare
+    for name, ings in _gold():
+        found, unknown = compare._find_additives(ings)
+        assert set(found) == _engine_ins(ings), name
+        assert unknown == [], f"{name}: {unknown}"          # Maliban's 160 a(ii) was 'unknown 160'
+
+
+def test_shelf_comparison_does_not_read_quantities():
+    from insidelabel.lenses import compare
+    found, unknown = compare._find_additives(["Wheat flour", "Sugar", "Raisins (150gm)"])
+    assert found == {} and unknown == []                   # was unknown ['150']: 'not fully checked'
+
+
+def test_eval_counts_four_digit_numbers_whole():
+    import importlib.util, os
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    spec = importlib.util.spec_from_file_location("eval_vision", os.path.join(root, "tools", "eval_vision.py"))
+    ev = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(ev)
+    assert ev.ins_set(["Thickener (INS 1422)", "Colours (160 a(ii))"]) == {"1422", "160a"}   # was {'142', '160'}
+
+
+def test_no_other_ins_pattern_in_the_code():
+    """CLAUDE.md: one INS parser. A 3-4 digit pattern anywhere else is a second one."""
+    import glob, os, re
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    allowed = {os.path.join("src", "insidelabel", "core", "tokenize.py"),
+               os.path.join("src", "insidelabel", "db", "migrate.py")}      # migration file names, not INS
+    digits = re.compile(r"\\d\{3|\[0-9\]\{3")
+    offenders = []
+    for path in glob.glob(os.path.join(root, "src", "**", "*.py"), recursive=True) + \
+            glob.glob(os.path.join(root, "tools", "*.py")):
+        rel = os.path.relpath(path, root)
+        if rel in allowed:
+            continue
+        with open(path, encoding="utf-8") as fh:
+            for n, line in enumerate(fh, 1):
+                if digits.search(line):
+                    offenders.append(f"{rel}:{n}")
+    assert not offenders, "INS-shaped regex outside core/tokenize.py: " + ", ".join(offenders)

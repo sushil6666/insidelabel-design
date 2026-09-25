@@ -94,6 +94,14 @@ class ProblemRequest(BaseModel):
                                          description="The app's recent trail, oldest first.")
 
 
+class SendToUsRequest(BaseModel):
+    """D-070 "Send it to us": the refused scans of a pack the app couldn't read."""
+
+    device_id: str = Field(..., description="The install that took the photos; /updates reports back to it.")
+    scan_ids: List[str] = Field(..., min_length=1, max_length=6,
+                                description="scan_id of each refused attempt, oldest first.")
+
+
 class AnalyzeResponse(BaseModel):
     """
     `verdict` is engine.analyze() output, verbatim. Nothing in this API mutates

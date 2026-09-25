@@ -16,6 +16,7 @@ import os
 import re
 
 from insidelabel.core import engine
+from insidelabel.core.tokenize import extract_ins
 
 _HERE = os.path.dirname(__file__)
 _ROOT = os.path.abspath(os.path.join(_HERE, "..", "..", ".."))
@@ -40,7 +41,6 @@ _ADDED_SUGAR_DIRECT = {
 _FLAVOUR_WORDS = RULES["flavour_carrier_words"]
 _NAMED_PRESERVATIVES = RULES["preservative_named_without_ins"]
 
-_INS_IN_MATCH = re.compile(r"INS\s+(\d{3}[a-z]?)", re.IGNORECASE)
 
 
 def _norm(text):
@@ -105,10 +105,10 @@ def _check_preservative(result, tokens, subject):
     facts = []
     seen = set()
     for f in result.get("flags", []):
-        m = _INS_IN_MATCH.search(f.get("matched_as", ""))
-        if not m:
+        # matched_as is "INS 211 (Sodium benzoate)"; read with the one parser (D-099).
+        ins = extract_ins(f.get("matched_as", ""))
+        if not ins:
             continue
-        ins = m.group(1).lower()
         if ins in _PRESERVATIVE_INS and ins not in seen:
             seen.add(ins)
             facts.append({

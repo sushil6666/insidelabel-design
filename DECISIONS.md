@@ -4,7 +4,7 @@ Architectural and product decisions for InsideLabel, with the reasoning attached
 Append-only. When a decision is reversed, mark it `SUPERSEDED` and add a new entry
 rather than editing the old one — the history is the point.
 
-**Last updated:** 2026-09-25 (D-090–D-093 locked)
+**Last updated:** 2026-09-26 (D-094–D-099 recommended, overnight session; awaiting Sushil)
 
 **Status key:** `LOCKED` decided, don't relitigate · `OPEN` not yet decided ·
 `RECOMMENDED` proposed but not accepted · `SUPERSEDED` replaced
@@ -644,6 +644,152 @@ nutrition-table value in reading order; the context rule is right to refuse them
 
 Open: Cloud Vision's text isn't stored on the scan row yet, so a replay (D-092) calls
 it again; store it (like `model_raw`) once it is switched on.
+
+### D-094 · A replay reads the stored OCR text and never calls Google `RECOMMENDED` (2026-09-26)
+Proposed by Claude (overnight session, STATE §8 item 5); awaiting Sushil.
+
+Closes the "Open" note on D-093. Migration 007 adds `scans.ocr`
+(`{"back": {"reader", "text"}}`), written on every vision-path scan that reached
+the OCR step, refused ones included. `repro.py` serves that text back through
+`cloud_vision.replaying()`, keyed by the hash of the photo it sends, so:
+
+- a replay gets the same text the scan got, even when the photo has been deleted
+  (D-080) or left out of a saved regression (1x1 PNG): the cross-check and the
+  brand corroboration come out the same;
+- **a replay never calls Google**, key or no key: in replay mode a photo without
+  stored text falls back to Tesseract (free, local). Scans from before 007 replay
+  that way, with a note saying the cross-check may differ;
+- a Tesseract read stores only `{"reader": "tesseract"}`: its check votes over six
+  passes, so one text wouldn't replay it, and re-running it costs nothing.
+
+Replay mode is a module global, not a context variable, because the reads run on
+worker threads; only `repro.py` (CLI, tests) sets it, never the server. Saved
+regressions (`--save`) now carry `ocr` too.
+
+Found on the way: a refused read where the OCR finds an additive the model lacks
+crashed `/scan` (`KeyError: 'caveats'` → 500) instead of refusing. Fixed.
+
+### D-095 · Rate limits per install and per IP, in memory `RECOMMENDED` (2026-09-26)
+Proposed by Claude (overnight session, STATE §8 item 6); awaiting Sushil.
+
+`/scan` and `/problem` are limited on two keys at once: `device_id` (exact for
+real users, but the client picks it, so an abuser rotates it) and the IP (can't
+be chosen, but Indian mobile carriers put many households behind one address,
+so its limit is looser). Checked first, before a photo is read or Gemini called.
+Starting values, to tune from beta traffic:
+
+- photo scans: 20 per 10 min and 100 a day per install; 60 / 10 min and 400 a day per IP;
+- barcode-only lookups (no model call): their own budget, 120 / 10 min per install,
+  600 per IP, so checking a shelf by barcode never uses up photo scans;
+- problem reports: 10 an hour per install, 60 per IP.
+
+A refused request isn't counted (the wait doesn't grow while a phone retries,
+and one phone's refusals don't use up its neighbours' budget on a shared IP).
+429 with `Retry-After` and a plain "wait about N minutes" message.
+
+**Not a scan row.** CLAUDE.md asks every new `/scan` outcome to be stored with
+its trace. A 429 is refused before anything is read: there's no photo or model
+answer to replay, and storing each refusal would let a flood turn into database
+writes. It is logged with its request id instead. *Sushil to confirm.*
+
+**In memory, one process.** Sliding windows in a dict, LRU-capped at 100k keys.
+Right for the beta's single server process; with several workers the limits
+multiply, and a restart forgets them. Move the counters to Postgres (or Redis)
+before scaling out. `X-Forwarded-For` is trusted only when
+`INSIDELABEL_PROXY_HOPS` says how many proxies sit in front, counting from the
+right. `repro.py` replays switch the limits off.
+
+### D-096 · "Send it to us": the server checks the attempts; the photos are kept `RECOMMENDED` (2026-09-26)
+Proposed by Claude (overnight session, STATE §8 item 7); awaiting Sushil. Builds D-070.
+
+- **After two refused scans** the retake screen offers "Send it to us". The app
+  sends the refused scans' ids to `POST /send-to-us`; the server checks them —
+  this install's own (anyone else's looks like "not found"), every one refused or
+  unreadable (`refused`, `vision_failed`), at least two, and a back photo stored.
+  The app's count is a convenience, not the rule.
+- **One review item per pack**, kind `send_to_us`: `scan_id` = the latest attempt,
+  `attempt_scan_ids` = the earlier ones (migration 008), so the reviewer sees every
+  photo (one may show what another lost to glare). Sending the same attempts again
+  returns the same item. The barcode the app read, if any, is pre-filled.
+- **Nothing is read automatically**: the reviewer types the label from the photos
+  and publishes through the usual `/review` path, or rejects with a reason. Either
+  way `/updates` tells the app ("ready" / "couldn't add it yet").
+- **The photos are held** (`evidence_hold`), outside the 30-day rule (D-080): the
+  user asked us to read them and they are the only copy of the label. The app says
+  so before sending ("We keep the photos you took until our team has read them").
+- Rate limit (D-095): 10 a day per install, 50 per IP.
+
+Not built: a free-text note with the photos (it could carry names, D-074), push
+notifications (D-070 says later).
+
+### D-097 · One login per reviewer; the shared token only bootstraps `RECOMMENDED` (2026-09-26)
+Proposed by Claude (overnight session, STATE §8 item 8); awaiting Sushil.
+
+The shared `INSIDELABEL_REVIEW_TOKEN` let anyone with it publish under any name.
+Now: a `reviewers` table (migration 009), passwords as salted scrypt hashes from
+Python's standard library (no new dependency), managed with `tools/reviewers.py`
+(`add` prints a generated password once; `reset`, `disable`, `list`).
+
+- **The shared token works only while no account exists**, so switching over
+  can't lock Sushil out: migrate, `add sushil`, and from then on it is refused.
+  *Sushil to confirm; the alternative is dropping the token outright.*
+- **Form tokens (CSRF) are keyed by the reviewer's password hash**, so a password
+  reset also invalidates forms opened before it.
+- **Guessing is throttled**: 10 failures per name or 30 per address in 15 minutes
+  lock that name/address (429), even for the right password. An unknown name costs
+  the same time as a wrong password, so names don't leak.
+- HTTP Basic sends the password with every request (each photo too): a verified
+  login is cached in memory for 5 minutes, keyed by the stored hash, so a reset or
+  disable applies at the next request.
+
+Still HTTP Basic, so HTTPS is required at deploy (it is, §8 item 13). No
+roles yet: every reviewer can publish.
+
+### D-098 · Photo retention is a daily job, not a storage lifecycle rule `RECOMMENDED` (2026-09-26)
+Proposed by Claude (overnight session, STATE §8 item 8); awaiting Sushil. Implements
+D-080 and changes its mechanism.
+
+D-080 planned an R2 lifecycle rule on an originals prefix. A lifecycle rule
+only sees age; it can't see a problem report's hold (D-092), a pack sent to us
+(D-096), an open review item, or that the same photo (keys are content hashes)
+was sent again yesterday. So `tools/retention.py` decides, daily from cron:
+
+- a user's scan photo goes 30 days after its **newest** scan;
+- kept whatever its age: held scans (`evidence_hold`), photos on any product
+  version that isn't rejected (the record's evidence, D-028), scans that an open
+  or claimed review item points at (including earlier attempts);
+- each key is re-checked just before its file is deleted, in case it was sent
+  again after the list was made;
+- the row keeps its key (what was there) and gets `photos_deleted_at` (migration
+  010); `repro.py` says "photo not available", and with D-094 still replays the
+  OCR exactly.
+
+Dry run unless `--apply`; `--days` can't go below 30. D-080's "keep the label-region
+crops used as evidence" has nothing to act on yet: no crops are made today, and
+evidence rows quote text, not pixels. When R2 comes, give its media class the
+same `delete(key)`; no lifecycle rule on user photos.
+
+### D-099 · One INS parser, enforced by a test `RECOMMENDED` (2026-09-26)
+Proposed by Claude (overnight session, STATE §8 item 9); awaiting Sushil.
+
+STATE §8 item 9 named `lenses/compare.py`. A search found four more private INS
+patterns: `claims/checker.py`, `tools/eval_vision.py`, `tools/stability_check.py`,
+`tools/coverage_report.py`. Most read 3 digits only. All now go through
+`core/tokenize.py`, which gains `ins_numbers(text or entries)` ("which INS numbers
+would the engine read here?").
+
+What the private copies got wrong, found by tests that fail on the old code:
+- `/compare` missed Maliban's printed "160 a(ii)" (annatto) and so called that
+  pack "not fully checked", while `/scan` read it fine; it read "Raisins (150gm)"
+  as an unknown additive, which also blocks a pack from being the pick.
+- `eval_vision.py` counted 1422 as 142 and "160 a(ii)" as 160, on gold and
+  prediction alike, so nothing showed. Re-run on the 6 gold labels: the
+  report is unchanged (INS F1 1.000), now measured with the engine's parser.
+- The claim checker parsed "INS 1105 (…)" as 110. No preservative in the table has
+  4 digits today, so no claim result changed.
+
+`tests/test_ins_parsing.py` now fails on any `\d{3…}` pattern in `src/` or `tools/`
+outside `core/tokenize.py` (migration file names in `db/migrate.py` excepted).
 
 ---
 

@@ -1,12 +1,13 @@
 """
 Scan photo storage (D-028: keep source photos as evidence).
 
-Local directory for now; Cloudflare R2 later behind the same two methods.
+Local directory for now; Cloudflare R2 later behind the same methods.
 Keys are content hashes, so the same photo sent twice is stored once and a key
 can never point at different bytes.
 
-Retention (D-080) is not applied here yet: user originals are to be deleted at
-30 days unless flagged, via an R2 lifecycle rule at deploy.
+Retention (D-080) is decided by retention.py, which calls delete(); the store
+itself never expires anything, because only the database knows which photos
+are held (D-098).
 """
 
 import hashlib
@@ -44,6 +45,16 @@ class LocalMedia:
             return None
         with open(path, "rb") as f:
             return f.read(), MIME[key.rsplit(".", 1)[1]]
+
+    def delete(self, key):
+        """Remove a photo. True if it was there. Refuses anything that isn't a well-formed key."""
+        if not _KEY.match(key or ""):
+            return False
+        try:
+            os.remove(self._path(key))
+            return True
+        except FileNotFoundError:
+            return False
 
     def _path(self, key):
         return os.path.join(self.root, key[:2], key)

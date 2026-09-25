@@ -321,3 +321,105 @@ def test_cloud_vision_setup_failure_raises_an_alarm(db, monkeypatch):
     rep = row(db, "SELECT * FROM problem_reports WHERE signature = 'ocr_config:http_403'")
     assert rep and rep["kind"] == "server" and "Tesseract" in rep["server_error"]
     assert cv.take_alarm() is None                             # taken once
+
+
+# ---------------------------------------------------------------- Cloud Vision text on the row (migration 007)
+
+GOOGLE_TEXT = ("INGREDIENTS: Refined wheat flour (Maida), Sugar, Milk solids, Preservative (211), "
+               "Emulsifier (322). Manufactured by Testco Foods Pvt Ltd.")
+
+
+def _google(monkeypatch, text=GOOGLE_TEXT):
+    """Fake Google's HTTP answer; count the calls."""
+    import io
+    from insidelabel.extraction.providers import cloud_vision as cv
+    calls = []
+
+    def answer(req, timeout=None):
+        calls.append(1)
+        return io.BytesIO(json.dumps({"responses": [{"fullTextAnnotation": {"text": text}}]}).encode())
+    monkeypatch.setenv("GOOGLE_VISION_KEY", "test-key")
+    monkeypatch.delenv("INSIDELABEL_OCR", raising=False)
+    monkeypatch.setattr(cv.urllib.request, "urlopen", answer)
+    monkeypatch.setattr(cv, "_down_until", 0.0)
+    cv._CACHE.clear()
+    return calls
+
+
+def _no_google(monkeypatch):
+    """Any call to Google now fails the test, key or no key."""
+    from insidelabel.extraction.providers import cloud_vision as cv
+
+    def refuse(req, timeout=None):
+        raise AssertionError("a replay called Google")
+    monkeypatch.setattr(cv.urllib.request, "urlopen", refuse)
+    cv._CACHE.clear()
+
+
+def test_cloud_vision_text_is_stored_on_the_scan(db, monkeypatch):
+    calls = _google(monkeypatch)
+    rid = str(uuid.uuid4())
+    # The model dropped the preservative; Cloud Vision read it.
+    r = scan(rid, replay=vision(ingredients=["Refined wheat flour (Maida)", "Sugar", "Milk solids",
+                                             "Emulsifier (322)"]))
+    assert r.status_code == 200 and calls == [1]
+    assert r.json()["reliability"]["ocr_cross_check"]["missing"] == ["211"]
+    s = row(db, "SELECT * FROM scans WHERE request_id = %s", rid)
+    assert s["ocr"] == {"back": {"reader": "cloud_vision", "text": GOOGLE_TEXT}}
+
+
+def test_a_replay_uses_the_stored_text_and_never_calls_google(db, monkeypatch):
+    from insidelabel import repro
+    _google(monkeypatch)
+    rid = str(uuid.uuid4())
+    first = scan(rid, replay=vision(ingredients=["Refined wheat flour (Maida)", "Sugar", "Milk solids",
+                                                 "Emulsifier (322)"])).json()
+    s = row(db, "SELECT * FROM scans WHERE request_id = %s", rid)
+    _no_google(monkeypatch)                                  # key still set: it must not be used
+    out = repro.replay_scan(s, media=None)                   # no photos: a 1x1 PNG stands in
+    assert out["status"] == 200
+    assert out["body"]["extracted"]["ingredients"] == first["extracted"]["ingredients"]   # 211 recovered again
+    assert out["body"]["reliability"]["ocr_cross_check"]["reader"] == "cloud_vision"
+    assert repro.summary(out["screen"]) == repro.summary(first["screen"])
+    assert not any("cross-check differs" in n for n in out["notes"])   # the text stood in for the photo
+
+
+def test_a_refused_scan_keeps_the_ocr_text_too(db, monkeypatch):
+    # Google reads 322, which the model's list lacks: on a refused read that used
+    # to crash /scan (KeyError 'caveats' → 500) instead of refusing.
+    _google(monkeypatch)
+    rid = str(uuid.uuid4())
+    assert scan(rid, replay=vision(back_status="unreadable")).status_code == 422
+    s = row(db, "SELECT * FROM scans WHERE request_id = %s", rid)
+    assert s["ocr"]["back"]["text"] == GOOGLE_TEXT
+
+
+def test_an_old_scan_without_stored_text_replays_without_google(db, monkeypatch):
+    from insidelabel import repro
+    _google(monkeypatch)
+    rid = str(uuid.uuid4())
+    scan(rid, replay=vision())
+    s = dict(row(db, "SELECT * FROM scans WHERE request_id = %s", rid))
+    s["ocr"] = {}                                            # as a scan from before migration 007
+    _no_google(monkeypatch)
+    out = repro.replay_scan(s, media=None)
+    assert out["status"] == 200
+    assert any("OCR text not stored" in n for n in out["notes"])
+
+
+def test_a_tesseract_scan_replays_with_tesseract(db, monkeypatch):
+    from insidelabel import repro
+    from insidelabel.extraction.providers import ocr_check
+    monkeypatch.setenv("INSIDELABEL_OCR", "tesseract")
+    monkeypatch.setattr(ocr_check, "vote_ins", lambda b: (set(), {}, 6))
+    monkeypatch.setattr(ocr_check, "AVAILABLE", True)
+    monkeypatch.setattr(ocr_check, "read_text", lambda b: "")
+    rid = str(uuid.uuid4())
+    scan(rid, replay=vision())
+    s = row(db, "SELECT * FROM scans WHERE request_id = %s", rid)
+    assert s["ocr"] == {"back": {"reader": "tesseract", "text": None}}
+    monkeypatch.delenv("INSIDELABEL_OCR")
+    monkeypatch.setenv("GOOGLE_VISION_KEY", "test-key")
+    _no_google(monkeypatch)
+    out = repro.replay_scan(s, media=None)
+    assert out["body"]["reliability"]["ocr_cross_check"]["reader"] == "tesseract"

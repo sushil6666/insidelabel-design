@@ -6,7 +6,7 @@ PostgreSQL 19. Solo founder: Sushil.
 ## Start here
 
 1. Read `STATE.md` (status, setup, open items, lessons) and skim `DECISIONS.md`.
-2. `source .venv/bin/activate && pytest -q` — expect 193 passing (1 skipped) before you change anything.
+2. `source .venv/bin/activate && pytest -q` — expect 245 passing (1 skipped) before you change anything.
    `python tools/release_check.py` shows how far the beta is from release.
 3. The "Next" list in `STATE.md` §8 is the default work queue.
 
@@ -29,7 +29,8 @@ PostgreSQL 19. Solo founder: Sushil.
 - **OCR cross-check = Cloud Vision, Tesseract fallback (D-093).** `GOOGLE_VISION_KEY` lives in
   the environment only — never in a file in this repo. It only ever *adds* a known additive.
 - **One INS parser:** `core/tokenize.py` (`INS_RE`, `prefix_bare_ins`,
-  `extract_ins`). Don't write another regex for INS numbers anywhere.
+  `extract_ins`, `ins_numbers`). Don't write another regex for INS numbers anywhere;
+  `tests/test_ins_parsing.py` fails on any 3–4 digit pattern outside it (D-099).
 - **Claim check is in shadow (D-051).** `/scan` computes and stores it; users get
   `reason: "claims_not_released"` unless `INSIDELABEL_CLAIMS_TO_USERS=on`. Don't route
   around `_user_claim_check()` in `api/main.py`.
@@ -58,8 +59,8 @@ PostgreSQL 19. Solo founder: Sushil.
 pytest -q                                   # all tests, embedded Postgres (pgserver)
 INSIDELABEL_TEST_PG="postgresql:///insidelabel_test?host=/var/run/postgresql" pytest -q
 python -m insidelabel.db.migrate "postgresql:///insidelabel?host=/var/run/postgresql"
-INSIDELABEL_DB="postgresql:///insidelabel?host=/var/run/postgresql" INSIDELABEL_REVIEW_TOKEN=… \
-  uvicorn insidelabel.api.main:app --reload
+INSIDELABEL_DB="postgresql:///insidelabel?host=/var/run/postgresql" \
+  uvicorn insidelabel.api.main:app --reload     # /review logins: tools/reviewers.py (D-097)
 python tools/eval_vision.py --gold gold/ --pred predictions/ --csv <scratch>/eval.csv
 INSIDELABEL_DB=… python tools/release_check.py --with-tests     # beta release gate
 ```

@@ -17,9 +17,14 @@ guards whichever reader supplied the text.
 
 Configure with GOOGLE_VISION_KEY (an API key restricted to the Vision API).
 Without it, or when a call fails, ocr_check.py falls back to Tesseract.
+
+Replays (D-092): every scan row keeps the text this module returned (migration
+007). repro.py puts it back with `replaying()`, so a replay reads exactly what
+the scan read, never calls Google, and works when the photo itself is gone.
 """
 
 import base64
+import contextlib
 import hashlib
 import io
 import json
@@ -71,8 +76,46 @@ def take_alarm():
     return alarm
 
 
+# Replay mode: {sha256 of the photo: stored text}, or None in normal running.
+# While set, no call leaves this machine: a photo with stored text gets that
+# text, any other photo gets None (the caller falls back to Tesseract). A module
+# global, not a context variable, because the reads run on worker threads. Only
+# repro.py (a CLI and the tests) sets it; the server never does.
+_REPLAY = None
+
+
+@contextlib.contextmanager
+def replaying(texts):
+    """Serve reads from recorded text, by photo hash, instead of Google."""
+    global _REPLAY
+    old, _REPLAY = _REPLAY, dict(texts or {})
+    try:
+        yield
+    finally:
+        _REPLAY = old
+
+
+def replay_active():
+    """In replay mode with recorded text to serve (so the Cloud Vision path applies)."""
+    return bool(_REPLAY)
+
+
 def configured():
     return bool(os.environ.get("GOOGLE_VISION_KEY"))
+
+
+def digest(image_bytes):
+    return hashlib.sha256(image_bytes).hexdigest()
+
+
+def cached(image_bytes):
+    """The text already read for this photo (or replayed for it), else None. Never calls Google."""
+    if not image_bytes:
+        return None
+    d = digest(image_bytes)
+    if _REPLAY is not None:
+        return _REPLAY.get(d)
+    return _CACHE.get(d)
 
 
 def _shrink(image_bytes):
@@ -91,17 +134,21 @@ def _shrink(image_bytes):
 
 def read_text(image_bytes):
     """Full text of the image, or None when the call fails (the caller falls back)."""
+    if _REPLAY is not None:
+        text = _REPLAY.get(digest(image_bytes)) if image_bytes else None
+        LAST.update(ms=0, status="replayed" if text is not None else "not_recorded", cached=True)
+        return text
     key = os.environ.get("GOOGLE_VISION_KEY")
     if not key or not image_bytes:
         return None
     if time.monotonic() < _down_until:
         LAST.update(ms=0, status=LAST.get("status", "down"), cached=False, skipped=True)
         return None
-    digest = hashlib.sha256(image_bytes).hexdigest()
-    if digest in _CACHE:
-        _CACHE.move_to_end(digest)
+    d = digest(image_bytes)
+    if d in _CACHE:
+        _CACHE.move_to_end(d)
         LAST.update(ms=0, status="ok", cached=True)
-        return _CACHE[digest]
+        return _CACHE[d]
 
     body = json.dumps({"requests": [{
         "image": {"content": base64.b64encode(_shrink(image_bytes)).decode()},
@@ -138,7 +185,7 @@ def read_text(image_bytes):
         return None
     LAST["status"] = "ok"
     text = (resp.get("fullTextAnnotation") or {}).get("text") or ""
-    _CACHE[digest] = text
+    _CACHE[d] = text
     if len(_CACHE) > _CACHE_SIZE:
         _CACHE.popitem(last=False)
     return text

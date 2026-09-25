@@ -9,20 +9,21 @@
 import {
   AGES, APP_VERSION, MAX_PROFILES, ApiError, addHistory, allergenList, clientInfo, compareRequest,
   deviceId, el, fill, history, historyItem, lastIncident, prepareImage, problemRequest, profileByRef,
-  profiles, record, reportRequest, saveProfiles, scanRequest, store, trailSnapshot, updatesRequest,
-  validGtin,
+  profiles, record, reportRequest, saveProfiles, scanRequest, sendToUsRequest, store, trailSnapshot,
+  updatesRequest, validGtin,
 } from "./lib.js";
 import { barcodeSupported, startScanner } from "./camera.js";
 
 const main = document.getElementById("main");
 let stopCamera = null;
 let navSeq = 0;               // async views check this so a late result can't replace a newer page
-// The scan in progress: barcode (if read), photos, and how many times it was refused.
-let pending = { barcode: null, back: null, front: null, pairing: false, attempts: 0 };
+// The scan in progress: barcode (if read), photos, and how many times it was refused
+// (with the refused scans' ids, for "Send it to us", D-070).
+let pending = { barcode: null, back: null, front: null, pairing: false, attempts: 0, refused: [] };
 
 // ------------------------------------------------------------------ navigation
 const routes = {
-  "": home, welcome, household, person, scan, photo, result, report, compare, problem,
+  "": home, welcome, household, person, scan, photo, result, report, compare, problem, send,
 };
 
 function go(path) { location.hash = "#/" + path; }
@@ -223,7 +224,7 @@ function nextRef(list) {
 
 // ------------------------------------------------------------------ scan: barcode first (D-024)
 function resetPending() {
-  pending = { barcode: null, back: null, front: null, pairing: false, attempts: 0 };
+  pending = { barcode: null, back: null, front: null, pairing: false, attempts: 0, refused: [] };
 }
 
 async function scan() {
@@ -381,7 +382,10 @@ function finish(body) {
       reliable: rel.source === "catalogue" || (!!rel.verdict_safe_to_display && !!rel.ingredients_complete),
     } : null,
   });
-  if (body.screen?.state === "retake") pending.attempts += 1;
+  if (body.screen?.state === "retake") {
+    pending.attempts += 1;
+    if (body.scan_id) pending.refused.push(body.scan_id);
+  }
   go("result/" + encodeURIComponent(id));
 }
 
@@ -408,6 +412,8 @@ function result(id) {
       button("Retake the photo", () => { pending.back = null; go("photo"); }, "primary"),
       pending.attempts >= 2 && el("p", { class: "muted" },
         "Still not working? Try daylight, or another pack. Some labels are printed too small or too shiny to read."),
+      // D-070: after two refusals, a person reads the photos instead.
+      pending.refused.length >= 2 && button("Send it to us", () => go("send")),
       reportLink(h), problemLink());
     return view;
   }
@@ -623,6 +629,8 @@ function apiMessage(e) {
   // Our setup (key, credit), not a busy moment: "in a minute" would be untrue.
   if (e.body?.error === "vision_not_configured") return "The label reader isn't available right now. Please try again later today.";
   if (e.status === 503) return "The label reader is busy right now. Try again in a minute.";
+  // D-095: the server's own text says how long to wait.
+  if (e.status === 429) return e.body?.detail || "You've checked a lot of packs in a short time. Please wait a few minutes.";
   if (e.status === 413) return "That photo is too large. Take it again a little further away.";
   if (e.status === 415) return "That file isn't a photo we can read. Use the camera instead.";
   return "Something went wrong on our side. Try again in a minute.";
@@ -686,6 +694,36 @@ function problem() {
     }
   });
   return form;
+}
+
+// ------------------------------------------------------------------ send it to us (D-070)
+function send() {
+  const ids = pending.refused.slice(-6);
+  if (ids.length < 2) return errorView("Take the photo twice first; then you can send it to us.");
+  const err = el("p", { class: "error", role: "alert" });
+  const go_ = el("button", { type: "button", class: "btn primary" }, "Send the photos");
+  const view = el("section", { class: "stack" },
+    el("h1", {}, "Send it to us"),
+    el("p", {}, "We'll read this pack's label by hand and tell you here when it's ready."),
+    el("ul", { class: "plain small" },
+      el("li", {}, `We keep the ${ids.length} photos you took until our team has read them.`),
+      el("li", {}, "Nothing else is sent. Nicknames stay on this phone.")),
+    err, go_,
+    button("Cancel", () => window.history.back(), "link"));
+  go_.addEventListener("click", async () => {
+    go_.disabled = true;
+    try {
+      await sendToUsRequest(ids);
+      resetPending();
+      show(el("section", { class: "stack" }, el("h1", {}, "Thank you"),
+        el("p", {}, "Our team will read the label. You'll see it on the home screen when it's ready."),
+        button("Done", () => go(""), "primary")));
+    } catch (ex) {
+      go_.disabled = false;
+      err.textContent = ex.status === 0 ? "No connection. Try again when you're online." : apiMessage(ex);
+    }
+  });
+  return view;
 }
 
 // Crashes nobody reports: sent automatically, once per error per session, with

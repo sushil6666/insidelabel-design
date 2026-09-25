@@ -40,6 +40,7 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "src"))
 from insidelabel.core import engine  # noqa: E402
+from insidelabel.core.tokenize import ins_numbers  # noqa: E402  (the one INS parser, D-099)
 
 # Extract INS numbers using the ENGINE's own parsing, not a parallel regex.
 # The first version of this file used a prefix-only pattern, which found zero
@@ -47,7 +48,6 @@ from insidelabel.core import engine  # noqa: E402
 # sets and reported a vacuous F1 of 1.000 while an additive had been dropped.
 # A harness that reimplements the parser it is grading will drift from it and
 # score its own blind spots as perfect.
-_INS = re.compile(r"(?:ins|e)[\s\-.]*?(\d{3}[a-z]?)", re.IGNORECASE)
 
 
 def norm(s):
@@ -58,12 +58,12 @@ def norm(s):
 
 
 def ins_set(ingredients):
-    """INS numbers as the engine would see them, bare-number labels included."""
-    out = set()
-    for i in ingredients:
-        for m in _INS.finditer(engine.prefix_bare_ins(i)):
-            out.add(m.group(1).lower())
-    return out
+    """
+    INS numbers as the engine would see them, bare-number labels included. The
+    engine's own parser (D-099): the old private pattern read 3 digits only, so
+    1422 counted as 142 on both sides and "160 a(ii)" as 160.
+    """
+    return ins_numbers(ingredients)
 
 
 def prf(pred, gold):

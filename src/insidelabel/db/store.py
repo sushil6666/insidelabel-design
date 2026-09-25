@@ -15,8 +15,8 @@ Rules this module follows (the database enforces the hard ones too):
   * Front-of-pack claims are stored only when the claim check actually ran on a
     confirmed pairing (D-035); otherwise they may belong to a different pack.
   * Every scan row carries its own trace (D-092): request id, build, data
-    version, the model's raw answer and the request options, so any scan can be
-    replayed later (tools/repro.py).
+    version, the model's raw answer, the independent reader's text (007) and
+    the request options, so any scan can be replayed later (tools/repro.py).
 """
 
 import hashlib
@@ -293,7 +293,7 @@ class Store:
                     "version_status": vstatus, "queued": queued}
 
     _TRACE_COLS = ("request_id", "build", "data_version", "engine_version", "prompt_version",
-                   "model_raw", "request", "timings")
+                   "model_raw", "request", "timings", "ocr")
 
     @classmethod
     def _set_trace(cls, conn, sid, trace):
@@ -303,7 +303,7 @@ class Store:
         cols = [c for c in cls._TRACE_COLS if trace.get(c) is not None]
         if not cols:
             return
-        vals = [Jsonb(trace[c]) if c in ("request", "timings") else trace[c] for c in cols]
+        vals = [Jsonb(trace[c]) if c in ("request", "timings", "ocr") else trace[c] for c in cols]
         conn.execute(f"UPDATE scans SET {', '.join(c + ' = %s' for c in cols)} WHERE id = %s",
                      (*vals, sid))
 
@@ -348,6 +348,46 @@ class Store:
                    VALUES ('correction', %s, %s, %s, %s) RETURNING id""",
                 (scan_id, product_version_id, cid, uid)).fetchone()["id"]
             return {"correction_id": cid, "review_id": rid}
+
+    # -- send it to us (D-070) ----------------------------------------------
+
+    SEND_OUTCOMES = ("refused", "vision_failed")      # the read failed; a person can still read the photo
+
+    def send_to_us(self, *, device_id, scan_ids):
+        """
+        Queue a pack the app couldn't read. Checks what the app claims: the
+        scans are this install's own, every one was refused, at least two, and
+        the photos exist. Returns {"review_id", "duplicate"?} or {"error": code}.
+        """
+        with self._connect() as conn:
+            uid = self._user(conn, device_id)
+            rows = conn.execute(
+                """SELECT id, user_id, outcome, back_image_key, created_at FROM scans
+                    WHERE id = ANY(%s::uuid[]) ORDER BY created_at, id""", (scan_ids,)).fetchall()
+            # Someone else's scan looks exactly like one that doesn't exist.
+            if len(rows) != len(scan_ids) or any(str(r["user_id"]) != uid for r in rows):
+                return {"error": "not_found"}
+            if any(r["outcome"] not in self.SEND_OUTCOMES for r in rows):
+                return {"error": "not_refused"}
+            if len(rows) < 2:
+                return {"error": "need_two_attempts"}
+            if not rows[-1]["back_image_key"]:
+                return {"error": "no_photo"}
+            ids = [r["id"] for r in rows]
+            dup = conn.execute(
+                """SELECT id FROM review_queue
+                    WHERE kind = 'send_to_us' AND (scan_id = ANY(%s) OR attempt_scan_ids && %s)
+                    LIMIT 1""", (ids, ids)).fetchone()
+            if dup:
+                return {"review_id": dup["id"], "duplicate": True}
+            rid = conn.execute(
+                """INSERT INTO review_queue (kind, scan_id, attempt_scan_ids, notify_user_id)
+                   VALUES ('send_to_us', %s, %s, %s) RETURNING id""",
+                (ids[-1], ids[:-1], uid)).fetchone()["id"]
+            # D-080: the user sent these photos to be read by a person; they are
+            # the only copy of the label we have, so they outlive the 30-day rule.
+            conn.execute("UPDATE scans SET evidence_hold = true WHERE id = ANY(%s)", (ids,))
+            return {"review_id": rid}
 
     # -- problem reports (D-092) --------------------------------------------
 

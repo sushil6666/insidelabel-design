@@ -174,13 +174,13 @@ def catalogue_gates(uri):
 
 MANUAL_ITEMS = [
     "PWA: camera + barcode, result screen per D-060–D-066, profiles, compare, report a mistake",
-    "Deployment: host with PostgreSQL 19, HTTPS, R2 photo store with 30-day lifecycle (D-080), backups",
-    "Individual reviewer logins (one shared token today)",
-    "'Send it to us' endpoint (D-070)",
+    "Deployment: host with PostgreSQL 19, HTTPS, R2 photo store, backups; tools/retention.py --apply daily from cron (D-080, D-098)",
+    "Reviewer accounts on the deployed server (tools/reviewers.py, D-097), so the shared token is refused",
+    "'Send it to us' tried on a phone: two refused scans → sent → published → shown on open (D-070, D-096)",
     "Privacy policy (DPDP Act; children's data, parental consent — D-074)",
     "Conflict-of-interest policy, methodology page, who is behind the app, 'last verified' dates (D-076)",
     "Play Console: developer account verified (D-011), closed-testing requirement met, target audience adults",
-    "Sentry / error monitoring and a rate limit on /scan",
+    "Rate limits (D-095): one server process (or shared counters), INSIDELABEL_PROXY_HOPS set behind the proxy",
 ]
 
 

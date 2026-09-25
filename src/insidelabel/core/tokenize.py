@@ -164,3 +164,14 @@ def extract_ins(token):
         return m2.group(1).lower()
 
     return None
+
+
+def ins_numbers(text):
+    """
+    Every INS number the engine would read in `text` (a string, or a list of
+    ingredient entries, joined as /scan joins them). The one way to ask "which
+    additive numbers are in this?" anywhere in the code (D-099).
+    """
+    if not isinstance(text, str):
+        text = ", ".join(text or [])
+    return {i for i in (extract_ins(t) for t in tokenize(text)) if i}

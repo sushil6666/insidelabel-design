@@ -74,6 +74,11 @@ class ReviewService:
                                     (v["product_id"], v["id"])).fetchone()
             if q["scan_id"]:
                 scan = c.execute("SELECT * FROM scans WHERE id = %s", (q["scan_id"],)).fetchone()
+            # D-070: the earlier refused attempts of a pack sent to us, oldest first.
+            attempts = c.execute(
+                """SELECT id, back_image_key, front_image_key, created_at, error_code FROM scans
+                    WHERE id = ANY(%s) ORDER BY created_at""",
+                (q.get("attempt_scan_ids") or [],)).fetchall()
             if q["correction_id"]:
                 corr = c.execute("SELECT * FROM corrections WHERE id = %s", (q["correction_id"],)).fetchone()
             leads = []
@@ -99,7 +104,8 @@ class ReviewService:
             "front": (v and v["front_image_key"]) or (scan and scan["front_image_key"]),
         }
         return {"item": q, "version": v, "product": p, "current": current, "scan": scan,
-                "correction": corr, "findings": findings, "images": images, "leads": leads}
+                "correction": corr, "findings": findings, "images": images, "leads": leads,
+                "attempts": attempts}
 
     # ---------------------------------------------------------------- claiming
 
