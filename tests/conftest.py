@@ -15,6 +15,10 @@ import uuid
 
 import pytest
 
+# D-101: most API tests send a recorded model answer as `replay`. The server
+# refuses it unless this is on; test_replay_gate.py checks the refusal.
+os.environ.setdefault("INSIDELABEL_ALLOW_REPLAY", "on")
+
 
 @pytest.fixture(autouse=True)
 def _fresh_rate_limits():

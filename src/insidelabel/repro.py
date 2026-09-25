@@ -44,13 +44,14 @@ def no_storage():
     """
     Run the API with nothing persisted: a replay must not create scans or photos.
     Rate limits (D-095) are off too: replaying a long trail isn't a flood.
+    Replay is allowed here whatever the environment says (D-101).
     """
-    old = main.STORE, main.MEDIA, ratelimit.LIMITER.rules
-    main.STORE, main.MEDIA, ratelimit.LIMITER.rules = None, None, {}
+    old = main.STORE, main.MEDIA, ratelimit.LIMITER.rules, main.REPLAY_ALLOWED
+    main.STORE, main.MEDIA, ratelimit.LIMITER.rules, main.REPLAY_ALLOWED = None, None, {}, True
     try:
         yield
     finally:
-        main.STORE, main.MEDIA, ratelimit.LIMITER.rules = old
+        main.STORE, main.MEDIA, ratelimit.LIMITER.rules, main.REPLAY_ALLOWED = old
 
 
 def form_for(request, model_raw):

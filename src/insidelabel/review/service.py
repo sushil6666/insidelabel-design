@@ -186,7 +186,10 @@ class ReviewService:
                 self._write_version(c, v["id"], ingredients, statement, claims)
                 c.execute("SELECT publish_version(%s, %s)", (v["id"], reviewer))
                 vid, resolution = v["id"], "published"
-            elif v and (v["ingredients_hash"], v["allergen_statement"], v["claims_hash"]) == content:
+            elif (v and (v["ingredients_hash"], v["allergen_statement"], v["claims_hash"]) == content
+                  # D-100: a front with no claims is still news: the new version
+                  # records the photo, so the app stops asking for it.
+                  and not (q["kind"] == "front_photo" and not v["front_image_key"])):
                 vid, resolution = v["id"], "no_change"        # a correction that changed nothing
             else:
                 # Published (or no) version: history is kept, so a change is a new version.

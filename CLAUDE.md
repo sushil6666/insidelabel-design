@@ -6,7 +6,7 @@ PostgreSQL 19. Solo founder: Sushil.
 ## Start here
 
 1. Read `STATE.md` (status, setup, open items, lessons) and skim `DECISIONS.md`.
-2. `source .venv/bin/activate && pytest -q` — expect 245 passing (1 skipped) before you change anything.
+2. `source .venv/bin/activate && pytest -q` — expect 252 passing (1 skipped) before you change anything.
    `python tools/release_check.py` shows how far the beta is from release.
 3. The "Next" list in `STATE.md` §8 is the default work queue.
 
@@ -43,7 +43,12 @@ PostgreSQL 19. Solo founder: Sushil.
   there, and never send a profile nickname (`profiles` = ref/age/avoid only, D-074).
 - **Scans must stay replayable (D-092).** Any new `/scan` outcome passes `trace=tr` to the
   store; never drop the model's raw answer. Debug a report with `tools/repro.py show <id>`
-  before touching code, and `--save` it so it becomes a regression test.
+  before touching code, and `--save` it so it becomes a regression test. The one
+  exception: a request refused *before anything is read* (429 rate limit, D-095; 403
+  `replay_disabled`, D-101) is logged with its request id, not stored.
+- **`replay` is off on servers (D-101).** Only `INSIDELABEL_ALLOW_REPLAY=on` or in-process
+  `main.REPLAY_ALLOWED = True` (repro, tools, tests via `conftest.py`) accept it. Never
+  set it on the public deploy.
 - **`DECISIONS.md` is append-only.** New decision = new `D-0xx` entry; reversal =
   mark `SUPERSEDED` and add a new one. Record who accepted it.
 - **No scraping or copying retailer listings** (Amazon, Flipkart, Blinkit, Zepto, Swiggy) —

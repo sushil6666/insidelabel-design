@@ -2,7 +2,8 @@
 {% block title %}Item {{ d.item.id }}{% endblock %}
 {% block body %}
 {% set labels = {"new_product": "New product", "reformulation": "Reformulation",
-                 "correction": "Reported mistake", "send_to_us": "Sent to us"} %}
+                 "correction": "Reported mistake", "send_to_us": "Sent to us",
+                 "front_photo": "Front photo"} %}
 {% set q = d.item %}
 <style>
   .grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
@@ -72,6 +73,14 @@
         <b>Sent to us after {{ d.attempts|length + 1 }} photos we couldn't read.</b>
         Nothing was read automatically: type the label from the photos. If no photo shows the whole
         ingredient list, reject it and say so — the person is told either way.
+      </div>
+    {% endif %}
+    {% if q.kind == "front_photo" %}
+      <div class="panel" style="margin-bottom:12px">
+        <b>Front of pack for a published product.</b> The ingredients are already reviewed. Check the
+        front photo is this pack (compare it with the back), then type its claims one per line —
+        leave them empty if the front makes none. Publishing records the front even with no claims.
+        If it's a different pack, or unreadable, reject it.
       </div>
     {% endif %}
 
