@@ -47,11 +47,14 @@ RULES = {
     # Problem reports: people report once; the app's crash reporter already
     # sends each error once per session.
     "problem": {"device": [(10, 3_600)], "ip": [(60, 3_600)]},
+    # "Send it to us" (D-070): each is a reviewer's time.
+    "send_to_us": {"device": [(10, 86_400)], "ip": [(50, 86_400)]},
 }
 
 SCAN_TEXT = ("You've checked a lot of packs in a short time. Please wait about {minutes} "
              "minute{s} and try again.")
 PROBLEM_TEXT = "We've had a lot of reports from this phone just now. Please try again later."
+SEND_TEXT = "You've sent us a lot of packs today. Please try again tomorrow."
 
 
 class Limiter:

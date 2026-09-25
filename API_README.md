@@ -30,6 +30,7 @@ pip install -e . && uvicorn insidelabel.api.main:app --reload
 | `GET /review` | live (needs DB + token) | reviewer screen, HTTP Basic |
 | `POST /report` | live (needs DB) | "Report a mistake": `{scan_id, field, proposed_value?, note?}` → correction + review queue (D-076) |
 | `GET /app/` | live | the PWA (`web/`, D-090); `/` redirects here |
+| `POST /send-to-us` | live (needs DB) | "Send it to us" after two refused scans: `{device_id, scan_ids[]}` (this install's own, all refused, ≥ 2) → one `send_to_us` review item with every attempt's photos, held past retention; `/updates` reports back (D-070, D-096) |
 | `POST /problem` | live (needs DB) | "Report a problem" / app crash: `{kind, comment?, request_id?, scan_id?, client, events[]}` → problem report (D-092) |
 
 ## The result screen and profiles (D-060–D-066, D-074, D-091)

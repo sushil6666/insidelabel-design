@@ -12,7 +12,7 @@
 //    beyond the headline the user was shown.
 
 // Bump together with VERSION in sw.js: a report then says which shell was cached.
-export const APP_VERSION = "web-4";
+export const APP_VERSION = "web-5";
 
 // ------------------------------------------------------------------ storage
 // localStorage can throw (private mode, blocked site data); the app must still work.
@@ -206,6 +206,11 @@ export const problemRequest = payload =>
   call("/problem", { method: "POST", headers: { "Content-Type": "application/json" },
                      body: JSON.stringify({ ...payload, device_id: deviceId(), app_version: APP_VERSION,
                                             client: clientInfo(), events: trailSnapshot() }) });
+
+// D-070: the refused scans of a pack the app couldn't read, oldest first.
+export const sendToUsRequest = scanIds =>
+  call("/send-to-us", { method: "POST", headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ device_id: deviceId(), scan_ids: scanIds }) });
 
 export const updatesRequest = () =>
   call("/updates?device_id=" + encodeURIComponent(deviceId()));

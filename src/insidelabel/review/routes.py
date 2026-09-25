@@ -108,7 +108,8 @@ def item(request: Request, item_id: int, name: str = Depends(reviewer), error: s
         "name": (p or {}).get("name") or "",
         "brand": (p or {}).get("brand") or "",
         "variant": (p or {}).get("variant") or "",
-        "barcode": (p or {}).get("barcode") or "",
+        # A pack sent to us has no product yet: the barcode the app read, if any.
+        "barcode": (p or {}).get("barcode") or ((data["scan"] or {}).get("request") or {}).get("barcode") or "",
         "category": (p or {}).get("category_code") or "",
         "ingredients": "\n".join(ingredients),
         "allergen_statement": (v or {}).get("allergen_statement") or "",

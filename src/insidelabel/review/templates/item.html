@@ -52,6 +52,14 @@
         </figure>
       {% endif %}
     {% endfor %}
+    {% for a in d.attempts %}{% for role in ("back", "front") %}{% set key = a[role ~ "_image_key"] %}
+      {% if key %}
+        <figure>
+          <figcaption>Earlier attempt · {{ role }} · {{ a.created_at.strftime("%d %b %H:%M") }} · <a href="/review/media/{{ key }}" target="_blank">open full size</a></figcaption>
+          <a href="/review/media/{{ key }}" target="_blank"><img src="/review/media/{{ key }}" alt="earlier {{ role }} photo"></a>
+        </figure>
+      {% endif %}
+    {% endfor %}{% endfor %}
     {% if not d.images.back and not d.images.front %}
       <div class="notice">No photo stored for this item. Don't publish anything you can't check against a photo.</div>
     {% endif %}
@@ -59,6 +67,14 @@
 
   <!-- RIGHT: what was read, and the decision -->
   <div>
+    {% if q.kind == "send_to_us" %}
+      <div class="panel" style="margin-bottom:12px">
+        <b>Sent to us after {{ d.attempts|length + 1 }} photos we couldn't read.</b>
+        Nothing was read automatically: type the label from the photos. If no photo shows the whole
+        ingredient list, reject it and say so — the person is told either way.
+      </div>
+    {% endif %}
+
     {% if correction %}
       <div class="panel" style="margin-bottom:12px">
         <b>Reported mistake</b> in <span class="mono">{{ correction.field }}</span>

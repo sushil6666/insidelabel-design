@@ -11,6 +11,7 @@ Inside Label — API (v0.1)
     POST /scan         one or two images   -> verdict + identity + claim check
                        (+ barcode: a reviewed catalogue entry skips the vision call)
     POST /report       "Report a mistake" on a scan (D-076)
+    POST /send-to-us   two refused scans -> the review queue (D-070)
 
 THE GUARD THAT MATTERS
 ----------------------
@@ -59,6 +60,7 @@ from insidelabel.extraction.schemas import (  # noqa: E402
     CompareRequest,
     ProblemRequest,
     ReportRequest,
+    SendToUsRequest,
     AnalyzeResponse,
     ClaimCheckRequest,
     ClaimCheckResponse,
@@ -602,6 +604,42 @@ def report(req: ReportRequest):
         raise HTTPException(status_code=404, detail={
             "error": "not_found", "detail": "No such scan or product version.",
         })
+    return {"status": "received", **out}
+
+
+# ---------------------------------------------------------------------------
+# "Send it to us" (D-070)
+# ---------------------------------------------------------------------------
+_SEND_ERRORS = {
+    "not_found": (404, "We couldn't find those scans from this phone."),
+    "not_refused": (422, "Only scans we couldn't read can be sent."),
+    "need_two_attempts": (422, "Try the photo twice first; then you can send it to us."),
+    "no_photo": (422, "We don't have the photo for that scan any more."),
+}
+
+
+@app.post("/send-to-us")
+def send_to_us(req: SendToUsRequest, request: Request):
+    """
+    After two refused scans (D-070): "Send it to us — we'll check this pack and
+    tell you when it's ready." Queues the photos for a reviewer; /updates
+    reports back when the item is decided.
+    """
+    _rate_limit(request, "send_to_us", req.device_id, ratelimit.SEND_TEXT)
+    if STORE is None:
+        raise HTTPException(status_code=503, detail={
+            "error": "storage_unavailable",
+            "detail": "Sending needs the database (INSIDELABEL_DB is not set).",
+        })
+    try:
+        device = str(uuid.UUID(req.device_id))
+        scan_ids = list(dict.fromkeys(str(uuid.UUID(s)) for s in req.scan_ids))
+    except ValueError:
+        raise HTTPException(status_code=422, detail={"error": "bad_id", "detail": "device_id and scan_ids are UUIDs."})
+    out = STORE.send_to_us(device_id=device, scan_ids=scan_ids)
+    if "error" in out:
+        status, text = _SEND_ERRORS[out["error"]]
+        raise HTTPException(status_code=status, detail={"error": out["error"], "detail": text})
     return {"status": "received", **out}
 
 

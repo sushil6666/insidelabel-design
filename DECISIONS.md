@@ -699,6 +699,29 @@ before scaling out. `X-Forwarded-For` is trusted only when
 `INSIDELABEL_PROXY_HOPS` says how many proxies sit in front, counting from the
 right. `repro.py` replays switch the limits off.
 
+### D-096 · "Send it to us": the server checks the attempts; the photos are kept `RECOMMENDED` (2026-09-26)
+Proposed by Claude (overnight session, STATE §8 item 7); awaiting Sushil. Builds D-070.
+
+- **After two refused scans** the retake screen offers "Send it to us". The app
+  sends the refused scans' ids to `POST /send-to-us`; the server checks them —
+  this install's own (anyone else's looks like "not found"), every one refused or
+  unreadable (`refused`, `vision_failed`), at least two, and a back photo stored.
+  The app's count is a convenience, not the rule.
+- **One review item per pack**, kind `send_to_us`: `scan_id` = the latest attempt,
+  `attempt_scan_ids` = the earlier ones (migration 008), so the reviewer sees every
+  photo (one may show what another lost to glare). Sending the same attempts again
+  returns the same item. The barcode the app read, if any, is pre-filled.
+- **Nothing is read automatically**: the reviewer types the label from the photos
+  and publishes through the usual `/review` path, or rejects with a reason. Either
+  way `/updates` tells the app ("ready" / "couldn't add it yet").
+- **The photos are held** (`evidence_hold`), outside the 30-day rule (D-080): the
+  user asked us to read them and they are the only copy of the label. The app says
+  so before sending ("We keep the photos you took until our team has read them").
+- Rate limit (D-095): 10 a day per install, 50 per IP.
+
+Not built: a free-text note with the photos (it could carry names, D-074), push
+notifications (D-070 says later).
+
 ---
 
 ## Open and pending
