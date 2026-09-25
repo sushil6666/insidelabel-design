@@ -669,6 +669,36 @@ regressions (`--save`) now carry `ocr` too.
 Found on the way: a refused read where the OCR finds an additive the model lacks
 crashed `/scan` (`KeyError: 'caveats'` → 500) instead of refusing. Fixed.
 
+### D-095 · Rate limits per install and per IP, in memory `RECOMMENDED` (2026-09-26)
+Proposed by Claude (overnight session, STATE §8 item 6); awaiting Sushil.
+
+`/scan` and `/problem` are limited on two keys at once: `device_id` (exact for
+real users, but the client picks it, so an abuser rotates it) and the IP (can't
+be chosen, but Indian mobile carriers put many households behind one address,
+so its limit is looser). Checked first, before a photo is read or Gemini called.
+Starting values, to tune from beta traffic:
+
+- photo scans: 20 per 10 min and 100 a day per install; 60 / 10 min and 400 a day per IP;
+- barcode-only lookups (no model call): their own budget, 120 / 10 min per install,
+  600 per IP, so checking a shelf by barcode never uses up photo scans;
+- problem reports: 10 an hour per install, 60 per IP.
+
+A refused request isn't counted (the wait doesn't grow while a phone retries,
+and one phone's refusals don't use up its neighbours' budget on a shared IP).
+429 with `Retry-After` and a plain "wait about N minutes" message.
+
+**Not a scan row.** CLAUDE.md asks every new `/scan` outcome to be stored with
+its trace. A 429 is refused before anything is read: there's no photo or model
+answer to replay, and storing each refusal would let a flood turn into database
+writes. It is logged with its request id instead. *Sushil to confirm.*
+
+**In memory, one process.** Sliding windows in a dict, LRU-capped at 100k keys.
+Right for the beta's single server process; with several workers the limits
+multiply, and a restart forgets them. Move the counters to Postgres (or Redis)
+before scaling out. `X-Forwarded-For` is trusted only when
+`INSIDELABEL_PROXY_HOPS` says how many proxies sit in front, counting from the
+right. `repro.py` replays switch the limits off.
+
 ---
 
 ## Open and pending

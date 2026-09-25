@@ -21,7 +21,7 @@ import json
 
 from fastapi.testclient import TestClient
 
-from insidelabel import trace
+from insidelabel import ratelimit, trace
 from insidelabel.api import main
 from insidelabel.extraction.providers import cloud_vision
 
@@ -41,13 +41,16 @@ def summary(screen):
 
 @contextlib.contextmanager
 def no_storage():
-    """Run the API with nothing persisted: a replay must not create scans or photos."""
-    old = main.STORE, main.MEDIA
-    main.STORE, main.MEDIA = None, None
+    """
+    Run the API with nothing persisted: a replay must not create scans or photos.
+    Rate limits (D-095) are off too: replaying a long trail isn't a flood.
+    """
+    old = main.STORE, main.MEDIA, ratelimit.LIMITER.rules
+    main.STORE, main.MEDIA, ratelimit.LIMITER.rules = None, None, {}
     try:
         yield
     finally:
-        main.STORE, main.MEDIA = old
+        main.STORE, main.MEDIA, ratelimit.LIMITER.rules = old
 
 
 def form_for(request, model_raw):

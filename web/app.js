@@ -623,6 +623,8 @@ function apiMessage(e) {
   // Our setup (key, credit), not a busy moment: "in a minute" would be untrue.
   if (e.body?.error === "vision_not_configured") return "The label reader isn't available right now. Please try again later today.";
   if (e.status === 503) return "The label reader is busy right now. Try again in a minute.";
+  // D-095: the server's own text says how long to wait.
+  if (e.status === 429) return e.body?.detail || "You've checked a lot of packs in a short time. Please wait a few minutes.";
   if (e.status === 413) return "That photo is too large. Take it again a little further away.";
   if (e.status === 415) return "That file isn't a photo we can read. Use the camera instead.";
   return "Something went wrong on our side. Try again in a minute.";

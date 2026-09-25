@@ -16,6 +16,14 @@ import uuid
 import pytest
 
 
+@pytest.fixture(autouse=True)
+def _fresh_rate_limits():
+    """D-095 counters are per process: the suite makes hundreds of scans from one 'IP'."""
+    from insidelabel import ratelimit
+    ratelimit.LIMITER.reset()
+    yield
+
+
 @pytest.fixture(scope="session")
 def pg_admin():
     """(admin_uri, base_name, skip_unavailable) for the server tests run on."""

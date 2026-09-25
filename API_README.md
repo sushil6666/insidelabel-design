@@ -99,6 +99,24 @@ most once an hour. A busy model (429/5xx) is still retried and answers
 `503 vision_unavailable`. Cloud Vision setup failures don't fail the scan (it falls
 back to Tesseract) but file `ocr_config:<status>` the same way.
 
+## Rate limits (D-095)
+
+`/scan` and `/problem` are limited per install (`device_id`) **and** per IP, checked
+before any photo is read or model called. Over a limit: `429 {error:
+"rate_limited", detail, retryable: true, retry_after_s, request_id}` plus a
+`Retry-After` header; the PWA shows `detail`. Starting values (`ratelimit.RULES`):
+
+| Bucket | Per install | Per IP |
+|---|---|---|
+| `scan` (photos, a model call) | 20 / 10 min, 100 / day | 60 / 10 min, 400 / day |
+| `lookup` (barcode only) | 120 / 10 min | 600 / 10 min |
+| `problem` | 10 / hour | 60 / hour |
+
+Counters are in memory, per process: right for one server process, wrong for
+several (move them to Postgres/Redis first). Behind a reverse proxy set
+`INSIDELABEL_PROXY_HOPS=<n>` so the client address is read from `X-Forwarded-For`;
+otherwise the header is ignored. A refused request is not stored as a scan.
+
 ## Scans and the catalogue (D-024, D-028)
 
 Set `INSIDELABEL_DB` to store scans; without it the API stores nothing and

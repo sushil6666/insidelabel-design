@@ -35,11 +35,12 @@ import traceback  # noqa: E402
 import uuid  # noqa: E402
 from typing import Optional  # noqa: E402
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile  # noqa: E402
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile  # noqa: E402
 from fastapi.responses import JSONResponse, RedirectResponse  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 from starlette.concurrency import run_in_threadpool  # noqa: E402
 
+from insidelabel import ratelimit  # noqa: E402
 from insidelabel import trace  # noqa: E402
 from insidelabel.core import engine  # noqa: E402
 from insidelabel.claims import checker as claim_checker  # noqa: E402
@@ -115,6 +116,29 @@ def _setup_alarm(signature, message):
     _persist(STORE and STORE.save_problem, kind="server", request_id=trace.current_request_id(),
              build=trace.BUILD, data_version=trace.DATA_VERSION,
              client={"source": "setup_alarm"}, server_error=message, signature=signature)
+
+
+def _rate_limit(request, bucket, device_id, text):
+    """
+    D-095: refuse with 429 before any work when this install or address is over
+    its limit. Not stored as a scan: nothing was read, so there is nothing to
+    replay, and a flood must not turn into database writes. Logged with the id.
+    """
+    try:
+        device = str(uuid.UUID(str(device_id))) if device_id else None
+    except ValueError:
+        device = None                     # an invalid id is ignored; the IP limit still applies
+    wait = ratelimit.LIMITER.hit(bucket, device=device, ip=ratelimit.client_ip(request))
+    if wait is None:
+        return
+    seconds = max(1, int(wait + 0.999))
+    minutes = max(1, round(seconds / 60))
+    log.warning("rate limited: %s device=%s wait=%ss", bucket, device, seconds)
+    raise HTTPException(status_code=429, headers={"Retry-After": str(seconds)}, detail={
+        "error": "rate_limited",
+        "detail": text.format(minutes=minutes, s="" if minutes == 1 else "s"),
+        "retryable": True, "retry_after_s": seconds,
+    })
 
 
 def _persist(fn, *args, **kwargs):
@@ -448,11 +472,14 @@ def regulator_row(ins: str):
 def http_exception_handler(request, exc):
     detail = exc.detail
     rid = trace.current_request_id()          # D-092: quote this when reporting
+    headers = getattr(exc, "headers", None)       # e.g. Retry-After on a 429 (D-095)
     if isinstance(detail, dict):
-        return JSONResponse(status_code=exc.status_code, content={**detail, "request_id": rid})
+        return JSONResponse(status_code=exc.status_code, content={**detail, "request_id": rid},
+                            headers=headers)
     return JSONResponse(
         status_code=exc.status_code,
         content={"error": "request_error", "detail": str(detail), "request_id": rid},
+        headers=headers,
     )
 
 
@@ -595,12 +622,13 @@ def _scrub(obj):
 
 
 @app.post("/problem")
-def problem(req: ProblemRequest):
+def problem(req: ProblemRequest, request: Request):
     """
     The app went wrong: a user tapped "Report a problem", or the app crashed.
     Stores the phone's event trail against the scans it names, and holds those
     scans' photos past retention (D-080). tools/repro.py replays it.
     """
+    _rate_limit(request, "problem", req.device_id, ratelimit.PROBLEM_TEXT)
     if STORE is None:
         raise HTTPException(status_code=503, detail={
             "error": "storage_unavailable",
@@ -654,6 +682,7 @@ async def _read_image(upload, role):
 
 @app.post("/scan")
 async def scan(
+    request: Request,
     back: Optional[UploadFile] = File(None, description="Back of pack — the ingredient list."),
     front: Optional[UploadFile] = File(None, description="Front of pack — marketing claims."),
     pairing_confirmed: bool = Form(False, description="User confirms both images show the same pack."),
@@ -683,6 +712,10 @@ async def scan(
     # Form tools (/docs included) can send an empty box as "". An empty replay is
     # not a model answer, and an empty avoid is not an avoid list.
     replay = replay if replay and replay.strip() else None
+    # D-095: before any photo is read or model called. A barcode-only lookup
+    # costs nothing and has its own budget.
+    lookup_only = bool(barcode and barcode.strip()) and back is None and front is None and replay is None
+    _rate_limit(request, "lookup" if lookup_only else "scan", device_id, ratelimit.SCAN_TEXT)
     avoid = avoid if avoid and avoid.strip() else None
     avoid_codes = parse_avoid(avoid)
     people = parse_profiles(profiles)
