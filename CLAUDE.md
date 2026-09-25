@@ -6,7 +6,7 @@ PostgreSQL 19. Solo founder: Sushil.
 ## Start here
 
 1. Read `STATE.md` (status, setup, open items, lessons) and skim `DECISIONS.md`.
-2. `source .venv/bin/activate && pytest -q` — expect 151 passing before you change anything.
+2. `source .venv/bin/activate && pytest -q` — expect 171 passing (1 skipped) before you change anything.
    `python tools/release_check.py` shows how far the beta is from release.
 3. The "Next" list in `STATE.md` §8 is the default work queue.
 
@@ -38,6 +38,9 @@ PostgreSQL 19. Solo founder: Sushil.
 - **Result-screen text is built in `lenses/screen.py` (D-091).** The PWA (`web/`)
   renders `/scan`'s `screen` block; don't compose findings in JS, never read `score`
   there, and never send a profile nickname (`profiles` = ref/age/avoid only, D-074).
+- **Scans must stay replayable (D-092).** Any new `/scan` outcome passes `trace=tr` to the
+  store; never drop the model's raw answer. Debug a report with `tools/repro.py show <id>`
+  before touching code, and `--save` it so it becomes a regression test.
 - **`DECISIONS.md` is append-only.** New decision = new `D-0xx` entry; reversal =
   mark `SUPERSEDED` and add a new one. Record who accepted it.
 - **No scraping or copying retailer listings** (Amazon, Flipkart, Blinkit, Zepto, Swiggy) —

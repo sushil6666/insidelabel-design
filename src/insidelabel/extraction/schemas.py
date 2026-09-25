@@ -79,6 +79,21 @@ class ReportRequest(BaseModel):
     note: Optional[str] = Field(None, max_length=2000)
 
 
+class ProblemRequest(BaseModel):
+    """D-092 "Report a problem": the app misbehaved. Goes to the developer, not reviewers."""
+
+    kind: str = Field("user", description='"user" (tapped Report a problem) or "auto" (an app crash).')
+    device_id: Optional[str] = None
+    scan_id: Optional[str] = None
+    request_id: Optional[str] = Field(None, max_length=64, description="The request that failed, if known.")
+    comment: Optional[str] = Field(None, max_length=2000)
+    app_version: Optional[str] = Field(None, max_length=40)
+    signature: Optional[str] = Field(None, max_length=200, description="Error kind + place, to group repeats.")
+    client: Dict[str, Any] = Field(default_factory=dict, description="Phone, browser, screen, network. No names.")
+    events: List[Dict[str, Any]] = Field(default_factory=list, max_length=200,
+                                         description="The app's recent trail, oldest first.")
+
+
 class AnalyzeResponse(BaseModel):
     """
     `verdict` is engine.analyze() output, verbatim. Nothing in this API mutates

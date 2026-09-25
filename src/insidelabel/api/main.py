@@ -30,6 +30,7 @@ import mimetypes  # noqa: E402
 import os  # noqa: E402
 import re  # noqa: E402
 import time  # noqa: E402
+import traceback  # noqa: E402
 import uuid  # noqa: E402
 from typing import Optional  # noqa: E402
 
@@ -37,6 +38,7 @@ from fastapi import FastAPI, File, Form, HTTPException, UploadFile  # noqa: E402
 from fastapi.responses import JSONResponse, RedirectResponse  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 
+from insidelabel import trace  # noqa: E402
 from insidelabel.core import engine  # noqa: E402
 from insidelabel.claims import checker as claim_checker  # noqa: E402
 from insidelabel.lenses import allergens as allergen_checker  # noqa: E402
@@ -51,6 +53,7 @@ from insidelabel.extraction.schemas import (  # noqa: E402
     AllergenCheckRequest,
     AnalyzeRequest,
     CompareRequest,
+    ProblemRequest,
     ReportRequest,
     AnalyzeResponse,
     ClaimCheckRequest,
@@ -123,6 +126,34 @@ app = FastAPI(
     ),
 )
 
+# D-092: every request gets an id (the app's own, or a new one). It goes back in
+# the X-Request-ID header, into every log line, onto the scan row and into error
+# bodies, so a report from a phone can be matched to exactly what the server did.
+# An exception nothing else handled is stored as a 'server' problem report.
+@app.middleware("http")
+async def request_ids(request, call_next):
+    rid = trace.accept_or_new(request.headers.get("x-request-id"))
+    token = trace.REQUEST_ID.set(rid)
+    try:
+        response = await call_next(request)
+    except Exception as exc:  # noqa: BLE001 — the last line of defence; logged and stored
+        log.exception("unhandled error on %s %s", request.method, request.url.path)
+        tb = traceback.extract_tb(exc.__traceback__)
+        where = f"{os.path.basename(tb[-1].filename)}:{tb[-1].lineno}" if tb else "?"
+        _persist(STORE and STORE.save_problem, kind="server", request_id=rid,
+                 build=trace.BUILD, data_version=trace.DATA_VERSION,
+                 client={"method": request.method, "path": request.url.path},
+                 server_error=traceback.format_exc(limit=40),
+                 signature=f"{type(exc).__name__}@{where}")
+        response = JSONResponse(status_code=500, content={
+            "error": "server_error", "detail": "Something went wrong on our side.",
+            "request_id": rid})
+    finally:
+        trace.REQUEST_ID.reset(token)
+    response.headers["X-Request-ID"] = rid
+    return response
+
+
 # Reviewer screen (D-028). Active only when the database is configured.
 from insidelabel.review import routes as review_routes  # noqa: E402
 from insidelabel.review.service import ReviewService  # noqa: E402
@@ -179,6 +210,8 @@ def health():
     return {
         "status": "ok",
         "engine_version": ENGINE_VERSION,
+        "build": trace.BUILD,                 # D-092
+        "data_version": trace.DATA_VERSION,
         "additives_loaded": len(engine._ADDITIVE_BY_INS),
         "nova_markers_loaded": len(engine.NOVA["markers"]),
     }
@@ -400,10 +433,12 @@ def regulator_row(ins: str):
 @app.exception_handler(HTTPException)
 def http_exception_handler(request, exc):
     detail = exc.detail
+    rid = trace.current_request_id()          # D-092: quote this when reporting
     if isinstance(detail, dict):
-        return JSONResponse(status_code=exc.status_code, content=detail)
+        return JSONResponse(status_code=exc.status_code, content={**detail, "request_id": rid})
     return JSONResponse(
-        status_code=exc.status_code, content={"error": "request_error", "detail": str(detail)}
+        status_code=exc.status_code,
+        content={"error": "request_error", "detail": str(detail), "request_id": rid},
     )
 
 
@@ -530,6 +565,55 @@ def report(req: ReportRequest):
 
 
 # ---------------------------------------------------------------------------
+# Report a problem (D-092)
+# ---------------------------------------------------------------------------
+MAX_PROBLEM_BYTES = 100_000
+# D-074 belt and braces: the app never sends these, and if one arrives it is dropped.
+_NAME_KEYS = {"nickname", "name", "who", "nicknames"}
+
+
+def _scrub(obj):
+    if isinstance(obj, dict):
+        return {k: _scrub(v) for k, v in obj.items() if k.lower() not in _NAME_KEYS}
+    if isinstance(obj, list):
+        return [_scrub(v) for v in obj]
+    return obj
+
+
+@app.post("/problem")
+def problem(req: ProblemRequest):
+    """
+    The app went wrong: a user tapped "Report a problem", or the app crashed.
+    Stores the phone's event trail against the scans it names, and holds those
+    scans' photos past retention (D-080). tools/repro.py replays it.
+    """
+    if STORE is None:
+        raise HTTPException(status_code=503, detail={
+            "error": "storage_unavailable",
+            "detail": "Problem reports need the database (INSIDELABEL_DB is not set).",
+        })
+    if req.kind not in ("user", "auto"):
+        raise HTTPException(status_code=422, detail={"error": "bad_kind", "detail": 'kind is "user" or "auto".'})
+    client, events = _scrub(req.client), _scrub(req.events)
+    if len(json.dumps(client)) + len(json.dumps(events)) > MAX_PROBLEM_BYTES:
+        raise HTTPException(status_code=413, detail={
+            "error": "report_too_large", "detail": f"client + events must be under {MAX_PROBLEM_BYTES} bytes.",
+        })
+    scan_id = None
+    if req.scan_id:
+        try:
+            scan_id = str(uuid.UUID(req.scan_id))
+        except ValueError:
+            scan_id = None
+    request_id = req.request_id if req.request_id and trace.accept_or_new(req.request_id) == req.request_id else None
+    out = STORE.save_problem(
+        kind=req.kind, device_id=req.device_id, scan_id=scan_id, request_id=request_id,
+        comment=req.comment, app_version=req.app_version, build=trace.BUILD,
+        data_version=trace.DATA_VERSION, client=client, events=events, signature=req.signature)
+    return {"status": "received", **out}
+
+
+# ---------------------------------------------------------------------------
 MAX_IMAGE_BYTES = 12 * 1024 * 1024
 ALLOWED_MIME = {"image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"}
 
@@ -588,6 +672,20 @@ async def scan(
         if img:
             images.append(img)
 
+    # D-092: everything needed to replay this scan, minus the photos (kept by
+    # media) and the model's answer (added once we have it). `who` is left out:
+    # an old client may put a name in it (D-074).
+    tr = {
+        "request_id": trace.current_request_id(), "build": trace.BUILD,
+        "data_version": trace.DATA_VERSION, "engine_version": ENGINE_VERSION,
+        "prompt_version": PROMPT_VERSION,
+        "request": {"barcode": barcode, "avoid": avoid_codes if avoid is not None else None,
+                    "profiles": people, "pairing_confirmed": pairing_confirmed,
+                    "compare_regulators": compare_regulators,
+                    "images": [r for _d, _m, r in images], "replay": replay is not None},
+        "timings": {},
+    }
+
     # D-024: a barcode alone is a catalogue lookup — no vision call, ~₹0.
     # Photos, when sent, are always read: that is how a reformulation under an
     # unchanged barcode gets noticed, and how the D-073 allergy re-check works.
@@ -601,7 +699,7 @@ async def scan(
             })
         result = _catalogue_result(hit, avoid_codes, who, compare_regulators, people)
         result["scan_id"] = _str(_persist(STORE.record_cache_hit, hit, device_id=device_id,
-                                          latency_ms=_ms(t0)))
+                                          latency_ms=_ms(t0), trace=tr))
         return result
 
     keys = _save_images(images)
@@ -612,12 +710,14 @@ async def scan(
             "detail": "Supply at least a back-of-pack image.",
         })
 
+    t_vision = time.monotonic()
     try:
         vision, corrections = gemini.analyze_images(images, raw_response=replay)
     except gemini.VisionUnavailable as e:
+        tr["timings"]["vision_ms"] = _ms(t_vision)
         _persist(STORE and STORE.record_failed_scan, "vision_unavailable",
                  device_id=device_id, latency_ms=_ms(t0),
-                 front_key=keys.get("front"), back_key=keys.get("back"))
+                 front_key=keys.get("front"), back_key=keys.get("back"), trace=tr)
         # 503 with Retry-After, not 502. The images were fine and the request
         # was fine; the upstream model was busy. A client should retry this,
         # and a user should not be told their photo failed.
@@ -628,12 +728,18 @@ async def scan(
             "hint": "Model overloaded upstream. Already retried with backoff; try again shortly.",
         })
     except gemini.VisionError as e:
+        tr["timings"]["vision_ms"] = _ms(t_vision)
+        tr["model_raw"] = getattr(e, "raw_text", None)
         _persist(STORE and STORE.record_failed_scan, "vision_failed",
                  device_id=device_id, latency_ms=_ms(t0),
-                 front_key=keys.get("front"), back_key=keys.get("back"))
+                 front_key=keys.get("front"), back_key=keys.get("back"), trace=tr)
         raise HTTPException(status_code=502, detail={
             "error": "vision_failed", "detail": str(e), "retryable": False,
         })
+
+    tr["timings"]["vision_ms"] = _ms(t_vision)
+    tr["model_raw"] = vision.pop("_raw_text", None)
+    t_ocr = time.monotonic()
 
     # Independent OCR cross-check on the back of pack. This is the only check
     # in the pipeline that is not the model grading itself, and it is the only
@@ -676,6 +782,7 @@ async def scan(
         vision["verified_anchors"] = []
     vision["_ocr_cross_check"] = ocr_result
 
+    tr["timings"]["ocr_ms"] = _ms(t_ocr)
     vision["_pairing_attested_by_user"] = pairing_confirmed
     proceed, reliability = rel.assess(vision)
     reliability["client_corrections"] = corrections
@@ -696,7 +803,8 @@ async def scan(
     if not proceed:
         scan_id = _persist(STORE and STORE.record_failed_scan, "refused",
                            error_code=reliability.get("error"), device_id=device_id,
-                           latency_ms=_ms(t0), front_key=keys.get("front"), back_key=keys.get("back"))
+                           latency_ms=_ms(t0), front_key=keys.get("front"), back_key=keys.get("back"),
+                           trace=tr)
         return JSONResponse(status_code=422, content={
             # A refused scan still answers the allergy question: "couldn't
             # confirm", never silence (D-037, D-072).
@@ -706,6 +814,7 @@ async def scan(
                 reliability=reliability, profiles=people, allergen_confidence=0.0,
                 allergen_reliable=False),
             "scan_id": _str(scan_id),
+            "request_id": tr["request_id"],
             "verdict": None,
             "product": vision.get("product"),
             "reliability": reliability,
@@ -716,7 +825,15 @@ async def scan(
     # commas and brackets. Rejoining is deliberate: it keeps a single parsing
     # path for /analyze and /scan, so the two endpoints can never disagree.
     raw = ", ".join(vision["ingredients"])
-    guard_ingredients(raw)
+    try:
+        guard_ingredients(raw)
+    except HTTPException as e:
+        # A read that yields nothing parseable is a refusal too; record it so it
+        # can be replayed (D-092), then refuse as before.
+        _persist(STORE and STORE.record_failed_scan, "refused",
+                 error_code=e.detail.get("error"), device_id=device_id, latency_ms=_ms(t0),
+                 front_key=keys.get("front"), back_key=keys.get("back"), trace=tr)
+        raise
     verdict = engine.analyze(raw)
 
     # D-072: allergen output needs a reliable scan AND a complete list AND
@@ -750,7 +867,7 @@ async def scan(
         claims_trusted=claims_trusted, reliability=reliability, barcode=barcode,
         device_id=device_id, latency_ms=_ms(t0), model_name=vision.get("_model") or MODEL,
         prompt_version=PROMPT_VERSION, engine_version=ENGINE_VERSION,
-        front_key=keys.get("front"), back_key=keys.get("back"))
+        front_key=keys.get("front"), back_key=keys.get("back"), trace=tr)
 
     display = rel.apply_display_rule(verdict, reliability)
     user_claims = _user_claim_check(claim_check, vision.get("front_claims", []))

@@ -14,6 +14,9 @@ Rules this module follows (the database enforces the hard ones too):
     label's own words (D-043).
   * Front-of-pack claims are stored only when the claim check actually ran on a
     confirmed pairing (D-035); otherwise they may belong to a different pack.
+  * Every scan row carries its own trace (D-092): request id, build, data
+    version, the model's raw answer and the request options, so any scan can be
+    replayed later (tools/repro.py).
 """
 
 import hashlib
@@ -162,33 +165,50 @@ class Store:
                      LEFT JOIN brands b ON b.id = p.brand_id
                     WHERE p.barcode = %s""", (barcode,)).fetchone()
 
+    def version_hit(self, product_version_id):
+        """A specific version in find_current()'s shape: what a cached scan was served (D-092)."""
+        with self._connect() as conn:
+            return conn.execute(
+                """SELECT p.id AS product_id, p.barcode, p.name, p.variant, b.name AS brand,
+                          p.net_qty_value, p.net_qty_unit,
+                          v.id AS product_version_id, v.version_no, v.ingredients,
+                          v.allergen_statement, v.front_claims, v.verified_at
+                     FROM product_versions v
+                     JOIN products p ON p.id = v.product_id
+                     LEFT JOIN brands b ON b.id = p.brand_id
+                    WHERE v.id = %s""", (product_version_id,)).fetchone()
+
     # -- writes --------------------------------------------------------
 
-    def record_cache_hit(self, hit, device_id=None, latency_ms=None):
+    def record_cache_hit(self, hit, device_id=None, latency_ms=None, trace=None):
         with self._connect() as conn:
             uid = self._user(conn, device_id)
             conn.execute("UPDATE products SET scan_count = scan_count + 1 WHERE id = %s",
                          (hit["product_id"],))
-            return conn.execute(
+            sid = conn.execute(
                 """INSERT INTO scans (user_id, product_version_id, resolved_via, cache_hit, outcome,
                                       latency_ms, ai_cost_paise)
                    VALUES (%s, %s, 'barcode', true, 'verdict', %s, 0) RETURNING id""",
                 (uid, hit["product_version_id"], latency_ms)).fetchone()["id"]
+            self._set_trace(conn, sid, trace)
+            return sid
 
     def record_failed_scan(self, outcome, error_code=None, device_id=None, latency_ms=None,
-                           front_key=None, back_key=None):
+                           front_key=None, back_key=None, trace=None):
         with self._connect() as conn:
             uid = self._user(conn, device_id)
-            return conn.execute(
+            sid = conn.execute(
                 """INSERT INTO scans (user_id, resolved_via, cache_hit, outcome, error_code, latency_ms,
                                       front_image_key, back_image_key)
                    VALUES (%s, 'failed', false, %s, %s, %s, %s, %s) RETURNING id""",
                 (uid, outcome, error_code, latency_ms, front_key, back_key)).fetchone()["id"]
+            self._set_trace(conn, sid, trace)
+            return sid
 
     def save_scan(self, *, vision, verdict, claim_check, claims_trusted, reliability,
                   barcode=None, device_id=None, latency_ms=None,
                   model_name=None, prompt_version=None, engine_version=None,
-                  front_key=None, back_key=None):
+                  front_key=None, back_key=None, trace=None):
         """
         Store a vision-path scan: product (found or created), a version waiting
         for review (new, or an identical one already waiting), its findings and
@@ -264,12 +284,28 @@ class Store:
                    VALUES (%s, %s, %s, false, 'verdict', %s, %s, %s) RETURNING id""",
                 (uid, vid, "new_product" if vstatus == "pending_review" else "barcode",
                  latency_ms, front_key, back_key)).fetchone()["id"]
+            self._set_trace(conn, sid, trace)
             if queued:
                 conn.execute(
                     """INSERT INTO review_queue (kind, scan_id, product_version_id, notify_user_id)
                        VALUES (%s, %s, %s, %s)""", (queued, sid, vid, uid))
             return {"scan_id": str(sid), "product_id": pid, "product_version_id": vid,
                     "version_status": vstatus, "queued": queued}
+
+    _TRACE_COLS = ("request_id", "build", "data_version", "engine_version", "prompt_version",
+                   "model_raw", "request", "timings")
+
+    @classmethod
+    def _set_trace(cls, conn, sid, trace):
+        """D-092: what it takes to replay this scan. Unknown keys are ignored."""
+        if not trace:
+            return
+        cols = [c for c in cls._TRACE_COLS if trace.get(c) is not None]
+        if not cols:
+            return
+        vals = [Jsonb(trace[c]) if c in ("request", "timings") else trace[c] for c in cols]
+        conn.execute(f"UPDATE scans SET {', '.join(c + ' = %s' for c in cols)} WHERE id = %s",
+                     (*vals, sid))
 
     @staticmethod
     def _insert_findings(conn, vid, engine_version, findings):
@@ -312,3 +348,70 @@ class Store:
                    VALUES ('correction', %s, %s, %s, %s) RETURNING id""",
                 (scan_id, product_version_id, cid, uid)).fetchone()["id"]
             return {"correction_id": cid, "review_id": rid}
+
+    # -- problem reports (D-092) --------------------------------------------
+
+    def save_problem(self, *, kind, device_id=None, scan_id=None, request_id=None, comment=None,
+                     app_version=None, build=None, data_version=None, client=None, events=None,
+                     server_error=None, signature=None):
+        """Store a problem report. A user report holds the scan's photos past retention (D-080)."""
+        with self._connect() as conn:
+            uid = self._user(conn, device_id)
+            # One crash can fire on every screen; an automatic report of the same
+            # error from the same phone within an hour is counted once.
+            if kind == "auto" and signature:
+                dup = conn.execute(
+                    """SELECT id FROM problem_reports WHERE kind = 'auto' AND signature = %s
+                          AND user_id IS NOT DISTINCT FROM %s AND created_at > now() - interval '1 hour'
+                        LIMIT 1""", (signature, uid)).fetchone()
+                if dup:
+                    return {"problem_id": dup["id"], "scan_id": None, "duplicate": True}
+            if scan_id is None and request_id:
+                row = conn.execute("SELECT id FROM scans WHERE request_id = %s ORDER BY created_at DESC LIMIT 1",
+                                   (request_id,)).fetchone()
+                scan_id = row["id"] if row else None
+            elif scan_id is not None and conn.execute(
+                    "SELECT 1 FROM scans WHERE id = %s", (scan_id,)).fetchone() is None:
+                scan_id = None                   # a scan we never stored; keep the report anyway
+            pid = conn.execute(
+                """INSERT INTO problem_reports (kind, user_id, scan_id, request_id, comment, app_version,
+                                                build, data_version, client, events, server_error, signature)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id""",
+                (kind, uid, scan_id, request_id, comment, app_version, build, data_version,
+                 Jsonb(client or {}), Jsonb(events or []), server_error, signature)).fetchone()["id"]
+            if kind == "user":
+                # Every scan in the trail, not just the last: the earlier one may be the cause.
+                rids = [e.get("request_id") for e in (events or []) if isinstance(e, dict) and e.get("request_id")]
+                conn.execute("""UPDATE scans SET evidence_hold = true
+                                 WHERE id = %s OR request_id = ANY(%s)""", (scan_id, rids))
+            return {"problem_id": pid, "scan_id": str(scan_id) if scan_id else None}
+
+    def problem(self, problem_id):
+        """A report with every scan it can be tied to: its own, and any whose request id is in the trail."""
+        with self._connect() as conn:
+            rep = conn.execute("SELECT * FROM problem_reports WHERE id = %s", (problem_id,)).fetchone()
+            if rep is None:
+                return None
+            rids = {e.get("request_id") for e in rep["events"] if isinstance(e, dict)} - {None}
+            if rep["request_id"]:
+                rids.add(rep["request_id"])
+            scans = conn.execute(
+                """SELECT s.*, p.barcode FROM scans s
+                     LEFT JOIN product_versions v ON v.id = s.product_version_id
+                     LEFT JOIN products p ON p.id = v.product_id
+                    WHERE s.id = %s OR s.request_id = ANY(%s)
+                    ORDER BY s.created_at""", (rep["scan_id"], list(rids))).fetchall()
+            return {"report": rep, "scans": scans}
+
+    def open_problems(self, limit=50):
+        with self._connect() as conn:
+            return conn.execute(
+                """SELECT id, kind, created_at, signature, comment, scan_id, request_id, app_version, build
+                     FROM problem_reports WHERE status = 'open' ORDER BY created_at DESC LIMIT %s""",
+                (limit,)).fetchall()
+
+    def set_problem_status(self, problem_id, status, note=None):
+        with self._connect() as conn:
+            return conn.execute(
+                "UPDATE problem_reports SET status = %s, note = coalesce(%s, note) WHERE id = %s RETURNING id",
+                (status, note, problem_id)).fetchone() is not None

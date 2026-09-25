@@ -7,9 +7,10 @@
 // checks it (D-042). Text in this file is linted too (tests/test_web.py).
 
 import {
-  AGES, MAX_PROFILES, ApiError, addHistory, allergenList, compareRequest, deviceId, el, fill,
-  history, historyItem, prepareImage, profileByRef, profiles, reportRequest, saveProfiles,
-  scanRequest, store, updatesRequest, validGtin,
+  AGES, APP_VERSION, MAX_PROFILES, ApiError, addHistory, allergenList, clientInfo, compareRequest,
+  deviceId, el, fill, history, historyItem, lastIncident, prepareImage, problemRequest, profileByRef,
+  profiles, record, reportRequest, saveProfiles, scanRequest, store, trailSnapshot, updatesRequest,
+  validGtin,
 } from "./lib.js";
 import { barcodeSupported, startScanner } from "./camera.js";
 
@@ -21,7 +22,7 @@ let pending = { barcode: null, back: null, front: null, pairing: false, attempts
 
 // ------------------------------------------------------------------ navigation
 const routes = {
-  "": home, welcome, household, person, scan, photo, result, report, compare,
+  "": home, welcome, household, person, scan, photo, result, report, compare, problem,
 };
 
 function go(path) { location.hash = "#/" + path; }
@@ -29,6 +30,8 @@ function go(path) { location.hash = "#/" + path; }
 function route() {
   if (stopCamera) { stopCamera(); stopCamera = null; }
   const [name, arg] = location.hash.replace(/^#\/?/, "").split("/");
+  // D-092: screens in the trail. `arg` is a scan id or a profile ref, never a name.
+  record("route", { to: name || "home", arg: arg || undefined });
   if (!store.get("welcomed", false) && name !== "welcome" && name !== "household" && name !== "person") {
     return show(welcome());
   }
@@ -238,13 +241,16 @@ async function scan() {
   if (await barcodeSupported()) {
     startScanner(video, code => lookUp(code)).then(stop => {
       if (seq !== navSeq) return stop();          // the user left before the camera opened
+      record("camera", { started: true });
       stopCamera = stop;
       status.textContent = "Point the camera at the barcode on the pack.";
-    }).catch(() => {
+    }).catch(e => {
+      record("camera", { started: false, error: String(e?.name || e) });
       video.parentElement.remove();
       status.textContent = "We couldn't open the camera. Type the number under the barcode instead.";
     });
   } else {
+    record("camera", { barcode_detector: false });
     video.parentElement.remove();
     status.textContent = "This phone can't read barcodes in the browser. Type the number under the barcode.";
   }
@@ -262,13 +268,14 @@ function manualEntry() {
     e.preventDefault();
     const code = input.value.replace(/\D/g, "");
     if (!validGtin(code)) { err.textContent = "That number doesn't look right. Check the digits under the barcode."; return; }
-    lookUp(code);
+    lookUp(code, "typed");
   });
   return el("div", {}, form, err);
 }
 
-async function lookUp(code) {
+async function lookUp(code, how = "camera") {
   if (stopCamera) { stopCamera(); stopCamera = null; }
+  record("barcode", { how, digits: code.length });
   pending.barcode = code;
   show(working("Looking up this pack…", false));
   try {
@@ -401,7 +408,7 @@ function result(id) {
       button("Retake the photo", () => { pending.back = null; go("photo"); }, "primary"),
       pending.attempts >= 2 && el("p", { class: "muted" },
         "Still not working? Try daylight, or another pack. Some labels are printed too small or too shiny to read."),
-      reportLink(h));
+      reportLink(h), problemLink());
     return view;
   }
 
@@ -624,13 +631,81 @@ function apiErrorView(e, retry) {
     el("h1", {}, "That didn't work"),
     el("p", {}, apiMessage(e)),
     retry && button("Try again", retry, "primary"),
+    problemLink(),
     button("Home", () => go(""), "link"));
 }
 
 function errorView(text) {
   return el("section", { class: "stack" }, el("h1", {}, "Sorry"), el("p", {}, text),
-    button("Home", () => go(""), "primary"));
+    button("Home", () => go(""), "primary"), problemLink());
 }
+
+// ------------------------------------------------------------------ report a problem (D-092)
+// "Report a mistake" is about the answer (reviewers fix the data). This is about
+// the app misbehaving: it sends the trail so the developer can replay it.
+function problemLink() {
+  return el("p", {}, el("a", { href: "#/problem", class: "report" }, "Something not working? Report a problem"));
+}
+
+function problem() {
+  const incident = lastIncident();
+  const comment = el("textarea", { id: "comment", maxlength: "2000", rows: "3" });
+  const err = el("p", { class: "error", role: "alert" });
+  const preview = el("pre", { class: "tech preview" });
+  const form = el("form", { class: "stack" },
+    el("h1", {}, "Report a problem"),
+    el("p", {}, "Tell us what went wrong. We'll send what the app did in the last few minutes, " +
+                "so we can see exactly what happened."),
+    el("label", { for: "comment" }, "What happened? (optional)"), comment,
+    el("details", { class: "item", ontoggle: () => {
+        preview.textContent = JSON.stringify({ client: clientInfo(), events: trailSnapshot(), ...incident }, null, 1);
+      } },
+      el("summary", {}, "What we'll send"),
+      el("ul", { class: "plain small" },
+        el("li", {}, "The screens you opened and the requests the app made, with their times and results."),
+        el("li", {}, "Your phone and browser type, screen size and connection."),
+        el("li", {}, "Age bands and avoid lists. Nicknames stay on this phone."),
+        el("li", {}, "If a pack was scanned, we keep its photos until we've looked into it.")),
+      preview),
+    err,
+    el("button", { type: "submit", class: "btn primary" }, "Send report"),
+    button("Cancel", () => window.history.back(), "link"));
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    try {
+      const { body } = await problemRequest({ kind: "user", comment: comment.value.trim() || null, ...incident });
+      show(el("section", { class: "stack" }, el("h1", {}, "Thank you"),
+        el("p", {}, `We've got it. Your reference is #${body.problem_id}.`),
+        el("p", { class: "muted" }, "Quote it if you write to us about this."),
+        button("Done", () => go(""), "primary")));
+    } catch (ex) {
+      err.textContent = ex.status === 0 ? "No connection. Try again when you're online."
+                                        : "We couldn't send that just now. Try again in a minute.";
+    }
+  });
+  return form;
+}
+
+// Crashes nobody reports: sent automatically, once per error per session, with
+// the trail but no comment. Only errors from our own scripts.
+const sentCrashes = new Set();
+function crash(kind, message, where) {
+  record("error", { kind, message: String(message).slice(0, 300), where });
+  const signature = `${kind}:${String(message).slice(0, 80)}@${where}`;
+  if (sentCrashes.has(signature)) return;
+  sentCrashes.add(signature);
+  problemRequest({ kind: "auto", signature, ...lastIncident() }).catch(() => {});
+}
+window.addEventListener("error", e => {
+  if (e.filename && !e.filename.startsWith(location.origin)) return;
+  const file = (e.filename || "").split("/").pop();
+  crash("error", e.message, `${file}:${e.lineno}:${e.colno}`);
+});
+window.addEventListener("unhandledrejection", e => {
+  const r = e.reason;
+  const top = String(r?.stack || "").split("\n").find(l => l.includes(location.origin)) || "";
+  crash("rejection", r?.message || r, top.split("/").pop().replace(/\)$/, "") || "?");
+});
 
 // ------------------------------------------------------------------ pictures
 const SVG = "http://www.w3.org/2000/svg";
@@ -666,5 +741,6 @@ function barcodeIcon() {
 // ------------------------------------------------------------------ start
 window.addEventListener("hashchange", route);
 deviceId();
+record("start", { app_version: APP_VERSION });
 route();
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});

@@ -665,8 +665,15 @@ def analyze_images(images, api_key=None, raw_response=None, on_attempt=None):
         caller = (lambda: call_gemini_sdk(images, api_key)) if _HAVE_SDK else \
                  (lambda: call_gemini_rest(images, api_key))
         text = _with_retries(caller, on_attempt=on_attempt)
-    vision = parse_vision_json(text)
+    # D-092: the raw answer is what makes a scan replayable, so it travels with
+    # the result, and with the error when the answer can't be parsed.
+    try:
+        vision = parse_vision_json(text)
+    except VisionError as e:
+        e.raw_text = text
+        raise
     vision["_model"] = MODEL
+    vision["_raw_text"] = text
     return harden(vision, sent_front, sent_back)
 
 

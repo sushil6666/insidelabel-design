@@ -82,3 +82,32 @@ def test_only_ref_age_avoid_leave_the_device():                     # D-074
     assert "nickname" not in m.group(1)
     # /scan's `who` would carry a name; the app never sends it.
     assert 'fd.append("who"' not in JS["lib.js"]
+
+
+# ---------------------------------------------------------------- D-092 flight recorder
+
+def test_app_and_shell_versions_move_together():
+    app = re.search(r'APP_VERSION = "web-(\d+)"', JS["lib.js"]).group(1)
+    sw = re.search(r'VERSION = "il-shell-(\d+)"', JS["sw.js"]).group(1)
+    assert app == sw, "bump APP_VERSION (lib.js) and VERSION (sw.js) together"
+
+
+def test_trail_keeps_no_query_strings_or_names():
+    lib = JS["lib.js"]
+    assert 'path: path.split("?")[0]' in lib                 # /updates?device_id=… → /updates
+    info = _COMMENT.sub("", re.search(r"export function clientInfo\(\) \{(.*?)\n\}", lib, re.S).group(1))
+    assert "profilesForServer()" in info and "nickname" not in info
+    summary = re.search(r"function screenSummary\(s\) \{(.*?)\n\}", lib, re.S).group(1)
+    assert "fill(" not in summary                             # {name} placeholders, not nicknames
+
+
+def test_every_request_carries_an_id():
+    assert '"X-Request-ID": rid' in JS["lib.js"]
+
+
+def test_problem_link_on_every_page_and_error_screen():
+    assert 'href="#/problem"' in HTML
+    app = _COMMENT.sub("", JS["app.js"])
+    for fn in ("apiErrorView", "errorView"):
+        body = re.search(rf"function {fn}\(.*?\n\}}", app, re.S).group(0)
+        assert "problemLink()" in body, fn

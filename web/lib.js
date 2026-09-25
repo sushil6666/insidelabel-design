@@ -1,10 +1,18 @@
-// lib.js — storage, API calls, image preparation and a tiny DOM builder.
+// lib.js — storage, API calls, the flight recorder, image preparation and a
+// tiny DOM builder.
 //
-// Two rules from DECISIONS.md shape this file:
+// Three rules from DECISIONS.md shape this file:
 //  - D-074: profile nicknames live only in this browser. The server gets
 //    {ref, age, avoid}; text comes back with "{name}" and fill() swaps it here.
 //  - Every string from the server (including words read off a label) goes into
 //    the page as a text node, never as HTML.
+//  - D-092: the app keeps a short trail of what happened (screens, API calls
+//    with their request ids, errors) so "Report a problem" can send enough to
+//    reproduce it. The trail holds no names, no query strings and no label text
+//    beyond the headline the user was shown.
+
+// Bump together with VERSION in sw.js: a report then says which shell was cached.
+export const APP_VERSION = "web-2";
 
 // ------------------------------------------------------------------ storage
 // localStorage can throw (private mode, blocked site data); the app must still work.
@@ -25,10 +33,14 @@ export const store = {
 export function deviceId() {
   let id = store.get("device", null);
   if (!id) {
-    id = crypto.randomUUID ? crypto.randomUUID() : fallbackUuid();
+    id = uuid();
     store.set("device", id);
   }
   return id;
+}
+
+export function uuid() {
+  return crypto.randomUUID ? crypto.randomUUID() : fallbackUuid();
 }
 
 function fallbackUuid() {
@@ -76,6 +88,55 @@ export function addHistory(entry) {
 }
 export function historyItem(id) { return history().find(h => h.id === id); }
 
+// ------------------------------------------------------------------ flight recorder (D-092)
+const TRAIL_MAX = 60;
+const trail = (() => {
+  try { return JSON.parse(sessionStorage.getItem("il.trail") || "[]"); } catch { return []; }
+})();
+
+export function record(type, data = {}) {
+  trail.push({ ...data, t: Date.now(), type });           // `type` and `t` can't be overwritten
+  if (trail.length > TRAIL_MAX) trail.splice(0, trail.length - TRAIL_MAX);
+  try { sessionStorage.setItem("il.trail", JSON.stringify(trail)); } catch { /* memory only */ }
+}
+
+export function trailSnapshot() { return trail.map(e => ({ ...e })); }
+
+// The most recent call that failed, or the most recent scan: what a report is about.
+export function lastIncident() {
+  const failed = [...trail].reverse().find(e => e.type === "api" && (e.status === 0 || e.status >= 400));
+  const scanned = [...trail].reverse().find(e => e.type === "api" && e.path === "/scan");
+  const hit = failed || scanned;
+  return hit ? { request_id: hit.request_id, scan_id: hit.scan_id || null } : { request_id: null, scan_id: null };
+}
+
+export function clientInfo() {
+  const c = navigator.connection || {};
+  return {
+    app_version: APP_VERSION,
+    ua: navigator.userAgent,
+    lang: navigator.language,
+    screen: `${screen.width}x${screen.height}@${window.devicePixelRatio || 1}`,
+    viewport: `${window.innerWidth}x${window.innerHeight}`,
+    online: navigator.onLine,
+    network: c.effectiveType || null,
+    save_data: c.saveData || false,
+    memory_gb: navigator.deviceMemory || null,
+    standalone: window.matchMedia?.("(display-mode: standalone)").matches || false,
+    barcode_detector: "BarcodeDetector" in window,
+    service_worker: !!navigator.serviceWorker?.controller,
+    profiles: profilesForServer(),          // ref, age band, avoid list: never a nickname
+    scans_on_phone: history().length,
+  };
+}
+
+// What the user was shown, without names: enough for tools/repro.py to compare.
+function screenSummary(s) {
+  if (!s) return null;
+  return { state: s.state, headline: s.headline?.text, band: s.band?.code || null,
+           people: (s.people || []).map(p => `${p.ref}:${p.status}`) };
+}
+
 // ------------------------------------------------------------------ API
 export class ApiError extends Error {
   constructor(status, body) {
@@ -85,14 +146,26 @@ export class ApiError extends Error {
 }
 
 async function call(path, opts = {}) {
+  // Our own id, so a request that never reaches the server still has one in the trail.
+  const rid = uuid();
+  const t0 = performance.now();
+  const entry = { method: opts.method || "GET", path: path.split("?")[0], request_id: rid };
   let res;
   try {
-    res = await fetch(path, opts);
-  } catch {
-    throw new ApiError(0, { error: "offline", detail: "No connection." });
+    res = await fetch(path, { ...opts, headers: { ...(opts.headers || {}), "X-Request-ID": rid } });
+  } catch (e) {
+    record("api", { ...entry, status: 0, ms: Math.round(performance.now() - t0), error: String(e?.name || "network") });
+    throw new ApiError(0, { error: "offline", detail: "No connection.", request_id: rid });
   }
   let body = null;
   try { body = await res.json(); } catch { /* empty body */ }
+  record("api", {
+    ...entry, status: res.status, ms: Math.round(performance.now() - t0),
+    request_id: res.headers.get("x-request-id") || rid,
+    error: body?.error || null,
+    scan_id: body?.scan_id || null,
+    shown: path === "/scan" ? screenSummary(body?.screen) : undefined,
+  });
   // A refused scan (422) still carries a screen to render (D-037).
   if (!res.ok && !(res.status === 422 && body && body.screen)) throw new ApiError(res.status, body);
   return { status: res.status, body };
@@ -129,6 +202,11 @@ export const reportRequest = payload =>
   call("/report", { method: "POST", headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ ...payload, device_id: deviceId() }) });
 
+export const problemRequest = payload =>
+  call("/problem", { method: "POST", headers: { "Content-Type": "application/json" },
+                     body: JSON.stringify({ ...payload, device_id: deviceId(), app_version: APP_VERSION,
+                                            client: clientInfo(), events: trailSnapshot() }) });
+
 export const updatesRequest = () =>
   call("/updates?device_id=" + encodeURIComponent(deviceId()));
 
@@ -156,8 +234,12 @@ export async function prepareImage(file, maxEdge = 1600) {
     canvas.getContext("2d").drawImage(bmp, 0, 0, canvas.width, canvas.height);
     bmp.close && bmp.close();
     const blob = await new Promise(r => canvas.toBlob(r, "image/jpeg", 0.85));
+    record("photo", { mime: file.type, kb_in: Math.round(file.size / 1024),
+                      kb_out: blob ? Math.round(blob.size / 1024) : null,
+                      px: `${canvas.width}x${canvas.height}` });
     return blob || file;
-  } catch {
+  } catch (e) {
+    record("photo", { mime: file.type, kb_in: Math.round(file.size / 1024), resize_failed: String(e?.name) });
     return file;            // e.g. HEIC the browser can't decode: the API accepts it as is
   }
 }

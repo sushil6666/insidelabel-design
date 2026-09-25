@@ -30,6 +30,7 @@ pip install -e . && uvicorn insidelabel.api.main:app --reload
 | `GET /review` | live (needs DB + token) | reviewer screen, HTTP Basic |
 | `POST /report` | live (needs DB) | "Report a mistake": `{scan_id, field, proposed_value?, note?}` → correction + review queue (D-076) |
 | `GET /app/` | live | the PWA (`web/`, D-090); `/` redirects here |
+| `POST /problem` | live (needs DB) | "Report a problem" / app crash: `{kind, comment?, request_id?, scan_id?, client, events[]}` → problem report (D-092) |
 
 ## The result screen and profiles (D-060–D-066, D-074, D-091)
 
@@ -69,6 +70,25 @@ to 1600 px on the phone) → result. Also: household profiles with parental cons
 (nicknames in `localStorage` only), compare via `/compare`, "Report a mistake" via
 `/report`, and `/updates` checked on open. The service worker caches only `/app/`
 files, never API answers.
+
+## Reproducing problems (D-092)
+
+Every response carries `X-Request-ID` (the client's own if it sent a plain id,
+else a new UUID); error bodies repeat it as `request_id`; `/health` reports
+`build` (git commit, or `INSIDELABEL_BUILD` at deploy) and `data_version`
+(hash of `data/*.json`). Each scan row keeps the model's raw answer, the request
+options, versions and timings (migration 006), so `tools/repro.py show <id>`
+can replay it exactly:
+
+```bash
+INSIDELABEL_DB=… python tools/repro.py list          # open reports
+INSIDELABEL_DB=… python tools/repro.py show 12       # trail + versions + replay + diff
+INSIDELABEL_DB=… python tools/repro.py show 12 --save name   # → tests/regression/problems/
+INSIDELABEL_DB=… python tools/repro.py close 12 fixed --note "…"
+```
+
+An exception no handler caught returns `500 {error: "server_error", request_id}`
+and is stored as a `server` report with its traceback.
 
 ## Scans and the catalogue (D-024, D-028)
 

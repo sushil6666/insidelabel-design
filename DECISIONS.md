@@ -4,7 +4,7 @@ Architectural and product decisions for InsideLabel, with the reasoning attached
 Append-only. When a decision is reversed, mark it `SUPERSEDED` and add a new entry
 rather than editing the old one — the history is the point.
 
-**Last updated:** 2026-09-25 (D-090, D-091 locked)
+**Last updated:** 2026-09-25 (D-090, D-091, D-092 locked)
 
 **Status key:** `LOCKED` decided, don't relitigate · `OPEN` not yet decided ·
 `RECOMMENDED` proposed but not accepted · `SUPERSEDED` replaced
@@ -560,6 +560,40 @@ device replaces with the nickname; the user's own profile (`ref: "me"`) reads
 → high-concern additive → sugar under ≥ 2 names (maltodextrin excluded,
 `added_sugar_adjacent`) → moderate additive → industrial ingredients → partial read →
 "No concerns found in the ingredients." (only when the display rule says clean).
+
+### D-092 · Every problem can be reproduced: request ids, scan traces, "Report a problem" `LOCKED` (2026-09-25)
+Proposed by Sushil ("capture everything from the beginning to the error, with proof
+to reproduce it"); design by Claude; accepted by Sushil 2026-09-25.
+
+- **One id per request.** The app sends `X-Request-ID` (its own UUID, so a request
+  that never arrived still has one); the server echoes it, prefixes its log lines
+  with it, stores it on the scan row and puts it in every error body.
+- **Every scan row is replayable** (migration 006): the model's raw answer before any
+  correction, the request options (barcode, profiles as ref/age/avoid, pairing…),
+  `build` (git commit), `data_version` (hash of `data/*.json`), engine and prompt
+  versions, step timings. Refused, failed and unparseable reads included; a read
+  with no parseable ingredients is now recorded too (it wasn't).
+- **The phone keeps a trail** of the last 60 events (screens, API calls with status,
+  time and request id, camera and photo outcomes, errors, and a name-free summary of
+  what each scan showed). Nothing leaves the phone until a report is sent.
+- **"Report a problem"** on every page and error screen, separate from "Report a
+  mistake" (D-076: wrong content → reviewers). It shows what will be sent, then posts
+  `/problem`. A user report holds the photos of every scan in its trail past the
+  30-day rule (D-080 "unless flagged"). **App crashes** are reported automatically
+  (no comment, no photo hold, once per error per session; the server counts repeats
+  from one phone within an hour once). **Unhandled server errors** are stored as
+  `server` reports with the traceback.
+- **`tools/repro.py show <id>`** prints the trail, versions and scans, replays each
+  scan on today's code with storage off, and says whether the result still matches
+  what the user saw. `--save NAME` freezes it as `tests/regression/problems/NAME.json`
+  (no photos: EXIF, git); edit `expected` to the right answer and the test fails
+  until the fix lands.
+
+Why our own and not Sentry first: Sentry groups crashes well but can't hold the
+photo + model answer that make a scan reproducible, and it would send user data to a
+third party (DPDP). Sentry can still be added for crash dashboards (STATE §8 item 8).
+Not recorded: nicknames (D-074; the server also drops `name`/`nickname`/`who` keys),
+query strings, response text beyond the headline shown. No session recording.
 
 ---
 
