@@ -89,6 +89,18 @@ if os.environ.get("INSIDELABEL_DB"):
 # computed and stored for reviewers; users see it only when this is "on".
 CLAIMS_TO_USERS = os.environ.get("INSIDELABEL_CLAIMS_TO_USERS", "off").lower() == "on"
 
+# D-101: `replay` (a recorded model answer used instead of a model call) is for
+# tests, repro.py and local tools. On a public server anyone could send an
+# invented reading: it skips the paid model step and lands in the review queue.
+# Off unless INSIDELABEL_ALLOW_REPLAY=on. In-process tools set REPLAY_ALLOWED.
+REPLAY_ALLOWED = None          # None: follow the environment, read per request
+
+
+def _replay_allowed():
+    if REPLAY_ALLOWED is not None:
+        return REPLAY_ALLOWED
+    return os.environ.get("INSIDELABEL_ALLOW_REPLAY", "off").lower() == "on"
+
 
 def _user_claim_check(cc, front_claims):
     """What a user sees of the claim check: the real result, or 'not released yet'."""
@@ -731,7 +743,7 @@ async def scan(
     # (422), while replay=string would be read as the model's answer. (Marking
     # fields include_in_schema=False has no effect inside a multipart form.)
     replay: Optional[str] = Form(None, examples=[""],
-                                 description="Testing only: recorded model JSON, used instead of a model call. Leave empty."),
+                                 description="Testing only: recorded model JSON, used instead of a model call. Needs INSIDELABEL_ALLOW_REPLAY=on (D-101). Leave empty."),
     avoid: Optional[str] = Form(None, examples=[""], description="Comma-separated allergen codes, e.g. 'milk,gluten'."),
     who: Optional[str] = Form(None, examples=[""],
                               description="Old clients only: a name for allergen text. The app sends none (D-074)."),
@@ -752,6 +764,13 @@ async def scan(
     # Form tools (/docs included) can send an empty box as "". An empty replay is
     # not a model answer, and an empty avoid is not an avoid list.
     replay = replay if replay and replay.strip() else None
+    if replay is not None and not _replay_allowed():
+        # D-101: refused before anything is read or stored, like a 429 (D-095).
+        log.warning("replay refused: INSIDELABEL_ALLOW_REPLAY is off")
+        raise HTTPException(status_code=403, detail={
+            "error": "replay_disabled",
+            "detail": "The replay field is for testing and is switched off on this server.",
+        })
     # D-095: before any photo is read or model called. A barcode-only lookup
     # costs nothing and has its own budget.
     lookup_only = bool(barcode and barcode.strip()) and back is None and front is None and replay is None

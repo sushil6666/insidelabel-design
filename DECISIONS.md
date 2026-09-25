@@ -4,7 +4,7 @@ Architectural and product decisions for InsideLabel, with the reasoning attached
 Append-only. When a decision is reversed, mark it `SUPERSEDED` and add a new entry
 rather than editing the old one — the history is the point.
 
-**Last updated:** 2026-09-26 (D-094–D-099 recommended, overnight session; awaiting Sushil)
+**Last updated:** 2026-09-25 (D-094–D-101 accepted by Sushil and locked)
 
 **Status key:** `LOCKED` decided, don't relitigate · `OPEN` not yet decided ·
 `RECOMMENDED` proposed but not accepted · `SUPERSEDED` replaced
@@ -645,8 +645,8 @@ nutrition-table value in reading order; the context rule is right to refuse them
 Open: Cloud Vision's text isn't stored on the scan row yet, so a replay (D-092) calls
 it again; store it (like `model_raw`) once it is switched on.
 
-### D-094 · A replay reads the stored OCR text and never calls Google `RECOMMENDED` (2026-09-26)
-Proposed by Claude (overnight session, STATE §8 item 5); awaiting Sushil.
+### D-094 · A replay reads the stored OCR text and never calls Google `LOCKED` (2026-09-26)
+Proposed by Claude (overnight session, STATE §8 item 5); accepted by Sushil 2026-09-25.
 
 Closes the "Open" note on D-093. Migration 007 adds `scans.ocr`
 (`{"back": {"reader", "text"}}`), written on every vision-path scan that reached
@@ -669,8 +669,8 @@ regressions (`--save`) now carry `ocr` too.
 Found on the way: a refused read where the OCR finds an additive the model lacks
 crashed `/scan` (`KeyError: 'caveats'` → 500) instead of refusing. Fixed.
 
-### D-095 · Rate limits per install and per IP, in memory `RECOMMENDED` (2026-09-26)
-Proposed by Claude (overnight session, STATE §8 item 6); awaiting Sushil.
+### D-095 · Rate limits per install and per IP, in memory `LOCKED` (2026-09-26)
+Proposed by Claude (overnight session, STATE §8 item 6); accepted by Sushil 2026-09-25.
 
 `/scan` and `/problem` are limited on two keys at once: `device_id` (exact for
 real users, but the client picks it, so an abuser rotates it) and the IP (can't
@@ -690,7 +690,7 @@ and one phone's refusals don't use up its neighbours' budget on a shared IP).
 **Not a scan row.** CLAUDE.md asks every new `/scan` outcome to be stored with
 its trace. A 429 is refused before anything is read: there's no photo or model
 answer to replay, and storing each refusal would let a flood turn into database
-writes. It is logged with its request id instead. *Sushil to confirm.*
+writes. It is logged with its request id instead. **Confirmed by Sushil (2026-09-25).**
 
 **In memory, one process.** Sliding windows in a dict, LRU-capped at 100k keys.
 Right for the beta's single server process; with several workers the limits
@@ -699,8 +699,8 @@ before scaling out. `X-Forwarded-For` is trusted only when
 `INSIDELABEL_PROXY_HOPS` says how many proxies sit in front, counting from the
 right. `repro.py` replays switch the limits off.
 
-### D-096 · "Send it to us": the server checks the attempts; the photos are kept `RECOMMENDED` (2026-09-26)
-Proposed by Claude (overnight session, STATE §8 item 7); awaiting Sushil. Builds D-070.
+### D-096 · "Send it to us": the server checks the attempts; the photos are kept `LOCKED` (2026-09-26)
+Proposed by Claude (overnight session, STATE §8 item 7); accepted by Sushil 2026-09-25. Builds D-070.
 
 - **After two refused scans** the retake screen offers "Send it to us". The app
   sends the refused scans' ids to `POST /send-to-us`; the server checks them —
@@ -722,8 +722,8 @@ Proposed by Claude (overnight session, STATE §8 item 7); awaiting Sushil. Build
 Not built: a free-text note with the photos (it could carry names, D-074), push
 notifications (D-070 says later).
 
-### D-097 · One login per reviewer; the shared token only bootstraps `RECOMMENDED` (2026-09-26)
-Proposed by Claude (overnight session, STATE §8 item 8); awaiting Sushil.
+### D-097 · One login per reviewer; the shared token only bootstraps `LOCKED` (2026-09-26)
+Proposed by Claude (overnight session, STATE §8 item 8); accepted by Sushil 2026-09-25.
 
 The shared `INSIDELABEL_REVIEW_TOKEN` let anyone with it publish under any name.
 Now: a `reviewers` table (migration 009), passwords as salted scrypt hashes from
@@ -732,7 +732,8 @@ Python's standard library (no new dependency), managed with `tools/reviewers.py`
 
 - **The shared token works only while no account exists**, so switching over
   can't lock Sushil out: migrate, `add sushil`, and from then on it is refused.
-  *Sushil to confirm; the alternative is dropping the token outright.*
+  **Confirmed by Sushil (2026-09-25)**, over dropping the token outright; once the first
+  account works, the token is also removed from the environment.
 - **Form tokens (CSRF) are keyed by the reviewer's password hash**, so a password
   reset also invalidates forms opened before it.
 - **Guessing is throttled**: 10 failures per name or 30 per address in 15 minutes
@@ -745,8 +746,8 @@ Python's standard library (no new dependency), managed with `tools/reviewers.py`
 Still HTTP Basic, so HTTPS is required at deploy (it is, §8 item 13). No
 roles yet: every reviewer can publish.
 
-### D-098 · Photo retention is a daily job, not a storage lifecycle rule `RECOMMENDED` (2026-09-26)
-Proposed by Claude (overnight session, STATE §8 item 8); awaiting Sushil. Implements
+### D-098 · Photo retention is a daily job, not a storage lifecycle rule `LOCKED` (2026-09-26)
+Proposed by Claude (overnight session, STATE §8 item 8); accepted by Sushil 2026-09-25. Implements
 D-080 and changes its mechanism.
 
 D-080 planned an R2 lifecycle rule on an originals prefix. A lifecycle rule
@@ -769,8 +770,8 @@ crops used as evidence" has nothing to act on yet: no crops are made today, and
 evidence rows quote text, not pixels. When R2 comes, give its media class the
 same `delete(key)`; no lifecycle rule on user photos.
 
-### D-099 · One INS parser, enforced by a test `RECOMMENDED` (2026-09-26)
-Proposed by Claude (overnight session, STATE §8 item 9); awaiting Sushil.
+### D-099 · One INS parser, enforced by a test `LOCKED` (2026-09-26)
+Proposed by Claude (overnight session, STATE §8 item 9); accepted by Sushil 2026-09-25.
 
 STATE §8 item 9 named `lenses/compare.py`. A search found four more private INS
 patterns: `claims/checker.py`, `tools/eval_vision.py`, `tools/stability_check.py`,
@@ -791,9 +792,9 @@ What the private copies got wrong, found by tests that fail on the old code:
 `tests/test_ins_parsing.py` now fails on any `\d{3…}` pattern in `src/` or `tools/`
 outside `core/tokenize.py` (migration file names in `db/migrate.py` excepted).
 
-### D-100 · The front photo: asked for once per pack, read by a reviewer `RECOMMENDED` (2026-09-25)
+### D-100 · The front photo: asked for once per pack, read by a reviewer `LOCKED` (2026-09-25)
 Proposed by Claude from Sushil's direction ("front photo is for company claims, and we
-keep the database of which brand claims what"); awaiting Sushil's acceptance.
+keep the database of which brand claims what"); accepted by Sushil 2026-09-25.
 
 The front carries the brand's claims and the product's name as sold. The catalogue
 wants one per version: it is the claims database, and the claim check (D-051) needs
@@ -816,6 +817,24 @@ the same ingredients queued nothing).
   card below the result; a thank-you on `/updates` once reviewed.
 
 Photo retention needs nothing new: open review items already hold their scans (D-098).
+
+### D-101 · `replay` is off on a server unless switched on `LOCKED` (2026-09-25)
+Proposed by Claude (noticed overnight, STATE §6 item 4); accepted by Sushil 2026-09-25.
+
+`/scan`'s `replay` field takes a recorded model answer instead of calling the model.
+It is how the tests, `tools/repro.py` (D-092) and `tools/queue_predictions.py` work,
+but on a public server anyone could send an invented reading: it skips the paid model
+step and lands in the review queue as a pending version. Review stops it reaching
+the catalogue; it still fills the queue with junk at no cost to the sender.
+
+- The server refuses a non-empty `replay` with **403 `replay_disabled`** unless
+  `INSIDELABEL_ALLOW_REPLAY=on`, before anything is read, stored or counted (like a
+  429, D-095: nothing to replay, logged with the request id). An empty box is not a
+  replay, so `/docs` keeps working.
+- In-process tools set `main.REPLAY_ALLOWED = True` (`repro.no_storage()`,
+  `queue_predictions.py`); the suite sets the variable in `tests/conftest.py`.
+- The public deploy never sets it. A local dev server that wants `replay` in `/docs`
+  sets it explicitly.
 
 ---
 

@@ -32,6 +32,7 @@ def main():
     from fastapi.testclient import TestClient
     from insidelabel.api import main as api
 
+    api.REPLAY_ALLOWED = True      # D-101: a local tool, in-process
     client = TestClient(api.app)
     ids = args.ids or sorted(os.path.basename(f)[:-5] for f in glob.glob(os.path.join(args.pred, "*.json")))
     for pid in ids:

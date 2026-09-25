@@ -1,6 +1,6 @@
 # STATE.md — where InsideLabel is, and how to pick it up
 
-**Last updated:** 2026-09-26, overnight session (branch `overnight-2026-09-26`, not merged) · **Owner:** Sushil · **Tests:** 245 passing, 1 skipped · **Release gate:** `python tools/release_check.py` — NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 6.9 s, Gemini + Cloud Vision, correct
+**Last updated:** 2026-09-25 evening (branch `front-photo-flow` = overnight work + D-100/D-101, not merged) · **Owner:** Sushil · **Tests:** 252 passing, 1 skipped · **Release gate:** `python tools/release_check.py` — NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 6.9 s, Gemini + Cloud Vision, correct
 
 This is the living status document. Read it first in any new session, then
 `DECISIONS.md` for the *why*. Update the "Last updated" line, the numbers and
@@ -81,7 +81,7 @@ sudo PG19_PORT=5432 bash tools/install_pg19.sh   # adds apt.postgresql.org, crea
 createdb insidelabel && createdb insidelabel_test
 python -m insidelabel.db.migrate "postgresql:///insidelabel?host=/var/run/postgresql"
 
-pytest -q                                    # 245 pass, 1 skipped; DB tests use embedded Postgres
+pytest -q                                    # 252 pass, 1 skipped; DB tests use embedded Postgres
 ```
 
 **Environment variables**
@@ -288,6 +288,24 @@ local `insidelabel` database, `photos/`, `media/`, `research/`, `predictions/` a
 Tests 193 → 245 (+52), 1 skipped. Release gate unchanged: 2 computed gates failing
 (gold set size, ingredient match), both data, not code.
 
+### After the overnight session — 2026-09-25 evening (branch `front-photo-flow`)
+
+Built on top of the overnight branch (rebased onto `91f46c6`), in a separate worktree so
+the unattended session wasn't disturbed.
+
+- **D-100, the front photo once per pack.** `/scan` says `front_wanted`; barcode + front
+  alone → a `front_photo` review item (migration 011), no model call; a re-check with a
+  trusted pairing queues it too; approval records the photo even with no claims. PWA: the
+  front is a visible card on first scans, "Add the front of the pack?" on catalogue hits.
+  **Found:** a re-check of a published pack silently dropped its front photo; and the
+  pairing checkbox showed before any front photo (`[hidden]` lost to `display: flex`).
+  4 tests + a headless-Chromium walk against a scratch DB.
+- **D-101, `replay` off on servers** unless `INSIDELABEL_ALLOW_REPLAY=on`; repro, tools
+  and tests switch it on in-process. 3 tests.
+- **D-094 – D-101 accepted by Sushil and locked**, including the two explicit points
+  (D-095: a 429 is not a scan row; D-097: the token bootstraps until the first account).
+- Tests 245 → 252, 1 skipped.
+
 ## 6. What went wrong, and what we learned
 
 Keep this list — it is the cheapest way to not repeat a mistake.
@@ -329,24 +347,19 @@ Keep this list — it is the cheapest way to not repeat a mistake.
 
 Nothing was blocked; all five items were built. These need you:
 
-1. **Accept or change D-094 – D-099** (all `RECOMMENDED` in `DECISIONS.md`), then review and
-   merge the PR. Two points inside them are explicitly yours:
-   - **D-095:** a rate-limited request is *not* stored as a scan row (nothing to replay,
-     and a flood mustn't become DB writes). CLAUDE.md says every new `/scan` outcome is
-     stored with its trace — confirm this exception or say otherwise.
-   - **D-097:** the shared token keeps working until the first account exists (so you
-     can't be locked out). Alternative: drop it outright.
+1. ~~Accept or change D-094 – D-099~~ ✅ accepted 2026-09-25 (with D-100, D-101). **Merge the
+   PR** `front-photo-flow` → `main` (it contains the overnight commits too).
 2. **After merging, on the local DB:** `python -m insidelabel.db.migrate "postgresql:///insidelabel?host=/var/run/postgresql"`
-   (applies 007–010), then `INSIDELABEL_DB=… python tools/reviewers.py add sushil` — it
+   (applies 007–011), then `INSIDELABEL_DB=… python tools/reviewers.py add sushil` — it
    prints your password once; from then on `/review` wants it, not the token. Until 007 is
    applied, a merged server can't store scans (the new `ocr` column is missing; the user still
    gets the result, the log says "scan persistence failed").
 3. **Try "Send it to us" on the phone** with the PWA test (§8 item 2): two unreadable photos
    → the button → publish it on `/review` → reopen the app. Only a faked API walked it.
-4. **Not done, noticed:** `/scan` still accepts the testing-only `replay` field from anyone:
-   a client can submit an invented model answer, which lands in the review queue as a
-   pending version. Harmless while every version is reviewed, but switch it off on the
-   public deploy (e.g. only with an env flag). Not changed overnight — it's a product call.
+4. ~~`replay` accepted from anyone~~ ✅ D-101: off unless `INSIDELABEL_ALLOW_REPLAY=on`.
+   Your local server now refuses `replay` in `/docs` (403) unless you add that variable.
+5. **Once `tools/reviewers.py add sushil` works,** delete `INSIDELABEL_REVIEW_TOKEN` from
+   `~/.bashrc` (D-097, as confirmed).
 
 ## 7. Open decisions (need Sushil)
 
@@ -393,7 +406,7 @@ setup alarms.
 8. ~~Individual reviewer logins and D-080 photo retention~~ ✅ overnight (D-097, D-098);
    retention needs a daily cron at deploy (item 13).
 9. ~~One INS parser, for real~~ ✅ overnight (D-099), five private patterns removed.
-9a. **Gate the `replay` form field** on `/scan` before a public URL (Waiting for Sushil, 4).
+9a. ~~Gate the `replay` form field~~ ✅ D-101.
 10. **Lift ingredient match 0.945 → ≥ 0.95** once the gold set is bigger (Britannia is the
     weakest at 0.80).
 11. **Fallback-model comparison** (`gemini-3.5-flash` on the gold set, ~₹3) when Google is
