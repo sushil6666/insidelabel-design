@@ -643,13 +643,20 @@ async def scan(
     back: Optional[UploadFile] = File(None, description="Back of pack — the ingredient list."),
     front: Optional[UploadFile] = File(None, description="Front of pack — marketing claims."),
     pairing_confirmed: bool = Form(False, description="User confirms both images show the same pack."),
-    replay: Optional[str] = Form(None, description="Recorded model JSON, for testing without an API call."),
-    avoid: Optional[str] = Form(None, description="Comma-separated allergen codes, e.g. 'milk,gluten'."),
-    who: Optional[str] = Form(None, description="Name used in allergen text."),
+    # Every text field carries an empty example: /docs otherwise pre-fills them
+    # with the word "string", and avoid=string is refused as an unknown allergen
+    # (422), while replay=string would be read as the model's answer. (Marking
+    # fields include_in_schema=False has no effect inside a multipart form.)
+    replay: Optional[str] = Form(None, examples=[""],
+                                 description="Testing only: recorded model JSON, used instead of a model call. Leave empty."),
+    avoid: Optional[str] = Form(None, examples=[""], description="Comma-separated allergen codes, e.g. 'milk,gluten'."),
+    who: Optional[str] = Form(None, examples=[""],
+                              description="Old clients only: a name for allergen text. The app sends none (D-074)."),
     compare_regulators: bool = Form(False, description="Also return EU and US status. Information only."),
-    barcode: Optional[str] = Form(None, description="EAN/UPC digits from the pack, if the camera read one."),
-    device_id: Optional[str] = Form(None, description="Anonymous install id (UUID). No personal data."),
-    profiles: Optional[str] = Form(None, description='JSON [{"ref","age","avoid"}], up to 3. No names (D-074).'),
+    barcode: Optional[str] = Form(None, examples=[""], description="EAN/UPC digits from the pack, if the camera read one."),
+    device_id: Optional[str] = Form(None, examples=[""], description="Anonymous install id (UUID). No personal data."),
+    profiles: Optional[str] = Form(None, examples=[""],
+                                   description='JSON [{"ref","age","avoid"}], up to 3. No names (D-074).'),
 ):
     """
     barcode -> reviewed catalogue entry, else images -> Gemini -> engine -> claim check.
@@ -659,6 +666,10 @@ async def scan(
     optional and only enables the claim check.
     """
     t0 = time.monotonic()
+    # Form tools (/docs included) can send an empty box as "". An empty replay is
+    # not a model answer, and an empty avoid is not an avoid list.
+    replay = replay if replay and replay.strip() else None
+    avoid = avoid if avoid and avoid.strip() else None
     avoid_codes = parse_avoid(avoid)
     people = parse_profiles(profiles)
     if avoid is None:

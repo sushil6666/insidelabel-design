@@ -130,3 +130,21 @@ def test_kid_line_for_a_profile_without_avoid_list():
     people = {p["ref"]: p for p in scan(BISCUIT).json()["screen"]["people"]}
     assert people["p2"]["status"] == "worth_knowing"               # sugar is the 2nd ingredient
     assert "{name}" in people["p2"]["line"]
+
+
+def test_empty_form_boxes_are_ignored():
+    # /docs and other form tools can send every empty text box as "".
+    empty = {k: "" for k in ("avoid", "who", "barcode", "device_id", "profiles")}
+    r = c.post("/scan", files=BACK, data={**empty, "replay": vision(PLAIN)})
+    assert r.status_code == 200 and r.json()["screen"]["state"] == "result"
+    # An empty replay is not a model answer: with no photo it is "no images", not a parse error.
+    r = c.post("/scan", data={**empty, "replay": ""})
+    assert r.status_code == 422 and r.json()["error"] == "no_images"
+
+
+def test_docs_page_prefills_nothing():
+    spec = c.get("/openapi.json").json()
+    ref = spec["paths"]["/scan"]["post"]["requestBody"]["content"]["multipart/form-data"]["schema"]["$ref"]
+    props = spec["components"]["schemas"][ref.split("/")[-1]]["properties"]
+    for name in ("replay", "avoid", "who", "barcode", "device_id", "profiles"):
+        assert props[name].get("examples") == [""], name       # else Swagger fills in "string"

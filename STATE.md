@@ -1,6 +1,6 @@
 # STATE.md — where InsideLabel is, and how to pick it up
 
-**Last updated:** 2026-09-25 (PWA + D-092) · **Owner:** Sushil · **Tests:** 179 passing, 1 skipped · **Release gate:** `python tools/release_check.py` — NOT READY (2 failing; 4 with `INSIDELABEL_DB` set)
+**Last updated:** 2026-09-25 (PWA + D-092) · **Owner:** Sushil · **Tests:** 181 passing, 1 skipped · **Release gate:** `python tools/release_check.py` — NOT READY (2 failing; 4 with `INSIDELABEL_DB` set)
 
 This is the living status document. Read it first in any new session, then
 `DECISIONS.md` for the *why*. Update the "Last updated" line, the numbers and
@@ -73,7 +73,7 @@ sudo PG19_PORT=5432 bash tools/install_pg19.sh   # adds apt.postgresql.org, crea
 createdb insidelabel && createdb insidelabel_test
 python -m insidelabel.db.migrate "postgresql:///insidelabel?host=/var/run/postgresql"
 
-pytest -q                                    # 179 pass, 1 skipped; DB tests use embedded Postgres
+pytest -q                                    # 181 pass, 1 skipped; DB tests use embedded Postgres
 ```
 
 **Environment variables**
@@ -301,7 +301,7 @@ current EUR-Lex text and check cyclamate's US status; drop PG18 after PG19 GA.
 | `src/insidelabel/` | the package (core, extraction, reliability, claims, lenses, db, review, api) |
 | `data/` | the knowledge tables — the moat |
 | `migrations/` | Postgres schema, plain SQL, applied in order |
-| `tests/` | 179 tests (+ `regression/problems/`, D-092); `conftest.py` gives each DB test module its own database |
+| `tests/` | 181 tests (+ `regression/problems/`, D-092); `conftest.py` gives each DB test module its own database |
 | `tools/` | release gate, leads (D-089), eval, batch scan, gold stubs, queue predictions, PG19 installer |
 | `gold/`, `photos/`, `predictions/` | 6 real labels: hand transcription, photos, recorded model output |
 | `research/` | private marketplace screenshots behind leads (git-ignored; never published — D-089) |
@@ -331,7 +331,7 @@ retention test. Public launch comes after the W4 number (D-083).
 | D-051, D-052, D-055 decided | locked | ✅ locked 2026-09-25 |
 | Published catalogue | ≥ 50 SKUs | ❌ 0 (6 waiting) |
 | Kids' biscuits published (D-058) | ≥ 15 in 7.2.1 / 7.2.2 | ❌ 0 (category picker ready) |
-| Test suite (`--with-tests`) | green | ✅ 179 |
+| Test suite (`--with-tests`) | green | ✅ 181 |
 
 ### Manual gates — tick when done
 
