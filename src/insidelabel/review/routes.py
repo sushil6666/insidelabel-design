@@ -2,10 +2,13 @@
 Reviewer screen (D-028): the label photo next to what was read from it, and
 the decision. Server-rendered; the one custom admin screen the plan allows.
 
-Auth: HTTP Basic. Username = reviewer name (recorded on every decision),
-password = INSIDELABEL_REVIEW_TOKEN. Every form carries a CSRF token derived
-from the reviewer and the secret, because a browser re-sends Basic credentials
-on cross-site requests.
+Auth: HTTP Basic, one account per reviewer (D-097, `tools/reviewers.py`); the
+name is recorded on every decision. The shared INSIDELABEL_REVIEW_TOKEN is only
+accepted while no account exists, so the first one can be created without a
+lockout. Failed logins are throttled per name and per address. Every form
+carries a CSRF token derived from the reviewer's password hash (the token, in
+bootstrap mode), because a browser re-sends Basic credentials on cross-site
+requests; a password reset invalidates the forms issued before it.
 """
 
 import difflib
@@ -20,8 +23,10 @@ from fastapi.responses import RedirectResponse, Response
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.templating import Jinja2Templates
 
+from insidelabel import ratelimit
 from insidelabel.core import engine
 from insidelabel.db.categories import COMMON
+from insidelabel.review import accounts
 from insidelabel.review.service import ReviewError, ReviewService
 
 router = APIRouter(prefix="/review", include_in_schema=False)
@@ -38,32 +43,50 @@ def _token():
     return os.environ.get("INSIDELABEL_REVIEW_TOKEN", "")
 
 
-def reviewer(creds: HTTPBasicCredentials = Depends(_basic)):
-    token = _token()
-    if SERVICE is None or not token:
+def reviewer(request: Request, creds: HTTPBasicCredentials = Depends(_basic)):
+    if SERVICE is None:
         raise HTTPException(status_code=503, detail={
             "error": "review_disabled",
-            "detail": "Set INSIDELABEL_DB and INSIDELABEL_REVIEW_TOKEN to enable the review screen."})
-    ok = secrets.compare_digest(creds.password.encode(), token.encode())
-    if not ok or not _NAME.match(creds.username):
+            "detail": "Set INSIDELABEL_DB to enable the review screen."})
+    name, ip = creds.username, ratelimit.client_ip(request)
+    wait = ratelimit.LIMITER.wait("review_login_fail", name=name, ip=ip)
+    if wait:
+        raise HTTPException(status_code=429, headers={"Retry-After": str(int(wait) + 1)},
+                            detail={"error": "too_many_attempts", "detail": "Too many wrong passwords. Wait a few minutes."})
+    key = None
+    if _NAME.match(name):
+        if accounts.any_accounts(SERVICE.conninfo):
+            key = accounts.check(SERVICE.conninfo, name, creds.password)
+        else:
+            # Bootstrap only: the shared token until the first account exists.
+            token = _token()
+            if not token:
+                raise HTTPException(status_code=503, detail={
+                    "error": "review_disabled",
+                    "detail": "Create a reviewer account: python tools/reviewers.py add <name>"})
+            if secrets.compare_digest(creds.password.encode(), token.encode()):
+                key = token
+    if key is None:
+        ratelimit.LIMITER.hit("review_login_fail", name=name, ip=ip)
         raise HTTPException(status_code=401, detail={"error": "unauthorised"},
                             headers={"WWW-Authenticate": 'Basic realm="InsideLabel review"'})
-    return creds.username
+    request.state.csrf_key = key
+    return name
 
 
-def _csrf(name):
-    return hmac.new(_token().encode(), f"csrf:{name}".encode(), hashlib.sha256).hexdigest()
+def _csrf(request, name):
+    return hmac.new(request.state.csrf_key.encode(), f"csrf:{name}".encode(), hashlib.sha256).hexdigest()
 
 
 async def _form(request, name):
     form = dict(await request.form())
-    if not secrets.compare_digest(form.get("csrf", ""), _csrf(name)):
+    if not secrets.compare_digest(form.get("csrf", ""), _csrf(request, name)):
         raise HTTPException(status_code=403, detail={"error": "bad_csrf_token"})
     return form
 
 
 def _page(request, template, name, **ctx):
-    return templates.TemplateResponse(request, template, {"reviewer": name, "csrf": _csrf(name), **ctx})
+    return templates.TemplateResponse(request, template, {"reviewer": name, "csrf": _csrf(request, name), **ctx})
 
 
 # ---------------------------------------------------------------- queue

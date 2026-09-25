@@ -47,6 +47,9 @@ RULES = {
     # Problem reports: people report once; the app's crash reporter already
     # sends each error once per session.
     "problem": {"device": [(10, 3_600)], "ip": [(60, 3_600)]},
+    # Failed reviewer logins (D-097), counted per name and per address. Only
+    # failures are counted; while locked, even the right password is refused.
+    "review_login_fail": {"name": [(10, 900)], "ip": [(30, 900)]},
     # "Send it to us" (D-070): each is a reviewer's time.
     "send_to_us": {"device": [(10, 86_400)], "ip": [(50, 86_400)]},
 }
@@ -78,6 +81,15 @@ class Limiter:
                 # The oldest hit that has to leave before one more fits.
                 wait = max(wait, in_window[len(in_window) - limit] + window - now)
         return wait
+
+    def wait(self, bucket, **keys):
+        """Seconds until one more request would pass, or None; counts nothing."""
+        rules = self.rules.get(bucket) or {}
+        now = self.clock()
+        with self._lock:
+            w = max([self._wait(self._hits.get((bucket, kind, value), ()), rules[kind], now)
+                     for kind, value in keys.items() if value is not None and rules.get(kind)] or [0.0])
+        return w if w > 0 else None
 
     def hit(self, bucket, **keys):
         """

@@ -722,6 +722,53 @@ Proposed by Claude (overnight session, STATE §8 item 7); awaiting Sushil. Build
 Not built: a free-text note with the photos (it could carry names, D-074), push
 notifications (D-070 says later).
 
+### D-097 · One login per reviewer; the shared token only bootstraps `RECOMMENDED` (2026-09-26)
+Proposed by Claude (overnight session, STATE §8 item 8); awaiting Sushil.
+
+The shared `INSIDELABEL_REVIEW_TOKEN` let anyone with it publish under any name.
+Now: a `reviewers` table (migration 009), passwords as salted scrypt hashes from
+Python's standard library (no new dependency), managed with `tools/reviewers.py`
+(`add` prints a generated password once; `reset`, `disable`, `list`).
+
+- **The shared token works only while no account exists**, so switching over
+  can't lock Sushil out: migrate, `add sushil`, and from then on it is refused.
+  *Sushil to confirm; the alternative is dropping the token outright.*
+- **Form tokens (CSRF) are keyed by the reviewer's password hash**, so a password
+  reset also invalidates forms opened before it.
+- **Guessing is throttled**: 10 failures per name or 30 per address in 15 minutes
+  lock that name/address (429), even for the right password. An unknown name costs
+  the same time as a wrong password, so names don't leak.
+- HTTP Basic sends the password with every request (each photo too): a verified
+  login is cached in memory for 5 minutes, keyed by the stored hash, so a reset or
+  disable applies at the next request.
+
+Still HTTP Basic, so HTTPS is required at deploy (it is, §8 item 13). No
+roles yet: every reviewer can publish.
+
+### D-098 · Photo retention is a daily job, not a storage lifecycle rule `RECOMMENDED` (2026-09-26)
+Proposed by Claude (overnight session, STATE §8 item 8); awaiting Sushil. Implements
+D-080 and changes its mechanism.
+
+D-080 planned an R2 lifecycle rule on an originals prefix. A lifecycle rule
+only sees age; it can't see a problem report's hold (D-092), a pack sent to us
+(D-096), an open review item, or that the same photo (keys are content hashes)
+was sent again yesterday. So `tools/retention.py` decides, daily from cron:
+
+- a user's scan photo goes 30 days after its **newest** scan;
+- kept whatever its age: held scans (`evidence_hold`), photos on any product
+  version that isn't rejected (the record's evidence, D-028), scans that an open
+  or claimed review item points at (including earlier attempts);
+- each key is re-checked just before its file is deleted, in case it was sent
+  again after the list was made;
+- the row keeps its key (what was there) and gets `photos_deleted_at` (migration
+  010); `repro.py` says "photo not available", and with D-094 still replays the
+  OCR exactly.
+
+Dry run unless `--apply`; `--days` can't go below 30. D-080's "keep the label-region
+crops used as evidence" has nothing to act on yet: no crops are made today, and
+evidence rows quote text, not pixels. When R2 comes, give its media class the
+same `delete(key)`; no lifecycle rule on user photos.
+
 ---
 
 ## Open and pending

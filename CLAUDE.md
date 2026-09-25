@@ -58,8 +58,8 @@ PostgreSQL 19. Solo founder: Sushil.
 pytest -q                                   # all tests, embedded Postgres (pgserver)
 INSIDELABEL_TEST_PG="postgresql:///insidelabel_test?host=/var/run/postgresql" pytest -q
 python -m insidelabel.db.migrate "postgresql:///insidelabel?host=/var/run/postgresql"
-INSIDELABEL_DB="postgresql:///insidelabel?host=/var/run/postgresql" INSIDELABEL_REVIEW_TOKEN=… \
-  uvicorn insidelabel.api.main:app --reload
+INSIDELABEL_DB="postgresql:///insidelabel?host=/var/run/postgresql" \
+  uvicorn insidelabel.api.main:app --reload     # /review logins: tools/reviewers.py (D-097)
 python tools/eval_vision.py --gold gold/ --pred predictions/ --csv <scratch>/eval.csv
 INSIDELABEL_DB=… python tools/release_check.py --with-tests     # beta release gate
 ```
