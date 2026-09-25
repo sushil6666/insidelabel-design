@@ -128,13 +128,8 @@ def summarise(runs, quiet=False):
 
 
 def _ins_of(ingredients):
-    import re
-    pat = re.compile(r"(?:ins|e)[\s\-.]*?(\d{3}[a-z]?)", re.IGNORECASE)
-    out = set()
-    for i in ingredients:
-        for m in pat.finditer(engine.prefix_bare_ins(i)):
-            out.add(m.group(1).lower())
-    return out
+    from insidelabel.core.tokenize import ins_numbers   # the one INS parser (D-099)
+    return ins_numbers(ingredients)
 
 
 def main():

@@ -33,6 +33,7 @@ import os
 import re
 from dataclasses import dataclass, field
 
+from insidelabel.core.tokenize import ins_numbers
 from insidelabel.lenses import allergens as allergen_check
 
 DATA_DIR = os.environ.get("INSIDELABEL_DATA", os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "data")))
@@ -69,15 +70,6 @@ for canonical, aliases in NORM["synonyms"].items():
         for al in aliases:
             NAME_TO_INS[al] = ins
 
-ADDITIVE_WORDS = (
-    "ins", "colour", "color", "emulsifier", "stabiliser", "stabilizer", "preservative",
-    "acidity regulator", "raising agent", "leavening", "sweetener", "flavour enhancer",
-    "flavor enhancer", "antioxidant", "thickener", "humectant", "anticaking",
-    "firming agent", "glazing agent", "improver", "e",
-)
-
-# 3-4 digit INS codes with optional letter / roman suffix: 150d, 339(ii), 1100(iii).
-INS_RE = re.compile(r"(?<![\d.])(\d{3,4})([a-d])?(?:\s*\(\s*([ivx]+)\s*\))?(?!\s*(?:[\d.]|%|g\b|mg\b|kcal))")
 
 ORDINAL = {1: "1st", 2: "2nd", 3: "3rd"}
 
@@ -121,20 +113,18 @@ class Product:
 
 
 def _find_additives(ingredients):
+    # INS numbers are read by the engine's own parser (core/tokenize.py, D-099),
+    # entry by entry so each can be quoted. This lens used to carry its own
+    # pattern: it missed Maliban's "160 a(ii)" (so the pack was "not fully
+    # checked") and read "Raisins (150gm)" as an unknown additive.
     found, unknown = {}, []
     for tok in ingredients:
         low = tok.lower()
-        looks_additive = any(_word_in(w, low) for w in ADDITIVE_WORDS) or "(" in low
-        if looks_additive:
-            for m in INS_RE.finditer(low):
-                num, letter, roman = m.group(1), m.group(2) or "", m.group(3)
-                code = num + letter
-                if code in ADDITIVES:
-                    found[code] = tok
-                elif num in ADDITIVES and not letter:
-                    found[num] = tok
-                else:
-                    unknown.append(code + (f"({roman})" if roman else ""))
+        for code in sorted(ins_numbers(tok)):
+            if code in ADDITIVES:
+                found.setdefault(code, tok)
+            else:
+                unknown.append(code)
         for name, ins in NAME_TO_INS.items():
             if ins not in found and _word_in(name, low):
                 found[ins] = tok

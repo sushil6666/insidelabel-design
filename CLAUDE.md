@@ -29,7 +29,8 @@ PostgreSQL 19. Solo founder: Sushil.
 - **OCR cross-check = Cloud Vision, Tesseract fallback (D-093).** `GOOGLE_VISION_KEY` lives in
   the environment only — never in a file in this repo. It only ever *adds* a known additive.
 - **One INS parser:** `core/tokenize.py` (`INS_RE`, `prefix_bare_ins`,
-  `extract_ins`). Don't write another regex for INS numbers anywhere.
+  `extract_ins`, `ins_numbers`). Don't write another regex for INS numbers anywhere;
+  `tests/test_ins_parsing.py` fails on any 3–4 digit pattern outside it (D-099).
 - **Claim check is in shadow (D-051).** `/scan` computes and stores it; users get
   `reason: "claims_not_released"` unless `INSIDELABEL_CLAIMS_TO_USERS=on`. Don't route
   around `_user_claim_check()` in `api/main.py`.

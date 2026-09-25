@@ -769,6 +769,28 @@ crops used as evidence" has nothing to act on yet: no crops are made today, and
 evidence rows quote text, not pixels. When R2 comes, give its media class the
 same `delete(key)`; no lifecycle rule on user photos.
 
+### D-099 · One INS parser, enforced by a test `RECOMMENDED` (2026-09-26)
+Proposed by Claude (overnight session, STATE §8 item 9); awaiting Sushil.
+
+STATE §8 item 9 named `lenses/compare.py`. A search found four more private INS
+patterns: `claims/checker.py`, `tools/eval_vision.py`, `tools/stability_check.py`,
+`tools/coverage_report.py`. Most read 3 digits only. All now go through
+`core/tokenize.py`, which gains `ins_numbers(text or entries)` ("which INS numbers
+would the engine read here?").
+
+What the private copies got wrong, found by tests that fail on the old code:
+- `/compare` missed Maliban's printed "160 a(ii)" (annatto) and so called that
+  pack "not fully checked", while `/scan` read it fine; it read "Raisins (150gm)"
+  as an unknown additive, which also blocks a pack from being the pick.
+- `eval_vision.py` counted 1422 as 142 and "160 a(ii)" as 160, on gold and
+  prediction alike, so nothing showed. Re-run on the 6 gold labels: the
+  report is unchanged (INS F1 1.000), now measured with the engine's parser.
+- The claim checker parsed "INS 1105 (…)" as 110. No preservative in the table has
+  4 digits today, so no claim result changed.
+
+`tests/test_ins_parsing.py` now fails on any `\d{3…}` pattern in `src/` or `tools/`
+outside `core/tokenize.py` (migration file names in `db/migrate.py` excepted).
+
 ---
 
 ## Open and pending

@@ -42,17 +42,17 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "src"))
 from insidelabel.core import engine  # noqa: E402
+from insidelabel.core.tokenize import extract_ins  # noqa: E402  (the one INS parser, D-099)
 
 # OFF tags look like "en:e471" or "en:e160a". E-numbers and INS numbers are
 # aligned for the vast majority of additives but they are not the same
 # namespace — treat a match as a strong lead, not as proof.
-_E_TAG = re.compile(r"^[a-z]{2}:e(\d{3}[a-z]?)$", re.IGNORECASE)
-_INS_IN_MATCH = re.compile(r"INS\s+(\d{3}[a-z]?)", re.IGNORECASE)
+_E_TAG = re.compile(r"^[a-z]{2}:(e\S+)$", re.IGNORECASE)      # the number itself goes to extract_ins
 
 # Tokens that look like an additive the engine should have known, as opposed to
 # a plain food it is right to ignore. Drives the miss triage.
-_ADDITIVE_SHAPED = re.compile(
-    r"(ins\s*\d|e\s?\d{3}|\b\d{3}[a-z]?\b|emulsifier|preservative|colour|color|"
+_ADDITIVE_WORDS = re.compile(
+    r"(emulsifier|preservative|colour|color|"
     r"stabilis|stabiliz|thickener|acidity|antioxidant|raising agent|anticaking|"
     r"anti-caking|humectant|sequestrant|flavour enhancer|flavor enhancer|"
     r"sweetener|firming|glazing|bulking|improver|conditioner)",
@@ -60,22 +60,23 @@ _ADDITIVE_SHAPED = re.compile(
 )
 
 
+def _additive_shaped(token):
+    """A token that looks like an additive: an INS/E number the parser reads, or a class word."""
+    return bool(extract_ins(token) or _ADDITIVE_WORDS.search(token))
+
+
 def off_enumbers(row):
     out = set()
     for tag in row.get("off_additives_tags", []):
         m = _E_TAG.match(tag)
-        if m:
-            out.add(m.group(1).lower())
+        ins = extract_ins(m.group(1)) if m else None
+        if ins:
+            out.add(ins)
     return out
 
 
 def engine_insnumbers(result):
-    out = set()
-    for f in result.get("flags", []):
-        m = _INS_IN_MATCH.search(f.get("matched_as", ""))
-        if m:
-            out.add(m.group(1).lower())
-    return out
+    return {i for i in (extract_ins(f.get("matched_as", "")) for f in result.get("flags", [])) if i}
 
 
 def main():
@@ -190,7 +191,7 @@ def main():
 
     p(f"\nUNMATCHED TOKENS THAT LOOK LIKE ADDITIVES  (top {args.top})")
     p("  Not INS-numbered, but shaped like something the engine should know.")
-    shaped = [(t, c) for t, c in unmatched_tokens.most_common() if _ADDITIVE_SHAPED.search(t)]
+    shaped = [(t, c) for t, c in unmatched_tokens.most_common() if _additive_shaped(t)]
     if not shaped:
         p("    none")
     for t, c in shaped[:args.top]:
@@ -199,7 +200,7 @@ def main():
     p(f"\nUNMATCHED TOKENS, EVERYTHING ELSE  (top {args.top})")
     p("  Mostly plain foods the engine is right to ignore. Scan for synonyms")
     p("  and Indian spellings worth adding to normalization.json.")
-    others = [(t, c) for t, c in unmatched_tokens.most_common() if not _ADDITIVE_SHAPED.search(t)]
+    others = [(t, c) for t, c in unmatched_tokens.most_common() if not _additive_shaped(t)]
     for t, c in others[:args.top]:
         p(f"    {c:>4}x  {t[:60]}")
 
