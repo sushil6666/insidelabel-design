@@ -4,7 +4,7 @@ Architectural and product decisions for InsideLabel, with the reasoning attached
 Append-only. When a decision is reversed, mark it `SUPERSEDED` and add a new entry
 rather than editing the old one — the history is the point.
 
-**Last updated:** 2026-09-25 (D-090, D-091, D-092 locked)
+**Last updated:** 2026-09-25 (D-090–D-093 locked)
 
 **Status key:** `LOCKED` decided, don't relitigate · `OPEN` not yet decided ·
 `RECOMMENDED` proposed but not accepted · `SUPERSEDED` replaced
@@ -594,6 +594,56 @@ photo + model answer that make a scan reproducible, and it would send user data 
 third party (DPDP). Sentry can still be added for crash dashboards (STATE §8 item 8).
 Not recorded: nicknames (D-074; the server also drops `name`/`nickname`/`who` keys),
 query strings, response text beyond the headline shown. No session recording.
+
+### D-093 · Google Cloud Vision replaces Tesseract as the independent reader `LOCKED` (2026-09-25)
+Direction from Sushil ("we will keep Google Cloud Vision API"); Claude recommended
+this role for it over replacing Gemini; switched on after it met the rule below.
+
+Gemini stays the reader (D-030): it returns structure Cloud Vision can't (which text
+is the ingredient list, the allergen line, the claims, the product). Cloud Vision
+takes Tesseract's job in `ocr_check.py`: the independent check that catches an
+additive Gemini dropped (D-034), and the brand/name corroboration.
+
+- One `DOCUMENT_TEXT_DETECTION` call per photo (hints `en`, `hi`), cached by content
+  hash and shared by every check. Tesseract read the back photo up to 9 times.
+- Same guards as before: a number counts only in additive-class context
+  (`prefix_bare_ins`), only numbers with a table row can be added, and OCR only ever
+  adds, never overwrites. No voting: the same image gives the same text.
+- Tesseract remains the fallback (no key, or a failed call). A failure trips a circuit
+  breaker (10 min for configuration errors such as billing/key, 1 min for transient
+  ones). `INSIDELABEL_OCR=tesseract` forces the old path. The result names the
+  `reader` that ran.
+- Independence caveat: same vendor as Gemini, different system (dedicated OCR, not a
+  generative model). Accepted for the reason D-034 exists — a model can't catch its
+  own omission; a separate reader can.
+- Cost (Google pricing page, 2026-09-25): first 1,000 units/month free, then $1.50 per
+  1,000 (~13 paise a photo). Closed beta fits in the free tier. Billing must be on
+  even for the free tier. Photos already go to Google for Gemini; the privacy policy
+  must name Cloud Vision too (§8 item 9). Check Google's data-use terms before launch.
+
+**Baseline to beat** (`tools/compare_ocr.py`, 6 gold back photos, WSL): Tesseract
+19.7 s per label for the INS check alone (6.5–29.3 s), recall **27/52** printed INS
+(Britannia 3/12, Limca 2.25 L 1/5), **0** wrong additions. Switch on if Cloud Vision
+is faster with recall ≥ Tesseract on every label and still 0 wrong additions.
+
+**Result** (same photos, same run, after the fix below):
+
+| | Tesseract | Cloud Vision |
+|---|---|---|
+| INS check, mean per label | 22.7 s | **3.6 s** |
+| Printed INS found | 27/52 | **50/52**, ≥ Tesseract on every label |
+| Simulated omissions put back (drop each additive from Gemini's read) | — | **49/51** |
+| Wrong additions | 0 | **0** |
+| Full Ziggy scan (D-092 trace) | 28.6 s | **4.0 s**, same result |
+
+Fix found on the way: OCR line breaks between a class word and its bracket
+("Acidity Regulators⏎(330, 270)") hid 5 printed numbers; `ocr_check` now collapses
+whitespace before the context rule (Tesseract unchanged at 27/52: its misses are
+misreads). The 2 still missed (Ziggy 1100, 1104) are read correctly but land after a
+nutrition-table value in reading order; the context rule is right to refuse them.
+
+Open: Cloud Vision's text isn't stored on the scan row yet, so a replay (D-092) calls
+it again; store it (like `model_raw`) once it is switched on.
 
 ---
 

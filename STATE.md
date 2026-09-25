@@ -1,6 +1,6 @@
 # STATE.md — where InsideLabel is, and how to pick it up
 
-**Last updated:** 2026-09-25 (PWA + D-092) · **Owner:** Sushil · **Tests:** 171 passing, 1 skipped · **Release gate:** `python tools/release_check.py` — NOT READY (2 failing; 4 with `INSIDELABEL_DB` set)
+**Last updated:** 2026-09-25 (PWA + D-092) · **Owner:** Sushil · **Tests:** 179 passing, 1 skipped · **Release gate:** `python tools/release_check.py` — NOT READY (2 failing; 4 with `INSIDELABEL_DB` set)
 
 This is the living status document. Read it first in any new session, then
 `DECISIONS.md` for the *why*. Update the "Last updated" line, the numbers and
@@ -32,7 +32,7 @@ over our data tables make every judgement** (D-004), and every judgement uses
 | Ingredient engine (INS parsing, NOVA markers, 3-band verdict, admin-only score) | ✅ | `src/insidelabel/core/` |
 | INS parsing — 3–4 digit numbers, `()[]{}` brackets, `&` separators, unit guard | ✅ reads every printed INS on all 6 gold labels | `core/tokenize.py` (the only INS parser) |
 | Additive table — 66 additives, 35 verified against FSSAI + Codex on 2026-09-25, none left `verify:true` | ✅ | `data/additives.json` |
-| Vision read (Gemini `gemini-3.6-flash`) + independent Tesseract cross-check | ✅ | `extraction/providers/` |
+| Vision read (Gemini `gemini-3.6-flash`) + independent OCR cross-check: Google Cloud Vision when `GOOGLE_VISION_KEY` is set, Tesseract otherwise (D-093: 3.6 s vs 22.7 s, recall 50/52 vs 27/52, 0 wrong additions) | ✅ | `extraction/providers/` (`cloud_vision.py`, `ocr_check.py`) |
 | Reliability gate (never shows "clean" on a partial read) | ✅ | `reliability/gates.py` |
 | Claim checker (no added sugar / no preservatives / made with real X) | ✅ built; **in shadow for the beta (D-051)**: stored for reviewers, shown to users only with `INSIDELABEL_CLAIMS_TO_USERS=on` | `claims/checker.py` |
 | Allergen check, five states, stricter 0.95 gate, first key in every result | ✅ | `lenses/allergens.py` |
@@ -73,7 +73,7 @@ sudo PG19_PORT=5432 bash tools/install_pg19.sh   # adds apt.postgresql.org, crea
 createdb insidelabel && createdb insidelabel_test
 python -m insidelabel.db.migrate "postgresql:///insidelabel?host=/var/run/postgresql"
 
-pytest -q                                    # 171 pass, 1 skipped; DB tests use embedded Postgres
+pytest -q                                    # 179 pass, 1 skipped; DB tests use embedded Postgres
 ```
 
 **Environment variables**
@@ -87,6 +87,8 @@ pytest -q                                    # 171 pass, 1 skipped; DB tests use
 | `INSIDELABEL_TEST_PG` | run DB tests on a real server | must name a `*_test` database |
 | `INSIDELABEL_CLAIMS_TO_USERS` | show the claim check to users (D-051) | default `off`; turn on only after ≥ 5 claim packs with 0 false contradictions |
 | `INSIDELABEL_DATA` | alternate `data/` dir | rarely needed |
+| `GOOGLE_VISION_KEY` | Cloud Vision as the OCR cross-check (D-093) | API key restricted to the Vision API; project billing must be on. Unset → Tesseract. Never commit it. |
+| `INSIDELABEL_OCR` | force a reader | `tesseract` to compare or fall back; default `auto` |
 | `INSIDELABEL_BUILD` | the build name on every scan and report (D-092) | set at deploy (no `.git` there); locally the git commit is read |
 | `INSIDELABEL_WEB` | alternate `web/` dir for the PWA | rarely needed |
 
@@ -116,6 +118,7 @@ python tools/eval_vision.py --gold gold/ --pred predictions/ --csv /tmp/eval.csv
 INSIDELABEL_DB=… python tools/queue_predictions.py           # queue recorded scans for review, free
 INSIDELABEL_DB=… python tools/leads.py list                  # products seen online, waiting for a real pack (D-089)
 INSIDELABEL_DB=… python tools/repro.py list                  # problem reports (D-092); `show <id>` replays one
+python tools/compare_ocr.py --csv /tmp/ocr.csv                 # Tesseract vs Cloud Vision on the gold photos (D-093)
 ```
 
 ---
@@ -190,6 +193,16 @@ applied to the local `insidelabel` database (6 scans and 6 queued items intact).
 1600 px photo (Ziggy), almost the whole scan, against the "8–15 s" the app promises
 (D-068). Measured on WSL; check on the deploy host before changing anything.
 
+### Cloud Vision (later on 2026-09-25) — D-093 locked
+
+Built `cloud_vision.py` (one cached call per photo, circuit breaker, Tesseract
+fallback), wired into `ocr_check.py` with the same guards; 8 tests with a faked
+Google API; `tools/compare_ocr.py`. Sushil restricted the key to the Vision API and
+enabled billing on project 797275767015. On the 6 gold photos: **3.6 s vs 22.7 s per
+label, 50/52 vs 27/52 printed INS, 49/51 simulated omissions put back, 0 wrong
+additions**; the full Ziggy scan went from 28.6 s to 4.0 s. A line-break bug in the
+context rule (5 of Ziggy's numbers) was found and fixed on the way.
+
 ## 6. What went wrong, and what we learned
 
 Keep this list — it is the cheapest way to not repeat a mistake.
@@ -214,6 +227,7 @@ Keep this list — it is the cheapest way to not repeat a mistake.
 | "Stopped test server" wasn't: `$!` after `( … & )` or `env … &` is a wrapper's PID, and the real uvicorn kept running on 8765 | After starting anything in the background, read the real PID from `ps` (not `pgrep -f`, which matches its own shell) and confirm it's gone after `kill`. |
 | An e2e step "failed" because the test's barcode had a wrong check digit — the app was right to refuse it | When a test fails, read the screen before touching code. |
 | The trail's photo events showed as `image/jpeg` — `record("photo", {type: …})` overwrote the event type | Spread the caller's data first, then the fixed keys: `{...data, t, type}`. |
+| Cloud Vision "missed" 5 Ziggy additives it had read perfectly — a newline sat between "Acidity Regulators" and "(330, 270)" | When a reader misses something, look at its raw text before blaming the reader. |
 | Headless Chromium on this box lacks `libnss3`/`libnspr4`/`libasound2` | `apt-get download` + `dpkg -x` into a scratch dir + `LD_LIBRARY_PATH` — no sudo needed. |
 
 ---
@@ -252,7 +266,9 @@ to see where each gate stands. §11 has the full list.
 7. **"Send it to us" endpoint** (D-070) — the queue kind exists; nothing creates it yet.
 8. **Individual reviewer logins**; **D-080 photo retention** (must skip `scans.evidence_hold`, D-092);
    rate limit on `/scan` and `/problem`; Sentry optional now that D-092 covers reproduction;
-   **look at the 28 s OCR cross-check** (D-092 finding) on the deploy host.
+   ~~28 s OCR cross-check~~ — fixed by D-093 (4 s). **Deploy needs `GOOGLE_VISION_KEY` as a secret**
+   (without it the server quietly falls back to Tesseract); **store Cloud Vision's text on the
+   scan row** so D-092 replays don't call Google again; name Cloud Vision in the privacy policy.
 9. **Trust pages** (D-076): privacy policy (DPDP, parental consent), COI policy, methodology,
    who is behind it.
 10. **Deploy** (week 10): host with PostgreSQL 19, HTTPS, R2 with a 30-day lifecycle rule, backups.
@@ -285,7 +301,7 @@ current EUR-Lex text and check cyclamate's US status; drop PG18 after PG19 GA.
 | `src/insidelabel/` | the package (core, extraction, reliability, claims, lenses, db, review, api) |
 | `data/` | the knowledge tables — the moat |
 | `migrations/` | Postgres schema, plain SQL, applied in order |
-| `tests/` | 171 tests (+ `regression/problems/`, D-092); `conftest.py` gives each DB test module its own database |
+| `tests/` | 179 tests (+ `regression/problems/`, D-092); `conftest.py` gives each DB test module its own database |
 | `tools/` | release gate, leads (D-089), eval, batch scan, gold stubs, queue predictions, PG19 installer |
 | `gold/`, `photos/`, `predictions/` | 6 real labels: hand transcription, photos, recorded model output |
 | `research/` | private marketplace screenshots behind leads (git-ignored; never published — D-089) |
@@ -315,7 +331,7 @@ retention test. Public launch comes after the W4 number (D-083).
 | D-051, D-052, D-055 decided | locked | ✅ locked 2026-09-25 |
 | Published catalogue | ≥ 50 SKUs | ❌ 0 (6 waiting) |
 | Kids' biscuits published (D-058) | ≥ 15 in 7.2.1 / 7.2.2 | ❌ 0 (category picker ready) |
-| Test suite (`--with-tests`) | green | ✅ 171 |
+| Test suite (`--with-tests`) | green | ✅ 179 |
 
 ### Manual gates — tick when done
 

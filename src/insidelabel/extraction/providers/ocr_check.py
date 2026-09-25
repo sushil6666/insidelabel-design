@@ -35,9 +35,17 @@ WHAT THIS IS AND IS NOT
     Numbers are only counted when they sit inside an additive class bracket,
     using engine.prefix_bare_ins -- the same rule the engine itself applies.
     So "200 ml" in a garbled footer is not mistaken for sorbic acid.
+
+WHICH READER (D-093)
+    Google Cloud Vision first, when GOOGLE_VISION_KEY is set: one call per
+    photo, cached, shared by the INS check and the identity checks. Tesseract
+    when it isn't set or a call fails -- the same guards apply to both, and the
+    result says which reader ran (`reader`). INSIDELABEL_OCR=tesseract forces
+    the old path, e.g. to compare the two.
 """
 
 import io
+import os
 import re
 
 try:
@@ -49,6 +57,7 @@ except ImportError:                                              # pragma: no co
 
 from insidelabel.core import engine
 from insidelabel.core.tokenize import INS_RE
+from insidelabel.extraction.providers import cloud_vision
 
 _INS = INS_RE  # same pattern the engine uses, so the cross-check cannot disagree with it
 
@@ -90,8 +99,17 @@ OCR_TIMEOUT_S = 25
 _MIN_PASS_FRACTION = 0.5
 
 
+def _cloud():
+    """Use Cloud Vision for this call? (auto = when a key is configured)."""
+    return os.environ.get("INSIDELABEL_OCR", "auto") != "tesseract" and cloud_vision.configured()
+
+
 def _ins_numbers(text):
     """INS numbers in class-bracket context, by the engine's own rule."""
+    # OCR line breaks are layout, not content. On the Ziggy pack the class word
+    # and its bracket sit on different lines ("Acidity Regulators\n(330, 270)"),
+    # and five printed numbers were lost to the newline alone (D-093).
+    text = " ".join((text or "").split())
     return {m.group(1).lower() for m in _INS.finditer(engine.prefix_bare_ins(text))}
 
 
@@ -125,7 +143,11 @@ def _prepared(im):
 
 
 def read_text(image_bytes):
-    """Best-effort single read, for display. Use vote_ins for decisions."""
+    """Best-effort single read. Cloud Vision when configured (cached), else Tesseract."""
+    if _cloud():
+        text = cloud_vision.read_text(image_bytes)
+        if text is not None:
+            return text
     if not AVAILABLE:
         return None
     try:
@@ -197,16 +219,34 @@ def cross_check(image_bytes, ingredients):
         missing          found by OCR, absent from the model  <- the signal
         extra            in the model, not found by OCR       <- expected, ignored
     """
+    model_ins = _ins_numbers(", ".join(ingredients or []))
+    fallback_reason = None
+    if _cloud():
+        text = cloud_vision.read_text(image_bytes)
+        if text is not None:
+            # One read, no vote: Cloud Vision returns the same text for the same
+            # image, so repeated passes would add cost, not evidence. The guard
+            # that matters stays: only numbers the engine knows can be recovered.
+            found = _ins_numbers(text)
+            ocr_ins = {i for i in found if i in engine._ADDITIVE_BY_INS}
+            return {
+                "available": True, "reader": "cloud_vision",
+                "ocr_ins": sorted(ocr_ins), "model_ins": sorted(model_ins),
+                "missing": sorted(ocr_ins - model_ins), "extra": sorted(model_ins - ocr_ins),
+                "vote_detail": {"voted": sorted(found), "rejected_unknown": sorted(found - ocr_ins)},
+                "passes": 1, "ms": cloud_vision.LAST.get("ms"), "ocr_text": text,
+            }
+        fallback_reason = f"cloud_vision {cloud_vision.LAST.get('status', 'failed')}"
+
     if not AVAILABLE:
-        return {"available": False, "reason": "pytesseract not installed"}
+        return {"available": False, "reason": "pytesseract not installed", "fallback_from": fallback_reason}
 
     ocr_ins, vote_detail, passes = vote_ins(image_bytes)
     if ocr_ins is None:
-        return {"available": False, "reason": "OCR failed on this image"}
+        return {"available": False, "reason": "OCR failed on this image", "fallback_from": fallback_reason}
     text = read_text(image_bytes) or ""
-    model_ins = _ins_numbers(", ".join(ingredients or []))
     return {
-        "available": True,
+        "available": True, "reader": "tesseract", "fallback_from": fallback_reason,
         "ocr_ins": sorted(ocr_ins),
         "model_ins": sorted(model_ins),
         "missing": sorted(ocr_ins - model_ins),
@@ -274,7 +314,7 @@ _MIN_USABLE_CHARS = 60
 
 def corroborate(image_bytes, needle):
     """Did an independent reader see this string on this face?"""
-    if not AVAILABLE or not needle:
+    if not needle or not (AVAILABLE or _cloud()):
         return OCR_UNUSABLE
     text = read_text(image_bytes) or ""
     if len(text.strip()) < _MIN_USABLE_CHARS:
