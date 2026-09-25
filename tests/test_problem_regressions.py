@@ -3,7 +3,8 @@ Problems reported from the app, frozen as tests (D-092).
 
 Each file in tests/regression/problems/ was written by
 `tools/repro.py show <id> --save NAME` from a real report: the stored model
-answer and request options, replayed through /scan with a 1x1 PNG. `expected`
+answer, OCR text (migration 007) and request options, replayed through /scan
+with a 1x1 PNG. `expected`
 is what the screen should show; once a fix lands it must keep showing it.
 """
 import glob
@@ -25,6 +26,6 @@ CASES = [(os.path.basename(p), i, c)
 def test_reported_problem_stays_fixed(name, i, case):
     req = case["request"]
     files = {r: (f"{r}.png", repro.PNG, "image/png") for r in (req.get("images") or ["back"])}
-    got = repro.post_scan(repro.form_for(req, case["model_raw"]), files)
+    got = repro.post_scan(repro.form_for(req, case["model_raw"]), files, case.get("ocr"))
     assert got["status"] == case["expected_status"], name
     assert repro.summary(got["screen"]) == case["expected"], name

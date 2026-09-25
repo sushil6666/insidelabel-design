@@ -3,9 +3,10 @@ repro.py - replay a stored scan exactly, to reproduce a reported problem (D-092)
 
 Everything after the vision model is deterministic, and each scan row keeps the
 model's raw answer, the request options, the build and the data version
-(migration 006). So a scan is replayed by sending the same photos, options and
-model answer through /scan again, with storage switched off so a replay never
-writes to the database or the media store.
+(migration 006), and the independent reader's text (007). So a scan is replayed
+by sending the same photos, options and model answer through /scan again, with
+the stored OCR text standing in for Cloud Vision and storage switched off, so a
+replay never calls Google and never writes to the database or the media store.
 
 What the user saw comes from the phone's trail (`shown` on the /scan event):
 state, headline, band and each profile's status, without names. Comparing it
@@ -22,6 +23,7 @@ from fastapi.testclient import TestClient
 
 from insidelabel import trace
 from insidelabel.api import main
+from insidelabel.extraction.providers import cloud_vision
 
 # The 1x1 PNG the test suite uses: saved regressions carry no photos (photos can
 # hold the shop's location in EXIF, and they stay out of git).
@@ -62,8 +64,18 @@ def form_for(request, model_raw):
     return data
 
 
-def post_scan(data, files):
-    with no_storage():
+def ocr_texts(ocr, files):
+    """{photo hash: text} for cloud_vision.replaying(): the stored read, on the photo sent now."""
+    out = {}
+    for role, rec in (ocr or {}).items():
+        if role in files and (rec or {}).get("reader") == "cloud_vision" and rec.get("text") is not None:
+            out[cloud_vision.digest(files[role][1])] = rec["text"]
+    return out
+
+
+def post_scan(data, files, ocr=None):
+    """Replay /scan. `ocr` is the scan row's stored OCR ({} or None: Tesseract, never Google)."""
+    with no_storage(), cloud_vision.replaying(ocr_texts(ocr, files or {})):
         r = TestClient(main.app).post("/scan", data=data, files=files or None)
     body = r.json()
     return {"status": r.status_code, "screen": body.get("screen"), "body": body}
@@ -91,6 +103,7 @@ def replay_scan(scan, media=None, hit=None):
         return {"status": None, "notes": notes + [
             f"nothing to replay: outcome {scan.get('outcome')}, the model never answered"]}
 
+    ocr = scan.get("ocr") or {}
     files = {}
     for role, key in (("back", scan.get("back_image_key")), ("front", scan.get("front_image_key"))):
         got = media.get(key) if (media and key) else None
@@ -98,8 +111,14 @@ def replay_scan(scan, media=None, hit=None):
             files[role] = (f"{role}.{key.rsplit('.', 1)[1]}", got[0], got[1])
         elif role in (req.get("images") or ["back"]):
             files[role] = (f"{role}.png", PNG, "image/png")
-            notes.append(f"{role} photo not available: replayed without it, so the OCR cross-check differs")
-    out = post_scan(form_for(req, scan["model_raw"]), files)
+            if (ocr.get(role) or {}).get("text") is not None:
+                notes.append(f"{role} photo not available: replayed with the stored OCR text")
+            elif role == "back":
+                notes.append(f"{role} photo not available: replayed without it, so the OCR cross-check differs")
+    if "back" in files and not ocr:
+        notes.append("OCR text not stored (scan predates migration 007): cross-check re-read with "
+                     "Tesseract, not Google, so it may differ")
+    out = post_scan(form_for(req, scan["model_raw"]), files, ocr)
     return {**out, "notes": notes}
 
 

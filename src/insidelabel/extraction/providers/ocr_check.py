@@ -101,6 +101,10 @@ _MIN_PASS_FRACTION = 0.5
 
 def _cloud():
     """Use Cloud Vision for this call? (auto = when a key is configured)."""
+    if cloud_vision._REPLAY is not None:
+        # A replay (D-092) uses the reader the scan used: recorded Cloud Vision
+        # text when there is some, otherwise Tesseract. Never a new Google call.
+        return cloud_vision.replay_active()
     return os.environ.get("INSIDELABEL_OCR", "auto") != "tesseract" and cloud_vision.configured()
 
 

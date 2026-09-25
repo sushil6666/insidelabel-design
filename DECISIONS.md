@@ -645,6 +645,30 @@ nutrition-table value in reading order; the context rule is right to refuse them
 Open: Cloud Vision's text isn't stored on the scan row yet, so a replay (D-092) calls
 it again; store it (like `model_raw`) once it is switched on.
 
+### D-094 · A replay reads the stored OCR text and never calls Google `RECOMMENDED` (2026-09-26)
+Proposed by Claude (overnight session, STATE §8 item 5); awaiting Sushil.
+
+Closes the "Open" note on D-093. Migration 007 adds `scans.ocr`
+(`{"back": {"reader", "text"}}`), written on every vision-path scan that reached
+the OCR step, refused ones included. `repro.py` serves that text back through
+`cloud_vision.replaying()`, keyed by the hash of the photo it sends, so:
+
+- a replay gets the same text the scan got, even when the photo has been deleted
+  (D-080) or left out of a saved regression (1x1 PNG): the cross-check and the
+  brand corroboration come out the same;
+- **a replay never calls Google**, key or no key: in replay mode a photo without
+  stored text falls back to Tesseract (free, local). Scans from before 007 replay
+  that way, with a note saying the cross-check may differ;
+- a Tesseract read stores only `{"reader": "tesseract"}`: its check votes over six
+  passes, so one text wouldn't replay it, and re-running it costs nothing.
+
+Replay mode is a module global, not a context variable, because the reads run on
+worker threads; only `repro.py` (CLI, tests) sets it, never the server. Saved
+regressions (`--save`) now carry `ocr` too.
+
+Found on the way: a refused read where the OCR finds an additive the model lacks
+crashed `/scan` (`KeyError: 'caveats'` → 500) instead of refusing. Fixed.
+
 ---
 
 ## Open and pending

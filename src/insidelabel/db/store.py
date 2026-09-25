@@ -15,8 +15,8 @@ Rules this module follows (the database enforces the hard ones too):
   * Front-of-pack claims are stored only when the claim check actually ran on a
     confirmed pairing (D-035); otherwise they may belong to a different pack.
   * Every scan row carries its own trace (D-092): request id, build, data
-    version, the model's raw answer and the request options, so any scan can be
-    replayed later (tools/repro.py).
+    version, the model's raw answer, the independent reader's text (007) and
+    the request options, so any scan can be replayed later (tools/repro.py).
 """
 
 import hashlib
@@ -293,7 +293,7 @@ class Store:
                     "version_status": vstatus, "queued": queued}
 
     _TRACE_COLS = ("request_id", "build", "data_version", "engine_version", "prompt_version",
-                   "model_raw", "request", "timings")
+                   "model_raw", "request", "timings", "ocr")
 
     @classmethod
     def _set_trace(cls, conn, sid, trace):
@@ -303,7 +303,7 @@ class Store:
         cols = [c for c in cls._TRACE_COLS if trace.get(c) is not None]
         if not cols:
             return
-        vals = [Jsonb(trace[c]) if c in ("request", "timings") else trace[c] for c in cols]
+        vals = [Jsonb(trace[c]) if c in ("request", "timings", "ocr") else trace[c] for c in cols]
         conn.execute(f"UPDATE scans SET {', '.join(c + ' = %s' for c in cols)} WHERE id = %s",
                      (*vals, sid))
 

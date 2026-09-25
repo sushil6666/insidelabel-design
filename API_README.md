@@ -77,8 +77,9 @@ Every response carries `X-Request-ID` (the client's own if it sent a plain id,
 else a new UUID); error bodies repeat it as `request_id`; `/health` reports
 `build` (git commit, or `INSIDELABEL_BUILD` at deploy) and `data_version`
 (hash of `data/*.json`). Each scan row keeps the model's raw answer, the request
-options, versions and timings (migration 006), so `tools/repro.py show <id>`
-can replay it exactly:
+options, versions and timings (migration 006) and the Cloud Vision text of the
+back photo (`ocr`, migration 007), so `tools/repro.py show <id>` can replay it
+exactly, without calling Google, even after the photo is gone:
 
 ```bash
 INSIDELABEL_DB=… python tools/repro.py list          # open reports

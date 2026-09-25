@@ -843,6 +843,13 @@ async def scan(
     vision["_ocr_cross_check"] = ocr_result
 
     tr["timings"]["ocr_ms"] = _ms(t_ocr)
+    # D-092/D-093: what the independent reader saw, so a replay reads the same
+    # text instead of calling Google again (migration 007). Only the back is read.
+    if back_bytes:
+        text = cloud_vision.cached(back_bytes)
+        reader = "cloud_vision" if text is not None else ocr_result.get("reader")
+        if reader:
+            tr["ocr"] = {"back": {"reader": reader, "text": text}}
     alarm = cloud_vision.take_alarm()
     if alarm:
         _setup_alarm(f"ocr_config:{alarm}", "Cloud Vision refused the call; scans fall back to Tesseract "
@@ -854,7 +861,9 @@ async def scan(
         k: v for k, v in ocr_result.items() if k != "ocr_text"
     }
     if ocr_result.get("missing"):
-        reliability["caveats"].append({
+        # A refusal from rel.assess() carries no caveats list; OCR can still find
+        # an additive on a photo the model refused (was a KeyError → HTTP 500).
+        reliability.setdefault("caveats", []).append({
             "code": "model_omitted_additive",
             "detail": (
                 "A second, independent OCR pass found "

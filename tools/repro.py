@@ -118,8 +118,9 @@ def write_regression(name, rep, scans):
     for s in scans:
         req = s["request"] or {}
         files = {r: (f"{r}.png", repro.PNG, "image/png") for r in (req.get("images") or ["back"])}
-        now = repro.post_scan(repro.form_for(req, s["model_raw"]), files)
+        now = repro.post_scan(repro.form_for(req, s["model_raw"]), files, s.get("ocr"))
         cases.append({"scan_id": str(s["id"]), "request": req, "model_raw": s["model_raw"],
+                      "ocr": s.get("ocr") or {},
                       "expected_status": now["status"], "expected": repro.summary(now["screen"])})
     path = os.path.join(REGRESSIONS, f"{name}.json")
     with open(path, "w", encoding="utf-8") as f:
