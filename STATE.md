@@ -376,7 +376,7 @@ then `migrate`, `tools/reviewers.py add`, `tools/beta.py invite 50 --base https:
 and `tools/beta.py feedback`. Seed the kids' biscuits first (§8 item 4): every pack not in
 the catalogue is a paid 8-15 s read.
 
-### Uploads marked for reviewers (2026-09-26, same branch, D-106 recommended)
+### Uploads marked for reviewers (2026-09-26, same branch, D-106 locked)
 
 D-102 and D-105 accepted. Each photo now says where it came from (camera or upload); the
 reviewer page warns on uploads ("could be edited, AI-made or a screen") and the queue shows

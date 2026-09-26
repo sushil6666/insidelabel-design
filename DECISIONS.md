@@ -4,7 +4,7 @@ Architectural and product decisions for InsideLabel, with the reasoning attached
 Append-only. When a decision is reversed, mark it `SUPERSEDED` and add a new entry
 rather than editing the old one - the history is the point.
 
-**Last updated:** 2026-09-26 (D-102 to D-105 locked; D-106 recommended)
+**Last updated:** 2026-09-26 (D-102 to D-106 locked)
 
 **Status key:** `LOCKED` decided, don't relitigate · `OPEN` not yet decided ·
 `RECOMMENDED` proposed but not accepted · `SUPERSEDED` replaced
@@ -988,9 +988,9 @@ mechanism by Claude; accepted by Sushil 2026-09-26.
   uploaded from the gallery (vs taken with the camera) for reviewers, since an AI-made
   picture can only arrive as an upload.
 
-### D-106 · Uploaded photos are marked for reviewers `RECOMMENDED` (2026-09-26)
+### D-106 · Uploaded photos are marked for reviewers `LOCKED` (2026-09-26)
 Proposed by Claude under D-105; Sushil asked for it to be built ("yes"). Details by Claude;
-awaiting Sushil.
+accepted by Sushil 2026-09-26.
 
 An AI-made or edited picture, or a photo of a screen, can only reach us as an upload,
 never from the live camera. The app already knows which button produced each photo.
