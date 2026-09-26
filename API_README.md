@@ -52,6 +52,8 @@ lint:
 | `claims` | released claim-check rows only (D-051); `[]` in shadow |
 | `worth_knowing` | moderate/high additives, industrial ingredients, sugar under ≥ 2 names |
 | `ordinary` | `{count, text, additives[]}`: none/low items grouped (D-065) |
+| `additives` | every additive as a card (D-111): `{title, items[], open, folded_text}`; each item has `ins`, `label_line` (the whole label line) and `badge` `{kind, text, note?}` with kind `not_permitted` / `worth_knowing` / `permitted` (or `badge: null`); the first `open` items stay open, the rest fold behind `folded_text` |
+| `additive_alert` | only when an additive isn't permitted in India on a complete read at confidence ≥ 0.95: `{text, detail, source}` (D-111) |
 | `retake` | a prompt naming the problem (D-036), or `null` |
 | `last_verified`, `recheck` | catalogue hits only (D-073) |
 

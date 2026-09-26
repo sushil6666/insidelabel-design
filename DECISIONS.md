@@ -4,7 +4,7 @@ Architectural and product decisions for InsideLabel, with the reasoning attached
 Append-only. When a decision is reversed, mark it `SUPERSEDED` and add a new entry
 rather than editing the old one - the history is the point.
 
-**Last updated:** 2026-09-26 (D-102 to D-110 locked; D-111 recommended)
+**Last updated:** 2026-09-26 (D-102 to D-112 locked)
 
 **Status key:** `LOCKED` decided, don't relitigate · `OPEN` not yet decided ·
 `RECOMMENDED` proposed but not accepted · `SUPERSEDED` replaced
@@ -1156,10 +1156,10 @@ doesn't edit or delete it; Sushil removes it when the look is in `web/`.
 walk of every screen at phone width in light and dark, with screenshots for Sushil
 before merge; `APP_VERSION` and the `sw.js` cache version bumped.
 
-### D-111 · Additive cards with a badge, in FSSAI's terms `RECOMMENDED` (2026-09-26)
+### D-111 · Additive cards with a badge, in FSSAI's terms `LOCKED` (2026-09-26)
 Direction from Sushil ("I liked their UI, banned / caution / safe kind of thing"), after
 screenshots of the SafeLabel Play Store listing; wording and conditions by Claude; mockup
-liked by Sushil 2026-09-26. **Not built; waiting for Sushil's "accepted".**
+liked by Sushil 2026-09-26; accepted by Sushil 2026-09-26.
 
 SafeLabel shows each additive on its own card with a coloured stripe and a badge
 ("Banned", "Caution", "Safe"), a "Risk level", and a banner ("All Clear - No Harmful
@@ -1201,6 +1201,28 @@ list.
 
 Order when accepted: verify the 32 rows (its own commit, each row with `fssai_basis` and
 `verified_on`), then the badges with tests, then phone-width screenshots before merge.
+
+### D-112 · The logo: barcode and a gold magnifier on deep green `LOCKED` (2026-09-26)
+Direction from Sushil: a logo image in the Drive `InsideLabel` folder (a Gemini-made picture of
+two phones: a green circle, a barcode, a white tick, "INSIDE LABEL / YOUR FOOD GUARDIAN");
+then "B" of three redraws, "blending green with yellow or golden shades", then "B1".
+Drawing by Claude; accepted by Sushil 2026-09-26 ("yes pls B1").
+
+- **The mark (B1):** a rounded deep-green tile (#07924f to #035c34) with white barcode bars
+  on the left and a magnifier on the right: gold rim and handle (#ffd166 to #e9a91c), gold
+  lines inside the lens. It says what the app does, reads the label. Gold on the deep green
+  is 4.6:1 or more, so it stays clear at 16 px.
+- **Why not the image as it was:** the white tick reads as "approved", the message D-042 keeps
+  out and D-111 took off the "Permitted" badge; "Your food guardian" promises protection,
+  close to "safe", for an app that can misread a label; the picture carries Gemini's
+  watermark and a real brand's pack (Aashirvaad Atta, ITC). The tagline stays "See what's
+  inside the pack".
+- **Where it goes:** one SVG source; `web/icon.svg` and `icon-maskable.svg` (the mark inside
+  the maskable safe zone), the header "IL" mark in the app and the site pages, the favicon,
+  and PNGs at 192 and 512 px for Play (D-011, STATE §8 item 14). `manifest.webmanifest`
+  theme colour unchanged.
+- **Checks when built:** the mark at 16, 32, 48, 192 and 512 px on light and dark; screenshots
+  of the header before merge; `APP_VERSION` and the `sw.js` cache bumped.
 
 ---
 

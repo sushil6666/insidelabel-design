@@ -694,6 +694,11 @@ function result(id) {
     return view;
   }
 
+  // D-111: an additive FSSAI doesn't permit, read with confidence. Server text only.
+  if (s.additive_alert) put(el("div", { class: "add-alert", role: "note" },
+    el("span", { class: "add-icon", "aria-hidden": "true" }, "!"),
+    el("div", {}, el("strong", {}, s.additive_alert.text), el("p", {}, s.additive_alert.detail))));
+
   // 3. Band (D-063), then what was checked (D-062).
   put(el("div", { class: `band band-${s.band.code}` },
     el("strong", {}, s.band.label),
@@ -719,10 +724,25 @@ function result(id) {
       el("ul", { class: "plain" }, s.claims.map(c => el("li", { class: c.contradicted ? "flag" : "" }, c.text))));
   }
 
-  // 5. Worth knowing, each with its why one tap away (D-056, D-066).
-  if (s.worth_knowing?.length) {
+  // 5a. Every additive as a card with its badge (D-111). When the server sends
+  // these, the lists below leave additives out so none shows twice.
+  const cards = s.additives?.items || [];
+  if (cards.length) {
+    // Server order: cards that need a look first, then the ones folded behind folded_text.
+    const shown = cards.slice(0, s.additives.open ?? cards.length);
+    const folded = cards.slice(s.additives.open ?? cards.length);
+    put(el("h2", {}, s.additives.title),
+      el("div", { class: "items" }, shown.map(additiveCard),
+        folded.length > 0 && el("details", { class: "item fold" }, el("summary", {}, s.additives.folded_text),
+          el("div", { class: "items" }, folded.map(additiveCard)))));
+  }
+  const notCard = w => !(cards.length && w.source?.kind === "additive");
+
+  // 5b. Worth knowing, each with its why one tap away (D-056, D-066).
+  const worth = (s.worth_knowing || []).filter(notCard);
+  if (worth.length) {
     put(el("h2", {}, "Worth knowing"),
-      el("div", { class: "items" }, s.worth_knowing.map(w => el("details", { class: `item concern-${w.concern}` },
+      el("div", { class: "items" }, worth.map(w => el("details", { class: `item concern-${w.concern}` },
         el("summary", {}, w.name),
         el("p", {}, w.why),
         el("p", { class: "muted" }, "On the label: ", el("q", {}, w.label_text)),
@@ -731,9 +751,10 @@ function result(id) {
 
   // 6. Ordinary ingredients, grouped (D-065), then the full list as read.
   if (s.ordinary?.text) {
+    const plain = s.ordinary.additives.filter(notCard);
     put(el("details", { class: "item" },
       el("summary", {}, s.ordinary.text),
-      s.ordinary.additives.length > 0 && el("ul", { class: "plain" }, s.ordinary.additives.map(a =>
+      plain.length > 0 && el("ul", { class: "plain" }, plain.map(a =>
         el("li", {}, el("strong", {}, a.name), ": ", a.why)))));
   }
   put(el("details", { class: "item" },
@@ -781,6 +802,21 @@ function personCard(p) {
     el("p", { class: "line" }, fill(p.line, p.ref)),
     detail.length > 0 && el("details", {}, el("summary", {}, "More"),
       el("ul", { class: "plain small" }, detail.map(t => el("li", {}, fill(t, p.ref))))));
+}
+
+// D-111: one additive, laid out from the server's item. The badge words and the
+// kind come from lenses/screen.py; the icon is decoration (aria-hidden).
+const BADGE_ICON = { not_permitted: "✕", worth_knowing: "!", permitted: "•" };
+function additiveCard(a) {
+  const kind = a.badge?.kind || "none";
+  return el("article", { class: `add add-${kind}` },
+    el("div", { class: "add-top" },
+      el("p", { class: "add-name" }, a.ins && el("small", {}, "INS " + a.ins), a.name),
+      a.badge && el("span", { class: "badge" },
+        el("span", { class: "add-icon", "aria-hidden": "true" }, BADGE_ICON[kind] || ""), a.badge.text)),
+    el("p", { class: "muted small" }, "On the label: ", el("q", {}, a.label_line || a.label_text)),
+    el("p", { class: "small" }, a.why),
+    a.badge?.note && el("p", { class: "small add-note" }, a.badge.note));
 }
 
 function reportLink(h) {
