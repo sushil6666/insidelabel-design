@@ -1,6 +1,6 @@
 /**
  * Ingredient tokenization and INS/E-number extraction.
- * Port of core/tokenize.py — the only INS parser in the app.
+ * Port of core/tokenize.py - the only INS parser in the app.
  */
 import normData from "./data/normalization.json";
 

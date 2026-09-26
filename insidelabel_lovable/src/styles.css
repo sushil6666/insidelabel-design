@@ -48,7 +48,7 @@
 
 :root {
   --radius: 1rem;
-  /* Fresh Air: white, cream, leafy green, aqua blue and soft pastels — deep blue replaces all dark ink */
+  /* Fresh Air: white, cream, leafy green, aqua blue and soft pastels - deep blue replaces all dark ink */
   --background: oklch(0.98 0.014 95);
   --foreground: oklch(0.4 0.07 245);
   --card: oklch(1 0 0);
