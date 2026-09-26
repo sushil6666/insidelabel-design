@@ -21,8 +21,8 @@ let navSeq = 0;               // async views check this so a late result can't r
 // The scan in progress: barcode (if read), photos, and how many times it was refused
 // (with the refused scans' ids, for "Send it to us", D-070).
 // frontWanted: offer the front photo (D-100); off for a re-check of a pack whose front is on file.
-let pending = { barcode: null, barcodeSource: null, back: null, front: null, pairing: false, attempts: 0,
-                refused: [], frontWanted: true };
+let pending = { barcode: null, barcodeSource: null, back: null, front: null, backSource: null,
+                frontSource: null, pairing: false, attempts: 0, refused: [], frontWanted: true };
 
 // ------------------------------------------------------------------ navigation
 const routes = {
@@ -402,8 +402,8 @@ function nextRef(list) {
 
 // ------------------------------------------------------------------ scan: barcode first (D-024)
 function resetPending() {
-  pending = { barcode: null, barcodeSource: null, back: null, front: null, pairing: false, attempts: 0,
-              refused: [], frontWanted: true };
+  pending = { barcode: null, barcodeSource: null, back: null, front: null, backSource: null,
+              frontSource: null, pairing: false, attempts: 0, refused: [], frontWanted: true };
 }
 
 async function scan() {
@@ -489,10 +489,11 @@ function photo() {
     el("figure", { class: "sample" }, sampleBack(),
       el("figcaption", { class: "muted" }, "Fill the frame with the ingredient list. Hold steady and avoid glare.")),
     photoPicker("back", pending.back ? "Retake the ingredients photo" : "Take the ingredients photo", backPreview,
-                (b, res) => {
+                (b, res, source) => {
                   // A red cross keeps "Check this pack" off; an unchecked photo (the
                   // check couldn't run) is let through, and /scan checks it again anyway.
                   pending.back = res && !res.ok ? null : b;
+                  pending.backSource = source;
                   go_.disabled = !pending.back;
                   if (res?.barcode && !pending.barcode) { pending.barcode = res.barcode; pending.barcodeSource = "photo"; }
                 }),
@@ -503,8 +504,9 @@ function photo() {
       el("h2", {}, "The front of the pack"),
       el("p", { class: "muted" }, "Optional. The front shows the pack's name and what it promises. " +
                                   "Our team records it once for each pack."),
-      photoPicker("front", "Take the front photo", frontPreview, (b, res) => {
+      photoPicker("front", "Take the front photo", frontPreview, (b, res, source) => {
         pending.front = res && !res.ok ? null : b;
+        pending.frontSource = source;
         pairRow.hidden = !pending.front;
       }),
       frontPreview, pairRow),
@@ -521,8 +523,9 @@ const TOUCH = window.matchMedia?.("(pointer: coarse)").matches ?? true;
 // D-104: every photo is checked on the server as soon as it is picked, and
 // gets a green tick or a red cross with the reason. onPick(blob, result):
 // result is {ok, message, barcode}, or null when the check couldn't run.
+// D-106: onPick also gets where the photo came from, "camera" or "upload".
 function photoPicker(role, label, preview, onPick) {
-  const use = async file => {
+  const use = async (file, source) => {
     if (!file || !file.type.startsWith("image/")) return;
     preview.replaceChildren(el("p", { class: "muted" }, "Preparing photo…"));
     const blob = await prepareImage(file);
@@ -544,12 +547,12 @@ function photoPicker(role, label, preview, onPick) {
       : el("p", { class: "check " + (res.ok ? "ok" : "bad"), role: "status" },
           el("span", { "aria-hidden": "true" }, res.ok ? "✓ " : "✗ "), res.message);
     preview.replaceChildren(img, line);
-    onPick(blob, res);
+    onPick(blob, res, source);
   };
   const input = (id, capture) => {
     const i = el("input", { type: "file", accept: "image/*", class: "sr", id, ...(capture ? { capture: "environment" } : {}) });
     i.addEventListener("change", () => { record("photo_source", { role, source: capture ? "camera" : "upload" });
-                                         use(i.files && i.files[0]); });
+                                         use(i.files && i.files[0], capture ? "camera" : "upload"); });
     return i;
   };
   const box = TOUCH
@@ -565,7 +568,7 @@ function photoPicker(role, label, preview, onPick) {
     box.addEventListener("drop", e => {
       e.preventDefault(); box.classList.remove("over");
       record("photo_source", { role, source: "drop" });
-      use(e.dataTransfer?.files?.[0]);
+      use(e.dataTransfer?.files?.[0], "upload");
     });
   }
   return box;
@@ -577,13 +580,13 @@ function front(id) {
   const h = historyItem(id);
   if (!h || !h.barcode) return errorView("We couldn't find that pack on this phone.");
   const preview = el("div", { class: "thumb" });
-  let blob = null;
+  let blob = null, blobSource = null;
   const send = el("button", { type: "button", class: "btn primary", disabled: true, onclick: async () => {
     resetPending();
     pending.barcode = h.barcode;
     show(working("Sending the photo…", false));
     try {
-      const { body } = await scanRequest({ barcode: h.barcode, front: blob });
+      const { body } = await scanRequest({ barcode: h.barcode, front: blob, frontSource: blobSource });
       finish(body);
     } catch (e) {
       show(apiErrorView(e, () => go("front/" + encodeURIComponent(id))));
@@ -593,8 +596,9 @@ function front(id) {
     el("h1", {}, "Photograph the front"),
     el("p", { class: "product" }, productName(h.product)),
     el("p", { class: "lead" }, "Fill the frame with the front of the pack, including any words printed on it."),
-    photoPicker("front", "Take the front photo", preview, (b, res) => {
+    photoPicker("front", "Take the front photo", preview, (b, res, source) => {
       blob = res && !res.ok ? null : b;
+      blobSource = source;
       send.disabled = !blob;
     }),
     preview,

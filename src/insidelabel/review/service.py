@@ -47,7 +47,11 @@ class ReviewService:
         with self._connect() as c:
             return c.execute(
                 """SELECT q.id, q.kind, q.status, q.created_at, q.claimed_by,
-                          p.name AS product_name, p.barcode, b.name AS brand
+                          p.name AS product_name, p.barcode, b.name AS brand,
+                          -- D-106: any photo on this item uploaded rather than taken with the camera
+                          EXISTS (SELECT 1 FROM scans s
+                                   WHERE (s.id = q.scan_id OR s.id = ANY(q.attempt_scan_ids))
+                                     AND s.request->'photo_sources' @? '$.* ? (@ == "upload")') AS uploaded
                      FROM review_queue q
                      LEFT JOIN product_versions v ON v.id = q.product_version_id
                      LEFT JOIN products p ON p.id = v.product_id
@@ -77,7 +81,7 @@ class ReviewService:
                 scan = c.execute("SELECT * FROM scans WHERE id = %s", (q["scan_id"],)).fetchone()
             # D-070: the earlier refused attempts of a pack sent to us, oldest first.
             attempts = c.execute(
-                """SELECT id, back_image_key, front_image_key, created_at, error_code FROM scans
+                """SELECT id, back_image_key, front_image_key, created_at, error_code, request FROM scans
                     WHERE id = ANY(%s) ORDER BY created_at""",
                 (q.get("attempt_scan_ids") or [],)).fetchall()
             if q["correction_id"]:

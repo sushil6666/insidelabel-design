@@ -955,6 +955,9 @@ async def scan(
                               description="Old clients only: a name for allergen text. The app sends none (D-074)."),
     compare_regulators: bool = Form(False, description="Also return EU and US status. Information only."),
     barcode: Optional[str] = Form(None, examples=[""], description="EAN/UPC digits from the pack, if the camera read one."),
+    back_source: Optional[str] = Form(None, examples=[""],
+                                      description='D-106: "camera" (taken in the app) or "upload" (gallery, computer).'),
+    front_source: Optional[str] = Form(None, examples=[""], description='D-106: as back_source.'),
     barcode_source: Optional[str] = Form(None, examples=[""],
                                          description='D-104: "camera" (live scanner) or "photo" (read by /check-photo).'),
     device_id: Optional[str] = Form(None, examples=[""], description="Anonymous install id (UUID). No personal data."),
@@ -1003,6 +1006,19 @@ async def scan(
         img = await _read_image(upload, role)
         if img:
             images.append(img)
+    # D-106: where each photo came from, as the app says. An AI-made or edited
+    # picture can only arrive as an upload, so reviewers see uploads marked.
+    # Recorded, not proved: a client could claim "camera".
+    photo_sources = {}
+    for role, said in (("back", back_source), ("front", front_source)):
+        said = said.strip() if said and said.strip() else None
+        if said is None:
+            continue
+        if said not in ("camera", "upload"):
+            raise HTTPException(status_code=422, detail={
+                "error": "bad_photo_source", "detail": f'{role}_source is "camera" or "upload".'})
+        if any(r == role for _d, _m, r in images):
+            photo_sources[role] = said
     # D-103: a file that can't be a readable label never costs a model read.
     # Replayed answers skip it: they were read from photos checked at the time.
     if replay is None:
@@ -1020,7 +1036,7 @@ async def scan(
         "request_id": trace.current_request_id(), "build": trace.BUILD,
         "data_version": trace.DATA_VERSION, "engine_version": ENGINE_VERSION,
         "prompt_version": PROMPT_VERSION,
-        "request": {"barcode": barcode, "barcode_source": barcode_source,
+        "request": {"barcode": barcode, "barcode_source": barcode_source, "photo_sources": photo_sources,
                     "avoid": avoid_codes if avoid is not None else None,
                     "profiles": people, "pairing_confirmed": pairing_confirmed,
                     "compare_regulators": compare_regulators,

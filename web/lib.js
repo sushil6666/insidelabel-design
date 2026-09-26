@@ -12,7 +12,7 @@
 //    beyond the headline the user was shown.
 
 // Bump together with VERSION in sw.js: a report then says which shell was cached.
-export const APP_VERSION = "web-10";
+export const APP_VERSION = "web-11";
 
 // ------------------------------------------------------------------ storage
 // localStorage can throw (private mode, blocked site data); the app must still work.
@@ -171,7 +171,7 @@ async function call(path, opts = {}) {
   return { status: res.status, body };
 }
 
-export async function scanRequest({ barcode, barcodeSource, back, front, pairing }) {
+export async function scanRequest({ barcode, barcodeSource, back, front, pairing, backSource, frontSource }) {
   const fd = new FormData();
   fd.append("device_id", deviceId());
   fd.append("profiles", JSON.stringify(profilesForServer()));
@@ -180,6 +180,9 @@ export async function scanRequest({ barcode, barcodeSource, back, front, pairing
   if (back) fd.append("back", back, "back.jpg");
   if (front) fd.append("front", front, "front.jpg");
   if (front && pairing) fd.append("pairing_confirmed", "true");
+  // D-106: taken with the camera or uploaded, so reviewers can look closer at uploads.
+  if (back && backSource) fd.append("back_source", backSource);
+  if (front && frontSource) fd.append("front_source", frontSource);
   return call("/scan", { method: "POST", body: fd });
 }
 

@@ -5,11 +5,19 @@
                  "correction": "Reported mistake", "send_to_us": "Sent to us",
                  "front_photo": "Front photo"} %}
 {% set q = d.item %}
+{# D-106: an uploaded photo could be edited, AI-made or a photo of a screen; a camera photo was taken in the app. #}
+{% macro source_note(src) %}
+  {% if src == "upload" %}<div class="upload-warn">Uploaded, not taken with the camera. Before publishing, look closely
+    for signs of editing, an AI-made picture or a photo of a screen: it has to be a real pack.</div>
+  {% elif src == "camera" %}<div class="muted" style="font-size:12px;margin-bottom:4px">Taken with the app's camera.</div>{% endif %}
+{% endmacro %}
 <style>
   .grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
   .photos img { width: 100%; border-radius: 6px; border: 1px solid var(--line); background: #fff; display: block; }
   .photos figure { margin: 0 0 12px; } .photos figcaption { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
   .sticky { position: sticky; top: 12px; }
+  .upload-warn { background: var(--warn-bg); color: var(--warn); border-radius: 6px; padding: 6px 10px;
+                 font-size: 13px; margin-bottom: 6px; }
   .diff li { font-family: var(--mono); font-size: 13px; list-style: none; padding: 2px 6px; border-radius: 4px; }
   .diff ul { padding: 0; margin: 0; }
   .diff .added { background: var(--ok-bg); color: var(--ok); } .diff .added::before { content: "+ "; }
@@ -49,6 +57,7 @@
       {% if d.images[role] %}
         <figure>
           <figcaption>{{ role|capitalize }} of pack · <a href="/review/media/{{ d.images[role] }}" target="_blank">open full size</a></figcaption>
+          {{ source_note(sources.get(role)) }}
           <a href="/review/media/{{ d.images[role] }}" target="_blank"><img src="/review/media/{{ d.images[role] }}" alt="{{ role }} of pack"></a>
         </figure>
       {% endif %}
@@ -57,6 +66,7 @@
       {% if key %}
         <figure>
           <figcaption>Earlier attempt · {{ role }} · {{ a.created_at.strftime("%d %b %H:%M") }} · <a href="/review/media/{{ key }}" target="_blank">open full size</a></figcaption>
+          {{ source_note(((a.request or {}).get("photo_sources") or {}).get(role)) }}
           <a href="/review/media/{{ key }}" target="_blank"><img src="/review/media/{{ key }}" alt="earlier {{ role }} photo"></a>
         </figure>
       {% endif %}

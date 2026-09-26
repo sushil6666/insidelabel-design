@@ -4,7 +4,7 @@ Architectural and product decisions for InsideLabel, with the reasoning attached
 Append-only. When a decision is reversed, mark it `SUPERSEDED` and add a new entry
 rather than editing the old one - the history is the point.
 
-**Last updated:** 2026-09-26 (D-103, D-104 locked; D-102, D-105 recommended)
+**Last updated:** 2026-09-26 (D-102 to D-105 locked; D-106 recommended)
 
 **Status key:** `LOCKED` decided, don't relitigate · `OPEN` not yet decided ·
 `RECOMMENDED` proposed but not accepted · `SUPERSEDED` replaced
@@ -836,9 +836,9 @@ the catalogue; it still fills the queue with junk at no cost to the sender.
 - The public deploy never sets it. A local dev server that wants `replay` in `/docs`
   sets it explicitly.
 
-### D-102 · The beta launches on the web first, invite-only, one code per tester `RECOMMENDED` (2026-09-26)
+### D-102 · The beta launches on the web first, invite-only, one code per tester `LOCKED` (2026-09-26)
 Direction from Sushil ("launch the website first, then the Android app"; "I will ask
-50 people to test and ask feedback"); design by Claude; awaiting Sushil.
+50 people to test and ask feedback"); design by Claude; accepted by Sushil 2026-09-26.
 
 Consistent with D-010 (PWA first, then wrap it): the website *is* the app, and the
 Play Store build later wraps the same site, which must be live on the domain anyway.
@@ -961,10 +961,10 @@ On the 12 gold photos zxing found the one barcode that is in frame (Patanjali ba
 8906032018810) and nothing on the others; label photos rarely show the barcode, so
 the dedicated barcode photo is the main route and a barcode on the back is a bonus.
 
-### D-105 · "Before you start": every tester agrees to real-pack rules before a first scan `RECOMMENDED` (2026-09-26)
+### D-105 · "Before you start": every tester agrees to real-pack rules before a first scan `LOCKED` (2026-09-26)
 Direction from Sushil ("correct data is important; in the beta there will be wrong data or
 AI feeding; an 'I agree' and conditions on the first or home screen"); wording and
-mechanism by Claude; awaiting Sushil.
+mechanism by Claude; accepted by Sushil 2026-09-26.
 
 - **The screen** comes right after joining (D-102) and before the welcome, and again
   whenever the text changes. Five points, one "I agree to these rules" box, "Continue"
@@ -987,6 +987,26 @@ mechanism by Claude; awaiting Sushil.
   file, screen/not-food) and the reviewer. Not built, worth considering: marking photos
   uploaded from the gallery (vs taken with the camera) for reviewers, since an AI-made
   picture can only arrive as an upload.
+
+### D-106 · Uploaded photos are marked for reviewers `RECOMMENDED` (2026-09-26)
+Proposed by Claude under D-105; Sushil asked for it to be built ("yes"). Details by Claude;
+awaiting Sushil.
+
+An AI-made or edited picture, or a photo of a screen, can only reach us as an upload,
+never from the live camera. The app already knows which button produced each photo.
+
+- `/scan` takes `back_source` and `front_source`: `camera` (taken in the app) or `upload`
+  (the gallery, a computer, dragged in). Anything else is refused; a source for a photo
+  that wasn't sent is ignored. Stored as `request.photo_sources` on the scan row.
+- **The reviewer** sees, under each photo: "Uploaded, not taken with the camera. Before
+  publishing, look closely for signs of editing, an AI-made picture or a photo of a
+  screen", or a quiet "Taken with the app's camera". Earlier attempts of a pack sent to
+  us are marked the same way. The queue shows an "uploaded" chip on those items.
+- Recorded, not proved: a modified client could say `camera`. It points a reviewer's
+  attention; the D-103 checks and the reviewer decide. Older scans say nothing.
+- Not built: reading the camera details (EXIF) of an upload before the app re-encodes
+  it. A real phone photo carries the phone model and the time taken; a screenshot or a
+  generated picture usually carries none. Worth adding if uploads turn out common.
 
 ---
 
