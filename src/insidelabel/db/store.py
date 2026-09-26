@@ -557,6 +557,8 @@ class Store:
             # a reviewer's job: there is no label in them to read.
             if any(r["error_code"] in ("back_is_a_screen", "not_a_food_pack") for r in rows):
                 return {"error": "not_a_pack"}
+            if any(r["error_code"] == "product_mismatch" for r in rows):
+                return {"error": "two_packs"}                      # D-108
             # D-107: the catalogue is filed by barcode; a reviewer can't file a pack without one.
             if not any((r["request"] or {}).get("barcode") for r in rows):
                 return {"error": "no_barcode"}

@@ -4,7 +4,7 @@ Architectural and product decisions for InsideLabel, with the reasoning attached
 Append-only. When a decision is reversed, mark it `SUPERSEDED` and add a new entry
 rather than editing the old one - the history is the point.
 
-**Last updated:** 2026-09-26 (D-102 to D-107 locked)
+**Last updated:** 2026-09-26 (D-102 to D-107 locked; D-108 recommended)
 
 **Status key:** `LOCKED` decided, don't relitigate · `OPEN` not yet decided ·
 `RECOMMENDED` proposed but not accepted · `SUPERSEDED` replaced
@@ -1032,6 +1032,36 @@ scan, and two different packs couldn't be told apart.
   a barcode (a "Report a mistake" on an unlisted scan can only be rejected).
 - `tools/queue_predictions.py` now reads each gold pack's barcode from its photos (or
   `--barcode ID=DIGITS`) and skips a pack without one.
+
+### D-108 · A front of one pack with the back of another is refused `RECOMMENDED` (2026-09-26)
+Reported by Sushil ("front image of one product and back image of another, it's
+allowing"); cause and fix by Claude; awaiting Sushil. Amends D-035 (the user's "same pack"
+tick resolves "can't tell", never "different packs").
+
+**Reproduced** on the live server: Patanjali Doodh Biscuits front + Maliban wafer back,
+"same pack" ticked. Gemini said `mismatch` (front Patanjali; back a wafer by Reliance
+Consumer Products). The code required a *matching* anchor before keeping any
+match/mismatch verdict, which a mismatch can never have, so it became `indeterminate`;
+the tick then trusted the pairing and Patanjali's claims ("100% ATTA", "MORE FIBRE"…)
+were attached to the wafer. With a barcode they would have reached the review queue.
+
+- **A mismatch is kept** when nothing checkable matches across the two faces (no shared
+  brand, name or manufacturer) **and** the model's own evidence names a difference
+  ("different", "vs", "not the same"…). A Limca bottle was once called `mismatch` on
+  evidence describing what matched ("printed on both", "matching design"): that stays
+  `indeterminate`. A code-only brand comparison was ruled out: a real Limca 2.25 L back
+  reads its brand as "The Coca-Cola Company", and a real Maliban back never prints
+  "Maliban".
+- **A kept mismatch refuses the scan** (`product_mismatch`, as `gates.py` always
+  intended): "These two photos look like different packs. Photograph the front and back
+  of the same pack, or just the back." The tick can't override it; it can't go to "Send
+  it to us"; "Retake" clears both photos. Refused rather than using the back alone: a
+  user holding pack A's front would read pack B's result as A's.
+- **"Can't tell" without the tick** still gives the back's result, and now says so on
+  screen: the front photo wasn't used (it used to be a small-print disclosure).
+- **Measured:** 12 reads of the 6 genuine gold pairs (recorded + live today) all keep
+  their result; the wrong pair is refused. 12 genuine reads is a small sample: watch
+  `product_mismatch` refusals in the beta.
 
 ---
 

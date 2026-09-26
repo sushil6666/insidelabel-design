@@ -58,6 +58,10 @@ _FENCE = re.compile(r"^\s*```(?:json)?\s*|\s*```\s*$", re.MULTILINE)
 OPTIONAL_KEYS = {"image_content"}
 REQUIRED_KEYS = set(VISION_RESPONSE_SCHEMA["required"]) - OPTIONAL_KEYS
 _IMAGE_CONTENT = {"food_pack", "screen", "not_food", "not_provided"}
+# D-108: words that state a difference between the two faces, in the model's evidence.
+_DIFFERENCE_CUES = ("different", " vs ", " vs. ", "versus", "does not match", "doesn't match",
+                    "do not match", "not the same", "another product", "unrelated", "two products",
+                    "two different")
 
 _FRONT_STATUS = {"read", "not_provided", "unreadable"}
 _BACK_STATUS = {"read", "not_provided", "unreadable"}
@@ -639,13 +643,30 @@ def harden(vision, sent_front, sent_back):
                 + "; ".join(rejected)
             )
 
-        if status in ("match", "mismatch") and not anchors:
+        if status == "match" and not anchors:
             corrections.append(
                 "product_match status had no code-verifiable anchor "
                 f"(model cited: {'; '.join(pm.get('evidence') or []) or 'nothing'})"
                 " -> indeterminate"
             )
             status = "indeterminate"
+        elif status == "mismatch":
+            # D-108: a mismatch has no matching anchor by definition, so the rule
+            # above used to turn every one into "indeterminate" (a Patanjali front
+            # was then filed with a Maliban back). It is kept when nothing
+            # checkable matches across the faces AND the model's own reason names
+            # a difference: a real Limca bottle was once called "mismatch" on
+            # evidence that described what matched.
+            said = " ".join(pm.get("evidence") or []).lower()
+            if anchors:
+                corrections.append("product_match mismatch contradicted by a matching anchor "
+                                   f"({'; '.join(anchors)}) -> indeterminate")
+                status = "indeterminate"
+            elif not any(cue in said for cue in _DIFFERENCE_CUES):
+                corrections.append("product_match mismatch without a stated difference "
+                                   f"(model cited: {'; '.join(pm.get('evidence') or []) or 'nothing'})"
+                                   " -> indeterminate")
+                status = "indeterminate"
 
     v["product_match"] = {
         "status": status,
