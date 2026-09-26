@@ -1,6 +1,6 @@
 # STATE.md — where InsideLabel is, and how to pick it up
 
-**Last updated:** 2026-09-25 evening (branch `front-photo-flow` = overnight work + D-100/D-101, not merged) · **Owner:** Sushil · **Tests:** 253 passing, 1 skipped · **Release gate:** `python tools/release_check.py` — NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 6.9 s, Gemini + Cloud Vision, correct
+**Last updated:** 2026-09-25 night (`main` = `a198535`: overnight work D-094–D-099, D-100, D-101, D-054; all merged and pushed) · **Owner:** Sushil · **Tests:** 253 passing, 1 skipped · **Release gate:** `python tools/release_check.py` — NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 6.9 s, Gemini + Cloud Vision, correct
 
 This is the living status document. Read it first in any new session, then
 `DECISIONS.md` for the *why*. Update the "Last updated" line, the numbers and
@@ -41,7 +41,7 @@ over our data tables make every judgement** (D-004), and every judgement uses
 | Shelf comparison (2–4 packs, best pick for a child) | ✅ `/compare` | `lenses/compare.py` |
 | India vs EU vs US comparison — optional, information only | ✅ 12 additives | `lenses/regulators.py`, `data/regulatory_status.json` |
 | Wording lint (no "misleading/illegal/toxic/safe/free from…") on tables **and** live output | ✅ in the test suite | `tests/test_wording.py` |
-| Postgres schema with rules enforced by the DB | ✅ 10 migrations (007–010 on the overnight branch; not applied to the local DB yet) | `migrations/` |
+| Postgres schema with rules enforced by the DB | ✅ 11 migrations, all applied to the local DB (001–011) | `migrations/` |
 | Marketplace leads → physical label → record (D-089); only `physical_label` versions can publish | ✅ | `db/leads.py`, `tools/leads.py`, migration 005 |
 | Scan persistence: barcode lookup, review queue, findings + evidence, photos | ✅ when `INSIDELABEL_DB` is set | `db/store.py`, `media.py` |
 | Reviewer screen (`/review`) — the only path into the catalogue; FSSAI food category required on approve | ✅ | `review/` |
@@ -62,9 +62,9 @@ F1 0.883. Gold scores: Britannia 48, Limca 80 (×2), Maliban 56, Patanjali 48,
 Ziggy 28. **The set is 6 labels; the RUNBOOK target is 20–30** — the accuracy
 question the README asks is not answered yet.
 
-**Catalogue:** 0 published products. 7 items wait in the review queue on the local
-database: the 6 gold packs, and **#7, a duplicate Ziggy from Sushil's `/docs` test —
-reject it** ("duplicate of #6"). 8 scans stored, 0 problem reports.
+**Catalogue:** 5 published products on the local database (review items #1, 3, 4, 5, 6);
+#2 and #7 rejected as duplicates. The review queue is empty. **None of the 5 has a
+barcode yet** — Sushil will send them; add each to `products.barcode`.
 
 ---
 
@@ -92,6 +92,7 @@ pytest -q                                    # 253 pass, 1 skipped; DB tests use
 | `INSIDELABEL_DB` | storing scans, catalogue, `/review`, `/report`, `/updates` | unset → API stores nothing, behaves as before |
 | `INSIDELABEL_MEDIA` | where scan photos go | default `./media` (git-ignored) |
 | `INSIDELABEL_REVIEW_TOKEN` | reviewer screen **until the first account exists** (D-097) | then refused; accounts via `tools/reviewers.py` |
+| `INSIDELABEL_ALLOW_REPLAY` | the `replay` form field on `/scan` (D-101) | default off (403); `repro.py`, tools and tests switch it on in-process |
 | `INSIDELABEL_PROXY_HOPS` | rate limits behind a reverse proxy (D-095) | number of proxies; unset → the socket address, `X-Forwarded-For` ignored |
 | `INSIDELABEL_TEST_PG` | run DB tests on a real server | must name a `*_test` database |
 | `INSIDELABEL_CLAIMS_TO_USERS` | show the claim check to users (D-051) | default `off`; turn on only after ≥ 5 claim packs with 0 false contradictions |
@@ -104,7 +105,8 @@ pytest -q                                    # 253 pass, 1 skipped; DB tests use
 **This machine right now:** PostgreSQL **19beta4 on 5432** (default) and
 **18.6 on 5433** (fallback, holds an older copy of the empty schema). Role
 `insightstack` with CREATEDB, peer auth (no password). Databases `insidelabel`
-(migrations 001–006, 7 items queued, no leads yet) and `insidelabel_test` (only used to
+(migrations 001–011, 5 products published, review queue empty, reviewer account
+`sushil`, no leads yet) and `insidelabel_test` (only used to
 create/drop per-module test databases). PostgreSQL 16 was removed.
 
 **Keys (in `~/.bashrc` only — never in the repo):**
@@ -114,6 +116,7 @@ create/drop per-module test databases). PostgreSQL 16 was removed.
   It belongs to an AI Studio project on **prepaid** credit: it ran out once today (402)
   and was topped up. Delete lines 126–127 (`sed -i '126,127d' ~/.bashrc`), restrict the
   key to the Generative Language API, and consider auto top-up or post-paid billing.
+- `INSIDELABEL_REVIEW_TOKEN` — removed 2026-09-25; `/review` uses the `sushil` account (D-097).
 - The dev server runs with `--reload`, so code changes apply at once, but a **new key
   needs a restart** (Ctrl+C, then start it again from a terminal that has the key).
 
@@ -124,9 +127,9 @@ create/drop per-module test databases). PostgreSQL 16 was removed.
 ```bash
 # API, with storage and the reviewer screen
 INSIDELABEL_DB="postgresql:///insidelabel?host=/var/run/postgresql" \
-INSIDELABEL_REVIEW_TOKEN="…" uvicorn insidelabel.api.main:app --reload
+  uvicorn insidelabel.api.main:app --reload
 #   http://127.0.0.1:8000/docs     API
-#   http://127.0.0.1:8000/review   reviewer screen (name + token)
+#   http://127.0.0.1:8000/review   reviewer screen (reviewer login, D-097)
 #   http://127.0.0.1:8000/app/     the PWA (camera needs HTTPS or localhost; see §8 item 6)
 
 pytest -q                                                    # everything, embedded Postgres
@@ -271,7 +274,7 @@ once an hour. Cloud Vision setup failures (billing, key restriction) raise
 
 ### Overnight session — 2026-09-26 (Claude, unattended; STATE §8 items 5–9)
 
-Branch `overnight-2026-09-26` (also pushed as `claude_code`). No PR yet: `gh` isn't installed here — open one at github.com/sushil6666/InsideLabel/pull/new/overnight-2026-09-26. Every
+Branch `overnight-2026-09-26`, merged to `main` ([PR #3](https://github.com/sushil6666/InsideLabel/pull/3)). Every
 new test was run against the old code first and failed; the suite was green before
 each commit. No paid calls (Google's HTTP answers faked, model answers replayed); the
 local `insidelabel` database, `photos/`, `media/`, `research/`, `predictions/` and
@@ -305,6 +308,12 @@ the unattended session wasn't disturbed.
 - **D-094 – D-101 accepted by Sushil and locked**, including the two explicit points
   (D-095: a 429 is not a scan row; D-097: the token bootstraps until the first account).
 - Tests 245 → 252, 1 skipped.
+- **D-054 decided** (`a198535`): "100% ATTA" is about the flour, so no finding. Tests 253.
+- **Merged** ([PR #1](https://github.com/sushil6666/InsideLabel/pull/1) `front-photo-flow`,
+  [PR #3](https://github.com/sushil6666/InsideLabel/pull/3) overnight); `main` = `a198535`, pushed.
+  Sushil then migrated the local DB through 011, created the `sushil` reviewer account,
+  removed `INSIDELABEL_REVIEW_TOKEN` from `~/.bashrc`, and cleared the review queue
+  (#1, 3, 4, 5, 6 published; #2 and #7 rejected as duplicates).
 
 ## 6. What went wrong, and what we learned
 
@@ -347,19 +356,17 @@ Keep this list — it is the cheapest way to not repeat a mistake.
 
 Nothing was blocked; all five items were built. These need you:
 
-1. ~~Accept or change D-094 – D-099~~ ✅ accepted 2026-09-25 (with D-100, D-101). **Merge the
-   PR** `front-photo-flow` → `main` (it contains the overnight commits too).
-2. **After merging, on the local DB:** `python -m insidelabel.db.migrate "postgresql:///insidelabel?host=/var/run/postgresql"`
-   (applies 007–011), then `INSIDELABEL_DB=… python tools/reviewers.py add sushil` — it
-   prints your password once; from then on `/review` wants it, not the token. Until 007 is
-   applied, a merged server can't store scans (the new `ocr` column is missing; the user still
-   gets the result, the log says "scan persistence failed").
+1. ~~Accept D-094 – D-099; merge `front-photo-flow` → `main`~~ ✅ accepted 2026-09-25 (with
+   D-100, D-101, all locked); PRs #1 and #3 merged, `main` = `a198535`.
+2. ~~Migrate the local DB and add the reviewer account~~ ✅ migrated through 011; reviewer
+   `sushil` exists.
 3. **Try "Send it to us" on the phone** with the PWA test (§8 item 2): two unreadable photos
    → the button → publish it on `/review` → reopen the app. Only a faked API walked it.
 4. ~~`replay` accepted from anyone~~ ✅ D-101: off unless `INSIDELABEL_ALLOW_REPLAY=on`.
    Your local server now refuses `replay` in `/docs` (403) unless you add that variable.
-5. **Once `tools/reviewers.py add sushil` works,** delete `INSIDELABEL_REVIEW_TOKEN` from
-   `~/.bashrc` (D-097, as confirmed).
+5. ~~Delete `INSIDELABEL_REVIEW_TOKEN` from `~/.bashrc`~~ ✅ removed (D-097).
+6. **Send the barcodes of the 5 published products** — Claude adds them to
+   `products.barcode`. Until then a barcode scan of those packs misses the catalogue.
 
 ## 7. Open decisions (need Sushil)
 
@@ -383,9 +390,10 @@ setup alarms.
 
 **This week — only Sushil can do these (they unblock the most):**
 
-1. **Housekeeping (10 minutes):** delete the two old Gemini key lines in `~/.bashrc`;
-   restrict the Gemini key to the Generative Language API; set a budget alert and
-   decide prepaid vs post-paid (§7); reject review item #7 on `/review`.
+1. **Housekeeping (10 minutes):** delete the two old Gemini key lines in `~/.bashrc`
+   (three are still there; only the last counts); restrict the Gemini key to the
+   Generative Language API; set a budget alert and decide prepaid vs post-paid (§7);
+   ~~reject review item #7 on `/review`~~ ✅ rejected (duplicate), with #2.
 2. **Try the PWA on a low-end Android phone** — the one manual gate that only a real
    phone answers (camera, barcode, photo, result, profiles, compare, report). Easiest:
    USB debugging + `adb reverse tcp:8000 tcp:8000`, then open `http://localhost:8000/app/`
@@ -393,7 +401,8 @@ setup alarms.
 3. **Grow the gold set to ≥ 20 labels** (RUNBOOK) — a third in bad conditions, and packs
    whose front says "no added sugar" / "no preservatives" / "made with real X" (otherwise
    the false-contradiction gate stays unmeasured). Unblocks 2 failing gates.
-4. **Publish the 6 queued packs on `/review`** and start the 50-SKU seed, 15 kids'
+4. ~~Publish the queued packs on `/review`~~ ✅ 5 published (#2 and #7 were duplicates);
+   barcodes still to add (Waiting for Sushil, 6). **Next:** start the 50-SKU seed, 15 kids'
    biscuits first (D-058), via the D-089 flow (`tools/leads.py add` → buy → scan front +
    back with barcode → `link --barcode` → publish). Unblocks the 2 catalogue gates.
 
@@ -416,8 +425,9 @@ setup alarms.
 
 12. **Trust pages** (D-076): privacy policy (DPDP, parental consent; name Gemini **and**
     Cloud Vision as processors), COI policy, methodology, who is behind it.
-13. **Deploy**: host with PostgreSQL 19, HTTPS, R2 with a 30-day lifecycle rule, backups
-    tested by a restore; `GEMINI_API_KEY`, `GOOGLE_VISION_KEY`, `INSIDELABEL_BUILD` as
+13. **Deploy**: host with PostgreSQL 19, HTTPS, R2 for photos, a daily cron running
+    `tools/retention.py --apply` (D-098 — not an R2 lifecycle rule, which can't see holds),
+    backups tested by a restore; `GEMINI_API_KEY`, `GOOGLE_VISION_KEY`, `INSIDELABEL_BUILD` as
     secrets (without the Vision key the server quietly falls back to slow Tesseract).
 14. **Play closed testing** (D-011): PNG icons 192/512 (Bubblewrap can make them from
     `web/icon.svg`), check the current tester requirement in Play Console.
@@ -432,7 +442,7 @@ drop PG18 after PG19 GA.
 
 - Beta: 15-week plan, Sep–Dec 2026 (blueprint §16). Wave 1 accepted with a ~3-week slip → **W4 retention answer late December 2026** (D-084).
 - Beta gate: ≥30 % W4 retention with ≥2.5 scans per returning user; ≥95 % ingredient match on seeded categories; <1 % false-positive contradictions; **0 allergen misses** on the gold set.
-- Deploy (R2 lifecycle, host) — week 10.
+- Deploy (host, R2, retention cron per D-098) — week 10.
 - Wave 2 (share target, WhatsApp card) only after the W4 number (D-083).
 
 ---
@@ -450,7 +460,7 @@ drop PG18 after PG19 GA.
 | `src/insidelabel/` | the package (core, extraction, reliability, claims, lenses, db, review, api) + `trace.py` / `repro.py` (D-092); OCR readers in `extraction/providers/` (`cloud_vision.py`, `ocr_check.py`) |
 | `data/` | the knowledge tables — the moat |
 | `migrations/` | Postgres schema, plain SQL, applied in order |
-| `tests/` | 245 tests (+ `regression/problems/`, D-092); `conftest.py` gives each DB test module its own database and resets the rate limits (D-095) |
+| `tests/` | 253 tests (+ `regression/problems/`, D-092); `conftest.py` gives each DB test module its own database and resets the rate limits (D-095) |
 | `tools/` | release gate, leads (D-089), `repro.py` (D-092), `compare_ocr.py` (D-093), `reviewers.py` (D-097), `retention.py` (D-098), eval, batch scan, gold stubs, queue predictions, PG19 installer |
 | `gold/`, `photos/`, `predictions/` | 6 real labels: hand transcription, photos, recorded model output |
 | `research/` | private marketplace screenshots behind leads (git-ignored; never published — D-089) |
@@ -478,9 +488,9 @@ retention test. Public launch comes after the W4 number (D-083).
 | Every gold INS has a table row | all | ✅ |
 | Additive rows still `verify:true` | 0 | ✅ 0 |
 | D-051, D-052, D-055 decided | locked | ✅ locked 2026-09-25 |
-| Published catalogue | ≥ 50 SKUs | ❌ 0 (7 waiting; #7 is a duplicate) |
+| Published catalogue | ≥ 50 SKUs | ❌ 5 (queue empty; no barcodes yet) |
 | Kids' biscuits published (D-058) | ≥ 15 in 7.2.1 / 7.2.2 | ❌ 0 (category picker ready) |
-| Test suite (`--with-tests`) | green | ✅ 245 (overnight branch) |
+| Test suite (`--with-tests`) | green | ✅ 253, 1 skipped (`main`) |
 
 ### Manual gates — tick when done
 
