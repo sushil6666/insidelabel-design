@@ -1,6 +1,6 @@
 # STATE.md - where InsideLabel is, and how to pick it up
 
-**Last updated:** 2026-09-26 (`main` = `ca1f661`: D-102 to D-108 locked and merged; D-109 recommended on branch `report-needs-content`) · **Owner:** Sushil · **Tests:** 363 passing, 1 skipped · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 6.9 s, Gemini + Cloud Vision, correct
+**Last updated:** 2026-09-26 (`main` = `784f209`: D-102 to D-108 locked and merged; D-109 and D-110 recommended) · **Owner:** Sushil · **Tests:** 363 passing, 1 skipped · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 6.9 s, Gemini + Cloud Vision, correct
 
 This is the living status document. Read it first in any new session, then
 `DECISIONS.md` for the *why*. Update the "Last updated" line, the numbers and
@@ -482,6 +482,9 @@ Nothing was blocked; all five items were built. These need you:
 - **D-053** premium pricing - ₹399-499/year recommended.
 - ~~**D-054** the "100% ATTA" ruling~~ ✅ decided 2026-09-25: about the flour, no finding.
 - **D-082** what Premium is for - interviews only.
+- **D-110** (RECOMMENDED 2026-09-26) the website takes the look of `insidelabel_lovable/`
+  (palette, self-hosted fonts, shapes), with three colours deepened to pass WCAG AA; not its
+  app, engine, wording, verdict banner or paste mode. Not built until accepted.
 - **D-109** (RECOMMENDED 2026-09-26) "Report a mistake" needs a note or what the pack says;
   the server refuses an empty report (422 `empty_report`). Not built until accepted.
 - Concern levels on the 35 verified rows are judgement calls (e.g. sorbitol `low`) - review before launch.

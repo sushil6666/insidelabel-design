@@ -4,7 +4,7 @@ Architectural and product decisions for InsideLabel, with the reasoning attached
 Append-only. When a decision is reversed, mark it `SUPERSEDED` and add a new entry
 rather than editing the old one - the history is the point.
 
-**Last updated:** 2026-09-26 (D-102 to D-108 locked; D-109 recommended)
+**Last updated:** 2026-09-26 (D-102 to D-108 locked; D-109, D-110 recommended)
 
 **Status key:** `LOCKED` decided, don't relitigate · `OPEN` not yet decided ·
 `RECOMMENDED` proposed but not accepted · `SUPERSEDED` replaced
@@ -1091,6 +1091,66 @@ useful back (D-076's "ready?" on `/updates`).
 - **Not proposed:** requiring a photo with the report (it slows the only feedback path
   on the result screen), or making the field more specific (the drop-down already says
   where to look; the text says what's wrong).
+
+### D-110 · The website takes the Lovable look, not the Lovable app `RECOMMENDED` (2026-09-26)
+Direction from Sushil ("implement the look and feel [of `insidelabel_lovable`] in our
+website"); review and details by Claude. **Not built; waiting for Sushil's "accepted".**
+
+`insidelabel_lovable/` is a second, complete app (TanStack Start, React, Tailwind,
+Supabase, 40+ UI components), not a theme. It carries its own TypeScript copy of the
+engine and of six `data/*.json` tables (identical to ours today) and reads photos with
+`openai/gpt-6-astra` through the Lovable AI Gateway. Only its **look** is taken.
+
+**What is ported** (CSS in `web/app.css` and `web/site/site.css`; no JS logic changes):
+- The "Fresh Air" palette: cream background, deep-blue text (no black), leafy green
+  for actions, aqua and pastel surfaces, red and orange kept for findings that must
+  catch the eye. Our status colours map onto it: `--stop` → Lovable `alert`,
+  `--unsure` → `warn`, `--calm` → `secondary` (aqua).
+- Type: **Bricolage Grotesque** for headings, **DM Sans** for text.
+- Shape: 16 px radius, soft shadows, the hero gradient on the landing page and home,
+  pill chips, cards that lift slightly on hover, buttons that press down, the "IL" mark
+  in the header, the segmented switch style.
+- Dark mode keeps following the phone's setting (`prefers-color-scheme`), with
+  Lovable's dark values.
+
+**Changed from Lovable, measured** (WCAG AA needs 4.5:1 for normal text):
+
+| Pair | Lovable | Proposed |
+|---|---|---|
+| White on the green button | 2.65 | 4.82 (green `#048149`, oklch 0.53) |
+| Red allergen text on its pink card | 3.95 | 4.68 (red `#c92324`, oklch 0.54) |
+| Muted text on the cream background | 4.36 | 4.5 (oklch 0.55) |
+
+Every other pair checked passes (deep-blue text on cream 8.6; dark mode 5.1 to 11.8).
+The original lighter green stays for large decorative areas that carry no text.
+
+**Fonts: self-hosted, not Google Fonts.** Lovable loads them from `fonts.googleapis.com`,
+which sends every visitor's IP address to Google on each page, a processor the privacy
+page doesn't name, and fails offline. Proposed: the two fonts (SIL Open Font License) as
+`woff2` files in `web/fonts/`, only the weights used (about 100 KB in all), cached by
+`sw.js`, `font-display: swap` so text shows at once in the system font on a slow phone.
+The "system fonts, no web fonts" note in `app.css` is replaced.
+
+**Not taken, and why:**
+- **The app itself**: its engine, Supabase, auth and AI Gateway. D-090 (no build step, no
+  third-party JS), D-091 (result text built in `lenses/screen.py`) and D-093/D-103 (our
+  reader and its checks) stand. Its copies of `data/` would drift from the reviewed
+  tables, and its scans skip the catalogue, the review queue, replay (D-092), the photo
+  checks (D-103/D-104), the barcode rule (D-107) and the rate limits.
+- **A coloured verdict banner** ("Clean" / "Mixed" / "Ultra-processed" as the biggest
+  thing on screen) and uppercase `HIGH` / `MODERATE` badges: D-060/D-091 put people and
+  allergens first, with the headline taken from a finding.
+- **Its wording**: "See what's really inside", "read what the pack doesn't say",
+  "hidden sugars" (suggest the brand hides something, D-042/D-071), "labelling breach"
+  (a word from the D-042 list's family), the ⚠️ emoji on the claims heading.
+- **"Paste ingredients"**: typed text isn't a physical label (D-089), and has no barcode
+  or photo for a reviewer.
+- **AI-drafted claim rules** (Lovable's admin): legal facts come from primary documents
+  (D-046), and the claim check is in shadow (D-051).
+
+**Checks when built:** `tests/test_web.py` and the wording lint pass; a headless-Chromium
+walk of every screen at phone width in light and dark, with screenshots for Sushil
+before merge; `APP_VERSION` and the `sw.js` cache version bumped.
 
 ---
 
