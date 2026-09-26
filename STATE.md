@@ -558,6 +558,26 @@ to see where each gate stands. §11 has the full list. Done today: D-051/52/55 d
 food categories, PWA built, D-092 reproduction, D-093 Cloud Vision, scan speed,
 setup alarms.
 
+**Tomorrow (2026-09-27), agreed with Sushil before he signed off:**
+
+- **Claude: a one-page DPDP data map** from the code: every piece of personal data
+  (label photos, device id, invite code and tester label, feedback and problem-report text,
+  household profiles: a child's age band and avoid list, D-074), where it is stored, who sees
+  it (Google as processor for Gemini and Cloud Vision), and when it is deleted (D-098). Sushil
+  hands it to the DPDP reviewer with `web/site/privacy.html`. About 30 minutes.
+- **Sushil: pick the host** (suggested: one small Ubuntu VPS in Mumbai, 2 GB). Then Claude
+  records **D-113** (hosting; PostgreSQL 18 on the server until 19 is released, which changes
+  D-087; photos on the server disk until R2 is built) and writes `deploy/`: Caddy (HTTPS),
+  a systemd service (one process, D-095), a settings template (`INSIDELABEL_INVITE_ONLY=on`,
+  replay off, `INSIDELABEL_PROXY_HOPS=1`), daily retention and backup jobs, a restore test,
+  and `DEPLOY.md`. About 1 to 2 hours; the first deploy with Sushil another 1 to 2.
+- **Sushil:** the FSSAI 2025 amendment PDF (browser download); privacy/about `[To complete]`
+  and a DPDP reviewer; Gemini auto top-up and a budget alert; review item #9 (still `open`
+  on the local DB).
+
+Estimate given: live on the domain in one working day; invites in 2 to 4 days, mostly
+waiting on the DPDP review.
+
 **This week - only Sushil can do these (they unblock the most):**
 
 1. **Housekeeping (10 minutes):** delete the two old Gemini key lines in `~/.bashrc`
