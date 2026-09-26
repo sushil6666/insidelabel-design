@@ -148,3 +148,74 @@ def test_docs_page_prefills_nothing():
     props = spec["components"]["schemas"][ref.split("/")[-1]]["properties"]
     for name in ("replay", "avoid", "who", "barcode", "device_id", "profiles"):
         assert props[name].get("examples") == [""], name       # else Swagger fills in "string"
+
+
+# ---------------------------------------------------------------- additive badges (D-111)
+
+def _adds(j):
+    return {a["ins"]: a for a in j["screen"]["additives"]["items"]}
+
+
+def test_each_additive_gets_a_badge_from_its_fssai_row():
+    j = scan(["Wheat flour", "Sugar", "Colour (INS 102)", "Acidity regulator (INS 330)"], profiles=None).json()
+    adds = _adds(j)
+    assert adds["102"]["badge"] == {"kind": "worth_knowing", "text": "Worth knowing"}     # permitted, moderate
+    assert adds["330"]["badge"] == {"kind": "permitted", "text": "Permitted in India"}    # GMP table
+    assert j["screen"]["additives"]["title"] == "Additives on this pack (2)"
+    assert "additive_alert" not in j["screen"]
+    # The same items are still in the older lists, for app versions before D-111.
+    assert any(w.get("ins") == "102" for w in j["screen"]["worth_knowing"])
+    assert any(a.get("ins") == "330" for a in j["screen"]["ordinary"]["additives"])
+
+
+def test_not_permitted_needs_a_sure_read_and_comes_first():
+    ing = ["Wheat flour", "Acidity regulator (INS 330)", "Flour treatment agent (INS 924a)"]
+    j = scan(ing, profiles=None).json()                                   # confidence 0.98
+    items = j["screen"]["additives"]["items"]
+    assert items[0]["ins"] == "924a"
+    assert items[0]["badge"] == {"kind": "not_permitted", "text": "Not permitted in India"}
+    alert = j["screen"]["additive_alert"]
+    assert alert["text"] == "An additive on this label isn't in FSSAI's permitted list."
+    assert alert["detail"].startswith('We read "INS 924a" on the label.') and alert["source"]["kind"] == "additive"
+
+    unsure = scan(ing, profiles=None, confidence={"ingredients": 0.9, "front_claims": 0.0,
+                                                  "product_identity": 0.5}).json()
+    assert unsure["screen"]["state"] == "result"                         # the general gate still shows it
+    b = _adds(unsure)["924a"]["badge"]
+    assert b["kind"] == "worth_knowing" and "Check this number on the pack" in b["note"]
+    assert "additive_alert" not in unsure["screen"]
+
+
+def test_partial_read_never_says_not_permitted():
+    j = scan(["Wheat flour", "Flour treatment agent (INS 924a)"], profiles=None,
+             ingredients_status="partial").json()
+    assert j["screen"]["state"] == "result"
+    assert _adds(j)["924a"]["badge"]["kind"] == "worth_knowing"
+    assert "additive_alert" not in j["screen"]
+
+
+def test_no_badge_without_a_recorded_basis(monkeypatch):
+    from insidelabel.core import engine
+    row = dict(engine._ADDITIVE_BY_INS["330"]); row.pop("fssai_basis")
+    monkeypatch.setitem(engine._ADDITIVE_BY_INS, "330", row)
+    j = scan(["Wheat flour", "Acidity regulator (INS 330)"], profiles=None).json()
+    assert _adds(j)["330"]["badge"] is None
+
+
+def test_badge_words_stay_within_d042():
+    from insidelabel.lenses import screen as sc
+    text = " ".join([*sc.BADGE_TEXT.values(), sc.CHECK_NUMBER, sc.ADDITIVE_ALERT]).lower()
+    for w in ("safe", "banned", "illegal", "harmful", "risk", "dangerous", "toxic"):
+        assert w not in text, w
+
+
+def test_permitted_cards_fold_and_cards_quote_the_label_line():
+    """D-111: "Permitted" cards fold into one row; each card quotes its whole label line."""
+    j = scan(["Wheat flour", "Colour (INS 102)", "Raising agent (INS 503(ii))", "Acidity regulator (INS 330)"],
+             profiles=None).json()
+    a = j["screen"]["additives"]
+    assert [i["ins"] for i in a["items"]][0] == "102" and a["open"] == 1
+    assert a["folded_text"] == "2 more additives, each permitted in India"
+    assert _adds(j)["503"]["label_line"] == "Raising agent (INS 503(ii))"
+    only = scan(["Wheat flour", "Acidity regulator (INS 330)"], profiles=None).json()["screen"]["additives"]
+    assert only["open"] == 0 and only["folded_text"] == "1 additive, permitted in India"

@@ -18,13 +18,16 @@ Rules this module keeps:
   D-063); a partial read can never produce it.
 - `none`/`low` ingredients are grouped as ordinary, not listed as concerns (D-065).
 - No numeric score anywhere in this block (D-064).
+- Each additive carries a badge built from its FSSAI fields (D-111): "Not
+  permitted in India" only on a sure read, "Worth knowing", or "Permitted in
+  India" only when the row records its Appendix A basis.
 - Profile names never reach the server (D-074). Text for a profile uses the
   literal placeholder NAME ("{name}"); the device swaps in the nickname. The
   user's own profile ("me") is written as "you"/"your".
 """
 
 from insidelabel.core import engine
-from insidelabel.core.tokenize import extract_ins
+from insidelabel.core.tokenize import extract_ins, ins_numbers
 from insidelabel.lenses import allergens as allergen_checker
 from insidelabel.lenses import compare as kids
 
@@ -88,6 +91,21 @@ RETAKE_DEFAULT = "We couldn't read this label. Retake the photo of the ingredien
 RETAKE_PARTIAL = "Part of the ingredient list was cut off or hard to read. Retake it to check the rest."
 
 _STRONGEST = {"contains": 0, "may_contain": 1, "cannot_confirm": 2, "uncertain": 3, "not_listed": 4}
+
+# D-111: one badge per additive, each a fact from its row in data/additives.json
+# (fssai_status + fssai_basis, checked against Appendix A, D-046). Never "safe",
+# never "banned", never a risk level; EU/US status never picks one (D-086).
+BADGE_TEXT = {
+    "not_permitted": "Not permitted in India",
+    "worth_knowing": "Worth knowing",
+    "permitted": "Permitted in India",
+}
+_BADGE_ORDER = {"not_permitted": 0, "worth_knowing": 1, "permitted": 2}
+# "Not permitted" is the most serious thing the app says about a pack, so it
+# needs a sure read; otherwise the number itself may be a misread.
+CHECK_NUMBER = ("Check this number on the pack: part of the list was hard to read, "
+                "so we can't be sure we read it right.")
+ADDITIVE_ALERT = "An additive on this label isn't in FSSAI's permitted list."
 
 
 class ProfileError(ValueError):
@@ -180,8 +198,23 @@ def _additive_name(flag):
     return a["name"] if a else flag["matched_as"].partition(" (INS ")[0]
 
 
-def _findings(verdict):
-    """Split engine flags into worth-knowing items and ordinary ones (D-065)."""
+def _badge(row, concern, sure):
+    """D-111: the badge for one additive, or None when its row can't back one."""
+    status = (row or {}).get("fssai_status")
+    if status == "not_permitted":
+        if sure:
+            return {"kind": "not_permitted", "text": BADGE_TEXT["not_permitted"]}
+        return {"kind": "worth_knowing", "text": BADGE_TEXT["worth_knowing"], "note": CHECK_NUMBER}
+    if concern in ("moderate", "high"):
+        return {"kind": "worth_knowing", "text": BADGE_TEXT["worth_knowing"]}
+    if status in ("permitted", "permitted_with_limits") and row.get("fssai_basis") and row.get("verified_on"):
+        return {"kind": "permitted", "text": BADGE_TEXT["permitted"]}
+    return None
+
+
+def _findings(verdict, sure=True):
+    """Split engine flags into worth-knowing items and ordinary ones (D-065).
+    `sure`: a complete read at allergen-gate confidence (D-111)."""
     worth, ordinary, nova, seen = [], [], [], set()
     for f in verdict["flags"]:
         if f["matched_as"] in seen:
@@ -190,9 +223,12 @@ def _findings(verdict):
         if f["type"] == "nova_marker":
             nova.append(f)
             continue
+        ins = extract_ins(f["matched_as"])
         item = {"name": _additive_name(f), "label_text": f["ingredient"], "why": f["why"],
                 "technical": f"{f['matched_as']}. Sources: {', '.join(f['sources'])}.",
-                "concern": f["concern"], "source": {"kind": "additive", "ref": f["matched_as"]}}
+                "concern": f["concern"], "source": {"kind": "additive", "ref": f["matched_as"]},
+                "ins": ins,
+                "badge": _badge(engine._ADDITIVE_BY_INS.get(ins) if ins else None, f["concern"], sure)}
         (worth if f["concern"] in ("moderate", "high") else ordinary).append(item)
     worth.sort(key=lambda i: i["concern"] != "high")
     if nova:
@@ -303,7 +339,9 @@ def build(*, verdict, display, claim_check, extracted, reliability, profiles,
         }
 
     band = display["display_binary"]
-    worth, ordinary = _findings(verdict)
+    sure = (bool(allergen_reliable) and reliability.get("ingredients_complete", True)
+            and (allergen_confidence or 0) >= allergen_checker.ALLERGEN_MIN_CONFIDENCE)
+    worth, ordinary = _findings(verdict, sure)
     claims = _claim_rows(claim_check)
     # Same unit as `scope` (parsed items, sub-ingredients included): everything
     # not already named under worth knowing, counting each item once.
@@ -312,6 +350,9 @@ def build(*, verdict, display, claim_check, extracted, reliability, profiles,
     for w in worth:
         if w["source"]["kind"] == "hidden_sugar":
             named |= set(w["source"]["ref"])
+    # D-111: low-concern additives now have their own cards, so "other ingredients"
+    # leaves them out too; every count on the screen stays in one unit.
+    named |= {f["ingredient"].lower() for f in verdict["flags"] if f["type"] != "nova_marker"}
     n_ord = max(verdict.get("ingredient_count_parsed", 0) - len(named), 0)
     checked = ("We checked the ingredients and the claims on the front." if claims
                else "We checked the ingredients.")
@@ -334,6 +375,37 @@ def build(*, verdict, display, claim_check, extracted, reliability, profiles,
         "ingredients": ingredients,
         "retake": None if reliability.get("ingredients_complete", True) else RETAKE_PARTIAL,
     }
+    # D-111: every additive as a card with its badge, most serious first. The same
+    # items stay in worth_knowing / ordinary for older app versions.
+    adds = sorted((i for i in worth + ordinary if i["source"]["kind"] == "additive"),
+                  key=lambda i: _BADGE_ORDER.get((i["badge"] or {}).get("kind"), 3))
+    for i in adds:
+        # Quote the whole label line ("Raising agent (INS 503(ii))"), not the
+        # engine's token ("ins 503(ii"), found with the one INS parser (D-099).
+        i["label_line"] = next((line for line in ingredients if i["ins"] and i["ins"] in ins_numbers(line)),
+                               i["label_text"])
+    if adds:
+        # Cards that need a look stay open; "Permitted" ones fold into one row, or
+        # a label with twenty ordinary additives becomes a very long screen.
+        folded = [i for i in adds if (i["badge"] or {}).get("kind") not in ("not_permitted", "worth_knowing")]
+        n = len(folded)
+        each = n and all((i["badge"] or {}).get("kind") == "permitted" for i in folded)
+        out["additives"] = {
+            "title": f"Additives on this pack ({len(adds)})",
+            "items": adds,
+            "open": len(adds) - n,
+            "folded_text": (None if not n else
+                            f"{n} {'more ' if n < len(adds) else ''}additive{'s' if n != 1 else ''}"
+                            f"{', each permitted in India' if each and n > 1 else ', permitted in India' if each else ''}"),
+        }
+    alert = next((i for i in adds if (i["badge"] or {}).get("kind") == "not_permitted"), None)
+    if alert:
+        out["additive_alert"] = {
+            "text": ADDITIVE_ALERT,
+            "detail": (f"We read \"INS {alert['ins']}\" on the label. Check the pack: if we "
+                       f"misread it, tap Report a mistake."),
+            "source": alert["source"],
+        }
     if catalogue and catalogue.get("source") == "catalogue":
         out["last_verified"] = f"Label last verified on {catalogue['last_verified']}."
         # D-073: a barcode can outlive a recipe. Ask anyone with an avoid list for one back photo.

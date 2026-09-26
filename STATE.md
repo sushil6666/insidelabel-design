@@ -1,6 +1,6 @@
 # STATE.md - where InsideLabel is, and how to pick it up
 
-**Last updated:** 2026-09-26 (`main` = `cf9aab0`; D-109 and D-110 locked and built on branch `report-note-and-look`) · **Owner:** Sushil · **Tests:** 366 passing, 1 skipped · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 6.9 s, Gemini + Cloud Vision, correct
+**Last updated:** 2026-09-26 (`main` = `93c47c1`; D-111 built on branch `additive-badges`) · **Owner:** Sushil · **Tests:** 375 passing, 1 skipped · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 6.9 s, Gemini + Cloud Vision, correct
 
 This is the living status document. Read it first in any new session, then
 `DECISIONS.md` for the *why*. Update the "Last updated" line, the numbers and
@@ -31,7 +31,7 @@ over our data tables make every judgement** (D-004), and every judgement uses
 |---|---|---|
 | Ingredient engine (INS parsing, NOVA markers, 3-band verdict, admin-only score) | ✅ | `src/insidelabel/core/` |
 | INS parsing - 3-4 digit numbers, `()[]{}` brackets, `&` separators, unit guard | ✅ reads every printed INS on all 6 gold labels | `core/tokenize.py` (the only INS parser) |
-| Additive table - 66 additives, 35 verified against FSSAI + Codex on 2026-09-25, none left `verify:true` | ✅ | `data/additives.json` |
+| Additive table - 66 additives, all with an FSSAI basis (35 checked 2026-09-25, 31 on 2026-09-26, D-111); a test keeps every row that way | ✅ | `data/additives.json` |
 | Vision read (Gemini `gemini-3.6-flash`) + independent OCR cross-check: Google Cloud Vision when `GOOGLE_VISION_KEY` is set, Tesseract otherwise (D-093: 3.6 s vs 22.7 s, recall 50/52 vs 27/52, 0 wrong additions) | ✅ | `extraction/providers/` (`cloud_vision.py`, `ocr_check.py`) |
 | Scan speed: Cloud Vision reads **alongside** Gemini; `/scan` runs the slow calls on worker threads so one scan never freezes the server | ✅ real scan 6.9 s (was 15.7 s); Gemini itself varies 7-28 s with Google's load | `api/main.py` |
 | Setup alarms: out of credit (402), key rejected (401/403), no key, Cloud Vision billing → plain "not available" to the user, `SETUP ALARM` in the log, a `server` problem report once an hour | ✅ checked against a real 402 | `gemini.VisionConfigError`, `cloud_vision.take_alarm` |
@@ -82,7 +82,7 @@ sudo PG19_PORT=5432 bash tools/install_pg19.sh   # adds apt.postgresql.org, crea
 createdb insidelabel && createdb insidelabel_test
 python -m insidelabel.db.migrate "postgresql:///insidelabel?host=/var/run/postgresql"
 
-pytest -q                                    # 366 pass, 1 skipped; DB tests use embedded Postgres
+pytest -q                                    # 375 pass, 1 skipped; DB tests use embedded Postgres
 ```
 
 **Environment variables**
@@ -377,6 +377,33 @@ then `migrate`, `tools/reviewers.py add`, `tools/beta.py invite 50 --base https:
 and `tools/beta.py feedback`. Seed the kids' biscuits first (§8 item 4): every pack not in
 the catalogue is a paid 8-15 s read.
 
+### D-111 built: additive cards with a badge (2026-09-26, branch `additive-badges`)
+
+Accepted by Sushil and locked.
+
+- **Step 1, data:** the 31 additive rows without an FSSAI basis checked against the
+  compendium XXVI Appendix A (GMP table pp. 736-741, category tables pp. 540-722,
+  Annexure-1 groups p. 723): 14 GMP, 17 numeric limits (6 through a group: SORBATES,
+  BENZOATES, SULFITES, NITRITES, PHOSPHATES, SACCHARINS). **Eight statuses were wrong**: MSG
+  (621) is in the GMP table; 133, 150d, 200, 202, 339, 476, 960 have only numeric limits.
+  Names and classes match the compendium's INS list. `tests/test_additives_data.py` now
+  fails on any row without `fssai_status` / `fssai_basis` / `verified_on`.
+- **The 2025 First Amendment** (in force 01.02.2026) was checked only through a trade
+  summary (ChemLinked): FSSAI's site returns an empty page to scripts. Its Appendix A change
+  (a steviol note in 14.1.5) and colour changes (purity, labelling) change none of the 31.
+  **Sushil: download the amendment PDF in a browser** so it can be read first-hand (D-046).
+- **Step 2, screen:** `lenses/screen.py` gives each additive `ins`, `label_line` and a
+  `badge`; `screen.additives` lists them most serious first, "Permitted" ones folded behind
+  one row; `screen.additive_alert` only for "not permitted" on a sure read (complete, ≥ 0.95).
+  "Other ingredients look ordinary" no longer counts additives that have a card. PWA lays it
+  out (`additiveCard`); `APP_VERSION` web-15. 6 new screen tests, all failing on the old code.
+- **Walked** in headless Chromium, light and dark: the real Ziggy read (21 additives, all
+  permitted, one folded row; the screen was ~10,000 px before folding, ~3,200 after) and a
+  made-up pack with 924a / 102 / 503. **Found and fixed:** cards quoted the engine's token
+  ("ins 503(ii") instead of the label line; 21 open cards made the screen unusable.
+- Not built: the reviewer page doesn't show badges yet (a new barcode's scan already goes
+  to review as a pending version).
+
 ### D-109 and D-110 built (2026-09-26, branch `report-note-and-look`)
 
 Both accepted by Sushil and locked.
@@ -506,9 +533,6 @@ Nothing was blocked; all five items were built. These need you:
 - **D-053** premium pricing - ₹399-499/year recommended.
 - ~~**D-054** the "100% ATTA" ruling~~ ✅ decided 2026-09-25: about the flour, no finding.
 - **D-082** what Premium is for - interviews only.
-- **D-111** (RECOMMENDED 2026-09-26) additive cards with a badge ("Not permitted in India" /
-  "Worth knowing" / "Permitted in India"), SafeLabel's layout in FSSAI's terms. Needs the 32
-  additive rows without `fssai_basis` verified first. Not built until accepted.
 - Concern levels on the 35 verified rows are judgement calls (e.g. sorbitol `low`) - review before launch.
 - **Gemini billing**: prepaid credit (can run out, as it did today) vs post-paid / auto top-up.
 - **A fallback model** for when `gemini-3.6-flash` is busy - only after `gemini-3.5-flash`
@@ -596,7 +620,7 @@ drop PG18 after PG19 GA.
 | `src/insidelabel/` | the package (core, extraction, reliability, claims, lenses, db, review, api) + `trace.py` / `repro.py` (D-092); OCR readers in `extraction/providers/` (`cloud_vision.py`, `ocr_check.py`) |
 | `data/` | the knowledge tables - the moat |
 | `migrations/` | Postgres schema, plain SQL, applied in order |
-| `tests/` | 366 tests (+ `regression/problems/`, D-092); `conftest.py` gives each DB test module its own database and resets the rate limits (D-095) |
+| `tests/` | 375 tests (+ `regression/problems/`, D-092); `conftest.py` gives each DB test module its own database and resets the rate limits (D-095) |
 | `tools/` | release gate, leads (D-089), `repro.py` (D-092), `compare_ocr.py` (D-093), `reviewers.py` (D-097), `retention.py` (D-098), eval, batch scan, gold stubs, queue predictions, PG19 installer |
 | `gold/`, `photos/`, `predictions/` | 6 real labels: hand transcription, photos, recorded model output |
 | `research/` | private marketplace screenshots behind leads (git-ignored; never published - D-089) |
@@ -626,7 +650,7 @@ retention test. Public launch comes after the W4 number (D-083).
 | D-051, D-052, D-055 decided | locked | ✅ locked 2026-09-25 |
 | Published catalogue | ≥ 50 SKUs | ❌ 5 (queue empty; no barcodes yet) |
 | Kids' biscuits published (D-058) | ≥ 15 in 7.2.1 / 7.2.2 | ❌ 0 (category picker ready) |
-| Test suite (`--with-tests`) | green | ✅ 366, 1 skipped (branch `report-note-and-look`, 2026-09-26) |
+| Test suite (`--with-tests`) | green | ✅ 375, 1 skipped (branch `additive-badges`, 2026-09-26) |
 
 ### Manual gates - tick when done
 
