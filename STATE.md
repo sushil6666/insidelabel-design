@@ -1,6 +1,6 @@
 # STATE.md - where InsideLabel is, and how to pick it up
 
-**Last updated:** 2026-09-25 night (`main` = `a198535`: overnight work D-094 to D-099, D-100, D-101, D-054; all merged and pushed) · **Owner:** Sushil · **Tests:** 253 passing, 1 skipped · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 6.9 s, Gemini + Cloud Vision, correct
+**Last updated:** 2026-09-26 (`main` = `ca1f661`: D-102 to D-108 locked and merged; D-109 recommended on branch `report-needs-content`) · **Owner:** Sushil · **Tests:** 363 passing, 1 skipped · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 6.9 s, Gemini + Cloud Vision, correct
 
 This is the living status document. Read it first in any new session, then
 `DECISIONS.md` for the *why*. Update the "Last updated" line, the numbers and
@@ -41,7 +41,7 @@ over our data tables make every judgement** (D-004), and every judgement uses
 | Shelf comparison (2-4 packs, best pick for a child) | ✅ `/compare` | `lenses/compare.py` |
 | India vs EU vs US comparison - optional, information only | ✅ 12 additives | `lenses/regulators.py`, `data/regulatory_status.json` |
 | Wording lint (no "misleading/illegal/toxic/safe/free from…") on tables **and** live output | ✅ in the test suite | `tests/test_wording.py` |
-| Postgres schema with rules enforced by the DB | ✅ 11 migrations, all applied to the local DB (001-011) | `migrations/` |
+| Postgres schema with rules enforced by the DB | ✅ 14 migrations, all applied to the local DB (001-014) | `migrations/` |
 | Marketplace leads → physical label → record (D-089); only `physical_label` versions can publish | ✅ | `db/leads.py`, `tools/leads.py`, migration 005 |
 | Scan persistence: barcode lookup, review queue, findings + evidence, photos | ✅ when `INSIDELABEL_DB` is set | `db/store.py`, `media.py` |
 | Reviewer screen (`/review`) - the only path into the catalogue; FSSAI food category required on approve | ✅ | `review/` |
@@ -63,7 +63,8 @@ Ziggy 28. **The set is 6 labels; the RUNBOOK target is 20-30** - the accuracy
 question the README asks is not answered yet.
 
 **Catalogue:** 5 published products on the local database (review items #1, 3, 4, 5, 6);
-#2 and #7 rejected as duplicates. The review queue is empty. **None of the 5 has a
+#2 and #7 rejected as duplicates, #8 (empty report) rejected. **#9 is open**: Sushil's own
+empty "Report a mistake" test, which he will reject on `/review`. **None of the 5 has a
 barcode yet** - Sushil will send them; add each to `products.barcode`.
 
 ---
@@ -81,7 +82,7 @@ sudo PG19_PORT=5432 bash tools/install_pg19.sh   # adds apt.postgresql.org, crea
 createdb insidelabel && createdb insidelabel_test
 python -m insidelabel.db.migrate "postgresql:///insidelabel?host=/var/run/postgresql"
 
-pytest -q                                    # 253 pass, 1 skipped; DB tests use embedded Postgres
+pytest -q                                    # 363 pass, 1 skipped; DB tests use embedded Postgres
 ```
 
 **Environment variables**
@@ -107,7 +108,7 @@ pytest -q                                    # 253 pass, 1 skipped; DB tests use
 **This machine right now:** PostgreSQL **19beta4 on 5432** (default) and
 **18.6 on 5433** (fallback, holds an older copy of the empty schema). Role
 `insightstack` with CREATEDB, peer auth (no password). Databases `insidelabel`
-(migrations 001-011, 5 products published, review queue empty, reviewer account
+(migrations 001-014, 5 products published, review queue empty, reviewer account
 `sushil`, no leads yet) and `insidelabel_test` (only used to
 create/drop per-module test databases). PostgreSQL 16 was removed.
 
@@ -376,6 +377,21 @@ then `migrate`, `tools/reviewers.py add`, `tools/beta.py invite 50 --base https:
 and `tools/beta.py feedback`. Seed the kids' biscuits first (§8 item 4): every pack not in
 the catalogue is a paid 8-15 s read.
 
+### Session start, and D-109 proposed (2026-09-26, branch `report-needs-content`)
+
+- PR #9 (`refusal-labels`, `05ba1fa`) and PR #10 are merged; local `main` = `origin/main` =
+  `ca1f661`. `pytest -q`: **363 passed, 1 skipped**. Release gate unchanged: 2 failing
+  (gold set size, ingredient match), 4 with the DB (plus catalogue size, kids' biscuits).
+- **D-109 recommended, not built:** "Report a mistake" needs text in "What does the pack
+  say?" or "Anything else?"; `/report` refuses an empty one (422 `empty_report`). Both
+  reports so far (#8, #9) came in empty.
+- **Left for Sushil to launch (D-102):** reject #9 on `/review`; on the deployed server,
+  `migrate` then `tools/reviewers.py add sushil`; fill `[To complete]` in
+  `web/site/privacy.html` and `about.html` and get a DPDP review; deploy with
+  `INSIDELABEL_INVITE_ONLY=on` (§8 item 13); `tools/beta.py invite 50 --base https://<domain>`;
+  replace the Limca 1 L gold image with a photo of a real bottle; send the barcodes of the
+  published packs (none on file yet).
+
 ### Refusals name the wrong photo (2026-09-26, branch `refusal-labels`)
 
 Sushil's test (screenshot back + real Ziggy front) was refused correctly, but the history
@@ -466,6 +482,8 @@ Nothing was blocked; all five items were built. These need you:
 - **D-053** premium pricing - ₹399-499/year recommended.
 - ~~**D-054** the "100% ATTA" ruling~~ ✅ decided 2026-09-25: about the flour, no finding.
 - **D-082** what Premium is for - interviews only.
+- **D-109** (RECOMMENDED 2026-09-26) "Report a mistake" needs a note or what the pack says;
+  the server refuses an empty report (422 `empty_report`). Not built until accepted.
 - Concern levels on the 35 verified rows are judgement calls (e.g. sorbitol `low`) - review before launch.
 - **Gemini billing**: prepaid credit (can run out, as it did today) vs post-paid / auto top-up.
 - **A fallback model** for when `gemini-3.6-flash` is busy - only after `gemini-3.5-flash`
@@ -553,7 +571,7 @@ drop PG18 after PG19 GA.
 | `src/insidelabel/` | the package (core, extraction, reliability, claims, lenses, db, review, api) + `trace.py` / `repro.py` (D-092); OCR readers in `extraction/providers/` (`cloud_vision.py`, `ocr_check.py`) |
 | `data/` | the knowledge tables - the moat |
 | `migrations/` | Postgres schema, plain SQL, applied in order |
-| `tests/` | 253 tests (+ `regression/problems/`, D-092); `conftest.py` gives each DB test module its own database and resets the rate limits (D-095) |
+| `tests/` | 363 tests (+ `regression/problems/`, D-092); `conftest.py` gives each DB test module its own database and resets the rate limits (D-095) |
 | `tools/` | release gate, leads (D-089), `repro.py` (D-092), `compare_ocr.py` (D-093), `reviewers.py` (D-097), `retention.py` (D-098), eval, batch scan, gold stubs, queue predictions, PG19 installer |
 | `gold/`, `photos/`, `predictions/` | 6 real labels: hand transcription, photos, recorded model output |
 | `research/` | private marketplace screenshots behind leads (git-ignored; never published - D-089) |
@@ -583,7 +601,7 @@ retention test. Public launch comes after the W4 number (D-083).
 | D-051, D-052, D-055 decided | locked | ✅ locked 2026-09-25 |
 | Published catalogue | ≥ 50 SKUs | ❌ 5 (queue empty; no barcodes yet) |
 | Kids' biscuits published (D-058) | ≥ 15 in 7.2.1 / 7.2.2 | ❌ 0 (category picker ready) |
-| Test suite (`--with-tests`) | green | ✅ 253, 1 skipped (`main`) |
+| Test suite (`--with-tests`) | green | ✅ 363, 1 skipped (`main`, 2026-09-26) |
 
 ### Manual gates - tick when done
 
