@@ -63,7 +63,11 @@ def scan(dev):
 
 
 def join(code, dev):
-    return c.post("/join", json={"code": code, "device_id": dev})
+    """Join with a code, and agree to "Before you start" (D-105) as the app does next."""
+    r = c.post("/join", json={"code": code, "device_id": dev})
+    if r.status_code == 200:
+        c.post("/agree", json={"device_id": dev, "terms_version": main.TERMS["version"]})
+    return r
 
 
 # ---------------------------------------------------------------- codes
@@ -89,10 +93,12 @@ def test_a_phone_without_a_code_cannot_scan(env, monkeypatch):
 def test_joining_opens_the_app(env):
     (code,) = new_codes(env, label="T01")
     dev = str(uuid.uuid4())
-    assert c.get("/access", params={"device_id": dev}).json() == {"invite_only": True, "joined": False}
+    a = c.get("/access", params={"device_id": dev}).json()
+    assert (a["invite_only"], a["joined"]) == (True, False)
     r = join(code.lower()[:4] + "-" + code.lower()[4:], dev)          # typed loosely: case and a dash
     assert r.status_code == 200 and r.json()["status"] == "joined"
-    assert c.get("/access", params={"device_id": dev}).json() == {"invite_only": True, "joined": True}
+    a = c.get("/access", params={"device_id": dev}).json()
+    assert (a["invite_only"], a["joined"], a["agreed"]) == (True, True, True)
     assert scan(dev).status_code == 200
     assert join(code, dev).status_code == 200                        # joining again is harmless
 

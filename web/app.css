@@ -165,3 +165,6 @@ q { quotes: "“" "”"; }
 .check.ok { background: var(--calm-bg); color: var(--calm); }
 .check.bad { background: var(--stop-bg); color: var(--stop); }
 .check.unknown { background: var(--unsure-bg); color: var(--unsure); font-weight: 400; }
+
+/* D-105: "Before you start". */
+.rules { padding-left: 22px; } .rules li { margin: 8px 0; }

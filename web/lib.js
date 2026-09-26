@@ -12,7 +12,7 @@
 //    beyond the headline the user was shown.
 
 // Bump together with VERSION in sw.js: a report then says which shell was cached.
-export const APP_VERSION = "web-9";
+export const APP_VERSION = "web-10";
 
 // ------------------------------------------------------------------ storage
 // localStorage can throw (private mode, blocked site data); the app must still work.
@@ -231,6 +231,12 @@ export const accessRequest = () =>
 export const joinRequest = code =>
   call("/join", { method: "POST", headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({ code, device_id: deviceId() }) });
+
+// D-105: "Before you start", the rules every tester agrees to first.
+export const termsRequest = () => call("/terms");
+export const agreeRequest = version =>
+  call("/agree", { method: "POST", headers: { "Content-Type": "application/json" },
+                   body: JSON.stringify({ device_id: deviceId(), terms_version: version }) });
 
 export const feedbackRequest = ({ comment, rating, screen }) =>
   call("/feedback", { method: "POST", headers: { "Content-Type": "application/json" },

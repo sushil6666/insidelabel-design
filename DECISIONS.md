@@ -4,7 +4,7 @@ Architectural and product decisions for InsideLabel, with the reasoning attached
 Append-only. When a decision is reversed, mark it `SUPERSEDED` and add a new entry
 rather than editing the old one - the history is the point.
 
-**Last updated:** 2026-09-26 (D-103, D-104 locked; D-102 recommended)
+**Last updated:** 2026-09-26 (D-103, D-104 locked; D-102, D-105 recommended)
 
 **Status key:** `LOCKED` decided, don't relitigate · `OPEN` not yet decided ·
 `RECOMMENDED` proposed but not accepted · `SUPERSEDED` replaced
@@ -960,6 +960,33 @@ green tick or a red cross, and why"); details by Claude; accepted by Sushil 2026
 On the 12 gold photos zxing found the one barcode that is in frame (Patanjali back,
 8906032018810) and nothing on the others; label photos rarely show the barcode, so
 the dedicated barcode photo is the main route and a barcode on the back is a bonus.
+
+### D-105 · "Before you start": every tester agrees to real-pack rules before a first scan `RECOMMENDED` (2026-09-26)
+Direction from Sushil ("correct data is important; in the beta there will be wrong data or
+AI feeding; an 'I agree' and conditions on the first or home screen"); wording and
+mechanism by Claude; awaiting Sushil.
+
+- **The screen** comes right after joining (D-102) and before the welcome, and again
+  whenever the text changes. Five points, one "I agree to these rules" box, "Continue"
+  stays off until it is ticked:
+  1. I am a real person using InsideLabel myself, not an automated program.
+  2. I will only photograph real packs that I am holding or that are in front of me.
+  3. I will not upload pictures made or changed by AI, edited photos, or screenshots.
+  4. What I send may be checked by a person; made-up or altered pictures are removed
+     and can close my invite.
+  5. InsideLabel shows ingredient facts from the label, not medical advice.
+- **The text is data** (`data/terms.json`, versioned, wording-linted): change it, bump
+  `version`, and every tester is asked again.
+- **Recorded and enforced on the server** (migration 013 `agreements`: install, version,
+  time). With `INSIDELABEL_INVITE_ONLY=on`, `/scan`, `/check-photo`, `/send-to-us` and
+  `/feedback` refuse a phone that hasn't agreed to the current version (403
+  `terms_required`, before anything is read). `tools/beta.py list` shows who agreed.
+- **What it is and isn't.** A tick doesn't stop a determined person or a program; it is
+  the rule we point to when removing made-up data or closing an invite
+  (`tools/beta.py revoke`). The checks that catch bad data are D-103/D-104 (barcode,
+  file, screen/not-food) and the reviewer. Not built, worth considering: marking photos
+  uploaded from the gallery (vs taken with the camera) for reviewers, since an AI-made
+  picture can only arrive as an upload.
 
 ---
 

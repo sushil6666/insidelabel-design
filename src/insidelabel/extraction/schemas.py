@@ -86,6 +86,13 @@ class JoinRequest(BaseModel):
     device_id: str = Field(..., max_length=64)
 
 
+class AgreeRequest(BaseModel):
+    """D-105: this install accepts this version of "Before you start"."""
+
+    device_id: str = Field(..., max_length=64)
+    terms_version: str = Field(..., max_length=40)
+
+
 class FeedbackRequest(BaseModel):
     """D-102 "Send feedback": what a tester thinks. Not a mistake (D-076), not a problem (D-092)."""
 

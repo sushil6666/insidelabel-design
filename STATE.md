@@ -376,6 +376,14 @@ then `migrate`, `tools/reviewers.py add`, `tools/beta.py invite 50 --base https:
 and `tools/beta.py feedback`. Seed the kids' biscuits first (§8 item 4): every pack not in
 the catalogue is a paid 8-15 s read.
 
+### "Before you start" (2026-09-26, same branch, D-105 recommended)
+
+Sushil: correct data first; expect wrong data and AI-made pictures in the beta. After
+joining, every tester ticks "I agree" to five rules (real person, real packs only, no
+AI-made/edited pictures or screenshots, a person may check, not medical advice). Text in
+`data/terms.json` (versioned); migration 013 records who agreed; invite-only servers refuse
+scans until then. Walked in headless Chromium. Tests: 335 passing.
+
 ### Barcodes, photo ticks, no dashes (2026-09-26, same branch)
 
 - **D-103 and D-104 locked** (Sushil). D-104: no typed barcode; the camera or a

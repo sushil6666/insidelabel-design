@@ -456,6 +456,22 @@ class Store:
                                  WHERE d.user_id = %s AND i.revoked_at IS NULL""", (uid,)).fetchone()
         return r["code"] if r else None
 
+    def agree(self, device_id, terms_version):
+        """D-105: this install accepted this version of 'Before you start'."""
+        with self._connect() as conn:
+            uid = self._user(conn, device_id)
+            conn.execute("""INSERT INTO agreements (user_id, terms_version) VALUES (%s, %s)
+                            ON CONFLICT DO NOTHING""", (uid, terms_version))
+
+    def has_agreed(self, device_id, terms_version):
+        try:
+            uid = str(uuid.UUID(str(device_id)))
+        except (ValueError, TypeError):
+            return False
+        with self._connect() as conn:
+            return conn.execute("SELECT 1 FROM agreements WHERE user_id = %s AND terms_version = %s",
+                                (uid, terms_version)).fetchone() is not None
+
     def revoke_invite(self, code):
         with self._connect() as conn:
             return conn.execute("UPDATE invites SET revoked_at = now() WHERE code = %s RETURNING code",
@@ -485,7 +501,10 @@ class Store:
                           count(DISTINCT s.id) AS scans,
                           count(DISTINCT s.created_at::date) AS days_active,
                           min(s.created_at) AS first_scan, max(s.created_at) AS last_scan,
-                          (SELECT count(*) FROM feedback f WHERE f.invite_code = i.code) AS feedback
+                          (SELECT count(*) FROM feedback f WHERE f.invite_code = i.code) AS feedback,
+                          (SELECT max(a.agreed_at) FROM agreements a
+                             JOIN invite_devices d2 ON d2.user_id = a.user_id
+                            WHERE d2.code = i.code) AS agreed_at
                      FROM invites i
                      LEFT JOIN invite_devices d ON d.code = i.code
                      LEFT JOIN scans s ON s.user_id = d.user_id

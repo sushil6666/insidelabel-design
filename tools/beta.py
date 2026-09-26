@@ -63,7 +63,8 @@ def main(argv=None):
             state = " REVOKED" if r["revoked_at"] else ""
             print(f"{r['code']}  {(r['label'] or '')[:20]:<20} {r['devices']} device(s)  {r['scans']} scan(s)  "
                   f"{r['days_active']} day(s) active  first {_d(r['first_scan'])}  last {_d(r['last_scan'])}  "
-                  f"{r['feedback']} feedback{state}")
+                  f"{r['feedback']} feedback  {'agreed ' + _d(r['agreed_at']) if r['agreed_at'] else 'not agreed yet'}"
+                  f"{state}")
     elif a.cmd == "feedback":
         rows = store.feedback_list(a.limit)
         if not rows:

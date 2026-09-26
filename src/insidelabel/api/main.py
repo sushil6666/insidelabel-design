@@ -62,6 +62,7 @@ from insidelabel.extraction.schemas import (  # noqa: E402
     AllergenCheckRequest,
     AnalyzeRequest,
     CompareRequest,
+    AgreeRequest,
     FeedbackRequest,
     JoinRequest,
     ProblemRequest,
@@ -120,11 +121,18 @@ def _invite_only():
     return os.environ.get("INSIDELABEL_INVITE_ONLY", "off").lower() == "on"
 
 
+# D-105: "Before you start", the rules every tester agrees to before a first
+# scan. The text is data (wording-linted); a new version asks everyone again.
+with open(os.path.join(os.path.dirname(__file__), "..", "..", "..", "data", "terms.json"), encoding="utf-8") as _f:
+    TERMS = {k: v for k, v in json.load(_f).items() if not k.startswith("_")}
+
+
 def _require_invite(device_id):
     """
-    Refuse a phone that hasn't joined, before anything is read or stored (like
-    a 429, D-095; logged, not a scan row). Without a database nobody can be
-    checked, so nobody gets in.
+    Refuse a phone that hasn't joined (D-102) or hasn't agreed to the current
+    "Before you start" (D-105), before anything is read or stored (like a 429,
+    D-095; logged, not a scan row). Without a database nobody can be checked,
+    so nobody gets in.
     """
     if not _invite_only():
         return
@@ -137,6 +145,11 @@ def _require_invite(device_id):
         raise HTTPException(status_code=403, detail={
             "error": "invite_required",
             "detail": "This beta is by invitation. Open the link from your invite, or type its code."})
+    if not _persist(STORE.has_agreed, device_id, TERMS["version"]):
+        log.warning("terms not agreed: device=%s version=%s", device_id, TERMS["version"])
+        raise HTTPException(status_code=403, detail={
+            "error": "terms_required", "terms_version": TERMS["version"],
+            "detail": "Please read and agree to the rules for the beta first."})
 
 
 def _user_claim_check(cc, front_claims):
@@ -778,9 +791,36 @@ _JOIN_ERRORS = {
 
 @app.get("/access")
 def access(device_id: str = ""):
-    """Does this server need an invite, and has this phone joined? The app asks on open."""
+    """Invite needed? Joined? Agreed to the current rules (D-105)? The app asks on open."""
     joined = bool(STORE and device_id and _persist(STORE.invite_of, device_id))
-    return {"invite_only": _invite_only(), "joined": joined}
+    agreed = bool(STORE and device_id and _persist(STORE.has_agreed, device_id, TERMS["version"]))
+    return {"invite_only": _invite_only(), "joined": joined, "agreed": agreed,
+            "terms_version": TERMS["version"]}
+
+
+@app.get("/terms")
+def terms():
+    """D-105: the "Before you start" text the app shows, with its version."""
+    return TERMS
+
+
+@app.post("/agree")
+def agree(req: AgreeRequest, request: Request):
+    """D-105: record that this install agreed to this version of the rules."""
+    _rate_limit(request, "agree", req.device_id, ratelimit.PROBLEM_TEXT)
+    try:
+        device = str(uuid.UUID(req.device_id))
+    except ValueError:
+        raise HTTPException(status_code=422, detail={"error": "bad_device_id"})
+    if req.terms_version != TERMS["version"]:
+        raise HTTPException(status_code=409, detail={
+            "error": "terms_changed", "terms_version": TERMS["version"],
+            "detail": "The rules have changed. Please read them again."})
+    if STORE is None:
+        raise HTTPException(status_code=503, detail={
+            "error": "storage_unavailable", "detail": "Agreements need the database (INSIDELABEL_DB is not set)."})
+    STORE.agree(device, req.terms_version)
+    return {"status": "agreed", "terms_version": TERMS["version"]}
 
 
 @app.post("/join")

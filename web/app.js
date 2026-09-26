@@ -10,7 +10,7 @@ import {
   AGES, APP_VERSION, MAX_PROFILES, ApiError, addHistory, allergenList, clientInfo, compareRequest,
   deviceId, el, fill, history, historyItem, lastIncident, prepareImage, problemRequest, profileByRef,
   profiles, record, reportRequest, saveProfiles, scanRequest, sendToUsRequest, store, trailSnapshot,
-  accessRequest, checkPhotoRequest, feedbackRequest, joinRequest,
+  accessRequest, agreeRequest, checkPhotoRequest, feedbackRequest, joinRequest, termsRequest,
   updatesRequest,
 } from "./lib.js";
 import { barcodeSupported, startScanner } from "./camera.js";
@@ -27,7 +27,7 @@ let pending = { barcode: null, barcodeSource: null, back: null, front: null, pai
 // ------------------------------------------------------------------ navigation
 const routes = {
   "": home, welcome, household, person, scan, photo, front, result, report, compare, problem, send,
-  join, feedback,
+  join, agree, feedback,
 };
 
 // Setting the hash it already has fires no hashchange, so the page wouldn't
@@ -45,15 +45,21 @@ function route() {
   record("route", { to: name || "home", arg: arg || undefined });
   if (name !== "feedback") store.set("lastScreen", name || "home");     // where feedback was sent from
   // D-102: an invite-only server lets a phone in once it has joined with a code.
-  if (name !== "join" && name !== "problem" && !store.get("joined", false)) {
+  // D-105: then "Before you start": the rules are agreed before anything else.
+  if (!["join", "agree", "problem"].includes(name)) {
     const seq = ++navSeq;
-    return checkAccess().then(ok => { if (seq === navSeq) (ok ? routeAfterJoin(name, arg) : show(join())); });
+    return checkAccess().then(a => {
+      if (seq !== navSeq) return;
+      if (!a.joined) return show(join());
+      if (a.needAgree) return show(agree());
+      routeAfterJoin(name, arg);
+    });
   }
   routeAfterJoin(name, arg);
 }
 
 function routeAfterJoin(name, arg) {
-  if (!store.get("welcomed", false) && !["welcome", "household", "person", "join"].includes(name)) {
+  if (!store.get("welcomed", false) && !["welcome", "household", "person", "join", "agree"].includes(name)) {
     return show(welcome());
   }
   const seq = ++navSeq;
@@ -93,21 +99,71 @@ let accessChecked = null;
 function checkAccess() {
   if (!accessChecked) {
     accessChecked = accessRequest().then(({ body }) => {
-      const ok = !body.invite_only || body.joined;
-      if (ok) store.set("joined", true);
-      return ok;
-    }).catch(() => true);            // offline: let the app open; the server still checks every scan
+      const joined = !body.invite_only || body.joined;
+      if (joined) store.set("joined", true);
+      store.set("termsVersion", body.terms_version);
+      // D-105: agreed on the server, or (a server without a database) on this phone.
+      const needAgree = !body.agreed && store.get("agreed", null) !== body.terms_version;
+      return { joined, needAgree };
+    }).catch(() => ({                // offline: open the app; the server still checks every scan
+      joined: store.get("joined", true),
+      needAgree: !store.get("agreed", null),
+    }));
   }
   return accessChecked;
 }
 
-function needsInvite(e) {
-  if (e instanceof ApiError && e.body?.error === "invite_required") {
+// A 403 from the server means this phone isn't (or is no longer) let in: no
+// invite (D-102), or the rules not agreed, e.g. after they changed (D-105).
+// Returns the screen to show, or null.
+function accessProblem(e) {
+  if (!(e instanceof ApiError)) return null;
+  if (e.body?.error === "invite_required") {
     store.set("joined", false);
     accessChecked = null;
-    return true;
+    return "join";
   }
-  return false;
+  if (e.body?.error === "terms_required") {
+    store.set("agreed", null);
+    accessChecked = null;
+    return "agree";
+  }
+  return null;
+}
+
+function agree() {
+  const view = el("section", { class: "stack" }, el("p", { class: "muted" }, "Loading…"));
+  termsRequest().then(({ body: t }) => {
+    const box = el("input", { type: "checkbox", id: "agree" });
+    const err = el("p", { class: "error", role: "alert" });
+    const go_ = el("button", { type: "button", class: "btn primary", disabled: true }, t.button);
+    box.addEventListener("change", () => { go_.disabled = !box.checked; });
+    go_.addEventListener("click", async () => {
+      go_.disabled = true;
+      try {
+        await agreeRequest(t.version);
+      } catch (ex) {
+        if (ex.body?.error === "terms_changed") { accessChecked = null; return show(agree()); }
+        // A server without a database can't record it; the phone keeps it (it doesn't gate).
+        if (ex.body?.error !== "storage_unavailable") {
+          go_.disabled = false;
+          err.textContent = ex.status === 0 ? "No connection. Try again when you're online." : apiMessage(ex);
+          return;
+        }
+      }
+      store.set("agreed", t.version);
+      record("agreed", { version: t.version });
+      accessChecked = Promise.resolve({ joined: true, needAgree: false });
+      go("");
+    });
+    view.replaceChildren(
+      el("h1", {}, t.title),
+      el("p", { class: "lead" }, t.intro),
+      el("ol", { class: "rules" }, t.points.map(p => el("li", {}, p))),
+      el("label", { class: "choice", for: "agree" }, box, " " + t.agree_label),
+      err, go_);
+  }).catch(e => view.replaceChildren(apiErrorView(e, () => show(agree()))));
+  return view;
 }
 
 function join(code) {
@@ -127,7 +183,7 @@ function join(code) {
     try {
       await joinRequest(typed);
       store.set("joined", true);
-      accessChecked = Promise.resolve(true);
+      accessChecked = null;                  // ask again: next comes "Before you start" (D-105)
       record("joined", {});
       go("");
     } catch (ex) {
@@ -170,7 +226,8 @@ function feedback() {
         el("p", {}, "We read every note. It shapes what we build next."),
         button("Done", () => go(""), "primary")));
     } catch (ex) {
-      if (needsInvite(ex)) return go("join");
+      const gate = accessProblem(ex);
+      if (gate) return go(gate);
       err.textContent = ex.status === 0 ? "No connection. Try again when you're online." : apiMessage(ex);
     }
   });
@@ -475,7 +532,8 @@ function photoPicker(role, label, preview, onPick) {
     try {
       res = (await checkPhotoRequest(role, blob)).body;
     } catch (e) {
-      if (needsInvite(e)) return go("join");
+      const gate = accessProblem(e);
+      if (gate) return go(gate);
       if (e.status === 429 || e.status === 413 || e.status === 415) res = { ok: false, message: apiMessage(e) };
     }
     record("photo_check", { role, ok: res ? res.ok : null, problem: res?.problem || null, barcode: !!res?.barcode });
@@ -864,7 +922,8 @@ function apiMessage(e) {
 }
 
 function apiErrorView(e, retry) {
-  if (needsInvite(e)) return join();          // D-102: this phone isn't (or is no longer) in the beta
+  const gate = accessProblem(e);             // D-102/D-105: not joined, or rules not agreed
+  if (gate) return gate === "join" ? join() : agree();
   return el("section", { class: "stack" },
     el("h1", {}, "That didn't work"),
     el("p", {}, apiMessage(e)),
