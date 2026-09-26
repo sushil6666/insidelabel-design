@@ -1,4 +1,4 @@
-// sw.js — keeps the app shell available offline and loading fast on slow networks.
+// sw.js - keeps the app shell available offline and loading fast on slow networks.
 // Only files under /app/ are cached. API calls (/scan, /compare, …) always go
 // to the network: a stale verdict must never be served from a cache here.
 const VERSION = "il-shell-9";   // bump with APP_VERSION in lib.js

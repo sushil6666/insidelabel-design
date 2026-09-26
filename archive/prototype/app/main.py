@@ -1,5 +1,5 @@
 """
-Inside Label — API (v0.1)
+Inside Label - API (v0.1)
 
     POST /analyze      raw ingredient text  -> layered verdict (engine verbatim)
     POST /claim-check  text + front claims  -> verdict + claim contradictions
@@ -10,7 +10,7 @@ Inside Label — API (v0.1)
 THE GUARD THAT MATTERS
 ----------------------
 engine.analyze("") returns score 100, grade A, binary "clean". That is correct
-behaviour for the engine — no flagged ingredients means no penalties — but it
+behaviour for the engine - no flagged ingredients means no penalties - but it
 is the single most dangerous output this API can emit, because "we could not
 read the label" and "this product is clean" become indistinguishable to the
 user. Every path into the engine therefore refuses input that yields no usable
@@ -46,7 +46,7 @@ app = FastAPI(
     title="Inside Label API",
     version="0.1.0",
     description=(
-        "Ingredient-list analysis. The engine states ingredient facts only — "
+        "Ingredient-list analysis. The engine states ingredient facts only - "
         "it never says a product is safe for any person or condition. Segment "
         "lenses sit above this API, not inside it."
     ),
@@ -163,8 +163,8 @@ async def _read_image(upload, role):
 
 @app.post("/scan")
 async def scan(
-    back: Optional[UploadFile] = File(None, description="Back of pack — the ingredient list."),
-    front: Optional[UploadFile] = File(None, description="Front of pack — marketing claims."),
+    back: Optional[UploadFile] = File(None, description="Back of pack - the ingredient list."),
+    front: Optional[UploadFile] = File(None, description="Front of pack - marketing claims."),
     pairing_confirmed: bool = Form(False, description="User confirms both images show the same pack."),
     replay: Optional[str] = Form(None, description="Recorded model JSON, for testing without an API call."),
 ):
@@ -216,7 +216,7 @@ async def scan(
             corrections.append(
                 "independent OCR found additive(s) the model omitted: "
                 + ", ".join(f"INS {i}" for i in ocr_result["missing"])
-                + " — recovered as: " + "; ".join(recovered)
+                + " - recovered as: " + "; ".join(recovered)
             )
             vision["ingredients"] = fixed
 
@@ -231,7 +231,7 @@ async def scan(
         bad = [f"{f}:{v['brand']!r}" for f, v in _idrep.items()
                if v["status"] == ocr_check.NOT_FOUND]
         corrections.append(
-            "product_match downgraded to indeterminate — independent OCR read "
+            "product_match downgraded to indeterminate - independent OCR read "
             "the face but found no such brand: " + ", ".join(bad)
         )
         vision["product_match"]["status"] = "indeterminate"

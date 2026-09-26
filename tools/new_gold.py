@@ -7,7 +7,7 @@ Create an EMPTY gold stub to transcribe by hand.
 WHY THIS IS EMPTY
     It would be trivial to prefill this from the model's prediction and let you
     correct it. Do not. Gold built by editing model output agrees with the
-    model by construction and measures nothing — you will accept whatever
+    model by construction and measures nothing - you will accept whatever
     looked plausible and only catch the errors that happen to look wrong.
 
     Transcribe from the photo, blind, then run the eval. A disagreement is then
@@ -17,7 +17,7 @@ THE RULE THAT MATTERS
     For every field, be able to point at the pixels.
 
     Three gold errors were made on the first two labels of this project, all
-    the same shape — writing what the pack MEANS rather than what it PRINTS:
+    the same shape - writing what the pack MEANS rather than what it PRINTS:
       - net_quantity "2000 ml", derived by multiplying 200ml x 10 servings.
         The pack prints no total.
       - back_identity.brand "Limca", inferred because it is a Limca bottle.
@@ -62,7 +62,7 @@ STUB = {
 }
 
 CHECKLIST = """
-Transcribing {id} — work in this order, from the photos only:
+Transcribing {id} - work in this order, from the photos only:
 
   1. ingredient_lines   one entry per PRINTED LINE, copied exactly.
                         Keep INS numbers as printed: "(330, 331(iii))" stays
@@ -73,7 +73,7 @@ Transcribing {id} — work in this order, from the photos only:
                         "Emulsifiers (INS 322, INS 471)" is ONE entry.
   4. product            brand / name / variant AS PRINTED, separately.
                         Never join them. net_quantity only if a total is
-                        printed — do not compute it from serving size.
+                        printed - do not compute it from serving size.
   5. front_claims       verbatim marketing claims only, asterisks included.
                         NOT: brand, product name, net quantity, MRP, price
                         stickers, FSSAI number, batch codes, veg mark,

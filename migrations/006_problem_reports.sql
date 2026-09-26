@@ -1,4 +1,4 @@
--- 006_problem_reports.sql — every scan can be reproduced, and users can say
+-- 006_problem_reports.sql - every scan can be reproduced, and users can say
 -- when something broke (D-092).
 --
 -- A scan's result is fixed by: the photos (media store), the model's raw

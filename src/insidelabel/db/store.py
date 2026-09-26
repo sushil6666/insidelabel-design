@@ -477,7 +477,7 @@ class Store:
                 (uid, code, rating, comment, screen, app_version)).fetchone()["id"]
 
     def beta_testers(self):
-        """One row per code: installs, scans, days active, last scan, feedback — the W4 view (D-055)."""
+        """One row per code: installs, scans, days active, last scan, feedback - the W4 view (D-055)."""
         with self._connect() as conn:
             return conn.execute(
                 """SELECT i.code, i.label, i.revoked_at, i.created_at,

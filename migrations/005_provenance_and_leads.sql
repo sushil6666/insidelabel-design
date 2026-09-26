@@ -1,9 +1,9 @@
--- 005_provenance_and_leads.sql — where a record came from (D-088, D-089).
+-- 005_provenance_and_leads.sql - where a record came from (D-088, D-089).
 --
 -- A marketplace listing (Flipkart, Amazon, Blinkit, Zepto, Swiggy Instamart…)
 -- is a *lead*: it tells us a product exists and is worth adding. It is never
 -- the source of a catalogue record. The canonical record is read from the
--- physical pack — front and back label — and goes through review (D-028).
+-- physical pack - front and back label - and goes through review (D-028).
 --
 -- Rules enforced here:
 --   D-089  only a version read from a physical label can be published

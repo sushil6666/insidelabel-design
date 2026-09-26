@@ -3,8 +3,8 @@ FSSAI food categories (Appendix A, Food Category System) in the `categories` tab
 
 The list is data (`data/food_categories.json`, verified against the compendium);
 this module only mirrors it into Postgres so `products.category_id` can point at
-it. `migrate.apply()` calls sync() after the migrations, so every database —
-including each test database — has the same list.
+it. `migrate.apply()` calls sync() after the migrations, so every database -
+including each test database - has the same list.
 
 Rows are upserted by code and never deleted: a product may already point at one.
 """

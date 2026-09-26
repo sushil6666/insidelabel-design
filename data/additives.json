@@ -14,11 +14,11 @@
       "rule": "A 'low' additive takes the low penalty only if it carries one of low_penalty_flags. A 'low' additive whose flags only name its class (emulsifier, preservative, modified_starch, ...) scores 0: long lists of ordinary baking additives should not sink a score on their own. NOVA markers are scored separately and are unaffected; the flag still appears in the verdict, and the claim checker still reads the class. Decided 2026-09-25.",
       "low_penalty_flags": ["4mei_trace", "phosphate_load", "possible_transfat_source", "gut_microbiome_research", "polyol", "synthetic_colour", "flavour_enhancer", "sweetener_natural"]
     },
-    "verification_log": "Rows with verified_on were checked on that date: name against Codex CAC/GL 36-1989 (INS list); permission against the FSS (Food Products Standards and Food Additives) Regulations 2011 compendium Version XXVI (20.12.2022) — fssai_basis says whether it is in the GMP table for all food categories or has numeric limits; and the First Amendment Regulations 2025 (gazette 14.07.2025, in force 01.02.2026), which changes none of them. Concern levels are a scoring judgement, not a regulatory fact.",
+    "verification_log": "Rows with verified_on were checked on that date: name against Codex CAC/GL 36-1989 (INS list); permission against the FSS (Food Products Standards and Food Additives) Regulations 2011 compendium Version XXVI (20.12.2022) - fssai_basis says whether it is in the GMP table for all food categories or has numeric limits; and the First Amendment Regulations 2025 (gazette 14.07.2025, in force 01.02.2026), which changes none of them. Concern levels are a scoring judgement, not a regulatory fact.",
     "sources_key": {
       "FSSAI": "FSS (Food Products Standards and Food Additives) Regulations, India",
       "EFSA": "European Food Safety Authority scientific opinion",
-      "SOUTHAMPTON": "McCann et al., Lancet 2007 — colours linked to hyperactivity in children (the 'Southampton Six')",
+      "SOUTHAMPTON": "McCann et al., Lancet 2007 - colours linked to hyperactivity in children (the 'Southampton Six')",
       "WHO": "WHO / JECFA position or IARC classification",
       "EU": "EU food additive regulation status",
       "CODEX": "Codex CAC/GL 36-1989, Class Names and the International Numbering System for Food Additives (names and functional classes)",

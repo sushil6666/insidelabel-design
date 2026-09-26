@@ -1,5 +1,5 @@
 """
-Inside Label — API (v0.1)
+Inside Label - API (v0.1)
 
     POST /analyze      raw ingredient text  -> layered verdict (engine verbatim)
     POST /claim-check  text + front claims  -> verdict + claim contradictions
@@ -18,7 +18,7 @@ Inside Label — API (v0.1)
 THE GUARD THAT MATTERS
 ----------------------
 engine.analyze("") returns score 100, grade A, binary "clean". That is correct
-behaviour for the engine — no flagged ingredients means no penalties — but it
+behaviour for the engine - no flagged ingredients means no penalties - but it
 is the single most dangerous output this API can emit, because "we could not
 read the label" and "this product is clean" become indistinguishable to the
 user. Every path into the engine therefore refuses input that yields no usable
@@ -201,7 +201,7 @@ def _persist(fn, *args, **kwargs):
         return None
     try:
         return fn(*args, **kwargs)
-    except Exception:  # noqa: BLE001 — any storage failure, logged with traceback
+    except Exception:  # noqa: BLE001 - any storage failure, logged with traceback
         log.exception("scan persistence failed")
         return None
 
@@ -209,7 +209,7 @@ app = FastAPI(
     title="Inside Label API",
     version="0.1.0",
     description=(
-        "Ingredient-list analysis. The engine states ingredient facts only — "
+        "Ingredient-list analysis. The engine states ingredient facts only - "
         "it never says a product is safe for any person or condition. Segment "
         "lenses sit above this API, not inside it."
     ),
@@ -225,7 +225,7 @@ async def request_ids(request, call_next):
     token = trace.REQUEST_ID.set(rid)
     try:
         response = await call_next(request)
-    except Exception as exc:  # noqa: BLE001 — the last line of defence; logged and stored
+    except Exception as exc:  # noqa: BLE001 - the last line of defence; logged and stored
         log.exception("unhandled error on %s %s", request.method, request.url.path)
         tb = traceback.extract_tb(exc.__traceback__)
         where = f"{os.path.basename(tb[-1].filename)}:{tb[-1].lineno}" if tb else "?"
@@ -262,7 +262,7 @@ mimetypes.add_type("text/javascript", ".js")        # module scripts refuse othe
 if os.path.isdir(WEB_DIR):
     app.mount("/app", StaticFiles(directory=WEB_DIR, html=True), name="app")
 
-    # D-102: the public pages around the app — landing, privacy, about. Plain
+    # D-102: the public pages around the app - landing, privacy, about. Plain
     # HTML in web/site/, linted with the app's wording rules (tests/test_web.py).
     SITE_DIR = os.path.join(WEB_DIR, "site")
     _SITE_PAGES = {"/": "index.html", "/privacy": "privacy.html", "/about": "about.html",
@@ -511,7 +511,7 @@ def compare_packs(req: CompareRequest):
 
 
 # ---------------------------------------------------------------------------
-# India vs EU vs US (D-086) — information only
+# India vs EU vs US (D-086) - information only
 # ---------------------------------------------------------------------------
 @app.get("/regulators")
 def list_regulators():
@@ -686,7 +686,7 @@ _SEND_ERRORS = {
 @app.post("/send-to-us")
 def send_to_us(req: SendToUsRequest, request: Request):
     """
-    After two refused scans (D-070): "Send it to us — we'll check this pack and
+    After two refused scans (D-070): "Send it to us - we'll check this pack and
     tell you when it's ready." Queues the photos for a reviewer; /updates
     reports back when the item is decided.
     """
@@ -809,7 +809,7 @@ def join(req: JoinRequest, request: Request):
 
 @app.post("/feedback")
 def feedback(req: FeedbackRequest, request: Request):
-    """D-102 "Send feedback": a tester's comment and optional 1–5 rating, stored against their code."""
+    """D-102 "Send feedback": a tester's comment and optional 1-5 rating, stored against their code."""
     _rate_limit(request, "feedback", req.device_id, ratelimit.FEEDBACK_TEXT)
     _require_invite(req.device_id)
     if STORE is None:
@@ -901,8 +901,8 @@ async def _read_image(upload, role):
 @app.post("/scan")
 async def scan(
     request: Request,
-    back: Optional[UploadFile] = File(None, description="Back of pack — the ingredient list."),
-    front: Optional[UploadFile] = File(None, description="Front of pack — marketing claims."),
+    back: Optional[UploadFile] = File(None, description="Back of pack - the ingredient list."),
+    front: Optional[UploadFile] = File(None, description="Front of pack - marketing claims."),
     pairing_confirmed: bool = Form(False, description="User confirms both images show the same pack."),
     # Every text field carries an empty example: /docs otherwise pre-fills them
     # with the word "string", and avoid=string is refused as an unknown allergen
@@ -988,7 +988,7 @@ async def scan(
         "timings": {},
     }
 
-    # D-024: a barcode alone is a catalogue lookup — no vision call, ~₹0.
+    # D-024: a barcode alone is a catalogue lookup - no vision call, ~₹0.
     # Photos, when sent, are always read: that is how a reformulation under an
     # unchanged barcode gets noticed, and how the D-073 allergy re-check works.
     if barcode and not images and replay is None:
@@ -1116,7 +1116,7 @@ async def scan(
             corrections.append(
                 "independent OCR found additive(s) the model omitted: "
                 + ", ".join(f"INS {i}" for i in ocr_result["missing"])
-                + " — recovered as: " + "; ".join(recovered)
+                + " - recovered as: " + "; ".join(recovered)
             )
             vision["ingredients"] = fixed
 
@@ -1131,7 +1131,7 @@ async def scan(
         bad = [f"{f}:{v['brand']!r}" for f, v in _idrep.items()
                if v["status"] == ocr_check.NOT_FOUND]
         corrections.append(
-            "product_match downgraded to indeterminate — independent OCR read "
+            "product_match downgraded to indeterminate - independent OCR read "
             "the face but found no such brand: " + ", ".join(bad)
         )
         vision["product_match"]["status"] = "indeterminate"

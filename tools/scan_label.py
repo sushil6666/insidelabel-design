@@ -14,7 +14,7 @@ Then score it against the gold transcription:
 
 This is deliberately not the same as a quick "read this label" script. It sends
 VISION_PROMPT with response_schema attached, so what comes back is the
-structured object the engine consumes — not a sentence. A script that returns
+structured object the engine consumes - not a sentence. A script that returns
 prose has tested your API key and nothing else.
 """
 
@@ -52,8 +52,8 @@ def load(path, role):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--id", required=True, help="Stem for the output file; must match the gold file.")
-    ap.add_argument("--back", required=True, help="Back of pack — the ingredient list.")
-    ap.add_argument("--front", default=None, help="Front of pack — marketing claims.")
+    ap.add_argument("--back", required=True, help="Back of pack - the ingredient list.")
+    ap.add_argument("--front", default=None, help="Front of pack - marketing claims.")
     ap.add_argument("--out", default="predictions")
     ap.add_argument("--raw", default=None, help="Also dump the unhardened model response here.")
     ap.add_argument("--pairing-confirmed", action="store_true",
@@ -64,7 +64,7 @@ def main():
     images = [i for i in (load(args.back, "back"), load(args.front, "front")) if i]
 
     def _note(attempt, delay, err):
-        print(f"  upstream busy (attempt {attempt}) — retrying in {delay:.1f}s",
+        print(f"  upstream busy (attempt {attempt}) - retrying in {delay:.1f}s",
               file=sys.stderr)
 
     try:
@@ -104,7 +104,7 @@ def main():
             corrections.append(
                 "independent OCR found additive(s) the model omitted: "
                 + ", ".join(f"INS {i}" for i in ocr_res["missing"])
-                + " — recovered as: " + "; ".join(recovered))
+                + " - recovered as: " + "; ".join(recovered))
     vision["_ocr_cross_check"] = ocr_res
 
     _dg, _idrep = ocr_check.check_identity_anchors(vision, front_bytes, back_bytes)
@@ -113,7 +113,7 @@ def main():
         bad = [f"{f}:{v['brand']!r}" for f, v in _idrep.items()
                if v["status"] == ocr_check.NOT_FOUND]
         corrections.append(
-            "product_match downgraded to indeterminate — independent OCR read "
+            "product_match downgraded to indeterminate - independent OCR read "
             "the back label but found no such brand on it: " + ", ".join(bad))
         vision["product_match"]["status"] = "indeterminate"
         vision["product_match"]["uncorroborated"] = bad
@@ -135,7 +135,7 @@ def main():
     print(f"\nwrote {pred_path}")
 
     if corrections:
-        print("\nCLIENT CORRECTIONS — the model's self-report was overridden:")
+        print("\nCLIENT CORRECTIONS - the model's self-report was overridden:")
         for c in corrections:
             print(f"  - {c}")
 
@@ -204,7 +204,7 @@ def main():
             print(f"  - {x}")
 
     if not proceed:
-        print(f"\nNO VERDICT: {reliability['error']} — {reliability['detail']}")
+        print(f"\nNO VERDICT: {reliability['error']} - {reliability['detail']}")
         return
 
     raw = ", ".join(vision["ingredients"])
@@ -214,7 +214,7 @@ def main():
     print(f"\ndisplay: {rel.apply_display_rule(verdict, reliability)}")
 
     # An unverified pairing suppresses the claim check exactly as an unread
-    # front does — /scan already did this; the CLI did not, and reported
+    # front does - /scan already did this; the CLI did not, and reported
     # "checked" on a scan whose two faces were never confirmed to be the same
     # product. Two entry points disagreeing about a safety gate is worse than
     # either behaviour on its own.
@@ -230,7 +230,7 @@ def main():
             print(f"  • {n}")
 
     # Display-only. "checked" with nothing beneath it is ambiguous between
-    # "no contradictions found" and "no rule covered any of these claims" —
+    # "no contradictions found" and "no rule covered any of these claims" -
     # and on the first real pack it meant the second. A claim checker that
     # silently examines nothing looks identical to one that cleared the pack.
     print(f"\nCLAIM CHECK: {cc['status']}" + (f" ({cc['reason']})" if cc["reason"] else ""))

@@ -6,7 +6,7 @@ PostgreSQL 19. Solo founder: Sushil.
 ## Start here
 
 1. Read `STATE.md` (status, setup, open items, lessons) and skim `DECISIONS.md`.
-2. `source .venv/bin/activate && pytest -q` — expect 253 passing (1 skipped) before you change anything.
+2. `source .venv/bin/activate && pytest -q` - expect 323 passing (1 skipped) before you change anything.
    `python tools/release_check.py` shows how far the beta is from release.
 3. The "Next" list in `STATE.md` §8 is the default work queue.
 
@@ -18,7 +18,7 @@ PostgreSQL 19. Solo founder: Sushil.
   (`data/regulatory_status.json`); it must never change a score, verdict or
   `concern`. A test enforces this.
 - **Wording (D-042/D-071).** User-facing text never says misleading, false,
-  illegal, violation, toxic, dangerous, poison, safe, free from, healthy — and
+  illegal, violation, toxic, dangerous, poison, safe, free from, healthy - and
   never judges the brand. `tests/test_wording.py` checks tables and live output.
   Quote the label; don't characterise it.
 - **Legal facts come from primary documents, never memory (D-046).** For an
@@ -27,10 +27,10 @@ PostgreSQL 19. Solo founder: Sushil.
   FSSAI INS *reference list* is **not permitted**. Record `fssai_basis` and
   `verified_on` on the row.
 - **OCR cross-check = Cloud Vision, Tesseract fallback (D-093).** `GOOGLE_VISION_KEY` lives in
-  the environment only — never in a file in this repo. It only ever *adds* a known additive.
+  the environment only - never in a file in this repo. It only ever *adds* a known additive.
 - **One INS parser:** `core/tokenize.py` (`INS_RE`, `prefix_bare_ins`,
   `extract_ins`, `ins_numbers`). Don't write another regex for INS numbers anywhere;
-  `tests/test_ins_parsing.py` fails on any 3–4 digit pattern outside it (D-099).
+  `tests/test_ins_parsing.py` fails on any 3-4 digit pattern outside it (D-099).
 - **Claim check is in shadow (D-051).** `/scan` computes and stores it; users get
   `reason: "claims_not_released"` unless `INSIDELABEL_CLAIMS_TO_USERS=on`. Don't route
   around `_user_claim_check()` in `api/main.py`.
@@ -51,12 +51,17 @@ PostgreSQL 19. Solo founder: Sushil.
   set it on the public deploy.
 - **`DECISIONS.md` is append-only.** New decision = new `D-0xx` entry; reversal =
   mark `SUPERSEDED` and add a new one. Record who accepted it.
-- **No scraping or copying retailer listings** (Amazon, Flipkart, Blinkit, Zepto, Swiggy) —
+- **No scraping or copying retailer listings** (Amazon, Flipkart, Blinkit, Zepto, Swiggy) -
   their terms forbid it (D-088). A listing screenshot is a **lead** (`product_leads`,
   `tools/leads.py`), never a source: the record is read from the physical pack (D-089),
   and the DB refuses to publish a version whose `production_source` isn't `physical_label`. Open Food Facts is ODbL: test input and prioritisation only, not catalogue rows.
+- **No em dash or en dash anywhere** (Sushil, 2026-09-26): use `-`, `:` or "to".
+  `tests/test_no_dashes.py` checks every tracked file. To match one in label text,
+  write the escape (`"\u2013"`).
+- **Barcodes are never typed (D-104).** Camera scanner or a photo read by `/check-photo`
+  (zxing-cpp on the server); every barcode passes `barcode.check()` (GS1 rules, D-103).
 - **A gate with no data is TODO, never PASS** (`tools/release_check.py`).
-- **Don't overwrite `reports/`** when re-running eval — write to a scratch path unless asked.
+- **Don't overwrite `reports/`** when re-running eval - write to a scratch path unless asked.
 
 ## Commands
 
@@ -76,7 +81,7 @@ INSIDELABEL_DB=… python tools/release_check.py --with-tests     # beta release
   comments citing decision numbers (`# D-043: …`).
 - Data changes go in `data/*.json`, not code. New additive rows copy the existing
   row shape and include `fssai_basis` + `verified_on`.
-- Schema changes are a new `migrations/NNN_*.sql` file — never edit an applied one.
+- Schema changes are a new `migrations/NNN_*.sql` file - never edit an applied one.
   A file needing an extension starts with `-- requires-extension: <name>`.
 - DB tests use the `fresh_db` fixture (`tests/conftest.py`); they refuse to run on
   any database not named `*_test`.
@@ -87,8 +92,8 @@ INSIDELABEL_DB=… python tools/release_check.py --with-tests     # beta release
 
 - Postgres: 19beta4 on **5432** (default), 18 on 5433 (fallback). Peer auth as
   `insightstack`; no password. Check `pg_lsclusters` before/after any apt Postgres work.
-- Admin commands need `sudo` — ask Sushil to run them (suggest the `!` prefix).
+- Admin commands need `sudo` - ask Sushil to run them (suggest the `!` prefix).
 - EUR-Lex blocks scripted downloads; use the FSAI consolidated PDF or ask for a
   manual download. eCFR API needs `curl --compressed`.
-- `pkill -f` can match its own shell — kill by PID.
+- `pkill -f` can match its own shell - kill by PID.
 - Another `uvicorn --reload` may already be running (Sushil's); don't kill it.

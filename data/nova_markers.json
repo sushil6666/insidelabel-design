@@ -6,7 +6,7 @@
     "basis": "Monteiro CA et al., 'Ultra-processed foods: what they are and how to identify them', Public Health Nutrition (2019); NOVA classification.",
     "how_to_use": "Match normalized ingredient tokens against 'aliases'. A single Group-4 marker => product is NOVA Group 4 (ultra-processed). This is a definitional rule, not a scored penalty.",
     "verify_before_public_claims": false,
-    "confidence": "high — NOVA markers are academically defined and stable"
+    "confidence": "high - NOVA markers are academically defined and stable"
   },
   "markers": [
     { "id": "nova_hfcs", "name": "High-fructose corn syrup", "category": "industrial_sweetener", "aliases": ["high fructose corn syrup", "hfcs", "corn syrup", "glucose-fructose syrup", "isoglucose", "fructose syrup"] },

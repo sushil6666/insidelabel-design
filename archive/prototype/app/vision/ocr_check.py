@@ -1,5 +1,5 @@
 """
-Inside Label — independent OCR cross-check.
+Inside Label - independent OCR cross-check.
 
 WHY THIS EXISTS
     Every self-check tried so far failed for the same structural reason: a
@@ -63,7 +63,7 @@ _INS = re.compile(r"(?:ins|e)[\s\-.]*?(\d{3}[a-z]?)", re.IGNORECASE)
 # omission", never as "no omission".
 # Tesseract wants roughly 300 DPI on the TEXT, not a huge image. A phone photo
 # is already 3-10 MP, so upscaling it was catastrophic: a 3187x3023 label photo
-# became 86.7 MP at x3, and twelve passes over that never finished — the first
+# became 86.7 MP at x3, and twelve passes over that never finished - the first
 # real full-resolution pack hung here until interrupted.
 #
 # So: normalise to a fixed working size FIRST, then vary. Label text in a
@@ -71,9 +71,9 @@ _INS = re.compile(r"(?:ins|e)[\s\-.]*?(\d{3}[a-z]?)", re.IGNORECASE)
 # small renders get upscaled to reach it rather than multiplied blindly.
 # Two scales, measured rather than guessed. Recall/time across three real
 # labels (render, phone photo, 9.6 MP phone photo):
-#   2200 only,      3 passes:  5/5, 0/5, 1/5   —  2s /  5s /  9s
-#   2200+3200,      6 passes:  5/5, 1/5, 1/5   —  5s / 12s / 22s   <- chosen
-#   2200+3200 +psm4, 12 passes: 5/5, 0/5, 1/5  — 12s / 21s / 44s
+#   2200 only,      3 passes:  5/5, 0/5, 1/5   -  2s /  5s /  9s
+#   2200+3200,      6 passes:  5/5, 1/5, 1/5   -  5s / 12s / 22s   <- chosen
+#   2200+3200 +psm4, 12 passes: 5/5, 0/5, 1/5  - 12s / 21s / 44s
 # psm 4 doubles the cost, adds nothing, and is unstable (it LOST the photo hit).
 TARGET_LONG_EDGES = (2200, 3200)
 MAX_WORKING_PIXELS = 6_000_000
@@ -112,8 +112,8 @@ def _prepared(im):
     Yield preprocessed variants, best-first. Three, not nine.
 
     The previous nine variants x two page-segmentation modes gave no recall
-    benefit on the labels measured — every INS number found was found by the
-    first variant — while multiplying runtime by twelve.
+    benefit on the labels measured - every INS number found was found by the
+    first variant - while multiplying runtime by twelve.
     """
     from PIL import ImageEnhance, ImageOps
     for target in TARGET_LONG_EDGES:
@@ -173,7 +173,7 @@ def vote_ins(image_bytes):
     #
     # Measured on a 9.6 MP phone photo: Tesseract read INS 503 as "303" in
     # every configuration tried. Recovery would have injected a fabricated
-    # additive into the ingredient list — a fact with no source on a real pack,
+    # additive into the ingredient list - a fact with no source on a real pack,
     # which is the worst output this system can produce.
     #
     # Restricting to known rows costs nothing real: an INS number absent from
@@ -312,7 +312,7 @@ def check_identity_anchors(vision, front_bytes, back_bytes):
     # The gap this closes: _verified_anchors counts a NAME match on both faces
     # as an identity anchor, but only brand was being corroborated. So a
     # hallucinated name appearing on both faces would unlock the claim check
-    # with nothing checking it. Not hypothetical — on one run the model
+    # with nothing checking it. Not hypothetical - on one run the model
     # returned product name "Carbonated Water", the first ingredient, for a
     # pack whose back carries no product name at all.
     back = vision.get("back_identity") or {}

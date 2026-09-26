@@ -55,11 +55,11 @@
   "front_claim_footnotes": [],
   "extraction_notes": [
     "THE CLAIM-CHECKER TEST CASE. '100% ATTA' is printed on the front while the ingredient list declares 'Wheat flour (Atta) 58.3%'. Whether that is a contradiction depends on reading: the likely manufacturer intent is that the flour used is 100% atta rather than maida, not that the product is 100% atta. Worth deciding deliberately before any rule fires on it.",
-    "'TRANS-FAT FREE' is checkable against the nutrition panel, which declares Trans fat (not more than) 0.09g per 100g — FSSAI permits a 'trans fat free' claim below a threshold, so this needs the legal threshold, not an ingredient rule.",
+    "'TRANS-FAT FREE' is checkable against the nutrition panel, which declares Trans fat (not more than) 0.09g per 100g - FSSAI permits a 'trans fat free' claim below a threshold, so this needs the legal threshold, not an ingredient rule.",
     "The asterisk on '*EASY TO DIGEST' has a footnote at the bottom edge of the front that is cut off in the photo; not transcribed.",
     "'₹10/- OFF' and '10 Stay Fresh Packs Inside' are a price offer and pack information, not claims.",
     "Hindi claims are the same four claims repeated; transcribed as printed rather than deduplicated.",
-    "Net quantity not visible. Servings per pack 80 at 10g serving is printed, but a total is not — not derived.",
+    "Net quantity not visible. Servings per pack 80 at 10g serving is printed, but a total is not - not derived.",
     "Nutrition panel: per 100g Energy 471.7 kcal, Total Carbohydrates 71.19g, Total sugars 24.1g, Added sugars 22.24g, Dietary fibre 6.22g, Protein 7.36g, Total Fat 17.18g, Saturated 8.08g, Trans 0.09g, Sodium 352.61mg. Recorded here only.",
     "Product is a milk biscuit despite the working id 'Patan-Atta-Bis'; suggest renaming to patanjali-doodh-biscuits."
   ],

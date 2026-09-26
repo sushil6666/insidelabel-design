@@ -1,4 +1,4 @@
--- 001_core.sql — beta transactional core (D-020).
+-- 001_core.sql - beta transactional core (D-020).
 --
 -- Knowledge tables (additives, allergens, NOVA markers, claim rules, regulator
 -- comparison) stay as versioned JSON in data/ for the beta; the engine reads

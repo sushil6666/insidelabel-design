@@ -16,7 +16,7 @@ WHY THIS EXISTS
     demo: `additives_tags`, which is OFF's OWN additive detection on the SAME
     ingredient text, and `nova_group`, which is OFF's own NOVA classification.
     Both were produced independently of your engine. So this is not the engine
-    grading its own homework — it is two systems reading identical input, and
+    grading its own homework - it is two systems reading identical input, and
     every disagreement is a lead.
 
     The single most useful output is MISSED ADDITIVES: INS numbers OFF found in
@@ -26,7 +26,7 @@ WHY THIS EXISTS
 
 WHAT IT CANNOT TELL YOU
     Nothing here validates OCR. Every row is pre-transcribed text. It also
-    cannot tell you whether a *concern level* is right — OFF has no opinion on
+    cannot tell you whether a *concern level* is right - OFF has no opinion on
     whether INS 951 is "moderate". That judgement stays yours and still needs
     human review against FSSAI.
 """
@@ -46,7 +46,7 @@ from insidelabel.core.tokenize import extract_ins  # noqa: E402  (the one INS pa
 
 # OFF tags look like "en:e471" or "en:e160a". E-numbers and INS numbers are
 # aligned for the vast majority of additives but they are not the same
-# namespace — treat a match as a strong lead, not as proof.
+# namespace - treat a match as a strong lead, not as proof.
 _E_TAG = re.compile(r"^[a-z]{2}:(e\S+)$", re.IGNORECASE)      # the number itself goes to extract_ins
 
 # Tokens that look like an additive the engine should have known, as opposed to
@@ -159,7 +159,7 @@ def main():
     n = len(rows)
     p = print
     p("=" * 72)
-    p(f"  INSIDE LABEL — COVERAGE REPORT   ({n} products)")
+    p(f"  INSIDE LABEL - COVERAGE REPORT   ({n} products)")
     p("=" * 72)
 
     p("\nVERDICT DISTRIBUTION")
@@ -181,7 +181,7 @@ def main():
     else:
         p("  no OFF nova_group values in this fixture")
 
-    p(f"\nMISSED ADDITIVES — OFF detected these, your tables have no row  (top {args.top})")
+    p(f"\nMISSED ADDITIVES - OFF detected these, your tables have no row  (top {args.top})")
     p("  Add these to additives.json in this order. Demand-driven, not guessed.")
     if not missed_ins:
         p("    none")
@@ -220,7 +220,7 @@ def main():
 
     p("\n" + "=" * 72)
     p("  Disagreement is a lead, not a verdict. OFF is crowdsourced and its")
-    p("  additive detection has its own misses — a row where OFF found nothing")
+    p("  additive detection has its own misses - a row where OFF found nothing")
     p("  and your engine flagged INS 621 is very possibly your engine being")
     p("  right. Read the text before changing a table.")
     p("=" * 72)

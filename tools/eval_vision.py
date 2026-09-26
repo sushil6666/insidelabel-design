@@ -14,7 +14,7 @@ THE METRIC THAT MATTERS
     often the two disagree. That is the only accuracy figure that maps onto
     what a person actually sees.
 
-    Everything else — ingredient F1, INS recall — exists to tell you WHY a
+    Everything else - ingredient F1, INS recall - exists to tell you WHY a
     verdict flipped, once you know that it did.
 
 FILE LAYOUT
@@ -51,7 +51,7 @@ from insidelabel.core.tokenize import ins_numbers  # noqa: E402  (the one INS pa
 
 
 def norm(s):
-    """Loose normalisation for set comparison — punctuation and case are noise."""
+    """Loose normalisation for set comparison - punctuation and case are noise."""
     s = s.lower().strip()
     s = re.sub(r"[^a-z0-9%() ]", " ", s)
     return re.sub(r"\s+", " ", s).strip()
@@ -205,7 +205,7 @@ def main():
     p_(f"\nFLAG SET CHANGED                 {agg['flagset_differs']}/{n}  ({agg['flagset_differs']/n:.1%})")
     p_(f"MEAN ABSOLUTE SCORE DRIFT        {agg['score_drift_total']/n:.1f} points")
     p_(f"SCORE DRIFT >= 10 POINTS         {agg['score_drift_material']}/{n}")
-    p_("  Binary is coarse — most Indian packaged food is ultra-processed on")
+    p_("  Binary is coarse - most Indian packaged food is ultra-processed on")
     p_("  several markers at once, so one dropped additive rarely flips it.")
     p_("  Flag-set change and score drift catch the errors binary hides. A")
     p_("  0% verdict-changing rate with a high flag-set change rate means the")
@@ -232,7 +232,7 @@ def main():
         p_("  none")
 
     p_(f"\nHALLUCINATED INS NUMBERS  (invented, not on the label)")
-    p_("  Any entry here is worse than a miss — it is a fact with no source.")
+    p_("  Any entry here is worse than a miss - it is a fact with no source.")
     for k, v in ins_hallucinated.most_common(12):
         p_(f"  {k:<8} invented on {v} labels")
     if not ins_hallucinated:
@@ -247,7 +247,7 @@ def main():
         p_("  mismatches:")
         for k, v in identity_wrong.most_common(10):
             p_(f"    {v:>3}x  {k}")
-    p_("  A mismatch here is as likely to be a gold error as a model error —")
+    p_("  A mismatch here is as likely to be a gold error as a model error -")
     p_("  read the pack before assuming the model was wrong.")
 
     p_(f"\nSTATUS FIELD ERRORS")

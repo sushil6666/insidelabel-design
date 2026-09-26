@@ -24,7 +24,7 @@
     "CORRECTED: product.name was 'Limca Lime n Lemoni', a string assembled from the wordmark and the separate descriptor pill. Split into name + variant, as printed. Same error as was corrected in limca-pet-2250 and not back-ported here at the time.",
     "Net quantity is not printed as a single value; the pack states only 'SERVING = 200ml : 10 SERVINGS IN THIS PACK'. Not derived, per prompt rule 2.",
     "Front-of-pack label visible on the bottle in image 1 but too small to read claim text; only the brand wordmark and 'Lime n Lemoni' descriptor are legible, neither of which is a claim.",
-    "Image 3 carries manufacturer addresses and FSSAI Lic. No. 10012022000261 — not ingredients, discarded per prompt rule 3.",
+    "Image 3 carries manufacturer addresses and FSSAI Lic. No. 10012022000261 - not ingredients, discarded per prompt rule 3.",
     "Nutrition panel present in image 1 (44 kcal, 10.7g total and added sugars per 100ml, 42.8% RDA added sugar per 200ml serve). Recorded here only; the engine has no nutrition logic and this schema has no field for it."
   ],
   "confidence": {

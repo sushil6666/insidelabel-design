@@ -1,4 +1,4 @@
--- 011_front_photo_queue.sql — D-100: a front-of-pack photo for a product the
+-- 011_front_photo_queue.sql - D-100: a front-of-pack photo for a product the
 -- catalogue already has, but without its front.
 --
 -- The front carries the brand's claims and the product's name as it is sold.

@@ -1,12 +1,12 @@
 """
-Inside Label — Gemini Flash vision client.
+Inside Label - Gemini Flash vision client.
 
 Calls the model with the prompt in prompt.py, parses strictly, and then
 DISTRUSTS the result in the specific ways a vision model tends to be wrong.
 
 The hardening is the point of this file. A vision model that says
 `front_status: "read"` for an image you never sent, or `ingredients_status:
-"read"` alongside an empty array, is not a rare failure — it is the normal
+"read"` alongside an empty array, is not a rare failure - it is the normal
 consequence of a schema that requires a value for every field. Every override
 below is a case where the CLIENT knows something the model cannot, or where the
 model contradicted itself.
@@ -65,7 +65,7 @@ _ING_STATUS = {"read", "partial", "not_found", "unreadable"}
 
 
 class VisionError(RuntimeError):
-    """Terminal. Retrying will not help — bad auth, bad schema, unparseable output."""
+    """Terminal. Retrying will not help - bad auth, bad schema, unparseable output."""
     retryable = False
 
 
@@ -146,7 +146,7 @@ def _with_retries(fn, on_attempt=None):
 def build_request(images):
     """
     images: list of (bytes, mime_type, role_hint) where role_hint is
-            "front" | "back" | "unknown". The hint is NOT sent to the model —
+            "front" | "back" | "unknown". The hint is NOT sent to the model -
             the prompt tells it to work roles out from content. The hint is
             kept client-side to check the model's answer against what we sent.
     """
@@ -265,7 +265,7 @@ def call_gemini_rest(images, api_key=None, timeout=90):
             raise VisionConfigError(
                 "401 from the REST endpoint. If your key starts with 'AQ.', this "
                 "is the known incompatibility between the new Authentication Key "
-                "format and raw REST auth — install google-genai and use "
+                "format and raw REST auth - install google-genai and use "
                 f"call_gemini_sdk() instead. Server said: {detail}"
             ) from e
         if _config_problem(e.code, detail):
@@ -335,7 +335,7 @@ def _entries_missing_from_array(raw, array):
     Why this matters, from a real label: Patanjali Doodh prints
     "... Natural, Nature identical & Artificial Flavours (Milk & Vanilla), ..."
     There is a genuine top-level comma after "Natural", so _split_declaration
-    yields two fragments — but the commas there separate ADJECTIVES describing
+    yields two fragments - but the commas there separate ADJECTIVES describing
     one flavouring, not two ingredients. The model returned it correctly as a
     single entry; an equality check found neither fragment, declared two
     entries missing, and replaced an 11-entry array with a 12-entry one.
@@ -369,7 +369,7 @@ def _verified_anchors(v):
 
     Only equality of a specific identifier counts. A shared product category,
     a shared parent company, or the fact that two images were uploaded together
-    are not anchors — they are true of many different products at once.
+    are not anchors - they are true of many different products at once.
     """
     fi, bi = v.get("front_identity") or {}, v.get("back_identity") or {}
     ing = {_clean(x) for x in (v.get("ingredients") or [])}
@@ -405,7 +405,7 @@ def _verified_anchors(v):
 
 # Front-of-pack text that is never a marketing claim, however it is phrased.
 # The prompt already excludes these; the model returns them anyway, so the
-# filter lives here. Prompt rules have not proved reliable in this pipeline —
+# filter lives here. Prompt rules have not proved reliable in this pipeline -
 # code-side enforcement has.
 _NON_CLAIM_PATTERNS = [
     re.compile(r"^\s*(net\s+(qty|quantity|wt|weight)|mrp|m\.r\.p)", re.I),
@@ -426,7 +426,7 @@ _NON_CLAIM_PATTERNS = [
 ]
 
 # A claim is an assertion, and an assertion needs words. Anything with no
-# letters at all — prices, codes, bare numbers — cannot be a marketing claim
+# letters at all - prices, codes, bare numbers - cannot be a marketing claim
 # whatever else it is. This is the backstop for price formats the patterns
 # above do not anticipate.
 _HAS_LETTERS = re.compile(r"[a-zA-Z]")
@@ -474,7 +474,7 @@ def harden(vision, sent_front, sent_back):
 
     Returns (vision, corrections) where corrections is a list of strings
     describing every override applied. Corrections are surfaced in the /scan
-    response — a silent override is just a different kind of unearned
+    response - a silent override is just a different kind of unearned
     confidence.
     """
     corrections = []
@@ -555,7 +555,7 @@ def harden(vision, sent_front, sent_back):
         if missing:
             corrections.append(
                 f"array dropped {len(missing)} entry(s) present in "
-                f"ingredient_lines: " + "; ".join(missing) + " — recovered from the lines"
+                f"ingredient_lines: " + "; ".join(missing) + " - recovered from the lines"
             )
             v["ingredients"] = from_lines
     else:
@@ -777,7 +777,7 @@ def analyze_images_consensus(images, api_key=None, runs=3, on_attempt=None,
             support[k] = support.get(k, 0) + 1
             first_seen.setdefault(k, e)
 
-    # Preserve the ordering of the run with the most entries — label order
+    # Preserve the ordering of the run with the most entries - label order
     # carries meaning (ingredients are listed by descending weight).
     richest = max(results, key=lambda v: len(v.get("ingredients", [])))
     ordered = [e for e in richest.get("ingredients", [])]

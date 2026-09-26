@@ -64,7 +64,7 @@
     "Declared as PROPRIETARY FOOD (CROISSANT, CATEGORY - 7.2.2). Not an ingredient; recorded here only.",
     "Second FSSAI licence 10018022008231 printed for the Maharashtra manufacturing site; the marketed-by licence is recorded above.",
     "Nutrition panel (from the second back photo): per 100g Energy 459 kcal, Protein 6.3g, Carbohydrate 50g, Total Sugars 20.3g, Added Sugars 19.6g, Total Fat 24.7g, Saturated 13.2g, Trans 0.2g, Sodium 150.4mg. Serving 45g (1 croissant). Engine has no nutrition logic; recorded here only.",
-    "TRANS FAT 0.2g per 100g is declared — relevant because the list contains INTERESTERIFIED VEGETABLE FAT and MARGARINE."
+    "TRANS FAT 0.2g per 100g is declared - relevant because the list contains INTERESTERIFIED VEGETABLE FAT and MARGARINE."
   ],
   "confidence": { "ingredients": 1.0, "front_claims": 1.0, "product_identity": 0.95 }
 }

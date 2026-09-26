@@ -1,5 +1,5 @@
 """
-Inside Label — validation engine (v0.1)
+Inside Label - validation engine (v0.1)
 ========================================
 Segment-blind core. Takes a raw ingredient list (as a string, e.g. straight
 from OCR) and returns a layered verdict:
@@ -66,7 +66,7 @@ for m in NOVA["markers"]:
 # INS parsing (class words, bare numbers, prefix_bare_ins) lives only in
 # tokenize.py. It used to be duplicated here, and the copies could drift.
 
-# concern -> penalty weight (tunable — this is a values choice, document it)
+# concern -> penalty weight (tunable - this is a values choice, document it)
 _CONCERN_PENALTY = CONCERN_PENALTY
 _GRADE_BANDS = GRADE_BANDS
 
@@ -164,7 +164,7 @@ def render(result):
     out.append("")
     out.append("  Flagged ingredients (most concerning first):")
     if not result["flags"]:
-        out.append("    (none flagged — either genuinely clean or not in starter DB)")
+        out.append("    (none flagged - either genuinely clean or not in starter DB)")
     for f in result["flags"]:
         tag = {"high": "HIGH", "moderate": "MOD ", "low": "LOW ", "none": "OK  "}[f["concern"]]
         vflag = "  [VERIFY vs FSSAI]" if f.get("verify") else ""
@@ -173,7 +173,7 @@ def render(result):
         out.append(f"           sources: {', '.join(f['sources'])}")
     if result["needs_verification"]:
         out.append("")
-        out.append("  ⚠ These rows carry legal exposure — verify against live FSSAI")
+        out.append("  ⚠ These rows carry legal exposure - verify against live FSSAI")
         out.append("    notifications before any public 'banned/permitted' claim:")
         for v in result["needs_verification"]:
             out.append(f"      - {v}")

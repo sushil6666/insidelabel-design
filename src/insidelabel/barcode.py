@@ -108,7 +108,7 @@ def read_from_photo(data):
         formats = [zxingcpp.BarcodeFormat.EAN13, zxingcpp.BarcodeFormat.EAN8,
                    zxingcpp.BarcodeFormat.UPCA, zxingcpp.BarcodeFormat.UPCE]
         found = zxingcpp.read_barcodes(im, formats=formats)
-    except Exception:                              # noqa: BLE001 — undecodable image or no library: nothing read
+    except Exception:                              # noqa: BLE001 - undecodable image or no library: nothing read
         return [], []
     good, bad = [], []
     for r in found:

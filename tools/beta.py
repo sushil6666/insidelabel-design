@@ -13,7 +13,7 @@ The invite-only web beta (D-102): codes for testers, who came back, what they sa
 
 One code per person, not per household: the W4 retention number (D-055) is
 counted per code. A label is for you only; the app never shows it. A first
-name or "T07" is enough — no phone numbers or emails here.
+name or "T07" is enough - no phone numbers or emails here.
 """
 import argparse
 import os
@@ -26,7 +26,7 @@ from insidelabel.db.store import Store  # noqa: E402
 
 
 def _d(ts):
-    return ts.strftime("%Y-%m-%d") if ts else "—"
+    return ts.strftime("%Y-%m-%d") if ts else "-"
 
 
 def main(argv=None):
@@ -51,7 +51,7 @@ def main(argv=None):
 
     if a.cmd == "invite":
         if not 1 <= a.n <= 200:
-            sys.exit("make 1–200 codes at a time")
+            sys.exit("make 1-200 codes at a time")
         base = a.base.rstrip("/")
         for code in store.create_invites(a.n, label=a.label, max_devices=a.devices):
             print(f"{code}  {base}/app/#/join/{code}")

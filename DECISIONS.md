@@ -2,7 +2,7 @@
 
 Architectural and product decisions for InsideLabel, with the reasoning attached.
 Append-only. When a decision is reversed, mark it `SUPERSEDED` and add a new entry
-rather than editing the old one — the history is the point.
+rather than editing the old one - the history is the point.
 
 **Last updated:** 2026-09-26 (D-103 locked; D-102, D-104 recommended)
 
@@ -44,7 +44,7 @@ can never change the underlying facts or the score.
 Removes the split-attention risk that made the 3-month catalogue phase unsurvivable.
 
 ### D-007 · Launch early, via closed beta `LOCKED` (2026-09-12)
-The unknown is no longer accuracy — it's whether anyone returns in week six. Ship a
+The unknown is no longer accuracy - it's whether anyone returns in week six. Ship a
 retention test, not a product.
 
 ---
@@ -82,12 +82,12 @@ DuckDB via `httpfs` → dbt models → aggregates written back to Postgres for t
 read. Aggregates flow *back* so DuckDB's single-writer limit never touches the request
 path.
 
-Revisit at the B2B trigger — Snowflake Secure Data Sharing is genuinely the right
+Revisit at the B2B trigger - Snowflake Secure Data Sharing is genuinely the right
 mechanism for selling category intelligence, and enterprise procurement expects it.
 
 ### D-022 · dbt models stay dialect-portable `LOCKED`
 No `QUALIFY`, `FLATTEN`, `VARIANT` paths, or Snowflake-only functions. Engine-specific
-logic lives in macros. `dev` and `ci` targets both on DuckDB from day one — having
+logic lives in macros. `dev` and `ci` targets both on DuckDB from day one - having
 `ci` exist is what enforces portability. Makes `dbt-duckdb` → `dbt-snowflake` an
 adapter swap, not a rewrite.
 
@@ -99,7 +99,7 @@ if free-text consumer questions ever need it.
 Resolution order: barcode → brand+name+net_qty exact → nutrition fingerprint →
 ingredient fingerprint → image embedding. Stop at first confident match. A cached
 product costs ~₹0.05/scan and resolves in under a second; an uncached one costs
-~₹0.53 and takes 8–15s.
+~₹0.53 and takes 8-15s.
 
 Note the tension with D-025: barcode is the right *key*, but cannot be the primary
 *path* at launch because Indian FMCG coverage in existing open databases is thin. The
@@ -112,7 +112,7 @@ claims). Single vision call handles both images and returns structured JSON.
 ### D-026 · Version everything `LOCKED`
 Labels change and brands reformulate silently. `product_versions` with
 `ingredients_hash` / `nutrition_hash` / `claims_hash`. Model as SCD2
-(`valid_from`, `valid_to`, `is_current`) — reformulation alerts and the eventual B2B
+(`valid_from`, `valid_to`, `is_current`) - reformulation alerts and the eventual B2B
 reformulation-tracking product both read from it, and it's painful to retrofit.
 
 ### D-027 · Always preserve raw OCR alongside resolved values `LOCKED`
@@ -173,11 +173,11 @@ explicitly; silence reads as approval.
 ### D-040 · Five rule tiers `LOCKED`
 | Tier | Basis |
 |---|---|
-| R1 | Regulatory numeric — FSSAI Schedule I threshold vs declared nutrition panel |
-| R2 | Regulatory non-addition — non-addition claim vs ingredient declaration |
-| R3 | Definitional — NOVA Group-4 marker present |
-| R4 | Unregulated marketing — claim with no legal definition |
-| R5 | Consumer preference — user's stated avoid-list |
+| R1 | Regulatory numeric - FSSAI Schedule I threshold vs declared nutrition panel |
+| R2 | Regulatory non-addition - non-addition claim vs ingredient declaration |
+| R3 | Definitional - NOVA Group-4 marker present |
+| R4 | Unregulated marketing - claim with no legal definition |
+| R5 | Consumer preference - user's stated avoid-list |
 
 ### D-041 · NOVA Group-4 is definitional, not scored `LOCKED`
 A single marker means ultra-processed regardless of score. The score adds nuance; it
@@ -188,7 +188,7 @@ Allowed: "The label claims X. The declaration says Y." / "Worth checking before
 buying." / "X is not a defined claim under Indian regulation."
 
 Forbidden: misleading, false, illegal, non-compliant, violation, lying, toxic,
-dangerous, poison — and any statement about the *brand* rather than the *label*.
+dangerous, poison - and any statement about the *brand* rather than the *label*.
 Lint the content tables in CI; don't rely on humans remembering.
 
 ### D-043 · Every finding needs ≥1 evidence row `LOCKED`
@@ -232,7 +232,7 @@ Parent text uses plain words; INS numbers and citations sit behind a tap. Never 
 "healthy".
 
 ### D-057 · Shelf comparison ships in the beta `LOCKED`
-The parent scans 2–4 packs on the shelf; `compare.py` names the best pick of those with
+The parent scans 2-4 packs on the shelf; `compare.py` names the best pick of those with
 reasons. Needs no catalogue, and every comparison scan feeds it. Ranked by concern
 tiers, never a numeric score. A pack can never be the best pick if it: contains or
 may contain something on the child's avoid list, has an allergen status we couldn't
@@ -255,7 +255,7 @@ profile. Order after that: headline finding → claim check → worth knowing �
 ingredients.
 
 ### D-061 · The headline states the finding, not a count `LOCKED`
-"Says 'No added sugar', but contains jaggery." — not "1 claim to check, 3 things worth
+"Says 'No added sugar', but contains jaggery." - not "1 claim to check, 3 things worth
 knowing". Counts move below the headline. Headline text comes from the same finding row
 (D-043), so it is still rule-generated and traceable.
 
@@ -273,8 +273,8 @@ freely"); "Worth checking" → **"A few things worth knowing"**; "Ultra-processe
 away.
 
 ### D-064 · The glanceable signal is per person; no numeric score in the consumer UI `LOCKED`
-Resolves D-050 as *remove*. The quick signal is a status per profile: "Contains milk —
-on Aarav's avoid list", "Fewer concerns for kids". The 0–100 score stays admin-only for
+Resolves D-050 as *remove*. The quick signal is a status per profile: "Contains milk -
+on Aarav's avoid list", "Fewer concerns for kids". The 0-100 score stays admin-only for
 regression testing.
 
 ### D-065 · Ordinary additives are grouped, not listed as concerns `LOCKED`
@@ -289,10 +289,10 @@ shows in full the first time a user meets that claim type, compact after that.
 
 ### D-067 · Medical questions: say "ask your doctor" once, clearly `LOCKED`
 Diabetic and pregnancy lenses show the facts and one clear line to ask a doctor about
-quantity, on the lens intro — not repeated on every screen.
+quantity, on the lens intro - not repeated on every screen.
 
 ### D-068 · First scans are honest about speed `LOCKED`
-Beta scans are mostly cache misses (8–15 s). Show real progress ("Reading ingredients…
+Beta scans are mostly cache misses (8-15 s). Show real progress ("Reading ingredients…
 found 14") and frame the wait: "First time we've seen this pack. Next time it's instant,
 for everyone." The camera screen shows a sample photo of which side to shoot.
 
@@ -301,7 +301,7 @@ First run: "Scan 3 packs from your kitchen." Value without a shopping trip, and 
 the catalogue with what families actually eat.
 
 ### D-070 · "Send it to us" replaces "type it in" `LOCKED`
-Amends D-036. After two failed retries: "Send it to us — we'll check this pack and
+Amends D-036. After two failed retries: "Send it to us - we'll check this pack and
 tell you when it's ready." Routes to the D-028 review queue. In the beta the result
 appears in-app on next open; push notifications come later.
 
@@ -319,7 +319,7 @@ flagged as not mandatory to declare.
 ### D-072 · Stricter confidence gate for allergens `LOCKED`
 Allergen output needs ingredient confidence ≥ 0.95 (the general gate is 0.85) and a
 reliable scan; below that, *cannot_confirm* and a retake prompt. 0.95 is a starting
-value — calibrate once allergen fields are in the gold set.
+value - calibrate once allergen fields are in the gold set.
 
 ### D-073 · Allergy profiles re-check cached results `LOCKED`
 Barcodes often survive reformulation. On a cache hit for a profile with an avoid list:
@@ -333,7 +333,7 @@ facts, so D-034 still holds.
 Up to 3 profiles (the user + 2). Each holds an age band, avoid list and lens choices.
 Nicknames stay on the device; the server sees a profile id and an age band only
 (DPDP Act, children's data). Parental consent at profile creation. Play Console target
-audience is adults — the app is for parents, not directed at children.
+audience is adults - the app is for parents, not directed at children.
 
 ### D-075 · Safety alerts are free `LOCKED`
 "Your son's usual biscuit now contains milk" is a safety fact. Reformulation alerts that
@@ -377,7 +377,7 @@ re-run to prove ingredients didn't regress.
 ### D-082 · What Premium is for, after this review `OPEN`
 After D-059 and D-075, Premium is roughly: full history and export, saved lists,
 non-safety alerts, households beyond 3 profiles. Ask beta parents what they would pay
-₹449/year for (interviews only — nothing built during the beta). Feeds D-053.
+₹449/year for (interviews only - nothing built during the beta). Feeds D-053.
 
 ### D-083 · Wave 2 builds wait for the W4 number `LOCKED`
 "Do not build features during the beta" stands: changing the product mid-beta muddies
@@ -438,7 +438,7 @@ repository (`tools/install_pg19.sh`), side by side with 16 (which stays on 5432 
 Known costs, accepted: a beta cluster may not start on the next beta/RC/GA binaries if
 the catalog version changes, so until GA the local 19 database is treated as disposable
 and rebuilt from `migrations/` rather than upgraded. The deployment host (D-080, week 10)
-must offer 19; if it doesn't by then, the schema stays portable to 16–18 (the DB tests
+must offer 19; if it doesn't by then, the schema stays portable to 16-18 (the DB tests
 run on any of them via `INSIDELABEL_TEST_PG`). Chosen by Sushil against the
 recommendation to wait for 19.1.
 
@@ -460,14 +460,14 @@ What was checked:
   Merchant" may be "incorrectly reflected"; it "accepts no liability for any errors or
   omissions"). **Zepto** (zeptonow.com/terms-of-service) renders only via JavaScript;
   a search-engine excerpt of the page shows the same "deep-link, robot, spider… or any
-  similar or equivalent manual process… access, acquire, copy" wording — not read
+  similar or equivalent manual process… access, acquire, copy" wording - not read
   first-hand. **Blinkit** returns 403 to scripted requests; a search excerpt (from its
   Bistro terms) says copying or storing platform content "in whole or part is prohibited
-  without the express prior written consent of Blinkit" — not read first-hand. Check
+  without the express prior written consent of Blinkit" - not read first-hand. Check
   both in a browser before quoting them publicly.
 - **The data is required but not reliable.** FSSAI's advisory to e-commerce FBOs
   (3 Dec 2024) requires mandatory label information to be shown pre-sale and matched
-  to the physical label — issued because listings often don't match. A listing is a
+  to the physical label - issued because listings often don't match. A listing is a
   claim about a pack, not the pack.
 - **Open Food Facts** has 23,156 products tagged India (2026-09-25), under ODbL:
   fine as test input and as a list of *which* products to prioritise; ingesting its
@@ -475,16 +475,16 @@ What was checked:
   collides with D-029.
 
 Recommendation:
-1. **Don't scrape or copy listings** — terms breach, takedown and account-ban risk,
+1. **Don't scrape or copy listings** - terms breach, takedown and account-ban risk,
    and a catalogue built on it is not an asset we own (D-029).
 2. **Move D-077 (share target) into the beta.** A user shares a Blinkit/Zepto/Amazon
    product screenshot into InsideLabel; the existing photo path reads it; it goes to
    review like any scan (D-028). Same data, user-initiated, demand-driven. Results
-   from a listing are labelled "read from an online listing — check your pack".
+   from a listing are labelled "read from an online listing - check your pack".
 3. **Seed by photographing real packs** (D-058: 15 kids' biscuits first), using OFF
    barcodes/names only to choose which packs to buy.
 4. **Ask GS1 India about brand-owner product data** (GTIN-keyed, supplied by the
-   brand) — terms and cost unknown; worth one email.
+   brand) - terms and cost unknown; worth one email.
 
 Needs Sushil's acceptance; D-077/D-083 ("after W4") change if accepted.
 
@@ -492,7 +492,7 @@ Accepted by Sushil 2026-09-25 ("it's not allowed"); how listings are used is D-0
 
 ### D-089 · A listing is a lead; the physical label is the record `LOCKED` (2026-09-25)
 Proposed by Sushil. Marketplace screenshots (Flipkart, Amazon, Blinkit, Zepto, Swiggy
-Instamart…) are collected by hand as **research evidence** of which products to add —
+Instamart…) are collected by hand as **research evidence** of which products to add -
 never as the source of a catalogue record:
 
 ```
@@ -614,7 +614,7 @@ additive Gemini dropped (D-034), and the brand/name corroboration.
   ones). `INSIDELABEL_OCR=tesseract` forces the old path. The result names the
   `reader` that ran.
 - Independence caveat: same vendor as Gemini, different system (dedicated OCR, not a
-  generative model). Accepted for the reason D-034 exists — a model can't catch its
+  generative model). Accepted for the reason D-034 exists - a model can't catch its
   own omission; a separate reader can.
 - Cost (Google pricing page, 2026-09-25): first 1,000 units/month free, then $1.50 per
   1,000 (~13 paise a photo). Closed beta fits in the free tier. Billing must be on
@@ -622,7 +622,7 @@ additive Gemini dropped (D-034), and the brand/name corroboration.
   must name Cloud Vision too (§8 item 9). Check Google's data-use terms before launch.
 
 **Baseline to beat** (`tools/compare_ocr.py`, 6 gold back photos, WSL): Tesseract
-19.7 s per label for the INS check alone (6.5–29.3 s), recall **27/52** printed INS
+19.7 s per label for the INS check alone (6.5-29.3 s), recall **27/52** printed INS
 (Britannia 3/12, Limca 2.25 L 1/5), **0** wrong additions. Switch on if Cloud Vision
 is faster with recall ≥ Tesseract on every label and still 0 wrong additions.
 
@@ -632,7 +632,7 @@ is faster with recall ≥ Tesseract on every label and still 0 wrong additions.
 |---|---|---|
 | INS check, mean per label | 22.7 s | **3.6 s** |
 | Printed INS found | 27/52 | **50/52**, ≥ Tesseract on every label |
-| Simulated omissions put back (drop each additive from Gemini's read) | — | **49/51** |
+| Simulated omissions put back (drop each additive from Gemini's read) | - | **49/51** |
 | Wrong additions | 0 | **0** |
 | Full Ziggy scan (D-092 trace) | 28.6 s | **4.0 s**, same result |
 
@@ -703,7 +703,7 @@ right. `repro.py` replays switch the limits off.
 Proposed by Claude (overnight session, STATE §8 item 7); accepted by Sushil 2026-09-25. Builds D-070.
 
 - **After two refused scans** the retake screen offers "Send it to us". The app
-  sends the refused scans' ids to `POST /send-to-us`; the server checks them —
+  sends the refused scans' ids to `POST /send-to-us`; the server checks them -
   this install's own (anyone else's looks like "not found"), every one refused or
   unreadable (`refused`, `vision_failed`), at least two, and a back photo stored.
   The app's count is a convenience, not the rule.
@@ -842,7 +842,7 @@ Direction from Sushil ("launch the website first, then the Android app"; "I will
 
 Consistent with D-010 (PWA first, then wrap it): the website *is* the app, and the
 Play Store build later wraps the same site, which must be live on the domain anyway.
-D-007's closed beta (50–100 testers, W4 retention) now starts on the web.
+D-007's closed beta (50-100 testers, W4 retention) now starts on the web.
 
 - **Invite codes** (migration 012, `tools/beta.py`): one per **person**, 8 characters
   without look-alikes (no 0/O, 1/I/L), sent as a link `…/app/#/join/CODE` that fills
@@ -850,17 +850,17 @@ D-007's closed beta (50–100 testers, W4 retention) now starts on the web.
   phone, `revoke` locks the tester out. Wrong codes are throttled.
 - **The gate**: with `INSIDELABEL_INVITE_ONLY=on`, `/scan`, `/send-to-us` and `/feedback`
   refuse a phone that hasn't joined (403 `invite_required`), before anything is read
-  or stored — logged, not a scan row, like D-095/D-101. Without the database nobody
+  or stored - logged, not a scan row, like D-095/D-101. Without the database nobody
   gets in. Off by default, so local work and tests are unchanged; **on at deploy**.
   Landing, privacy, about, `/access` and "Report a problem" stay open.
 - **Retention per person**: `tools/beta.py list` shows each code's devices, scans, days
   active, first/last scan and feedback: the D-055 W4 number counted per tester.
-- **Feedback** ("Send feedback" in the footer): comment + optional 1–5 rating + the
+- **Feedback** ("Send feedback" in the footer): comment + optional 1-5 rating + the
   screen it came from, stored against the code. Separate from "Report a mistake"
   (content, D-076) and "Report a problem" (app broke, D-092).
 - **Uploads**: every photo can be taken *or* uploaded (a phone's camera-only input
   hid the gallery); on a computer, choose or drag-and-drop. A barcode can be read from
-  a photo where the browser can (Chrome on Android/Mac); otherwise it is typed —
+  a photo where the browser can (Chrome on Android/Mac); otherwise it is typed -
   never read by the AI, since a wrong barcode shows the wrong product.
 - **Public pages** at `/`, `/privacy`, `/about` (`web/site/`), wording-linted. Privacy
   and about are **drafts** describing what the app does today; the bracketed parts
@@ -881,17 +881,17 @@ accepted by Sushil 2026-09-26.
    checked only the length): check digit, then GS1's prefix tables
    (`data/barcode_rules.json`, from the GS1 General Specifications Release 26.0,
    Tables 1-4, 1-5, 1-6 and 2-17, read 2026-09-26). Refused with a plain reason: a
-   GTIN-14 with indicator 1–9 (a carton or case; that test code), a shop's in-store
-   code (02, 04, 20–29, RCN-8), a book/magazine (977–979), a coupon or refund receipt,
+   GTIN-14 with indicator 1-9 (a carton or case; that test code), a shop's in-store
+   code (02, 04, 20-29, RCN-8), a book/magazine (977-979), a coupon or refund receipt,
    a demo or reserved number. A GTIN-14 with indicator 0 is looked up as the GTIN-13
    inside it. GS1 Prefix 05 is allowed on purpose (the tables disagree; refusing a real
    pack is worse). The reviewer's barcode field uses the same check.
 2. **Photo file, before any paid call** (`photo_check.py`): it must decode as an image,
    be at least 480 px on the long edge and 240 on the short (below the smallest gold
    photo Gemini read correctly, 528×572), and not be blank or black (grey-level
-   spread ≥ 8; the 12 gold photos measure 33–68). HEIC passes to the model undecoded.
+   spread ≥ 8; the 12 gold photos measure 33-68). HEIC passes to the model undecoded.
    Skipped for recorded answers (`replay`), which were read from photos checked then.
-3. **What the photo shows — the model reads, rules decide (D-004).** The prompt gains
+3. **What the photo shows - the model reads, rules decide (D-004).** The prompt gains
    rule 7a and a required `image_content` {back, front}: `food_pack`, `screen`
    (a screenshot or a photo of a display, *even when an ingredient list is legible
    on it*: D-089, a listing is a lead, never the record), `not_food`, `not_provided`.
@@ -906,7 +906,7 @@ accepted by Sushil 2026-09-26.
 
 The prompt changed, so `PROMPT_VERSION` changed. **Not yet measured on the live model:**
 the 6 gold labels must still come back `food_pack` with the same reading, and real
-screenshots must come back `screen`. Needs a few paid Gemini calls — Sushil to approve.
+screenshots must come back `screen`. Needs a few paid Gemini calls - Sushil to approve.
 The D-100 front-only path (barcode + front, no model call) gets the file check only;
 its reviewer rejects a front that isn't a pack.
 
@@ -949,7 +949,7 @@ the dedicated barcode photo is the main route and a barcode on the back is a bon
 ## Open and pending
 
 ### D-050 · Numeric score in the consumer UI `SUPERSEDED by D-064` (removed)
-The prototype currently shows a 0–100 score, an A–E grade, *and* "Risk Index 7.2/10" —
+The prototype currently shows a 0-100 score, an A-E grade, *and* "Risk Index 7.2/10" -
 three renderings of the same `{none:0, low:4, moderate:12, high:25}` table. One decimal
 of implied precision on arbitrary weights is the easiest thing for a lawyer or
 journalist to dismantle, and it contradicts the stated "no single health score"
@@ -961,13 +961,13 @@ alternatives and regression-testing rule changes. **Not yet decided.**
 
 ### D-051 · Claim checker in the beta `LOCKED` (2026-09-25): ship in shadow, switch on when measured
 The claim checker has never fired on a real front-of-pack claim. Shipping it requires
-pairing attestation + a rebuilt rule set + FSSAI Schedule I retrieval — roughly 3
+pairing attestation + a rebuilt rule set + FSSAI Schedule I retrieval - roughly 3
 extra weeks. Deferring means the beta tests the commodity half (ingredient
 explanation) and the resulting retention number is a **floor, not a forecast**.
 ~~**Not yet decided.**~~
 
 **Decided 2026-09-25** (Sushil delegated: "go with your best decision"): neither defer
-nor ship blind — **ship in shadow**. The checker is built, pairing attestation (D-035)
+nor ship blind - **ship in shadow**. The checker is built, pairing attestation (D-035)
 exists, and it has tests; what it lacks is evidence on real claim-bearing packs.
 - Every `/scan` still runs the claim check and stores its findings with evidence, so
   reviewers see them on `/review` and the gold set measures them.
@@ -981,7 +981,7 @@ the app can make, while the upside (the differentiator) is kept one flag away.
 
 ### D-052 · Launch wedge `LOCKED` (2026-09-25): allergy households + parents of young children
 General wellness users scan twice and churn; household packaged-food variety caps
-natural frequency at 2–4 scans/month. Allergen and diabetic households have a forcing
+natural frequency at 2-4 scans/month. Allergen and diabetic households have a forcing
 function to open the app. ~~**Not yet decided.**~~
 
 **Decided 2026-09-25** (Sushil delegated): **allergy households + parents of young
@@ -994,7 +994,7 @@ children**, not diabetic households for now.
   audience in Play Console stays **adults** (parents), never children (D-074).
 
 ### D-053 · Premium pricing `OPEN`
-Original thinking was ₹49–99/month. Recommendation is ₹399–499/**year** — Indian
+Original thinking was ₹49-99/month. Recommendation is ₹399-499/**year** - Indian
 consumer utilities convert far better on annual, and matches a product used a few
 times a month rather than daily. Also: scans stay uncapped and free forever
 (throttling scans starves the catalogue, which is the asset). **Not yet decided.**
@@ -1024,22 +1024,22 @@ already sunk. **Write the number that makes you stop, now, before the data exist
 | W4 retention (and scans per returning user) | What happens |
 |---|---|
 | **≥ 30 %** and **≥ 2.5** | Continue: Phase 2 planning starts |
-| **20 – 30 %**, or ≥ 30 % with < 2.5 scans | **One** fix-and-retest cycle, max 4 weeks: fixes to what users report only, no new features; re-measure W4 on a fresh cohort |
+| **20 - 30 %**, or ≥ 30 % with < 2.5 scans | **One** fix-and-retest cycle, max 4 weeks: fixes to what users report only, no new features; re-measure W4 on a fresh cohort |
 | **< 20 %**, or the retest misses 30 % | **Stop.** No Phase 2 build. Rethink the product or the audience from interviews before writing more code |
 
 Measured on at least 50 activated users (one completed scan); fewer than that and the
-number is not read as a pass or a fail — recruit more first. Not renegotiable after
+number is not read as a pass or a fail - recruit more first. Not renegotiable after
 the data arrives; a change needs a new D- entry written *before* the next measurement.
 
 ---
 
 ## Explicitly not building
 
-Airflow (batch tool, wrong for per-scan — use Celery/RQ on Redis) · Snowflake (see
+Airflow (batch tool, wrong for per-scan - use Celery/RQ on Redis) · Snowflake (see
 D-021) · vector DB · Elasticsearch · microservices · Kubernetes · native app ·
 custom admin platform (use Django admin or Retool; the one custom screen worth
 building is the label-image/extracted-data reviewer) · streaks, rewards or scan
-credits (incentivise junk scans that poison the catalogue — reward accepted
+credits (incentivise junk scans that poison the catalogue - reward accepted
 *corrections* instead) · social sharing infrastructure beyond a PNG share sheet ·
 multi-language UI at launch · B2B dashboard in any form before ~500K scans/month ·
 brand-submitted data portal · affiliate revenue until a public methodology exists.

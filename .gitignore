@@ -5,7 +5,7 @@ __pycache__/
 .pytest_cache/
 venv/
 
-# Regenerable output — never commit
+# Regenerable output - never commit
 predictions/
 runs/
 reports/
@@ -19,7 +19,7 @@ photos/
 .env
 *.key
 
-# COMMIT THESE — they are hand-written and not reproducible:
+# COMMIT THESE - they are hand-written and not reproducible:
 #   gold/        the transcriptions everything is measured against
 #   data/*.json  the additive tables, the moat
 #   app/ tools/ tests/

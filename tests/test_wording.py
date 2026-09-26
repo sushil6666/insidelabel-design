@@ -80,7 +80,7 @@ def test_content_tables():
         with open(os.path.join(ROOT, "data", fname), encoding="utf-8") as f:
             rows = json.load(f)[section]
         texts = [r[k] for r in rows for k in fields if isinstance(r.get(k), str)]
-        assert texts, f"{fname}: no consumer fields found — CONSUMER_FIELDS is stale"
+        assert texts, f"{fname}: no consumer fields found - CONSUMER_FIELDS is stale"
         assert_clean(texts, fname)
 
 

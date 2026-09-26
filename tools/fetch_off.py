@@ -2,7 +2,7 @@
 """
 Fetch Indian product records from Open Food Facts into a local JSONL fixture.
 
-Run this on your machine, not in a sandbox — OFF is not reachable from the
+Run this on your machine, not in a sandbox - OFF is not reachable from the
 Claude container.
 
     python3 tools/fetch_off.py --target 150 --out fixtures/off_india.jsonl
@@ -13,8 +13,8 @@ WHAT THIS IS FOR
 
 WHAT IT DELIBERATELY DOES NOT DO
     It does not validate the vision layer. Every row here is text that someone
-    already transcribed. Your hardest accuracy problem — reading a crumpled
-    foil packet under shop lighting — is untouched by this dataset. You still
+    already transcribed. Your hardest accuracy problem - reading a crumpled
+    foil packet under shop lighting - is untouched by this dataset. You still
     have to photograph real packs for that.
 """
 
@@ -40,8 +40,8 @@ FIELDS = ",".join([
     "ingredients_text",
     "ingredients_text_en",
     "ingredients_text_debug",
-    "additives_tags",        # OFF's own additive detection — the cross-check
-    "nova_group",            # OFF's own NOVA classification — the benchmark
+    "additives_tags",        # OFF's own additive detection - the cross-check
+    "nova_group",            # OFF's own NOVA classification - the benchmark
     "nutriscore_grade",
     "categories_tags",
     "labels_tags",           # sometimes carries front-of-pack claims
@@ -74,7 +74,7 @@ def fetch_page(page, page_size, extra_params=None):
 def best_ingredient_text(p):
     """
     Prefer the English field, fall back to the raw one. Returns None if there
-    is nothing usable — which is the common case on Indian records, so we skip
+    is nothing usable - which is the common case on Indian records, so we skip
     rather than feed the engine an empty string.
     """
     for key in ("ingredients_text_en", "ingredients_text"):
@@ -189,7 +189,7 @@ if __name__ == "__main__":
 
 
 # ---------------------------------------------------------------------------
-# LICENCE — read before this touches production
+# LICENCE - read before this touches production
 # ---------------------------------------------------------------------------
 # Open Food Facts data is published under the Open Database License (ODbL),
 # which carries a share-alike obligation on DERIVED DATABASES. For a product
@@ -204,6 +204,6 @@ if __name__ == "__main__":
 #                  share-alike would attach to it.
 #
 # The first is what this script is for. The second is a different decision and
-# not one to drift into by accident. I'm not a lawyer — worth a real opinion
+# not one to drift into by accident. I'm not a lawyer - worth a real opinion
 # before any OFF-sourced record ends up in a product catalog you sell access to.
 # Attribution to Open Food Facts is required either way.

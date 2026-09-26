@@ -184,7 +184,7 @@ def test_reported_mistake_on_published_pack_creates_new_version(env):
 
 
 def test_unreadable_scan_can_be_transcribed_by_reviewer(env):
-    """D-070: 'send it to us' — the reviewer types the list from the stored photo."""
+    """D-070: 'send it to us' - the reviewer types the list from the stored photo."""
     uri = env
     r = scan(["x"], back_status="unreadable")
     sid = r.json()["scan_id"]

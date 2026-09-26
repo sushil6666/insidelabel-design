@@ -1,4 +1,4 @@
-# InsideLabel — API v0.1
+# InsideLabel - API v0.1
 
 > Status, full setup and next steps: [`STATE.md`](STATE.md).
 
@@ -24,7 +24,7 @@ pip install -e . && uvicorn insidelabel.api.main:app --reload
 > **D-051:** `/scan` stores the claim check but returns `claim_check.reason = "claims_not_released"` to users until `INSIDELABEL_CLAIMS_TO_USERS=on`. `/claim-check` is a developer tool and always returns the full result.
 | `GET /allergens` | live | allergen codes a profile can avoid |
 | `POST /allergen-check` | live | ingredients + statement + `avoid[]` → five-state result (D-071), text-only |
-| `POST /compare` | live | 2–4 scanned packs + age + `avoid[]` → best pick of these, with reasons (D-057) |
+| `POST /compare` | live | 2-4 scanned packs + age + `avoid[]` → best pick of these, with reasons (D-057) |
 | `GET /regulators`, `GET /regulators/{ins}` | live | India vs EU vs US status per additive, information only (D-086) |
 | `GET /updates` | live (needs DB) | `?device_id=` → this install's packs that review has decided (D-070) |
 | `GET /review` | live (needs DB + a reviewer account) | reviewer screen, HTTP Basic, one login per reviewer (D-097) |
@@ -36,7 +36,7 @@ pip install -e . && uvicorn insidelabel.api.main:app --reload
 | `GET /`, `/privacy`, `/about` | live | public pages from `web/site/` (D-102); privacy and about are drafts |
 | `POST /problem` | live (needs DB) | "Report a problem" / app crash: `{kind, comment?, request_id?, scan_id?, client, events[]}` → problem report (D-092) |
 
-## The result screen and profiles (D-060–D-066, D-074, D-091)
+## The result screen and profiles (D-060 to D-066, D-074, D-091)
 
 `/scan` returns a `screen` block next to `allergens` (which stays the first key).
 It is what the app renders, in order, and every sentence in it passes the wording
@@ -201,7 +201,7 @@ python -m insidelabel.db.migrate "$INSIDELABEL_DB"          # 009 adds the revie
 INSIDELABEL_DB=… python tools/reviewers.py add sushil       # prints a password, once
 INSIDELABEL_DB="postgresql:///insidelabel?host=/var/run/postgresql" \
 uvicorn insidelabel.api.main:app --reload
-# browser: http://127.0.0.1:8000/review — your name + your password
+# browser: http://127.0.0.1:8000/review - your name + your password
 ```
 
 **One login per reviewer (D-097).** `tools/reviewers.py add | reset | disable | list`.
@@ -219,7 +219,7 @@ review, and photos sent again within 30 days. Rows keep their keys and get
 
 - **Take the next item** claims the oldest open item; nobody else can decide it
   until you publish, reject or put it back.
-- Left: the stored pack photos. Right: what was read, pre-filled and editable —
+- Left: the stored pack photos. Right: what was read, pre-filled and editable -
   fix it to match the pixels, then **Publish to catalogue**. Findings are rebuilt
   from your corrected list.
 - A new product or reformulation publishes the waiting version; a reported
@@ -264,7 +264,7 @@ consumer fields of `data/*.json` and the live output of every endpoint.
 
 ## The empty-input guard
 
-`engine.analyze("")` returns **score 100, grade A, binary "clean"** — correct for
+`engine.analyze("")` returns **score 100, grade A, binary "clean"** - correct for
 the engine (no flags, no penalties), and the most dangerous thing this API could
 emit. It makes *"we could not read the label"* indistinguishable from *"this
 product is clean"*.

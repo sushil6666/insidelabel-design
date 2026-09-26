@@ -1,4 +1,4 @@
-// app.js — InsideLabel PWA: views and navigation.
+// app.js - InsideLabel PWA: views and navigation.
 //
 // The result screen is rendered from the `screen` block that /scan returns
 // (src/insidelabel/lenses/screen.py). This file adds layout and buttons, not
@@ -223,7 +223,7 @@ function peopleSummary(screen) {
   return p ? fill(p.line, p.ref) : "";
 }
 
-// D-070: "we'll tell you when it's ready" — checked on open; push comes later.
+// D-070: "we'll tell you when it's ready" - checked on open; push comes later.
 async function loadUpdates(slot) {
   let rows;
   try { rows = (await updatesRequest()).body.updates || []; } catch { return; }
@@ -566,7 +566,7 @@ function working(text, reading) {
   return el("section", { class: "stack center", "aria-busy": "true" },
     el("div", { class: "pulse", "aria-hidden": "true" }),
     el("h1", {}, text),
-    reading && el("p", { class: "muted" }, "The first read of a pack takes about 8–15 seconds."),
+    reading && el("p", { class: "muted" }, "The first read of a pack takes about 8 to 15 seconds."),
     el("p", { class: "muted", role: "timer" }, secs, " s"));
 }
 
@@ -596,7 +596,7 @@ function finish(body) {
   go("result/" + encodeURIComponent(id));
 }
 
-// ------------------------------------------------------------------ result (D-060 – D-066)
+// ------------------------------------------------------------------ result (D-060 to D-066)
 function result(id) {
   const h = historyItem(id);
   if (!h || !h.screen) return errorView("We couldn't find that result on this phone.");
@@ -663,7 +663,7 @@ function result(id) {
     put(el("details", { class: "item" },
       el("summary", {}, s.ordinary.text),
       s.ordinary.additives.length > 0 && el("ul", { class: "plain" }, s.ordinary.additives.map(a =>
-        el("li", {}, el("strong", {}, a.name), " — ", a.why)))));
+        el("li", {}, el("strong", {}, a.name), ": ", a.why)))));
   }
   put(el("details", { class: "item" },
     el("summary", {}, "The ingredient list as read"),
@@ -686,7 +686,7 @@ function result(id) {
       button("Photograph the front", () => go("front/" + encodeURIComponent(h.id)))));
   }
 
-  // 7. What this covers — stated, never silent (D-037).
+  // 7. What this covers - stated, never silent (D-037).
   put(el("details", { class: "item" }, el("summary", {}, "What this check covers"),
     el("ul", { class: "plain small" }, (h.disclosures || []).map(d => el("li", {}, d)))));
 
@@ -838,7 +838,7 @@ function compareResult(r, ref) {
     r.why_best?.length > 0 && el("ul", { class: "plain" }, r.why_best.map(t => el("li", {}, fill(t, ref)))),
     r.allergen_lines?.length > 0 && el("ul", { class: "plain" }, r.allergen_lines.map(t => el("li", {}, fill(t, ref)))),
     r.packs.map(p => el("details", { class: "item" + (p.id === r.best ? " best" : "") },
-      el("summary", {}, p.name + (p.id === r.best ? " — better pick" : "")),
+      el("summary", {}, p.name + (p.id === r.best ? " (better pick)" : "")),
       el("ul", { class: "plain small" },
         p.allergens.filter(a => a.state !== "not_listed").map(a => el("li", { class: "flag" }, fill(a.text, ref))),
         p.facts.filter(f => f.tier !== "info" || f.positive).map(f =>

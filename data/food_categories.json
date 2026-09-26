@@ -1,7 +1,7 @@
 {
  "_meta": {
   "version": "1.0.0",
-  "source": "FSS (Food Products Standards and Food Additives) Regulations 2011, Appendix A, Part I 'Food Category System' — compendium Version XXVI (20.12.2022). Category 16 ('Prepared foods') is taken from Part II 'Food Category Descriptions', where it is described but omitted from the Part I list in this compendium.",
+  "source": "FSS (Food Products Standards and Food Additives) Regulations 2011, Appendix A, Part I 'Food Category System' - compendium Version XXVI (20.12.2022). Category 16 ('Prepared foods') is taken from Part II 'Food Category Descriptions', where it is described but omitted from the Part I list in this compendium.",
   "verified_on": "2026-09-25",
   "method": "Parsed from the compendium PDF text, then corrected by hand for PDF line breaks and spacing. Codes keep FSSAI's numbering without the '.0' on top-level groups ('7', not '7.0'). The Part I list prints '…and articulated drinks' for 14.1.4; Part II and Codex GSFA say 'particulated drinks', used here.",
   "why": "products.category_id uses these codes so a product can later be joined to per-category additive limits in Appendix A, and so the D-058 seed (kids' biscuits = 7.2.1) can be counted."

@@ -20,8 +20,8 @@ from PIL import Image, ImageStat
 # (INS F1 1.0 on both). The app itself sends 1600 px on the long edge.
 MIN_LONG_EDGE = 480
 MIN_SHORT_EDGE = 240
-# Standard deviation of grey levels, 0–255. Measured on the 12 gold photos:
-# 33.5–67.6. A blank, black or lens-cap frame is ~0–5.
+# Standard deviation of grey levels, 0-255. Measured on the 12 gold photos:
+# 33.5-67.6. A blank, black or lens-cap frame is ~0-5.
 MIN_CONTRAST = 8
 _UNDECODED = {"image/heic", "image/heif"}
 

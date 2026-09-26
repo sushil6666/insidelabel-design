@@ -1,4 +1,4 @@
-// lib.js — storage, API calls, the flight recorder, image preparation and a
+// lib.js - storage, API calls, the flight recorder, image preparation and a
 // tiny DOM builder.
 //
 // Three rules from DECISIONS.md shape this file:
@@ -52,8 +52,8 @@ function fallbackUuid() {
 
 // ------------------------------------------------------------------ profiles (D-074)
 export const AGES = [
-  { id: "toddler", label: "Toddler", sub: "1–3 years" },
-  { id: "kid", label: "Child", sub: "4–11 years" },
+  { id: "toddler", label: "Toddler", sub: "1 to 3 years" },
+  { id: "kid", label: "Child", sub: "4 to 11 years" },
   { id: "young", label: "Older child or teen", sub: "12 and up" },
 ];
 export const MAX_PROFILES = 3;
@@ -243,7 +243,7 @@ export const updatesRequest = () =>
 // Barcodes are checked on the server (D-103), from the camera or a photo (D-104).
 
 // ------------------------------------------------------------------ images
-// Phone photos are 3–12 MB; the label only needs ~1600 px on the long edge.
+// Phone photos are 3-12 MB; the label only needs ~1600 px on the long edge.
 // Smaller uploads matter on slow connections and stay under the 12 MB API limit.
 export async function prepareImage(file, maxEdge = 1600) {
   try {

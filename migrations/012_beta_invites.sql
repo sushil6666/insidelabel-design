@@ -1,4 +1,4 @@
--- 012_beta_invites.sql — the invite-only web beta (D-102).
+-- 012_beta_invites.sql - the invite-only web beta (D-102).
 --
 -- The beta is a retention test with ~50 named testers (D-007, D-055). One code
 -- per tester: it lets them in, and it ties their installs, scans and feedback

@@ -231,7 +231,7 @@ class ReviewService:
         """Every FSSAI food category as (code, name, depth), in the regulation's order."""
         with self._connect() as c:
             rows = c.execute("SELECT code, name FROM categories").fetchall()
-        key = lambda r: [int(x) for x in r["code"].split(".")]      # noqa: E731 — 7.2.10 after 7.2.9
+        key = lambda r: [int(x) for x in r["code"].split(".")]      # noqa: E731 - 7.2.10 after 7.2.9
         return [(r["code"], r["name"], r["code"].count(".")) for r in sorted(rows, key=key)]
 
     def _save_product(self, c, pid, form, barcode):

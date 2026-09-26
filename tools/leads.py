@@ -16,7 +16,7 @@ the physical pack has been photographed, scanned and published through /review.
     python tools/leads.py obtained 1
     python tools/leads.py link 1 --barcode 8901764012273      # or --version 42
 
-    # 4. publish it on /review — the lead closes itself
+    # 4. publish it on /review - the lead closes itself
     python tools/leads.py list                   # what's still needed
     python tools/leads.py export > leads.json    # provenance records
     python tools/leads.py abandon 7 "not sold offline"
