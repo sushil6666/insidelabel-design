@@ -5,11 +5,19 @@
                  "correction": "Reported mistake", "send_to_us": "Sent to us",
                  "front_photo": "Front photo"} %}
 {% set q = d.item %}
+{# D-106: an uploaded photo could be edited, AI-made or a photo of a screen; a camera photo was taken in the app. #}
+{% macro source_note(src) %}
+  {% if src == "upload" %}<div class="upload-warn">Uploaded, not taken with the camera. Before publishing, look closely
+    for signs of editing, an AI-made picture or a photo of a screen: it has to be a real pack.</div>
+  {% elif src == "camera" %}<div class="muted" style="font-size:12px;margin-bottom:4px">Taken with the app's camera.</div>{% endif %}
+{% endmacro %}
 <style>
   .grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
   .photos img { width: 100%; border-radius: 6px; border: 1px solid var(--line); background: #fff; display: block; }
   .photos figure { margin: 0 0 12px; } .photos figcaption { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
   .sticky { position: sticky; top: 12px; }
+  .upload-warn { background: var(--warn-bg); color: var(--warn); border-radius: 6px; padding: 6px 10px;
+                 font-size: 13px; margin-bottom: 6px; }
   .diff li { font-family: var(--mono); font-size: 13px; list-style: none; padding: 2px 6px; border-radius: 4px; }
   .diff ul { padding: 0; margin: 0; }
   .diff .added { background: var(--ok-bg); color: var(--ok); } .diff .added::before { content: "+ "; }
@@ -31,7 +39,7 @@
 
 {% if error %}<div class="error">{{ error }}</div>{% endif %}
 {% if q.status in ("done", "rejected") %}
-  <div class="notice">Decided: <b>{{ q.resolution }}</b>{% if q.resolution_note %} — {{ q.resolution_note }}{% endif %}</div>
+  <div class="notice">Decided: <b>{{ q.resolution }}</b>{% if q.resolution_note %}: {{ q.resolution_note }}{% endif %}</div>
 {% elif not mine %}
   <div class="notice" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
     {% if q.status == "open" %}Claim this item to decide it.{% else %}{{ q.claimed_by }} is working on this item.{% endif %}
@@ -49,6 +57,7 @@
       {% if d.images[role] %}
         <figure>
           <figcaption>{{ role|capitalize }} of pack · <a href="/review/media/{{ d.images[role] }}" target="_blank">open full size</a></figcaption>
+          {{ source_note(sources.get(role)) }}
           <a href="/review/media/{{ d.images[role] }}" target="_blank"><img src="/review/media/{{ d.images[role] }}" alt="{{ role }} of pack"></a>
         </figure>
       {% endif %}
@@ -57,6 +66,7 @@
       {% if key %}
         <figure>
           <figcaption>Earlier attempt · {{ role }} · {{ a.created_at.strftime("%d %b %H:%M") }} · <a href="/review/media/{{ key }}" target="_blank">open full size</a></figcaption>
+          {{ source_note(((a.request or {}).get("photo_sources") or {}).get(role)) }}
           <a href="/review/media/{{ key }}" target="_blank"><img src="/review/media/{{ key }}" alt="earlier {{ role }} photo"></a>
         </figure>
       {% endif %}
@@ -72,13 +82,13 @@
       <div class="panel" style="margin-bottom:12px">
         <b>Sent to us after {{ d.attempts|length + 1 }} photos we couldn't read.</b>
         Nothing was read automatically: type the label from the photos. If no photo shows the whole
-        ingredient list, reject it and say so — the person is told either way.
+        ingredient list, reject it and say so. The person is told either way.
       </div>
     {% endif %}
     {% if q.kind == "front_photo" %}
       <div class="panel" style="margin-bottom:12px">
         <b>Front of pack for a published product.</b> The ingredients are already reviewed. Check the
-        front photo is this pack (compare it with the back), then type its claims one per line —
+        front photo is this pack (compare it with the back), then type its claims one per line -
         leave them empty if the front makes none. Publishing records the front even with no claims.
         If it's a different pack, or unreadable, reject it.
       </div>
@@ -118,9 +128,9 @@
           <div><label for="variant">Variant</label><input type="text" id="variant" name="variant" value="{{ form.variant }}"></div>
           <div><label for="barcode">Barcode</label><input type="text" id="barcode" name="barcode" value="{{ form.barcode }}" inputmode="numeric"></div>
         </div>
-        <label for="category">FSSAI food category (Appendix A) — required</label>
+        <label for="category">FSSAI food category (Appendix A), required</label>
         <select id="category" name="category" required>
-          <option value="">— choose —</option>
+          <option value="">Choose a category</option>
           <optgroup label="Common">
             {% for code, hint in common %}<option value="{{ code }}" {% if form.category == code %}selected{% endif %}>{{ code }} · {{ hint }}</option>{% endfor %}
           </optgroup>
@@ -128,11 +138,11 @@
             {% set common_codes = common|map("first")|list %}{% for code, cname, depth in categories %}<option value="{{ code }}" {% if form.category == code and code not in common_codes %}selected{% endif %}>{{ "  " * depth }}{{ code }} {{ cname|truncate(90) }}</option>{% endfor %}
           </optgroup>
         </select>
-        <label for="ingredients">Ingredients — one entry per line, in printed order, spelled as printed</label>
+        <label for="ingredients">Ingredients: one entry per line, in printed order, spelled as printed</label>
         <textarea id="ingredients" name="ingredients" rows="12" required>{{ form.ingredients }}</textarea>
         <label for="allergen_statement">Allergen line (“Contains… / May contain…”), exactly as printed</label>
         <input type="text" id="allergen_statement" name="allergen_statement" value="{{ form.allergen_statement }}">
-        <label for="front_claims">Front-of-pack claims — one per line (only if the front photo is this pack)</label>
+        <label for="front_claims">Front-of-pack claims: one per line (only if the front photo is this pack)</label>
         <textarea id="front_claims" name="front_claims" rows="3">{{ form.front_claims }}</textarea>
         <label for="note">Note (optional, kept with the decision)</label>
         <input type="text" id="note" name="note">
@@ -146,7 +156,7 @@
     <div class="panel" style="margin-top:12px">
       <form method="post" action="/review/item/{{ q.id }}/reject">
         <input type="hidden" name="csrf" value="{{ csrf }}">
-        <label for="reason">Reject — why? (photo unusable, not food, duplicate…)</label>
+        <label for="reason">Reject: why? (photo unusable, not food, duplicate…)</label>
         <div style="display:flex;gap:8px"><input type="text" id="reason" name="reason" required>
           <button class="danger" type="submit">Reject</button></div>
       </form>
@@ -172,15 +182,15 @@
 
     {% if d.version %}
       <div class="muted" style="margin-top:12px">
-        Read from: <b>{{ "the physical label" if d.version.production_source == "physical_label" else "an online listing — can't be published; scan the pack" }}</b>
-        {% for l in d.leads %}<br>Lead #{{ l.id }}: seen on {{ l.source_platform or l.source_type }} {{ l.captured_on }} ({{ l.evidence_status }}) — research only; check against the photos, not the listing.{% endfor %}
+        Read from: <b>{{ "the physical label" if d.version.production_source == "physical_label" else "an online listing, which can't be published; scan the pack" }}</b>
+        {% for l in d.leads %}<br>Lead #{{ l.id }}: seen on {{ l.source_platform or l.source_type }} {{ l.captured_on }} ({{ l.evidence_status }}). Research only; check against the photos, not the listing.{% endfor %}
       </div>
     {% endif %}
 
     <details style="margin-top:12px"><summary>Trace: model, prompt, engine</summary>
       <div class="mono muted" style="margin-top:6px">
         {% if d.version %}version #{{ d.version.id }} (v{{ d.version.version_no }}, {{ d.version.source }}) ·
-        model {{ d.version.model_name or "—" }} · prompt {{ d.version.prompt_version or "—" }} ·
+        model {{ d.version.model_name or "none" }} · prompt {{ d.version.prompt_version or "none" }} ·
         engine {{ d.version.engine_version }}{% endif %}
         {% if d.scan %}<br>scan {{ d.scan.id }} · {{ d.scan.outcome }}{% if d.scan.error_code %} ({{ d.scan.error_code }}){% endif %}{% endif %}
       </div>

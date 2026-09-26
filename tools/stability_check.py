@@ -92,7 +92,7 @@ def summarise(runs, quiet=False):
     p(f"\nUNSTABLE ENTRIES                {len(unstable)}")
     p("  Present in some runs, absent in others. Target prompt work here.")
     if not unstable:
-        p("    none — every run returned the same entries")
+        p("    none - every run returned the same entries")
     for k, c in sorted(unstable.items(), key=lambda x: x[1]):
         p(f"    {c}/{n} runs   {k[:64]}")
 

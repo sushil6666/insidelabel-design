@@ -1,14 +1,14 @@
 # InsideLabel
 
 Reads the front and back of an Indian packaged-food label and tells you what is
-in it — and where the front of the pack disagrees with the ingredient list.
+in it - and where the front of the pack disagrees with the ingredient list.
 
 **AI reads the label; deterministic rules over our data tables judge it**
 (D-004). Every judgement uses FSSAI rules (D-086) and is traceable to a table
 row and to the label's own words. The data tables and the reviewed catalogue are
 the moat; the code is thin.
 
-> **New here, or starting a new session? Read [`STATE.md`](STATE.md) first** —
+> **New here, or starting a new session? Read [`STATE.md`](STATE.md) first** -
 > what works, how to set up, what failed, what's next.
 
 ## Quick start
@@ -26,8 +26,8 @@ python -m insidelabel.core.engine "Refined wheat flour, Sugar, Palm oil, INS 471
 uvicorn insidelabel.api.main:app --reload
 ```
 
-Full setup — PostgreSQL 19, Tesseract, environment variables, the reviewer
-screen — is in [`STATE.md` §3](STATE.md#3-set-up-from-scratch-wsl-ubuntu-2404).
+Full setup - PostgreSQL 19, Tesseract, environment variables, the reviewer
+screen - is in [`STATE.md` §3](STATE.md#3-set-up-from-scratch-wsl-ubuntu-2404).
 
 ## Documents
 
@@ -54,7 +54,7 @@ photo(s) ──► Gemini reads the label ──► Tesseract cross-checks INS n
       ┌───────────────┼──────────────────┬───────────────────┐
       ▼               ▼                  ▼                   ▼
   allergens      claim check       shelf comparison    India/EU/US (optional,
-  (first line)   (front vs back)   (2–4 packs)          information only)
+  (first line)   (front vs back)   (2-4 packs)          information only)
 ```
 
 With a database configured, each scan becomes a version **waiting for review**;
@@ -75,7 +75,7 @@ catalogue, after which a barcode alone returns the result instantly.
 ## ⚠ Before any public "permitted / not permitted" statement
 
 A status is only as good as its source. Check it against the current FSSAI Food
-Additives Regulations (Appendix A — the GMP table or a numeric limit) and record
+Additives Regulations (Appendix A - the GMP table or a numeric limit) and record
 `fssai_basis` and `verified_on` on the row. A number that appears only in the
 regulation's INS reference list is **not** permitted. A wrong "not permitted in
 India" statement is a legal liability, not just a bug.
@@ -85,5 +85,5 @@ India" statement is a legal liability, not just a bug.
 - 66 additives in the table; anything else on a label is seen but not flagged
   (and the result says an absence of flags is not proof of absence).
 - Ingredient list only: the nutrition panel (sugar/salt/fat amounts) is not read yet.
-- The accuracy set is 6 real labels; the target before trusting it is 20–30.
+- The accuracy set is 6 real labels; the target before trusting it is 20-30.
 - The score is an internal ranking aid only; users see findings, not a number (D-064).

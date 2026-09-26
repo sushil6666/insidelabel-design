@@ -10,7 +10,7 @@ echo "== stale root data tables (engine reads data/ only)"
 for f in additives.json normalization.json nova_markers.json; do
   if [ -f "$f" ] && [ -f "data/$f" ]; then
     if diff -q "$f" "data/$f" >/dev/null 2>&1; then echo "   $f  (identical to data/$f)"
-    else echo "   $f  DIFFERS from data/$f — check before deleting"; fi
+    else echo "   $f  DIFFERS from data/$f - check before deleting"; fi
   fi
 done
 echo "   -> rm additives.json normalization.json nova_markers.json"

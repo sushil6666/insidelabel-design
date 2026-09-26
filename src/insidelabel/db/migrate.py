@@ -8,7 +8,7 @@ skip_unavailable=True (the embedded test server): then it is skipped and NOT
 recorded, so it applies later on a full install.
 
 After the migrations it syncs reference data (FSSAI food categories from
-data/food_categories.json) — idempotent, so it runs every time.
+data/food_categories.json) - idempotent, so it runs every time.
 
     python -m insidelabel.db.migrate postgresql://...
 """

@@ -1,5 +1,5 @@
 """
-Inside Label — reliability gate.
+Inside Label - reliability gate.
 
 Sits between the vision layer and the engine and answers one question: given
 how well the label was actually read, is a verdict safe to put in front of a
@@ -12,8 +12,8 @@ would be a lie.
 
 The asymmetry that drives rule 3: a partially-read ingredient list can only
 ever cause the engine to flag TOO LITTLE. Nothing you failed to read can add a
-flag. So on a partial read, "ultra-processed" is still true — the markers found
-are really there — but "clean" is unsupported, because the evidence that would
+flag. So on a partial read, "ultra-processed" is still true - the markers found
+are really there - but "clean" is unsupported, because the evidence that would
 have overturned it is exactly the evidence you could not read.
 """
 
@@ -24,6 +24,31 @@ _REFUSE = {
 }
 
 
+# D-103: what the model says each photo shows. The model reads; these rules
+# decide. A photo of a screen is refused even when an ingredient list is
+# legible on it: a listing or a picture on a display is a lead, never the
+# record (D-089). Refusals for these codes can't go to "Send it to us".
+NOT_A_PACK = ("back_is_a_screen", "not_a_food_pack")
+
+
+def drop_unusable_front(vision):
+    """
+    A front photo that isn't a food pack is dropped, not fatal: the back still
+    carries the ingredient list. Mutates `vision`; returns a caveat or None.
+    """
+    seen = (vision.get("image_content") or {}).get("front")
+    if seen not in ("screen", "not_food"):
+        return None
+    vision["front_status"] = "not_provided"
+    vision["front_claims"], vision["front_claim_footnotes"] = [], []
+    vision["front_identity"] = None
+    vision["product_match"] = {"status": "single_image", "evidence": []}
+    return {"code": "front_not_a_pack",
+            "detail": "The front photo doesn't show a food pack"
+                      + (" (it looks like a screen)" if seen == "screen" else "")
+                      + ", so it wasn't used."}
+
+
 def assess(vision):
     """
     Returns (proceed: bool, reliability: dict).
@@ -32,6 +57,21 @@ def assess(vision):
     back = vision["back_status"]
     ing = vision["ingredients_status"]
     front = vision["front_status"]
+
+    # 0. Not a pack at all (D-103): say so, instead of "retake the photo".
+    seen = (vision.get("image_content") or {}).get("back")
+    if seen == "screen":
+        return False, {
+            "error": "back_is_a_screen",
+            "detail": "The back photo shows a screen, not the pack itself.",
+            "hint": "Photograph the physical pack; a listing or a picture on a screen isn't used.",
+        }
+    if seen == "not_food":
+        return False, {
+            "error": "not_a_food_pack",
+            "detail": "The back photo doesn't show a packaged food.",
+            "hint": "Photograph the ingredient list on the back of a food pack.",
+        }
 
     # 1. No usable ingredient list -> no verdict, at all.
     # Two different products is a user error worth naming, not something to
@@ -128,7 +168,7 @@ def assess(vision):
     #     because the ingredient list is self-contained. A CLAIM CHECK needs
     #     both faces to belong to the same product, because it asserts that
     #     THIS pack's front contradicts THIS pack's ingredients. So an
-    #     unverified pairing does not block the verdict — it blocks only the
+    #     unverified pairing does not block the verdict - it blocks only the
     #     claim check.
     match = (vision.get("product_match") or {}).get("status", "indeterminate")
     reliability["product_match"] = match
@@ -171,7 +211,7 @@ def assess(vision):
     #     printed preservative in roughly 4 of 10 reads, and every self-check
     #     (confidence, raw declaration, self-count) reported success on those
     #     reads. So running WITHOUT the cross-check is running with a known,
-    #     unmitigated omission rate — that is a caveat, not a footnote, and a
+    #     unmitigated omission rate - that is a caveat, not a footnote, and a
     #     reassuring score must not be presented as if it were verified.
     ocr = vision.get("_ocr_cross_check") or {}
     if ocr and not ocr.get("available"):

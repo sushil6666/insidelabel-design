@@ -79,6 +79,30 @@ class ReportRequest(BaseModel):
     note: Optional[str] = Field(None, max_length=2000)
 
 
+class JoinRequest(BaseModel):
+    """D-102: a tester's invite code, as typed or from their link."""
+
+    code: str = Field(..., max_length=40)
+    device_id: str = Field(..., max_length=64)
+
+
+class AgreeRequest(BaseModel):
+    """D-105: this install accepts this version of "Before you start"."""
+
+    device_id: str = Field(..., max_length=64)
+    terms_version: str = Field(..., max_length=40)
+
+
+class FeedbackRequest(BaseModel):
+    """D-102 "Send feedback": what a tester thinks. Not a mistake (D-076), not a problem (D-092)."""
+
+    device_id: str = Field(..., max_length=64)
+    comment: str = Field(..., max_length=4000)
+    rating: Optional[int] = Field(None, ge=1, le=5)
+    screen: Optional[str] = Field(None, max_length=40, description="Where it was sent from: home, result…")
+    app_version: Optional[str] = Field(None, max_length=40)
+
+
 class ProblemRequest(BaseModel):
     """D-092 "Report a problem": the app misbehaved. Goes to the developer, not reviewers."""
 

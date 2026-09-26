@@ -132,10 +132,10 @@ def test_barcode_lookups_have_their_own_budget():
     dev = str(uuid.uuid4())
     for _ in range(3):
         assert scan(dev).status_code == 200
-    assert c.post("/scan", data={"barcode": "8901000000013", "device_id": dev}).status_code == 404
+    assert c.post("/scan", data={"barcode": "8901000000019", "device_id": dev}).status_code == 404
     for _ in range(3):
-        c.post("/scan", data={"barcode": "8901000000013", "device_id": dev})
-    r = c.post("/scan", data={"barcode": "8901000000013", "device_id": dev})
+        c.post("/scan", data={"barcode": "8901000000019", "device_id": dev})
+    r = c.post("/scan", data={"barcode": "8901000000019", "device_id": dev})
     assert r.status_code == 429
 
 
@@ -162,7 +162,8 @@ def test_the_limit_messages_pass_the_wording_lint():
     for _ in range(4):
         r = scan(dev)
     assert "minute" in r.json()["detail"]
-    test_wording.assert_clean([r.json()["detail"], ratelimit.PROBLEM_TEXT, ratelimit.SEND_TEXT], "429 bodies")
+    test_wording.assert_clean([r.json()["detail"], ratelimit.PROBLEM_TEXT, ratelimit.SEND_TEXT,
+                                ratelimit.JOIN_TEXT, ratelimit.FEEDBACK_TEXT], "429 bodies")
 
 
 # ---------------------------------------------------------------- /problem

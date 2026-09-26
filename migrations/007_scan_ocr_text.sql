@@ -1,4 +1,4 @@
--- 007_scan_ocr_text.sql — the independent reader's text on every scan row, so a
+-- 007_scan_ocr_text.sql - the independent reader's text on every scan row, so a
 -- replay is exact (D-092, D-093).
 --
 -- Migration 006 kept the model's raw answer on each scan, but not what the

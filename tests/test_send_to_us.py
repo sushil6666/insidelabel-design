@@ -78,7 +78,7 @@ def send(dev, scan_ids):
 
 def test_two_refused_scans_go_to_the_review_queue(env):
     dev = str(uuid.uuid4())
-    a, b = refused(dev), refused(dev, barcode="8901000000037")
+    a, b = refused(dev), refused(dev, barcode="8901000000033")
     r = send(dev, [a, b])
     assert r.status_code == 200, r.text
     j = r.json()
@@ -134,7 +134,7 @@ def test_needs_the_database(monkeypatch):
 
 def test_reviewer_sees_every_attempt_and_the_barcode(env):
     dev = str(uuid.uuid4())
-    a, b = refused(dev), refused(dev, barcode="8901000000044")
+    a, b = refused(dev), refused(dev, barcode="8901000000040")
     rid = send(dev, [a, b]).json()["review_id"]
     d = routes.SERVICE.get(rid)
     assert [str(s["id"]) for s in d["attempts"]] == [a]
@@ -142,22 +142,22 @@ def test_reviewer_sees_every_attempt_and_the_barcode(env):
     cred = base64.b64encode(f"asha:{TOKEN}".encode()).decode()
     page = TestClient(main.app, headers={"Authorization": f"Basic {cred}"}).get(f"/review/item/{rid}").text
     assert d["attempts"][0]["back_image_key"] in page                # both photos on the page
-    assert 'value="8901000000044"' in page                          # barcode the app read, pre-filled
+    assert 'value="8901000000040"' in page                          # barcode the app read, pre-filled
     assert "Nothing was read automatically" in page
 
 
 def test_published_by_a_reviewer_then_ready_on_updates(env):
     dev = str(uuid.uuid4())
-    rid = send(dev, [refused(dev), refused(dev, barcode="8901000000051")]).json()["review_id"]
+    rid = send(dev, [refused(dev), refused(dev, barcode="8901000000057")]).json()["review_id"]
     svc = routes.SERVICE
     assert svc.claim(rid, "asha")
-    out = svc.approve(rid, "asha", {"name": "Jeera Biscuit", "brand": "Testco", "barcode": "8901000000051",
+    out = svc.approve(rid, "asha", {"name": "Jeera Biscuit", "brand": "Testco", "barcode": "8901000000057",
                                     "category": "7.2.1", "ingredients": "Wheat flour\nSugar\nSalt"})
     assert out["resolution"] == "published_new_version"
     ups = c.get("/updates", params={"device_id": dev}).json()["updates"]
     assert [(u["kind"], u["ready"], u["product_name"]) for u in ups] == [("send_to_us", True, "Jeera Biscuit")]
     # …and the barcode now answers from the catalogue.
-    assert c.post("/scan", data={"barcode": "8901000000051"}).status_code == 200
+    assert c.post("/scan", data={"barcode": "8901000000057"}).status_code == 200
 
 
 def test_sending_is_rate_limited(env, monkeypatch):

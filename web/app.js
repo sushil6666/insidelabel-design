@@ -1,4 +1,4 @@
-// app.js — InsideLabel PWA: views and navigation.
+// app.js - InsideLabel PWA: views and navigation.
 //
 // The result screen is rendered from the `screen` block that /scan returns
 // (src/insidelabel/lenses/screen.py). This file adds layout and buttons, not
@@ -10,7 +10,8 @@ import {
   AGES, APP_VERSION, MAX_PROFILES, ApiError, addHistory, allergenList, clientInfo, compareRequest,
   deviceId, el, fill, history, historyItem, lastIncident, prepareImage, problemRequest, profileByRef,
   profiles, record, reportRequest, saveProfiles, scanRequest, sendToUsRequest, store, trailSnapshot,
-  updatesRequest, validGtin,
+  accessRequest, agreeRequest, checkPhotoRequest, feedbackRequest, joinRequest, termsRequest,
+  updatesRequest,
 } from "./lib.js";
 import { barcodeSupported, startScanner } from "./camera.js";
 
@@ -20,22 +21,45 @@ let navSeq = 0;               // async views check this so a late result can't r
 // The scan in progress: barcode (if read), photos, and how many times it was refused
 // (with the refused scans' ids, for "Send it to us", D-070).
 // frontWanted: offer the front photo (D-100); off for a re-check of a pack whose front is on file.
-let pending = { barcode: null, back: null, front: null, pairing: false, attempts: 0, refused: [],
-                frontWanted: true };
+let pending = { barcode: null, barcodeSource: null, back: null, front: null, backSource: null,
+                frontSource: null, pairing: false, attempts: 0, refused: [], frontWanted: true };
 
 // ------------------------------------------------------------------ navigation
 const routes = {
   "": home, welcome, household, person, scan, photo, front, result, report, compare, problem, send,
+  join, agree, feedback,
 };
 
-function go(path) { location.hash = "#/" + path; }
+// Setting the hash it already has fires no hashchange, so the page wouldn't
+// change (e.g. "Skip for now" on a welcome shown at #/ after joining).
+function go(path) {
+  const hash = "#/" + path;
+  if (location.hash === hash) route();
+  else location.hash = hash;
+}
 
 function route() {
   if (stopCamera) { stopCamera(); stopCamera = null; }
   const [name, arg] = location.hash.replace(/^#\/?/, "").split("/");
   // D-092: screens in the trail. `arg` is a scan id or a profile ref, never a name.
   record("route", { to: name || "home", arg: arg || undefined });
-  if (!store.get("welcomed", false) && name !== "welcome" && name !== "household" && name !== "person") {
+  if (name !== "feedback") store.set("lastScreen", name || "home");     // where feedback was sent from
+  // D-102: an invite-only server lets a phone in once it has joined with a code.
+  // D-105: then "Before you start": the rules are agreed before anything else.
+  if (!["join", "agree", "problem"].includes(name)) {
+    const seq = ++navSeq;
+    return checkAccess().then(a => {
+      if (seq !== navSeq) return;
+      if (!a.joined) return show(join());
+      if (a.needAgree) return show(agree());
+      routeAfterJoin(name, arg);
+    });
+  }
+  routeAfterJoin(name, arg);
+}
+
+function routeAfterJoin(name, arg) {
+  if (!store.get("welcomed", false) && !["welcome", "household", "person", "join", "agree"].includes(name)) {
     return show(welcome());
   }
   const seq = ++navSeq;
@@ -65,6 +89,149 @@ function productName(product) {
 
 function button(label, onclick, cls = "") {
   return el("button", { type: "button", class: "btn " + cls, onclick }, label);
+}
+
+// ------------------------------------------------------------------ invite-only beta (D-102)
+// Asked once per session; a phone that has joined remembers it. If the server
+// says otherwise later (403 invite_required), the flag is cleared and the
+// join screen comes back.
+let accessChecked = null;
+function checkAccess() {
+  if (!accessChecked) {
+    accessChecked = accessRequest().then(({ body }) => {
+      const joined = !body.invite_only || body.joined;
+      if (joined) store.set("joined", true);
+      store.set("termsVersion", body.terms_version);
+      // D-105: agreed on the server, or (a server without a database) on this phone.
+      const needAgree = !body.agreed && store.get("agreed", null) !== body.terms_version;
+      return { joined, needAgree };
+    }).catch(() => ({                // offline: open the app; the server still checks every scan
+      joined: store.get("joined", true),
+      needAgree: !store.get("agreed", null),
+    }));
+  }
+  return accessChecked;
+}
+
+// A 403 from the server means this phone isn't (or is no longer) let in: no
+// invite (D-102), or the rules not agreed, e.g. after they changed (D-105).
+// Returns the screen to show, or null.
+function accessProblem(e) {
+  if (!(e instanceof ApiError)) return null;
+  if (e.body?.error === "invite_required") {
+    store.set("joined", false);
+    accessChecked = null;
+    return "join";
+  }
+  if (e.body?.error === "terms_required") {
+    store.set("agreed", null);
+    accessChecked = null;
+    return "agree";
+  }
+  return null;
+}
+
+function agree() {
+  const view = el("section", { class: "stack" }, el("p", { class: "muted" }, "Loading…"));
+  termsRequest().then(({ body: t }) => {
+    const box = el("input", { type: "checkbox", id: "agree" });
+    const err = el("p", { class: "error", role: "alert" });
+    const go_ = el("button", { type: "button", class: "btn primary", disabled: true }, t.button);
+    box.addEventListener("change", () => { go_.disabled = !box.checked; });
+    go_.addEventListener("click", async () => {
+      go_.disabled = true;
+      try {
+        await agreeRequest(t.version);
+      } catch (ex) {
+        if (ex.body?.error === "terms_changed") { accessChecked = null; return show(agree()); }
+        // A server without a database can't record it; the phone keeps it (it doesn't gate).
+        if (ex.body?.error !== "storage_unavailable") {
+          go_.disabled = false;
+          err.textContent = ex.status === 0 ? "No connection. Try again when you're online." : apiMessage(ex);
+          return;
+        }
+      }
+      store.set("agreed", t.version);
+      record("agreed", { version: t.version });
+      accessChecked = Promise.resolve({ joined: true, needAgree: false });
+      go("");
+    });
+    view.replaceChildren(
+      el("h1", {}, t.title),
+      el("p", { class: "lead" }, t.intro),
+      el("ol", { class: "rules" }, t.points.map(p => el("li", {}, p))),
+      el("label", { class: "choice", for: "agree" }, box, " " + t.agree_label),
+      err, go_);
+  }).catch(e => view.replaceChildren(apiErrorView(e, () => show(agree()))));
+  return view;
+}
+
+function join(code) {
+  const input = el("input", { id: "invite", autocomplete: "off", autocapitalize: "characters",
+                              maxlength: "12", placeholder: "e.g. K7PM4QXT", value: code || "" });
+  const err = el("p", { class: "error", role: "alert" });
+  const go_ = el("button", { type: "submit", class: "btn primary" }, "Join the beta");
+  const form = el("form", { class: "stack" },
+    el("h1", {}, "Welcome to the InsideLabel beta"),
+    el("p", { class: "lead" }, "InsideLabel is being tried by a small group first. Your invite has a code; " +
+                               "the link in your message fills it in for you."),
+    el("label", { for: "invite" }, "Invite code"), input, err, go_);
+  const submit = async () => {
+    const typed = input.value.trim();
+    if (!typed) { err.textContent = "Type the code from your invite."; return; }
+    go_.disabled = true;
+    try {
+      await joinRequest(typed);
+      store.set("joined", true);
+      accessChecked = null;                  // ask again: next comes "Before you start" (D-105)
+      record("joined", {});
+      go("");
+    } catch (ex) {
+      go_.disabled = false;
+      err.textContent = ex.status === 0 ? "No connection. Try again when you're online."
+        : (ex.body?.detail || "That didn't work. Check the code and try again.");
+    }
+  };
+  form.addEventListener("submit", e => { e.preventDefault(); submit(); });
+  if (code) setTimeout(submit, 0);          // opened from the invite link
+  return form;
+}
+
+function feedback() {
+  const from = store.get("lastScreen", "home");
+  const comment = el("textarea", { id: "fb", maxlength: "4000", rows: "5", required: true });
+  const err = el("p", { class: "error", role: "alert" });
+  let rating = null;
+  const stars = el("div", { class: "row rating", role: "radiogroup", "aria-label": "How useful is it so far?" },
+    [1, 2, 3, 4, 5].map(n => {
+      const r = el("input", { type: "radio", name: "rating", id: "r" + n, value: String(n),
+                              onchange: () => { rating = n; } });
+      return el("label", { for: "r" + n, class: "choice" }, r, " " + n);
+    }));
+  const form = el("form", { class: "stack" },
+    el("h1", {}, "Send feedback"),
+    el("p", {}, "What worked, what was confusing, what you wished it did. Every note is read."),
+    el("p", { class: "muted" }, "How useful is it so far? (1 = not at all, 5 = very)"), stars,
+    el("label", { for: "fb" }, "Your feedback"), comment,
+    err,
+    el("button", { type: "submit", class: "btn primary" }, "Send"),
+    button("Cancel", () => window.history.back(), "link"));
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    const text = comment.value.trim();
+    if (!text) { err.textContent = "Write a few words first."; return; }
+    try {
+      await feedbackRequest({ comment: text, rating, screen: from });
+      show(el("section", { class: "stack" }, el("h1", {}, "Thank you"),
+        el("p", {}, "We read every note. It shapes what we build next."),
+        button("Done", () => go(""), "primary")));
+    } catch (ex) {
+      const gate = accessProblem(ex);
+      if (gate) return go(gate);
+      err.textContent = ex.status === 0 ? "No connection. Try again when you're online." : apiMessage(ex);
+    }
+  });
+  return form;
 }
 
 // ------------------------------------------------------------------ first run (D-069, D-074)
@@ -113,7 +280,7 @@ function peopleSummary(screen) {
   return p ? fill(p.line, p.ref) : "";
 }
 
-// D-070: "we'll tell you when it's ready" — checked on open; push comes later.
+// D-070: "we'll tell you when it's ready" - checked on open; push comes later.
 async function loadUpdates(slot) {
   let rows;
   try { rows = (await updatesRequest()).body.updates || []; } catch { return; }
@@ -235,24 +402,36 @@ function nextRef(list) {
 
 // ------------------------------------------------------------------ scan: barcode first (D-024)
 function resetPending() {
-  pending = { barcode: null, back: null, front: null, pairing: false, attempts: 0, refused: [],
-              frontWanted: true };
+  pending = { barcode: null, barcodeSource: null, back: null, front: null, backSource: null,
+              frontSource: null, pairing: false, attempts: 0, refused: [], frontWanted: true };
 }
 
 async function scan() {
   const video = el("video", { class: "viewfinder", muted: true, playsinline: true, "aria-label": "Camera" });
   const status = el("p", { class: "muted", role: "status" }, "Starting the camera…");
-  const manual = manualEntry();
+  // D-104: a barcode comes from the live scanner or from a photo read on the
+  // server, never typed: a mistyped number would file a pack under someone
+  // else's product.
+  const preview = el("div", { class: "thumb" });
+  const next = el("div", {});
   const view = el("section", { class: "stack" },
     el("h1", {}, "Scan the barcode"),
     el("div", { class: "viewfinder-wrap" }, video, el("div", { class: "frame", "aria-hidden": "true" })),
     status,
-    manual,
+    el("h2", {}, "Or use a photo of the barcode"),
+    photoPicker("barcode", "Take a photo of the barcode", preview, (_blob, res) => {
+      next.replaceChildren();
+      if (res?.ok && res.barcode) {
+        next.append(button("Look up this pack", () => lookUp(res.barcode, "photo"), "primary"));
+      }
+    }),
+    preview,
+    next,
     button("No barcode? Photograph the ingredients", () => { pending.barcode = null; go("photo"); }, "link"));
 
   const seq = navSeq;
   if (await barcodeSupported()) {
-    startScanner(video, code => lookUp(code)).then(stop => {
+    startScanner(video, code => lookUp(code, "camera")).then(stop => {
       if (seq !== navSeq) return stop();          // the user left before the camera opened
       record("camera", { started: true });
       stopCamera = stop;
@@ -260,44 +439,29 @@ async function scan() {
     }).catch(e => {
       record("camera", { started: false, error: String(e?.name || e) });
       video.parentElement.remove();
-      status.textContent = "We couldn't open the camera. Type the number under the barcode instead.";
+      status.textContent = "We couldn't open the camera here. Take or upload a photo of the barcode instead.";
     });
   } else {
     record("camera", { barcode_detector: false });
     video.parentElement.remove();
-    status.textContent = "This phone can't read barcodes in the browser. Type the number under the barcode.";
+    status.textContent = "This browser can't read barcodes live. Take or upload a photo of the barcode instead.";
   }
   return view;
 }
 
-function manualEntry() {
-  const input = el("input", { id: "code", inputmode: "numeric", autocomplete: "off", maxlength: "14",
-                              placeholder: "e.g. 8901063010321" });
-  const err = el("p", { class: "error", role: "alert" });
-  const form = el("form", { class: "row" },
-    el("label", { for: "code", class: "sr" }, "Barcode number"),
-    input, el("button", { type: "submit", class: "btn" }, "Look up"));
-  form.addEventListener("submit", e => {
-    e.preventDefault();
-    const code = input.value.replace(/\D/g, "");
-    if (!validGtin(code)) { err.textContent = "That number doesn't look right. Check the digits under the barcode."; return; }
-    lookUp(code, "typed");
-  });
-  return el("div", {}, form, err);
-}
-
-async function lookUp(code, how = "camera") {
+async function lookUp(code, how) {
   if (stopCamera) { stopCamera(); stopCamera = null; }
   record("barcode", { how, digits: code.length });
   pending.barcode = code;
+  pending.barcodeSource = how;
   show(working("Looking up this pack…", false));
   try {
-    const { body } = await scanRequest({ barcode: code });
+    const { body } = await scanRequest({ barcode: code, barcodeSource: how });
     finish(body);
   } catch (e) {
     // 404 not_in_catalogue: the normal first-time path, not an error (D-068).
     if (e instanceof ApiError && e.status === 404 && e.body.error === "not_in_catalogue") return go("photo");
-    show(apiErrorView(e, () => lookUp(code)));
+    show(apiErrorView(e, () => lookUp(code, how)));
   }
 }
 
@@ -325,7 +489,14 @@ function photo() {
     el("figure", { class: "sample" }, sampleBack(),
       el("figcaption", { class: "muted" }, "Fill the frame with the ingredient list. Hold steady and avoid glare.")),
     photoPicker("back", pending.back ? "Retake the ingredients photo" : "Take the ingredients photo", backPreview,
-                b => { pending.back = b; go_.disabled = false; }),
+                (b, res, source) => {
+                  // A red cross keeps "Check this pack" off; an unchecked photo (the
+                  // check couldn't run) is let through, and /scan checks it again anyway.
+                  pending.back = res && !res.ok ? null : b;
+                  pending.backSource = source;
+                  go_.disabled = !pending.back;
+                  if (res?.barcode && !pending.barcode) { pending.barcode = res.barcode; pending.barcodeSource = "photo"; }
+                }),
     backPreview,
     // D-100: asked for once per pack, not once per scan. A re-check of a pack
     // whose front is already on file doesn't ask again.
@@ -333,24 +504,74 @@ function photo() {
       el("h2", {}, "The front of the pack"),
       el("p", { class: "muted" }, "Optional. The front shows the pack's name and what it promises. " +
                                   "Our team records it once for each pack."),
-      photoPicker("front", "Take the front photo", frontPreview, b => { pending.front = b; pairRow.hidden = false; }),
+      photoPicker("front", "Take the front photo", frontPreview, (b, res, source) => {
+        pending.front = res && !res.ok ? null : b;
+        pending.frontSource = source;
+        pairRow.hidden = !pending.front;
+      }),
       frontPreview, pairRow),
     go_);
 }
 
+// D-102: take a photo now, or upload one already on the phone or computer
+// (a saved picture, a pack photographed earlier). `capture` makes a phone open
+// the camera straight away, so the upload button is a second input without it.
+// On a computer (no touch screen) there is only "choose", and a photo can be
+// dropped onto the box.
+const TOUCH = window.matchMedia?.("(pointer: coarse)").matches ?? true;
+
+// D-104: every photo is checked on the server as soon as it is picked, and
+// gets a green tick or a red cross with the reason. onPick(blob, result):
+// result is {ok, message, barcode}, or null when the check couldn't run.
+// D-106: onPick also gets where the photo came from, "camera" or "upload".
 function photoPicker(role, label, preview, onPick) {
-  const input = el("input", { type: "file", accept: "image/*", capture: "environment", class: "sr",
-                              id: "pick-" + role });
-  input.addEventListener("change", async () => {
-    const file = input.files && input.files[0];
-    if (!file) return;
+  const use = async (file, source) => {
+    if (!file || !file.type.startsWith("image/")) return;
     preview.replaceChildren(el("p", { class: "muted" }, "Preparing photo…"));
     const blob = await prepareImage(file);
-    onPick(blob);
-    const url = URL.createObjectURL(blob);
-    preview.replaceChildren(el("img", { src: url, alt: `Your ${role} photo` }));
-  });
-  return el("div", {}, input, el("label", { for: "pick-" + role, class: "btn" }, label));
+    const img = el("img", { src: URL.createObjectURL(blob), alt: `Your ${role} photo` });
+    preview.replaceChildren(img, el("p", { class: "muted", role: "status" }, "Checking the photo…"));
+    let res = null;
+    try {
+      res = (await checkPhotoRequest(role, blob)).body;
+    } catch (e) {
+      const gate = accessProblem(e);
+      if (gate) return go(gate);
+      if (e.status === 429 || e.status === 413 || e.status === 415) res = { ok: false, message: apiMessage(e) };
+    }
+    record("photo_check", { role, ok: res ? res.ok : null, problem: res?.problem || null, barcode: !!res?.barcode });
+    const line = res === null
+      ? el("p", { class: "check unknown", role: "status" },
+          role === "barcode" ? "We couldn't check this photo just now. Try again in a moment."
+                             : "We couldn't check this photo just now. It will be checked when you continue.")
+      : el("p", { class: "check " + (res.ok ? "ok" : "bad"), role: "status" },
+          el("span", { "aria-hidden": "true" }, res.ok ? "✓ " : "✗ "), res.message);
+    preview.replaceChildren(img, line);
+    onPick(blob, res, source);
+  };
+  const input = (id, capture) => {
+    const i = el("input", { type: "file", accept: "image/*", class: "sr", id, ...(capture ? { capture: "environment" } : {}) });
+    i.addEventListener("change", () => { record("photo_source", { role, source: capture ? "camera" : "upload" });
+                                         use(i.files && i.files[0], capture ? "camera" : "upload"); });
+    return i;
+  };
+  const box = TOUCH
+    ? el("div", { class: "row" },
+        input("pick-" + role, true), el("label", { for: "pick-" + role, class: "btn" }, label),
+        input("upload-" + role, false), el("label", { for: "upload-" + role, class: "btn link" }, "Upload a photo"))
+    : el("div", { class: "drop" },
+        input("pick-" + role, false), el("label", { for: "pick-" + role, class: "btn" }, "Choose a photo"),
+        el("span", { class: "muted" }, " or drop one here"));
+  if (!TOUCH) {
+    box.addEventListener("dragover", e => { e.preventDefault(); box.classList.add("over"); });
+    box.addEventListener("dragleave", () => box.classList.remove("over"));
+    box.addEventListener("drop", e => {
+      e.preventDefault(); box.classList.remove("over");
+      record("photo_source", { role, source: "drop" });
+      use(e.dataTransfer?.files?.[0], "upload");
+    });
+  }
+  return box;
 }
 
 // ------------------------------------------------------------------ the front alone (D-100)
@@ -359,13 +580,13 @@ function front(id) {
   const h = historyItem(id);
   if (!h || !h.barcode) return errorView("We couldn't find that pack on this phone.");
   const preview = el("div", { class: "thumb" });
-  let blob = null;
+  let blob = null, blobSource = null;
   const send = el("button", { type: "button", class: "btn primary", disabled: true, onclick: async () => {
     resetPending();
     pending.barcode = h.barcode;
     show(working("Sending the photo…", false));
     try {
-      const { body } = await scanRequest({ barcode: h.barcode, front: blob });
+      const { body } = await scanRequest({ barcode: h.barcode, front: blob, frontSource: blobSource });
       finish(body);
     } catch (e) {
       show(apiErrorView(e, () => go("front/" + encodeURIComponent(id))));
@@ -375,7 +596,11 @@ function front(id) {
     el("h1", {}, "Photograph the front"),
     el("p", { class: "product" }, productName(h.product)),
     el("p", { class: "lead" }, "Fill the frame with the front of the pack, including any words printed on it."),
-    photoPicker("front", "Take the front photo", preview, b => { blob = b; send.disabled = false; }),
+    photoPicker("front", "Take the front photo", preview, (b, res, source) => {
+      blob = res && !res.ok ? null : b;
+      blobSource = source;
+      send.disabled = !blob;
+    }),
     preview,
     send,
     button("Not now", () => go("result/" + encodeURIComponent(id)), "link"));
@@ -403,7 +628,7 @@ function working(text, reading) {
   return el("section", { class: "stack center", "aria-busy": "true" },
     el("div", { class: "pulse", "aria-hidden": "true" }),
     el("h1", {}, text),
-    reading && el("p", { class: "muted" }, "The first read of a pack takes about 8–15 seconds."),
+    reading && el("p", { class: "muted" }, "The first read of a pack takes about 8 to 15 seconds."),
     el("p", { class: "muted", role: "timer" }, secs, " s"));
 }
 
@@ -427,12 +652,13 @@ function finish(body) {
   });
   if (body.screen?.state === "retake") {
     pending.attempts += 1;
-    if (body.scan_id) pending.refused.push(body.scan_id);
+    // D-103: a photo that isn't a pack (a screen, anything else) can't be sent to a reviewer.
+    if (body.scan_id && body.screen.can_send !== false) pending.refused.push(body.scan_id);
   }
   go("result/" + encodeURIComponent(id));
 }
 
-// ------------------------------------------------------------------ result (D-060 – D-066)
+// ------------------------------------------------------------------ result (D-060 to D-066)
 function result(id) {
   const h = historyItem(id);
   if (!h || !h.screen) return errorView("We couldn't find that result on this phone.");
@@ -453,7 +679,7 @@ function result(id) {
     put(
       el("p", { class: "card warn" }, s.retake),
       button("Retake the photo", () => { pending.back = null; go("photo"); }, "primary"),
-      pending.attempts >= 2 && el("p", { class: "muted" },
+      pending.attempts >= 2 && s.can_send !== false && el("p", { class: "muted" },
         "Still not working? Try daylight, or another pack. Some labels are printed too small or too shiny to read."),
       // D-070: after two refusals, a person reads the photos instead.
       pending.refused.length >= 2 && button("Send it to us", () => go("send")),
@@ -499,7 +725,7 @@ function result(id) {
     put(el("details", { class: "item" },
       el("summary", {}, s.ordinary.text),
       s.ordinary.additives.length > 0 && el("ul", { class: "plain" }, s.ordinary.additives.map(a =>
-        el("li", {}, el("strong", {}, a.name), " — ", a.why)))));
+        el("li", {}, el("strong", {}, a.name), ": ", a.why)))));
   }
   put(el("details", { class: "item" },
     el("summary", {}, "The ingredient list as read"),
@@ -522,7 +748,7 @@ function result(id) {
       button("Photograph the front", () => go("front/" + encodeURIComponent(h.id)))));
   }
 
-  // 7. What this covers — stated, never silent (D-037).
+  // 7. What this covers - stated, never silent (D-037).
   put(el("details", { class: "item" }, el("summary", {}, "What this check covers"),
     el("ul", { class: "plain small" }, (h.disclosures || []).map(d => el("li", {}, d)))));
 
@@ -674,7 +900,7 @@ function compareResult(r, ref) {
     r.why_best?.length > 0 && el("ul", { class: "plain" }, r.why_best.map(t => el("li", {}, fill(t, ref)))),
     r.allergen_lines?.length > 0 && el("ul", { class: "plain" }, r.allergen_lines.map(t => el("li", {}, fill(t, ref)))),
     r.packs.map(p => el("details", { class: "item" + (p.id === r.best ? " best" : "") },
-      el("summary", {}, p.name + (p.id === r.best ? " — better pick" : "")),
+      el("summary", {}, p.name + (p.id === r.best ? " (better pick)" : "")),
       el("ul", { class: "plain small" },
         p.allergens.filter(a => a.state !== "not_listed").map(a => el("li", { class: "flag" }, fill(a.text, ref))),
         p.facts.filter(f => f.tier !== "info" || f.positive).map(f =>
@@ -691,12 +917,17 @@ function apiMessage(e) {
   if (e.status === 503) return "The label reader is busy right now. Try again in a minute.";
   // D-095: the server's own text says how long to wait.
   if (e.status === 429) return e.body?.detail || "You've checked a lot of packs in a short time. Please wait a few minutes.";
+  // D-103: the server names what's wrong with a barcode or a photo file.
+  const own = ["bad_barcode", "not_an_image", "photo_too_small", "photo_blank", "back_required", "rate_limited"];
+  if (own.includes(e.body?.error) && e.body.detail) return e.body.detail;
   if (e.status === 413) return "That photo is too large. Take it again a little further away.";
   if (e.status === 415) return "That file isn't a photo we can read. Use the camera instead.";
   return "Something went wrong on our side. Try again in a minute.";
 }
 
 function apiErrorView(e, retry) {
+  const gate = accessProblem(e);             // D-102/D-105: not joined, or rules not agreed
+  if (gate) return gate === "join" ? join() : agree();
   return el("section", { class: "stack" },
     el("h1", {}, "That didn't work"),
     el("p", {}, apiMessage(e)),

@@ -1,4 +1,4 @@
-// camera.js — live barcode reading (D-024: the barcode is the product key).
+// camera.js - live barcode reading (D-024: the barcode is the product key).
 //
 // Uses the browser's own BarcodeDetector, which Chrome on Android provides and
 // which is what the Play Store build (a Trusted Web Activity, D-010) runs in.

@@ -1,4 +1,4 @@
-// lib.js — storage, API calls, the flight recorder, image preparation and a
+// lib.js - storage, API calls, the flight recorder, image preparation and a
 // tiny DOM builder.
 //
 // Three rules from DECISIONS.md shape this file:
@@ -12,7 +12,7 @@
 //    beyond the headline the user was shown.
 
 // Bump together with VERSION in sw.js: a report then says which shell was cached.
-export const APP_VERSION = "web-6";
+export const APP_VERSION = "web-11";
 
 // ------------------------------------------------------------------ storage
 // localStorage can throw (private mode, blocked site data); the app must still work.
@@ -52,8 +52,8 @@ function fallbackUuid() {
 
 // ------------------------------------------------------------------ profiles (D-074)
 export const AGES = [
-  { id: "toddler", label: "Toddler", sub: "1–3 years" },
-  { id: "kid", label: "Child", sub: "4–11 years" },
+  { id: "toddler", label: "Toddler", sub: "1 to 3 years" },
+  { id: "kid", label: "Child", sub: "4 to 11 years" },
   { id: "young", label: "Older child or teen", sub: "12 and up" },
 ];
 export const MAX_PROFILES = 3;
@@ -171,14 +171,18 @@ async function call(path, opts = {}) {
   return { status: res.status, body };
 }
 
-export async function scanRequest({ barcode, back, front, pairing }) {
+export async function scanRequest({ barcode, barcodeSource, back, front, pairing, backSource, frontSource }) {
   const fd = new FormData();
   fd.append("device_id", deviceId());
   fd.append("profiles", JSON.stringify(profilesForServer()));
   if (barcode) fd.append("barcode", barcode);
+  if (barcode && barcodeSource) fd.append("barcode_source", barcodeSource);     // D-104: camera or photo
   if (back) fd.append("back", back, "back.jpg");
   if (front) fd.append("front", front, "front.jpg");
   if (front && pairing) fd.append("pairing_confirmed", "true");
+  // D-106: taken with the camera or uploaded, so reviewers can look closer at uploads.
+  if (back && backSource) fd.append("back_source", backSource);
+  if (front && frontSource) fd.append("front_source", frontSource);
   return call("/scan", { method: "POST", body: fd });
 }
 
@@ -212,22 +216,43 @@ export const sendToUsRequest = scanIds =>
   call("/send-to-us", { method: "POST", headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ device_id: deviceId(), scan_ids: scanIds }) });
 
+// D-104: the tick or cross on a photo as soon as it is picked. The server
+// reads any barcode on it (never typed) and checks the file; no model call.
+export async function checkPhotoRequest(role, blob) {
+  const fd = new FormData();
+  fd.append("device_id", deviceId());
+  fd.append("role", role);
+  fd.append("photo", blob, role + ".jpg");
+  return call("/check-photo", { method: "POST", body: fd });
+}
+
+// D-102: the invite-only beta. The server says whether it needs a code and
+// whether this phone has joined; the code comes from the tester's link.
+export const accessRequest = () =>
+  call("/access?device_id=" + encodeURIComponent(deviceId()));
+
+export const joinRequest = code =>
+  call("/join", { method: "POST", headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ code, device_id: deviceId() }) });
+
+// D-105: "Before you start", the rules every tester agrees to first.
+export const termsRequest = () => call("/terms");
+export const agreeRequest = version =>
+  call("/agree", { method: "POST", headers: { "Content-Type": "application/json" },
+                   body: JSON.stringify({ device_id: deviceId(), terms_version: version }) });
+
+export const feedbackRequest = ({ comment, rating, screen }) =>
+  call("/feedback", { method: "POST", headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ comment, rating, screen, device_id: deviceId(),
+                                             app_version: APP_VERSION }) });
+
 export const updatesRequest = () =>
   call("/updates?device_id=" + encodeURIComponent(deviceId()));
 
-// ------------------------------------------------------------------ barcodes
-// GTIN check digit (EAN-8, UPC-A, EAN-13, GTIN-14): catches a mistyped digit
-// before it becomes a "we haven't checked this pack" answer.
-export function validGtin(code) {
-  if (!/^(\d{8}|\d{12,14})$/.test(code)) return false;
-  const d = [...code].map(Number);
-  const check = d.pop();
-  const sum = d.reverse().reduce((s, x, i) => s + x * (i % 2 === 0 ? 3 : 1), 0);
-  return (10 - (sum % 10)) % 10 === check;
-}
+// Barcodes are checked on the server (D-103), from the camera or a photo (D-104).
 
 // ------------------------------------------------------------------ images
-// Phone photos are 3–12 MB; the label only needs ~1600 px on the long edge.
+// Phone photos are 3-12 MB; the label only needs ~1600 px on the long edge.
 // Smaller uploads matter on slow connections and stay under the 12 MB API limit.
 export async function prepareImage(file, maxEdge = 1600) {
   try {

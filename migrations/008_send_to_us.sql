@@ -1,4 +1,4 @@
--- 008_send_to_us.sql — "Send it to us" (D-070): the app hands a pack it
+-- 008_send_to_us.sql - "Send it to us" (D-070): the app hands a pack it
 -- couldn't read to a reviewer, after two refused scans.
 --
 -- review_queue already had the 'send_to_us' kind and one scan_id (the latest

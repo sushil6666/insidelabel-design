@@ -32,8 +32,9 @@
   {% for i in items %}
     <tr>
       <td><a href="/review/item/{{ i.id }}">{{ i.id }}</a></td>
-      <td><span class="chip {{ i.kind }}">{{ labels.get(i.kind, i.kind) }}</span></td>
-      <td>{{ i.brand ~ " " if i.brand }}{{ i.product_name or "— (no read)" }}</td>
+      <td><span class="chip {{ i.kind }}">{{ labels.get(i.kind, i.kind) }}</span>
+        {% if i.uploaded %}<span class="chip reformulation" title="A photo was uploaded, not taken with the camera (D-106)">uploaded</span>{% endif %}</td>
+      <td>{{ i.brand ~ " " if i.brand }}{{ i.product_name or "(no read yet)" }}</td>
       <td class="hide-sm mono">{{ i.barcode or "" }}</td>
       <td class="hide-sm muted">{{ i.created_at.strftime("%d %b %H:%M") }}</td>
     </tr>

@@ -1,5 +1,5 @@
 """
-Inside Label — API (v0.1)
+Inside Label - API (v0.1)
 
     POST /analyze      raw ingredient text  -> layered verdict (engine verbatim)
     POST /claim-check  text + front claims  -> verdict + claim contradictions
@@ -12,11 +12,13 @@ Inside Label — API (v0.1)
                        (+ barcode: a reviewed catalogue entry skips the vision call)
     POST /report       "Report a mistake" on a scan (D-076)
     POST /send-to-us   two refused scans -> the review queue (D-070)
+    GET  /access       invite-only? joined?   POST /join   a tester's code (D-102)
+    POST /feedback     a tester's comment + optional rating (D-102)
 
 THE GUARD THAT MATTERS
 ----------------------
 engine.analyze("") returns score 100, grade A, binary "clean". That is correct
-behaviour for the engine — no flagged ingredients means no penalties — but it
+behaviour for the engine - no flagged ingredients means no penalties - but it
 is the single most dangerous output this API can emit, because "we could not
 read the label" and "this product is clean" become indistinguishable to the
 user. Every path into the engine therefore refuses input that yields no usable
@@ -37,10 +39,12 @@ import uuid  # noqa: E402
 from typing import Optional  # noqa: E402
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile  # noqa: E402
-from fastapi.responses import JSONResponse, RedirectResponse  # noqa: E402
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 from starlette.concurrency import run_in_threadpool  # noqa: E402
 
+from insidelabel import barcode as barcode_rules  # noqa: E402
+from insidelabel import photo_check  # noqa: E402
 from insidelabel import ratelimit  # noqa: E402
 from insidelabel import trace  # noqa: E402
 from insidelabel.core import engine  # noqa: E402
@@ -58,6 +62,9 @@ from insidelabel.extraction.schemas import (  # noqa: E402
     AllergenCheckRequest,
     AnalyzeRequest,
     CompareRequest,
+    AgreeRequest,
+    FeedbackRequest,
+    JoinRequest,
     ProblemRequest,
     ReportRequest,
     SendToUsRequest,
@@ -100,6 +107,49 @@ def _replay_allowed():
     if REPLAY_ALLOWED is not None:
         return REPLAY_ALLOWED
     return os.environ.get("INSIDELABEL_ALLOW_REPLAY", "off").lower() == "on"
+
+
+# D-102: the web beta is invite-only: ~50 named testers, one code each. On a
+# server with INSIDELABEL_INVITE_ONLY=on a phone must join with a code before
+# it can scan, send photos or give feedback. Tests set INVITE_ONLY directly.
+INVITE_ONLY = None             # None: follow the environment, read per request
+
+
+def _invite_only():
+    if INVITE_ONLY is not None:
+        return INVITE_ONLY
+    return os.environ.get("INSIDELABEL_INVITE_ONLY", "off").lower() == "on"
+
+
+# D-105: "Before you start", the rules every tester agrees to before a first
+# scan. The text is data (wording-linted); a new version asks everyone again.
+with open(os.path.join(os.path.dirname(__file__), "..", "..", "..", "data", "terms.json"), encoding="utf-8") as _f:
+    TERMS = {k: v for k, v in json.load(_f).items() if not k.startswith("_")}
+
+
+def _require_invite(device_id):
+    """
+    Refuse a phone that hasn't joined (D-102) or hasn't agreed to the current
+    "Before you start" (D-105), before anything is read or stored (like a 429,
+    D-095; logged, not a scan row). Without a database nobody can be checked,
+    so nobody gets in.
+    """
+    if not _invite_only():
+        return
+    if STORE is None:
+        raise HTTPException(status_code=503, detail={
+            "error": "storage_unavailable", "detail": "Invites need the database (INSIDELABEL_DB is not set)."})
+    code = _persist(STORE.invite_of, device_id) if device_id else None
+    if code is None:
+        log.warning("no invite: device=%s", device_id)
+        raise HTTPException(status_code=403, detail={
+            "error": "invite_required",
+            "detail": "This beta is by invitation. Open the link from your invite, or type its code."})
+    if not _persist(STORE.has_agreed, device_id, TERMS["version"]):
+        log.warning("terms not agreed: device=%s version=%s", device_id, TERMS["version"])
+        raise HTTPException(status_code=403, detail={
+            "error": "terms_required", "terms_version": TERMS["version"],
+            "detail": "Please read and agree to the rules for the beta first."})
 
 
 def _user_claim_check(cc, front_claims):
@@ -164,7 +214,7 @@ def _persist(fn, *args, **kwargs):
         return None
     try:
         return fn(*args, **kwargs)
-    except Exception:  # noqa: BLE001 — any storage failure, logged with traceback
+    except Exception:  # noqa: BLE001 - any storage failure, logged with traceback
         log.exception("scan persistence failed")
         return None
 
@@ -172,7 +222,7 @@ app = FastAPI(
     title="Inside Label API",
     version="0.1.0",
     description=(
-        "Ingredient-list analysis. The engine states ingredient facts only — "
+        "Ingredient-list analysis. The engine states ingredient facts only - "
         "it never says a product is safe for any person or condition. Segment "
         "lenses sit above this API, not inside it."
     ),
@@ -188,7 +238,7 @@ async def request_ids(request, call_next):
     token = trace.REQUEST_ID.set(rid)
     try:
         response = await call_next(request)
-    except Exception as exc:  # noqa: BLE001 — the last line of defence; logged and stored
+    except Exception as exc:  # noqa: BLE001 - the last line of defence; logged and stored
         log.exception("unhandled error on %s %s", request.method, request.url.path)
         tb = traceback.extract_tb(exc.__traceback__)
         where = f"{os.path.basename(tb[-1].filename)}:{tb[-1].lineno}" if tb else "?"
@@ -225,9 +275,22 @@ mimetypes.add_type("text/javascript", ".js")        # module scripts refuse othe
 if os.path.isdir(WEB_DIR):
     app.mount("/app", StaticFiles(directory=WEB_DIR, html=True), name="app")
 
-    @app.get("/", include_in_schema=False)
-    def root():
-        return RedirectResponse("/app/")
+    # D-102: the public pages around the app - landing, privacy, about. Plain
+    # HTML in web/site/, linted with the app's wording rules (tests/test_web.py).
+    SITE_DIR = os.path.join(WEB_DIR, "site")
+    _SITE_PAGES = {"/": "index.html", "/privacy": "privacy.html", "/about": "about.html",
+                   "/site.css": "site.css"}
+
+    def _site_page(path):
+        name = _SITE_PAGES[path]
+        full = os.path.join(SITE_DIR, name)
+        if not os.path.exists(full):
+            return RedirectResponse("/app/")
+        return FileResponse(full)
+
+    for _path in _SITE_PAGES:
+        app.add_api_route(_path, (lambda p: (lambda: _site_page(p)))(_path), methods=["GET"],
+                          include_in_schema=False)
 
 
 # ---------------------------------------------------------------------------
@@ -461,7 +524,7 @@ def compare_packs(req: CompareRequest):
 
 
 # ---------------------------------------------------------------------------
-# India vs EU vs US (D-086) — information only
+# India vs EU vs US (D-086) - information only
 # ---------------------------------------------------------------------------
 @app.get("/regulators")
 def list_regulators():
@@ -500,17 +563,17 @@ def http_exception_handler(request, exc):
 # ---------------------------------------------------------------------------
 # Scan helpers: barcode, timing, catalogue results (D-024, D-073)
 # ---------------------------------------------------------------------------
-_BARCODE = re.compile(r"^\d{8}$|^\d{12,14}$")      # EAN-8, UPC-A, EAN-13, GTIN-14
-
-
-def _clean_barcode(barcode):
-    if barcode is None or not barcode.strip():
+def _clean_barcode(code):
+    """
+    D-103: a retail pack's GTIN or a 422 naming what's wrong (check digit, a
+    carton code, a shop's in-store code, a book…), before anything is read.
+    """
+    if code is None or not code.strip():
         return None
-    b = re.sub(r"[\s-]", "", barcode)
-    if not _BARCODE.match(b):
+    b, reason = barcode_rules.check(code)
+    if reason:
         raise HTTPException(status_code=422, detail={
-            "error": "bad_barcode",
-            "detail": "barcode must be 8, 12, 13 or 14 digits (EAN/UPC).",
+            "error": "bad_barcode", "reason": reason, "detail": barcode_rules.MESSAGES[reason],
         })
     return b
 
@@ -629,17 +692,19 @@ _SEND_ERRORS = {
     "not_refused": (422, "Only scans we couldn't read can be sent."),
     "need_two_attempts": (422, "Try the photo twice first; then you can send it to us."),
     "no_photo": (422, "We don't have the photo for that scan any more."),
+    "not_a_pack": (422, "Those photos don't show a food pack, so there's nothing for our team to read."),
 }
 
 
 @app.post("/send-to-us")
 def send_to_us(req: SendToUsRequest, request: Request):
     """
-    After two refused scans (D-070): "Send it to us — we'll check this pack and
+    After two refused scans (D-070): "Send it to us - we'll check this pack and
     tell you when it's ready." Queues the photos for a reviewer; /updates
     reports back when the item is decided.
     """
     _rate_limit(request, "send_to_us", req.device_id, ratelimit.SEND_TEXT)
+    _require_invite(req.device_id)
     if STORE is None:
         raise HTTPException(status_code=503, detail={
             "error": "storage_unavailable",
@@ -655,6 +720,147 @@ def send_to_us(req: SendToUsRequest, request: Request):
         status, text = _SEND_ERRORS[out["error"]]
         raise HTTPException(status_code=status, detail={"error": out["error"], "detail": text})
     return {"status": "received", **out}
+
+
+# ---------------------------------------------------------------------------
+# Checking each photo as it's picked (D-104)
+# ---------------------------------------------------------------------------
+CHECK_MESSAGES = {
+    "barcode_ok": "Barcode {code} read from the photo.",
+    "no_barcode": "We couldn't find a barcode in this photo. Take it again close up and straight on, "
+                  "with the whole barcode and its numbers in the frame.",
+    "several_barcodes": "This photo shows more than one barcode. Take it again with only the pack's "
+                        "barcode in the frame.",
+    "back_ok": "Clear photo. We'll read the ingredient list when you tap Check this pack.",
+    "front_ok": "Clear photo of the front.",
+    "barcode_too": " Barcode {code} found on it too.",
+}
+
+
+@app.post("/check-photo")
+async def check_photo(
+    request: Request,
+    role: str = Form(..., description='"barcode", "back" or "front".'),
+    photo: Optional[UploadFile] = File(None),
+    device_id: Optional[str] = Form(None, examples=[""]),
+):
+    """
+    D-104: the tick or cross the app shows on each photo as soon as it is picked.
+    A barcode photo must show one retail barcode, read by zxing-cpp (never
+    typed, never read by the model); a label photo must be a readable picture.
+    No model call and nothing stored: this costs nothing but CPU.
+    """
+    _rate_limit(request, "check_photo", device_id, ratelimit.SCAN_TEXT)
+    _require_invite(device_id)
+    if role not in ("barcode", "back", "front"):
+        raise HTTPException(status_code=422, detail={"error": "bad_role", "detail": 'role is "barcode", "back" or "front".'})
+    img = await _read_image(photo, role)
+    if img is None:
+        raise HTTPException(status_code=422, detail={"error": "no_photo", "detail": "Send a photo."})
+    data, mime, _role = img
+    bad = photo_check.check(data, mime, role, min_size=role != "barcode")
+    if bad:
+        return {"role": role, "ok": False, "problem": bad[0], "message": bad[1], "barcode": None}
+    good, reasons = await run_in_threadpool(barcode_rules.read_from_photo, data)
+    code = good[0] if len(good) == 1 else None
+    if role == "barcode":
+        if len(good) > 1:
+            return {"role": role, "ok": False, "problem": "several_barcodes",
+                    "message": CHECK_MESSAGES["several_barcodes"], "barcode": None}
+        if code:
+            return {"role": role, "ok": True, "problem": None,
+                    "message": CHECK_MESSAGES["barcode_ok"].format(code=code), "barcode": code}
+        if reasons:                               # a barcode, but not a retail pack's (a book, a carton…)
+            return {"role": role, "ok": False, "problem": reasons[0],
+                    "message": barcode_rules.MESSAGES[reasons[0]], "barcode": None}
+        return {"role": role, "ok": False, "problem": "no_barcode",
+                "message": CHECK_MESSAGES["no_barcode"], "barcode": None}
+    msg = CHECK_MESSAGES[f"{role}_ok"] + (CHECK_MESSAGES["barcode_too"].format(code=code) if code else "")
+    return {"role": role, "ok": True, "problem": None, "message": msg, "barcode": code}
+
+
+# ---------------------------------------------------------------------------
+# Invite-only beta (D-102): join, access, feedback
+# ---------------------------------------------------------------------------
+_JOIN_ERRORS = {
+    "bad_code": (404, "That code doesn't match an invite. Check it against your message."),
+    "revoked": (410, "That invite has been closed. Ask the person who sent it."),
+    "code_full": (409, "That code is already in use on three devices. Ask for it to be reset."),
+}
+
+
+@app.get("/access")
+def access(device_id: str = ""):
+    """Invite needed? Joined? Agreed to the current rules (D-105)? The app asks on open."""
+    joined = bool(STORE and device_id and _persist(STORE.invite_of, device_id))
+    agreed = bool(STORE and device_id and _persist(STORE.has_agreed, device_id, TERMS["version"]))
+    return {"invite_only": _invite_only(), "joined": joined, "agreed": agreed,
+            "terms_version": TERMS["version"]}
+
+
+@app.get("/terms")
+def terms():
+    """D-105: the "Before you start" text the app shows, with its version."""
+    return TERMS
+
+
+@app.post("/agree")
+def agree(req: AgreeRequest, request: Request):
+    """D-105: record that this install agreed to this version of the rules."""
+    _rate_limit(request, "agree", req.device_id, ratelimit.PROBLEM_TEXT)
+    try:
+        device = str(uuid.UUID(req.device_id))
+    except ValueError:
+        raise HTTPException(status_code=422, detail={"error": "bad_device_id"})
+    if req.terms_version != TERMS["version"]:
+        raise HTTPException(status_code=409, detail={
+            "error": "terms_changed", "terms_version": TERMS["version"],
+            "detail": "The rules have changed. Please read them again."})
+    if STORE is None:
+        raise HTTPException(status_code=503, detail={
+            "error": "storage_unavailable", "detail": "Agreements need the database (INSIDELABEL_DB is not set)."})
+    STORE.agree(device, req.terms_version)
+    return {"status": "agreed", "terms_version": TERMS["version"]}
+
+
+@app.post("/join")
+def join(req: JoinRequest, request: Request):
+    """A tester's code, from their link or typed. One code serves up to three devices."""
+    if STORE is None:
+        raise HTTPException(status_code=503, detail={
+            "error": "storage_unavailable", "detail": "Invites need the database (INSIDELABEL_DB is not set)."})
+    try:
+        device = str(uuid.UUID(req.device_id))
+    except ValueError:
+        raise HTTPException(status_code=422, detail={"error": "bad_device_id"})
+    ip = ratelimit.client_ip(request)
+    wait = ratelimit.LIMITER.wait("join_fail", device=device, ip=ip)
+    if wait:
+        raise HTTPException(status_code=429, headers={"Retry-After": str(int(wait) + 1)}, detail={
+            "error": "rate_limited", "detail": ratelimit.JOIN_TEXT, "retryable": True,
+            "retry_after_s": int(wait) + 1})
+    out = STORE.join_invite(req.code, device)
+    if "error" in out:
+        ratelimit.LIMITER.hit("join_fail", device=device, ip=ip)       # only failures count
+        status, text = _JOIN_ERRORS[out["error"]]
+        raise HTTPException(status_code=status, detail={"error": out["error"], "detail": text})
+    return {"status": "joined"}
+
+
+@app.post("/feedback")
+def feedback(req: FeedbackRequest, request: Request):
+    """D-102 "Send feedback": a tester's comment and optional 1-5 rating, stored against their code."""
+    _rate_limit(request, "feedback", req.device_id, ratelimit.FEEDBACK_TEXT)
+    _require_invite(req.device_id)
+    if STORE is None:
+        raise HTTPException(status_code=503, detail={
+            "error": "storage_unavailable", "detail": "Feedback needs the database (INSIDELABEL_DB is not set)."})
+    comment = (req.comment or "").strip()
+    if not comment:
+        raise HTTPException(status_code=422, detail={"error": "empty_feedback", "detail": "Write a few words first."})
+    fid = STORE.save_feedback(device_id=req.device_id, comment=comment, rating=req.rating,
+                              screen=req.screen, app_version=req.app_version)
+    return {"status": "received", "feedback_id": fid}
 
 
 # ---------------------------------------------------------------------------
@@ -735,8 +941,8 @@ async def _read_image(upload, role):
 @app.post("/scan")
 async def scan(
     request: Request,
-    back: Optional[UploadFile] = File(None, description="Back of pack — the ingredient list."),
-    front: Optional[UploadFile] = File(None, description="Front of pack — marketing claims."),
+    back: Optional[UploadFile] = File(None, description="Back of pack - the ingredient list."),
+    front: Optional[UploadFile] = File(None, description="Front of pack - marketing claims."),
     pairing_confirmed: bool = Form(False, description="User confirms both images show the same pack."),
     # Every text field carries an empty example: /docs otherwise pre-fills them
     # with the word "string", and avoid=string is refused as an unknown allergen
@@ -749,6 +955,11 @@ async def scan(
                               description="Old clients only: a name for allergen text. The app sends none (D-074)."),
     compare_regulators: bool = Form(False, description="Also return EU and US status. Information only."),
     barcode: Optional[str] = Form(None, examples=[""], description="EAN/UPC digits from the pack, if the camera read one."),
+    back_source: Optional[str] = Form(None, examples=[""],
+                                      description='D-106: "camera" (taken in the app) or "upload" (gallery, computer).'),
+    front_source: Optional[str] = Form(None, examples=[""], description='D-106: as back_source.'),
+    barcode_source: Optional[str] = Form(None, examples=[""],
+                                         description='D-104: "camera" (live scanner) or "photo" (read by /check-photo).'),
     device_id: Optional[str] = Form(None, examples=[""], description="Anonymous install id (UUID). No personal data."),
     profiles: Optional[str] = Form(None, examples=[""],
                                    description='JSON [{"ref","age","avoid"}], up to 3. No names (D-074).'),
@@ -775,6 +986,7 @@ async def scan(
     # costs nothing and has its own budget.
     lookup_only = bool(barcode and barcode.strip()) and back is None and front is None and replay is None
     _rate_limit(request, "lookup" if lookup_only else "scan", device_id, ratelimit.SCAN_TEXT)
+    _require_invite(device_id)            # D-102, before any photo is read
     avoid = avoid if avoid and avoid.strip() else None
     avoid_codes = parse_avoid(avoid)
     people = parse_profiles(profiles)
@@ -782,12 +994,40 @@ async def scan(
         # D-060: the top-level allergen block covers every profile's avoid list.
         avoid_codes = list(dict.fromkeys(c for p in people for c in p["avoid"]))
     barcode = _clean_barcode(barcode)
+    # D-104: where the barcode came from. The app offers only the live scanner
+    # and a photo read by /check-photo; typed numbers aren't accepted from it.
+    barcode_source = barcode_source if barcode_source and barcode_source.strip() else None
+    if barcode_source not in (None, "camera", "photo"):
+        raise HTTPException(status_code=422, detail={
+            "error": "bad_barcode_source", "detail": 'barcode_source is "camera" or "photo".'})
 
     images = []
     for upload, role in ((back, "back"), (front, "front")):
         img = await _read_image(upload, role)
         if img:
             images.append(img)
+    # D-106: where each photo came from, as the app says. An AI-made or edited
+    # picture can only arrive as an upload, so reviewers see uploads marked.
+    # Recorded, not proved: a client could claim "camera".
+    photo_sources = {}
+    for role, said in (("back", back_source), ("front", front_source)):
+        said = said.strip() if said and said.strip() else None
+        if said is None:
+            continue
+        if said not in ("camera", "upload"):
+            raise HTTPException(status_code=422, detail={
+                "error": "bad_photo_source", "detail": f'{role}_source is "camera" or "upload".'})
+        if any(r == role for _d, _m, r in images):
+            photo_sources[role] = said
+    # D-103: a file that can't be a readable label never costs a model read.
+    # Replayed answers skip it: they were read from photos checked at the time.
+    if replay is None:
+        for data, mime, role in images:
+            bad = photo_check.check(data, mime, role)
+            if bad:
+                log.warning("photo refused: %s %s", role, bad[0])
+                raise HTTPException(status_code=415 if bad[0] == "not_an_image" else 422, detail={
+                    "error": bad[0], "role": role, "detail": bad[1]})
 
     # D-092: everything needed to replay this scan, minus the photos (kept by
     # media) and the model's answer (added once we have it). `who` is left out:
@@ -796,14 +1036,15 @@ async def scan(
         "request_id": trace.current_request_id(), "build": trace.BUILD,
         "data_version": trace.DATA_VERSION, "engine_version": ENGINE_VERSION,
         "prompt_version": PROMPT_VERSION,
-        "request": {"barcode": barcode, "avoid": avoid_codes if avoid is not None else None,
+        "request": {"barcode": barcode, "barcode_source": barcode_source, "photo_sources": photo_sources,
+                    "avoid": avoid_codes if avoid is not None else None,
                     "profiles": people, "pairing_confirmed": pairing_confirmed,
                     "compare_regulators": compare_regulators,
                     "images": [r for _d, _m, r in images], "replay": replay is not None},
         "timings": {},
     }
 
-    # D-024: a barcode alone is a catalogue lookup — no vision call, ~₹0.
+    # D-024: a barcode alone is a catalogue lookup - no vision call, ~₹0.
     # Photos, when sent, are always read: that is how a reformulation under an
     # unchanged barcode gets noticed, and how the D-073 allergy re-check works.
     if barcode and not images and replay is None:
@@ -910,6 +1151,11 @@ async def scan(
 
     tr["timings"]["vision_ms"] = _ms(t_vision)
     tr["model_raw"] = vision.pop("_raw_text", None)
+    # D-103: a front photo that isn't a food pack is set aside before anything
+    # uses it (claims, pairing, identity); the back still decides the scan.
+    front_caveat = rel.drop_unusable_front(vision)
+    if front_caveat:
+        corrections.append("front photo is not a food pack: " + front_caveat["detail"])
     t_ocr = time.monotonic()
     if ocr_prefetch is not None:
         await ocr_prefetch                       # usually done already; never raises
@@ -926,7 +1172,7 @@ async def scan(
             corrections.append(
                 "independent OCR found additive(s) the model omitted: "
                 + ", ".join(f"INS {i}" for i in ocr_result["missing"])
-                + " — recovered as: " + "; ".join(recovered)
+                + " - recovered as: " + "; ".join(recovered)
             )
             vision["ingredients"] = fixed
 
@@ -941,7 +1187,7 @@ async def scan(
         bad = [f"{f}:{v['brand']!r}" for f, v in _idrep.items()
                if v["status"] == ocr_check.NOT_FOUND]
         corrections.append(
-            "product_match downgraded to indeterminate — independent OCR read "
+            "product_match downgraded to indeterminate - independent OCR read "
             "the face but found no such brand: " + ", ".join(bad)
         )
         vision["product_match"]["status"] = "indeterminate"
@@ -970,6 +1216,8 @@ async def scan(
     vision["_pairing_attested_by_user"] = pairing_confirmed
     proceed, reliability = rel.assess(vision)
     reliability["client_corrections"] = corrections
+    if front_caveat:
+        reliability.setdefault("caveats", []).append(front_caveat)
     reliability["ocr_cross_check"] = {
         k: v for k, v in ocr_result.items() if k != "ocr_text"
     }

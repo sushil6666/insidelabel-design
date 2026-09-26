@@ -126,7 +126,7 @@ def gates(gold_dir, pred_dir):
     out.append((TODO if not checked else PASS if rate < MAX_FALSE_CONTRADICTION_RATE else FAIL,
                 f"False contradictions < {MAX_FALSE_CONTRADICTION_RATE:.0%}",
                 f"{fp} of {checked} checked claims ({rate:.1%})" if checked else
-                "unmeasured: no front claim on the gold labels matches a claim rule yet — "
+                "unmeasured: no front claim on the gold labels matches a claim rule yet - "
                 "add packs claiming 'no added sugar' / 'no preservatives' / 'made with real X'"))
 
     # Every INS on a gold label is in the table, so none reaches a user unflagged.
@@ -173,14 +173,15 @@ def catalogue_gates(uri):
 
 
 MANUAL_ITEMS = [
-    "PWA: camera + barcode, result screen per D-060–D-066, profiles, compare, report a mistake",
+    "PWA: camera + barcode, result screen per D-060 to D-066, profiles, compare, report a mistake",
     "Deployment: host with PostgreSQL 19, HTTPS, R2 photo store, backups; tools/retention.py --apply daily from cron (D-080, D-098)",
     "Reviewer accounts on the deployed server (tools/reviewers.py, D-097), so the shared token is refused",
     "'Send it to us' tried on a phone: two refused scans → sent → published → shown on open (D-070, D-096)",
-    "Privacy policy (DPDP Act; children's data, parental consent — D-074)",
+    "Privacy policy (DPDP Act; children's data, parental consent - D-074)",
     "Conflict-of-interest policy, methodology page, who is behind the app, 'last verified' dates (D-076)",
     "Play Console: developer account verified (D-011), closed-testing requirement met, target audience adults",
     "Rate limits (D-095): one server process (or shared counters), INSIDELABEL_PROXY_HOPS set behind the proxy",
+    "Web beta (D-102): INSIDELABEL_INVITE_ONLY=on on the deploy; privacy/about drafts completed; codes sent (tools/beta.py)",
 ]
 
 
@@ -201,13 +202,13 @@ def main():
         sections.append(("Tests", [(PASS if r.returncode == 0 else FAIL, "Test suite", last)]))
 
     failed = 0
-    print("\nINSIDELABEL — BETA RELEASE GATE\n" + "=" * 72)
+    print("\nINSIDELABEL - BETA RELEASE GATE\n" + "=" * 72)
     for title, rows in sections:
         print(f"\n{title}")
         for status, name, detail in rows:
             failed += status == FAIL
             print(f"  [{status:4}] {name}\n          {detail}")
-    print("\nManual (not computed — tick off in STATE.md §11)")
+    print("\nManual (not computed - tick off in STATE.md §11)")
     for m in MANUAL_ITEMS:
         print(f"  [ ]    {m}")
     print("\n" + ("NOT READY: %d gate(s) failing." % failed if failed else "All computed gates pass."))

@@ -1,4 +1,4 @@
--- 009_reviewers.sql — one login per reviewer (D-097).
+-- 009_reviewers.sql - one login per reviewer (D-097).
 --
 -- Until now the reviewer screen had one shared password (INSIDELABEL_REVIEW_TOKEN)
 -- and the username was whatever the reviewer typed: every decision carried a

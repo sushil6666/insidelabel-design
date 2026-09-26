@@ -1,5 +1,5 @@
 """
-Inside Label — claim checker.
+Inside Label - claim checker.
 
 Compares verbatim front-of-pack claims against the engine's output and returns
 the contradicting ingredient facts as pairs. No editorial language anywhere:
@@ -177,11 +177,11 @@ def check_claims(front_claims, raw_ingredients, result, front_status="read"):
                       distinction matters: reporting "front_not_provided" for a
                       front that was photographed and read is a false reason,
                       and a reason field that lies is worse than no reason at
-                      all — someone debugging it will go looking for a missing
+                      all - someone debugging it will go looking for a missing
                       image that was never missing.
 
     Returns a dict. When the front was not read, `status` says so and
-    `checked` is empty — this never returns "no contradictions found" for a
+    `checked` is empty - this never returns "no contradictions found" for a
     front of pack that was simply never read.
     """
     if front_status != "read":

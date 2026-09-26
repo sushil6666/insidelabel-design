@@ -34,7 +34,11 @@ def js_strings(src):
 
 
 def test_app_is_served_with_the_right_types():
-    assert c.get("/", follow_redirects=False).headers["location"] == "/app/"
+    for path in ("/", "/privacy", "/about"):                       # D-102: the public pages
+        r = c.get(path, follow_redirects=False)
+        assert r.status_code == 200 and "text/html" in r.headers["content-type"], path
+        assert 'href="/app/"' in r.text or path != "/", path
+    assert "text/css" in c.get("/site.css").headers["content-type"]
     assert "text/html" in c.get("/app/").headers["content-type"]
     for name in JS:
         assert "javascript" in c.get(f"/app/{name}").headers["content-type"], name
@@ -111,3 +115,18 @@ def test_problem_link_on_every_page_and_error_screen():
     for fn in ("apiErrorView", "errorView"):
         body = re.search(rf"function {fn}\(.*?\n\}}", app, re.S).group(0)
         assert "problemLink()" in body, fn
+
+
+
+def test_public_pages_pass_the_wording_lint():
+    """D-102: the landing page and the drafts travel without the app around them."""
+    site = os.path.join(WEB_DIR, "site")
+    for name in os.listdir(site):
+        if name.endswith(".html"):
+            text = re.sub(r"<[^>]+>", " ", open(os.path.join(site, name), encoding="utf-8").read())
+            assert_clean([text], name)
+
+
+def test_invite_and_feedback_errors_pass_the_wording_lint():
+    from insidelabel.api import main
+    assert_clean([t for _s, t in main._JOIN_ERRORS.values()], "join errors")

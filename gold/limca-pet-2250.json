@@ -12,7 +12,7 @@
   "product_match": {
     "status": "indeterminate",
     "evidence": [
-      "back label carries no brand wordmark — only 'A PRODUCT OF THE COCA-COLA COMPANY', a parent-company attribution, which is not an identity anchor",
+      "back label carries no brand wordmark - only 'A PRODUCT OF THE COCA-COLA COMPANY', a parent-company attribution, which is not an identity anchor",
       "green label artwork is continuous around the bottle, but that is not independently verifiable from two still photos"
     ]
   },
@@ -46,7 +46,7 @@
   "front_claims": [],
   "front_claim_footnotes": [],
   "extraction_notes": [
-    "CORRECTED: an earlier version of this gold file recorded back_identity.brand as 'Limca' and product_match as 'match'. Neither is supported by the photo — the back label shows no Limca wordmark, only a parent-company attribution. The model read this correctly and was scored against a wrong reference.",
+    "CORRECTED: an earlier version of this gold file recorded back_identity.brand as 'Limca' and product_match as 'match'. Neither is supported by the photo - the back label shows no Limca wordmark, only a parent-company attribution. The model read this correctly and was scored against a wrong reference.",
     "CORRECTED: product.name was 'Limca Lime N Lemoni', a string assembled from two separate pieces of print. The pack shows the wordmark 'Limca' and, below it, 'LIME N LEMONI' in a yellow pill. Recorded as name + variant, as printed.",
     "Manufacturer address is legible only in part (curvature and glare); recorded to city level rather than guessing the street line.",
     "Different pack from gold/limca-pet-1l.json: 2.25 L, FSSAI Lic. 10012011000620, 11.3 servings per pack.",

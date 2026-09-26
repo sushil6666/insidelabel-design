@@ -45,7 +45,7 @@ def verify_password(password, stored):
 
 def _check_new(name, password):
     if not NAME.match(name or ""):
-        raise ValueError("A reviewer name is 2–32 letters, digits, '.', '_' or '-'.")
+        raise ValueError("A reviewer name is 2-32 letters, digits, '.', '_' or '-'.")
     if len(password or "") < MIN_PASSWORD:
         raise ValueError(f"A password needs at least {MIN_PASSWORD} characters.")
 

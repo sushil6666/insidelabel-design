@@ -1,4 +1,4 @@
-# InsideLabel — Product & Engineering Blueprint
+# InsideLabel - Product & Engineering Blueprint
 
 **Status:** v1.1 blueprint (2026-09-24), written against the 43-section spec. Sections
 where I've overruled the spec are marked **[CHANGED]** with the reasoning. Changes from
@@ -6,12 +6,12 @@ the 2026-09-24 user-perspective review are marked **[v1.1]** and point to their
 decision in `DECISIONS.md`.
 
 **v1.1 changelog.** Parents become a first-class audience (kids lens, shelf comparison,
-household profiles — §1, §7, §15). Allergen safety is the first line of every result,
+household profiles - §1, §7, §15). Allergen safety is the first line of every result,
 with a five-state check that never says "free from" (§3.3, §4.2, §7). The headline
 states the finding; "nothing wrong" is a designed state; band names are plain words;
 the quick signal is per person (§2.3, §6, §7). Comparison, alternatives, browse,
 search and safety alerts are free (§8). Online shopping, WhatsApp sharing and Hindi
-explanations enter the plan (§7, §9, §13). §15–16 now match `STATE.md`'s 15-week beta.
+explanations enter the plan (§7, §9, §13). §15-16 now match `STATE.md`'s 15-week beta.
 Also fixed: a false statement about FSSAI sweetener warnings (§7, D-056).
 
 ---
@@ -21,10 +21,10 @@ Also fixed: a false statement about FSSAI sweetener warnings (§7, D-056).
 I modelled the unit economics before writing anything else, because they invalidate
 part of the spec.
 
-**Consumer subscriptions at ₹49–99/month will never pay for the AI pipeline as
-specified.** At 100K scans/month with realistic Indian conversion (1.5–2%), premium
-revenue is roughly ₹10–15K/month against ₹1.2–1.4L/month in cost. At 1M scans/month
-the gap widens in absolute terms. This means B2B is not "long-term upside" — it is
+**Consumer subscriptions at ₹49-99/month will never pay for the AI pipeline as
+specified.** At 100K scans/month with realistic Indian conversion (1.5-2%), premium
+revenue is roughly ₹10-15K/month against ₹1.2-1.4L/month in cost. At 1M scans/month
+the gap widens in absolute terms. This means B2B is not "long-term upside" - it is
 *required for viability*, which collides directly with the trust principle in §24.
 
 There is one way out, and it reframes the whole company:
@@ -33,16 +33,16 @@ There is one way out, and it reframes the whole company:
 
 If a product has already been resolved, a scan costs ~₹0.05 (barcode lookup + DB
 read). If it hasn't, it costs ~₹2.30 (dual-image OCR + vision verification + LLM
-extraction). Indian packaged food is extremely concentrated — Parle, Britannia, ITC,
+extraction). Indian packaged food is extremely concentrated - Parle, Britannia, ITC,
 Nestlé, Mondelez, Amul, Haldiram, PepsiCo/Frito-Lay, Hindustan Unilever and Dabur
 cover the large majority of what a middle-class urban shopper actually puts in a
 trolley. **Manually seeding the top ~2,000 SKUs before launch converts the dominant
 cost line from per-scan AI into one-time labour**, and takes blended cost per scan
-from ~₹2.30 to ~₹0.20–0.35.
+from ~₹2.30 to ~₹0.20-0.35.
 
 Everything downstream improves: the free tier is genuinely free, latency drops from
-8–15s to under 1s for most scans, verdicts become *consistent* (same product always
-gives the same answer — something no LLM-per-scan design can promise), and B2B
+8-15s to under 1s for most scans, verdicts become *consistent* (same product always
+gives the same answer - something no LLM-per-scan design can promise), and B2B
 becomes optional rather than load-bearing.
 
 **Consequence for the roadmap:** the first two months are not engineering. They are
@@ -63,14 +63,14 @@ cannot do in the aisle in ten seconds and cannot get from a generic AI.
 **Ten-second value prop:** "It says No Added Sugar. Here's the sugar."
 
 **[CHANGED] Launch segment.** The spec implies a broad "health-conscious Indian
-consumer" audience. That audience scans twice and churns — see §12 on retention.
+consumer" audience. That audience scans twice and churns - see §12 on retention.
 Launch instead to two segments where label-reading is *non-optional*:
 
-1. **Allergen households** — parents of children with nut/milk/soy allergy, coeliac
+1. **Allergen households** - parents of children with nut/milk/soy allergy, coeliac
    families. They must read every label of every new product, every time.
-2. **Diabetic / prediabetic households** — India has the volume, and your existing
+2. **Diabetic / prediabetic households** - India has the volume, and your existing
    prototype already carries the strongest finding in this category (maltodextrin
-   with GI ~85–105 inside a biscuit marketed "Diabetic Friendly").
+   with GI ~85-105 inside a biscuit marketed "Diabetic Friendly").
 
 These users have a *forcing function* to open the app. General wellness users do not.
 Broaden later from a retained base, not before.
@@ -78,7 +78,7 @@ Broaden later from a retained base, not before.
 **[v1.1] Parents of young children** (D-056, D-057). Indian children are exposed to a
 lot of packaged food, and parents choose between packs daily. Allergy parents stay the
 core; general parents are the wider audience the kids lens and shelf comparison open
-up. Their question is not "is this bad?" but **"which one should I pick?"** — so a
+up. Their question is not "is this bad?" but **"which one should I pick?"** - so a
 warning without an alternative is half a product for them.
 
 **[v1.1] Each segment has a different everyday job.** The claim gap is the hook, not
@@ -147,20 +147,20 @@ whole result on one image.
 
 ### [CHANGED] 2.3 Kill the numeric score from the consumer UI
 
-§12 says don't create a single health score. Your prototype currently shows a 0–100
-score, an A–E grade, *and* a "Risk Index 7.2/10". All three are the same arbitrary
-weight table rendered three ways, and the risk index is the worst offender — one
+§12 says don't create a single health score. Your prototype currently shows a 0-100
+score, an A-E grade, *and* a "Risk Index 7.2/10". All three are the same arbitrary
+weight table rendered three ways, and the risk index is the worst offender - one
 decimal place of implied precision on a number derived from `{none:0, low:4,
 moderate:12, high:25}`. That is exactly the false precision §12 warns against, and
 it's the single easiest thing for a brand's lawyer or a journalist to dismantle.
 
 Keep:
 - **The three-band verdict** (Clean / Worth checking / Ultra-processed). Defensible
-  because the ultra-processed band is *definitional* — NOVA Group-4 marker present or
-  not — not a weighted opinion.
+  because the ultra-processed band is *definitional* - NOVA Group-4 marker present or
+  not - not a weighted opinion.
 - **Flag counts by severity**, shown as "2 things worth knowing, 1 claim to check."
 
-Move the 0–100 score to internal/admin use for ranking alternatives and for
+Move the 0-100 score to internal/admin use for ranking alternatives and for
 regression-testing rule changes. Never show it. Never expose it in the B2B product.
 
 **[v1.1] Band display names** (D-063). Most biscuits and namkeen land in the
@@ -170,12 +170,12 @@ in the ingredients"** · **"A few things worth knowing"** · **"Made with indust
 ingredients"** (the NOVA term and definition one tap away).
 
 **[v1.1] The quick signal is per person** (D-064, resolves D-050). With the score gone,
-the glanceable answer is a status per household profile: "Contains milk — on Aarav's
+the glanceable answer is a status per household profile: "Contains milk - on Aarav's
 avoid list", "Fewer concerns for kids".
 
 ### [CHANGED] 2.4 Flat "flagged ingredient count" is invalid for comparison
 
-§20/§21 propose "Brand A — 3 flagged attributes vs Brand B — 1". Three low-concern
+§20/§21 propose "Brand A - 3 flagged attributes vs Brand B - 1". Three low-concern
 emulsifiers is a cleaner product than one sodium nitrite. Your own concern weights
 exist precisely so you never do a flat count. Comparisons must use the weighted
 internal score plus the band, and must show the per-ingredient receipts alongside.
@@ -194,11 +194,11 @@ conflicts remove a pack from ranking entirely.
 |---|---|---|
 | Database | Postgres primary (`products`, `findings`, `rules`) | Separate warehouse, read-only ETL |
 | Write path | Internal reviewers + rule engine only | No write path to truth layer. Ever. |
-| Access | — | Brands never see their own score, never see pre-publication findings, never have a contest/appeal channel into a verdict |
+| Access | - | Brands never see their own score, never see pre-publication findings, never have a contest/appeal channel into a verdict |
 | Audit | Every rule change is a signed, versioned row with author and reviewer | Every B2B query logged |
 
 This maps well onto your existing stack instincts: Postgres for the transactional
-truth layer, and dbt/Snowflake for the analytics layer — which is genuinely your
+truth layer, and dbt/Snowflake for the analytics layer - which is genuinely your
 strongest technical edge here, and it's on the *right* side of the wall.
 
 ---
@@ -208,7 +208,7 @@ strongest technical edge here, and it's on the *right* side of the wall.
 This is the part worth building carefully, because it is the part Gemini cannot do
 consistently.
 
-### 3.1 Many Indian claims are legally defined — use that
+### 3.1 Many Indian claims are legally defined - use that
 
 The **Food Safety and Standards (Advertising and Claims) Regulations, 2018** govern
 nutrition claims, health claims and "non-addition" claims in India, and <cite index="13-1">FSSAI published a final amendment on 13 December 2022 (notification No. Std/EC/T(NSF-01)) revising the general principles for claims, nutrition claims, non-addition claims, and Schedules I (nutrient content claims), II (synonyms used for claims) and III (reduction of disease risk claims)</cite>. <cite index="8-1">A "high protein" or "no added sugar" claim on an Indian label is a legal statement backed by verifiable data requirements under those regulations together with the Food Safety and Standards (Labelling and Display) Regulations, 2020</cite>.
@@ -220,7 +220,7 @@ declared panel says M*. That is a fact with a citation, not an AI opinion.
 
 **Hard requirement:** retrieve the current Schedule I and Schedule II text (2022
 amendment, plus any later amendment) and populate `claim_criteria` from it directly.
-Do not hardcode remembered thresholds — mine or anyone's. Schedule II is especially
+Do not hardcode remembered thresholds - mine or anyone's. Schedule II is especially
 valuable: it enumerates *permitted synonyms* for claims, which is exactly the alias
 table your claim extractor needs, written by the regulator.
 
@@ -228,14 +228,14 @@ table your claim extractor needs, written by the regulator.
 
 | Tier | Basis | Wording | Example |
 |---|---|---|---|
-| **R1 — Regulatory, numeric** | Schedule I threshold + declared nutrition panel | "The label claims *High Protein*. FSSAI Schedule I defines this as ≥N g/100g. The panel declares M g/100g." | High protein with 2g/serving |
-| **R2 — Regulatory, non-addition** | Non-addition claim + ingredient declaration | "The label claims *No Added Sugar*. The ingredient list declares *glucose syrup*." | The killer case |
-| **R3 — Definitional** | NOVA Group-4 marker present | "Contains an ultra-processing marker." | Already built |
-| **R4 — Unregulated marketing** | Claim with no legal definition | "*Healthy* is not a defined claim under Indian regulation. Here's what the label actually declares." | "Healthy", "Immunity", "Goodness of…" |
-| **R5 — Consumer preference** | User's stated avoid-list | "Contains palm oil, which you asked to avoid." | Personalization |
+| **R1 - Regulatory, numeric** | Schedule I threshold + declared nutrition panel | "The label claims *High Protein*. FSSAI Schedule I defines this as ≥N g/100g. The panel declares M g/100g." | High protein with 2g/serving |
+| **R2 - Regulatory, non-addition** | Non-addition claim + ingredient declaration | "The label claims *No Added Sugar*. The ingredient list declares *glucose syrup*." | The killer case |
+| **R3 - Definitional** | NOVA Group-4 marker present | "Contains an ultra-processing marker." | Already built |
+| **R4 - Unregulated marketing** | Claim with no legal definition | "*Healthy* is not a defined claim under Indian regulation. Here's what the label actually declares." | "Healthy", "Immunity", "Goodness of…" |
+| **R5 - Consumer preference** | User's stated avoid-list | "Contains palm oil, which you asked to avoid." | Personalization |
 
 R1/R2 are strong, citable, and legally safe when worded as a comparison rather than a
-verdict. R4 is *rhetorically* your best material — telling a shopper that "Healthy" is
+verdict. R4 is *rhetorically* your best material - telling a shopper that "Healthy" is
 not a regulated word in India is genuinely useful and completely unfalsifiable.
 
 ### 3.3 Wording discipline (non-negotiable)
@@ -257,9 +257,9 @@ ingredients or the allergen line."* Ambiguous sources get *"We can't tell whethe
 **[v1.1] "What the rule says"** (D-066). Where an R2 finding has a verified citation,
 add one neutral line on what the regulation defines, so the user isn't left asking "is
 that allowed?". R4 shows in full the first time a user meets that claim type, and
-compact after that — interesting once, preachy by the tenth time.
+compact after that - interesting once, preachy by the tenth time.
 
-**[v1.1] No legal claim without a verified citation — including in lens text.** The
+**[v1.1] No legal claim without a verified citation - including in lens text.** The
 first kids-lens draft said Indian rules require sweetened packs to carry "Not
 recommended for children". FSSAI's labelling FAQ (June 2022) says sucralose no longer
 needs a warning statement. The line is gone; sweeteners are stated as facts (D-056).
@@ -279,7 +279,7 @@ finding = {
 ```
 
 A finding with zero evidence rows cannot be inserted. A finding with an unpinned
-citation cannot be rendered to a consumer — which is the formalisation of the
+citation cannot be rendered to a consumer - which is the formalisation of the
 verified/unverified chip distinction you already built into `SrcChip`. That mechanism
 is one of the best things in the prototype; make it a database constraint instead of a
 rendering nicety.
@@ -295,9 +295,9 @@ rendering nicety.
 | **0. On-device** | Phone | Barcode decode, blur/glare/exposure check, perspective correction, crop, compress to ~250KB | ₹0 | Reject bad images *before upload*. Critical on Indian mobile data. |
 | **1. Cheap OCR** | Cloud OCR (document text detection) | Raw text + per-block confidence + bounding boxes | ~₹0.27 (2 images) | 80% of extraction |
 | **2. Deterministic parse** | Your Python | INS/E numbers, sugar aliases, nutrition table regex, claim synonym match (Schedule II), FSSAI licence number, net qty, MRP | ₹0 | Everything with a known shape |
-| **3. VLM fallback** | Vision-language model | Only when: OCR block confidence < threshold, nutrition table unparsed, ingredient list truncated, or unknown token density > threshold | ~₹1.20–1.80 | The hard 20% |
+| **3. VLM fallback** | Vision-language model | Only when: OCR block confidence < threshold, nutrition table unparsed, ingredient list truncated, or unknown token density > threshold | ~₹1.20-1.80 | The hard 20% |
 
-Cache key is `(barcode)` or `(brand, name, net_qty)`, versioned. Stages 1–3 run **once
+Cache key is `(barcode)` or `(brand, name, net_qty)`, versioned. Stages 1-3 run **once
 per product version**, not once per scan. Personalization (lenses) is deterministic
 and runs per user at read time for free.
 
@@ -308,8 +308,8 @@ per-field confidence = min(ocr_block_confidence, parser_confidence, vlm_agreemen
 
 if ingredient_list.confidence < 0.85:
     → do not interpret. Return retake prompt with the SPECIFIC problem:
-      "The ingredient list is cut off on the right — try landscape."
-      "Too much glare on the panel — tilt away from the light."
+      "The ingredient list is cut off on the right - try landscape."
+      "Too much glare on the panel - tilt away from the light."
 if nutrition_table.confidence < 0.85:
     → return ingredient analysis, mark nutrition unavailable, suppress all R1 rules
 if front_image missing/low:
@@ -322,8 +322,8 @@ retake prompt. A missed "milk solids" is a hospital visit, not a wrong verdict. 
 value, to calibrate once allergen fields are in the gold set.
 
 **Retry strategy:** maximum two automatic retries with different preprocessing
-(contrast stretch, then 2× upscale). After that, prompt the human — and offer
-**[v1.1] "Send it to us — we'll check this pack and tell you when it's ready"** (D-070;
+(contrast stretch, then 2× upscale). After that, prompt the human - and offer
+**[v1.1] "Send it to us - we'll check this pack and tell you when it's ready"** (D-070;
 nobody types a 20-item list on a phone) plus "this product is already in our
 catalogue, is this it?" with candidates. Never silently degrade confidence into a confident answer. A bad OCR that
 becomes a health statement is the one failure mode that ends the company's
@@ -341,7 +341,7 @@ class VisionProvider(Protocol):
 ```
 
 Pin a model version per `product_version` row, so you can tell later whether a wrong
-verdict came from a model change. Use deterministic code wherever the shape is known —
+verdict came from a model change. Use deterministic code wherever the shape is known -
 INS numbers, nutrition tables, FSSAI licence formats are all regex problems, not AI
 problems. **No vector database at launch.** Ingredient alias matching is a
 `pg_trgm` + alias-table problem; embeddings only earn their place later for free-text
@@ -639,11 +639,11 @@ Content-Type: application/json
   "client": {"app_version":"1.2.0","net":"3g"}
 }
 
-202 Accepted    (cache miss — async)
+202 Accepted    (cache miss - async)
 { "scan_id":"...", "status":"processing", "poll_after_ms":1200,
   "partial": {"product":{"name":"...","brand":"..."},"resolved_via":"barcode"} }
 
-200 OK          (cache hit — the common case)
+200 OK          (cache hit - the common case)
 {
   "scan_id": "...",
   "status": "complete",
@@ -692,7 +692,7 @@ Content-Type: application/json
   "ordinary_count": 12                // [v1.1] D-065: "12 other ingredients look ordinary"
 }
 
-200 OK          (low confidence — never guess)
+200 OK          (low confidence - never guess)
 { "scan_id":"...","status":"needs_retake",
   "reason":"ingredient_list_truncated",
   "message":"The ingredient list looks cut off on the right side. Try holding the pack landscape.",
@@ -711,7 +711,7 @@ Other endpoints, thin by design:
 | `GET /v1/products/{id}/evidence/{finding_id}` | the "why did you flag this?" tap |
 | `GET /v1/ingredients/{id}` | explanation + regulatory status + citations |
 | `POST /v1/feedback` | corrections → review queue |
-| `POST /v1/compare` | **[v1.1] free** (D-059); body: `{scan_ids or product_ids:[2–4], profile_id}` — shelf comparison (D-057) |
+| `POST /v1/compare` | **[v1.1] free** (D-059); body: `{scan_ids or product_ids:[2-4], profile_id}` - shelf comparison (D-057) |
 | `GET /v1/alternatives?product_id=` | **[v1.1] free**; **requires populated category** (≥80%) |
 | `GET /v1/search?q=` | **[v1.1] free** name search over the catalogue (D-059) |
 | `POST /v1/recheck` | **[v1.1]** one back photo vs cached version (D-073) |
@@ -728,18 +728,18 @@ tier by device+IP, not by user, because abuse comes from unauthenticated scan sp
 Progressive disclosure, four depths. Target: **first useful pixel under 1.5s on a
 cache hit**; never a blank spinner.
 
-0. **[v1.1] First run** (D-069) — "Scan 3 packs from your kitchen." Then offer a
+0. **[v1.1] First run** (D-069) - "Scan 3 packs from your kitchen." Then offer a
    household profile: nickname (device only), age band, avoid list.
 
-1. **Camera** — single screen, barcode reader always live. Copy: "Point at the
+1. **Camera** - single screen, barcode reader always live. Copy: "Point at the
    barcode, or photograph the back of the pack." **[v1.1]** Show a sample photo of
    "the side that says Ingredients", and while a cache miss processes, show real
    progress and "First time we've seen this pack. Next time it's instant, for
    everyone." (D-068) Live quality feedback (glare/blur
-   warnings) *before* the shutter, not after upload. Two-shot guided flow (back first —
+   warnings) *before* the shutter, not after upload. Two-shot guided flow (back first -
    it's the valuable one), front optional and skippable.
 
-2. **Verdict** — **[v1.1] order: per-person safety line → headline finding → claim
+2. **Verdict** - **[v1.1] order: per-person safety line → headline finding → claim
    checks → things worth knowing → ingredient list** (D-060). No score. No ring gauge.
    The headline states the finding in plain words (D-061). Ordinary additives collapse
    to "12 other ingredients look ordinary" (D-065). Band labels per D-063. For a
@@ -750,36 +750,36 @@ cache hit**; never a blank spinner.
    sugar is the 2nd ingredient; no colours or sweeteners." Say "the front matches the
    back" only when the claim checker actually ran on a paired front image.
 
-3. **Why** — tap any row: plain-language explanation, the exact quoted label text, and
+3. **Why** - tap any row: plain-language explanation, the exact quoted label text, and
    **a crop of the actual photo with the phrase boxed**. Showing the pixels is worth
    more for trust than any amount of confidence scoring.
 
-4. **Ingredient detail** — what it is / why it's used / worth knowing / regulatory
+4. **Ingredient detail** - what it is / why it's used / worth knowing / regulatory
    status, with linked citations. Verified citations link out; unverified ones render
    as plain text, exactly as your prototype already does.
 
-5. **Personalization** (free for safety-relevant lenses) — allergens, diet, age,
+5. **Personalization** (free for safety-relevant lenses) - allergens, diet, age,
    pregnancy, metabolic. Framed as "based on your preferences", never "this product is
    unhealthy." **[v1.1]** Diabetic and pregnancy lenses say "ask your doctor about
-   quantity" once, clearly, on the lens intro — not on every screen (D-067).
+   quantity" once, clearly, on the lens intro - not on every screen (D-067).
 
-6. **[v1.1] Shelf comparison** (D-057) — "Not sure? Scan 2 or 3 other packs on this
+6. **[v1.1] Shelf comparison** (D-057) - "Not sure? Scan 2 or 3 other packs on this
    shelf." Returns a named best pick with reasons, packs that are "not for Riya",
    packs to check before buying, and packs we couldn't compare ("we won't guess").
    Works with zero catalogue, because the parent brings the candidates.
 
-7. **[v1.1] Allergy re-check** (D-073) — on a cache hit for an avoid-list profile:
-   "Label last verified on 14 Aug. Recipes change — snap the back to re-check."
+7. **[v1.1] Allergy re-check** (D-073) - on a cache hit for an avoid-list profile:
+   "Label last verified on 14 Aug. Recipes change - snap the back to re-check."
 
-8. **[v1.1] Trust pages** (D-076) — conflict-of-interest policy, methodology, who is
+8. **[v1.1] Trust pages** (D-076) - conflict-of-interest policy, methodology, who is
    behind the app, and "Report a mistake" on every result. Live from the first beta
    user.
 
-9. **[v1.1] Share card** (D-078, after the beta) — built for WhatsApp family groups:
+9. **[v1.1] Share card** (D-078, after the beta) - built for WhatsApp family groups:
    vertical, readable on a small phone, Hindi option, "check your own" link, wording
    linted like everything else.
 
-10. **[v1.1] Online orders** (D-077, after the beta) — share a Blinkit / Zepto /
+10. **[v1.1] Online orders** (D-077, after the beta) - share a Blinkit / Zepto /
     BigBasket product screenshot into the app via the Android share target; plus free
     name search.
 
@@ -787,7 +787,7 @@ cache hit**; never a blank spinner.
 it. Uploading two photos over congested 3G in a supermarket basement is the actual UX
 killer. Mitigations: barcode-first (zero upload for cache hits), on-device compression
 to ≤250KB, WebP, resumable upload, optimistic local render of the cached product
-while nutrition loads, and a full offline queue — scan now, results when you have
+while nutrition loads, and a full offline queue - scan now, results when you have
 signal. Build the PWA first; native Android only after retention is proven.
 
 ---
@@ -798,7 +798,7 @@ signal. Build the PWA first; native Android only after retention is proven.
 
 **[v1.1] Table updated** (D-059, D-075, D-074). Premium's final shape is open (D-082).
 
-| Free | Premium (₹399–499/**year**, scope per D-082) |
+| Free | Premium (₹399-499/**year**, scope per D-082) |
 |---|---|
 | Unlimited scans | Full scan history & export |
 | All ingredient facts and explanations | Saved products + shopping lists |
@@ -812,8 +812,8 @@ signal. Build the PWA first; native Android only after retention is proven.
 | **Safety alerts:** any reformulation touching an avoid list or allergen | |
 
 **Two corrections to §14/§15.** First, "unlimited scans" as a premium feature
-contradicts "don't paywall the core scan" — and throttling scans starves the catalogue,
-which is your actual asset. Scans stay uncapped and free forever. Second, ₹49–99/month
+contradicts "don't paywall the core scan" - and throttling scans starves the catalogue,
+which is your actual asset. Scans stay uncapped and free forever. Second, ₹49-99/month
 converts badly in India; annual pricing is how Indian consumer utilities actually
 convert, and it matches a product people use a few times a month rather than daily.
 
@@ -823,24 +823,24 @@ they're the features users would most trust you for. Say so publicly.
 
 ---
 
-## 9. Retention — the question the spec doesn't answer
+## 9. Retention - the question the spec doesn't answer
 
 §40 asks why someone scans the *second* product. It's the right question and the spec
-doesn't answer it. Honest arithmetic: a household buys maybe 25–40 distinct packaged
+doesn't answer it. Honest arithmetic: a household buys maybe 25-40 distinct packaged
 SKUs, mostly repeats. Scan each once and the app has nothing left to do. Natural
-frequency settles around 2–4 scans/month. That is a churn machine.
+frequency settles around 2-4 scans/month. That is a churn machine.
 
 Four mechanisms that actually generate return visits, in order of strength:
 
-1. **Allergen/medical necessity** (launch wedge) — a forcing function, not a habit to
+1. **Allergen/medical necessity** (launch wedge) - a forcing function, not a habit to
    be built. Every new product, every time, non-negotiable.
-2. **Formulation-change alerts** — the one thing genuinely impossible for the user to
+2. **Formulation-change alerts** - the one thing genuinely impossible for the user to
    do themselves. Requires the versioned catalogue you're building anyway. Turns a
    one-off scan into a standing subscription to that product.
-3. **Category browse without scanning** — "show me the biscuit aisle sorted by claim
+3. **Category browse without scanning** - "show me the biscuit aisle sorted by claim
    consistency." Shifts value from *scan-utility* to *shelf-utility*, and works at home
    before shopping, not just in the aisle.
-4. **Household profiles** — one scan answers four different questions (toddler, diabetic
+4. **Household profiles** - one scan answers four different questions (toddler, diabetic
    parent, pregnant sister, self). Multiplies the value per scan. **[v1.1]** Minimal
    version in the beta (D-074).
 
@@ -851,7 +851,7 @@ beta (D-083).
 
 **[v1.1] The aisle is shrinking.** Urban parents increasingly buy on quick-commerce apps
 and never hold the pack before ordering. Checking before ordering needs the share-target
-path and name search (D-077, D-059) — otherwise the app only works after the purchase.
+path and name search (D-077, D-059) - otherwise the app only works after the purchase.
 
 **[v1.1] Safety alerts are free** (D-075). Formulation alerts are mechanism #2 above;
 paywalling them would hide the very thing the beta is testing.
@@ -859,12 +859,12 @@ paywalling them would hide the very thing the beta is testing.
 **[CHANGED] Cut the reward/streak system in §35 entirely.** "Scan your first product →
 unlock ₹10 credit" is exactly the manipulative gamification the same section warns
 against, and worse: it incentivises garbage scans, which poison the catalogue you're
-paying to build. Reward *corrections* instead — accepted correction → free premium
+paying to build. Reward *corrections* instead - accepted correction → free premium
 month. That pays for data quality rather than noise.
 
 ---
 
-## 10. B2B — narrower than the spec, and firewalled
+## 10. B2B - narrower than the spec, and firewalled
 
 Only build after 500K+ scans/month with meaningful per-SKU density. Before that there
 is nothing to sell: an FMCG category manager needs roughly 20K+ scans on *their own
@@ -880,7 +880,7 @@ SKU* before the data beats their existing panel research.
 publication, any appeal channel into a rule, any influence on alternatives or ranking,
 any individual user data.
 
-**Better buyers with no conflict at all** — and worth pursuing *first*:
+**Better buyers with no conflict at all** - and worth pursuing *first*:
 - Health/fitness and diabetes-management apps → **engine API licence**
 - Retailers and quick-commerce (shelf/PLP enrichment)
 - Hospital dietetics and corporate wellness
@@ -928,13 +928,13 @@ MAU at 10K/100K scale, 2.0% at 1M. MAU ≈ scans/month ÷ 4. Annual plan ₹449.
 | Gross margin | −707% | −421% | −71% |
 
 **Read this honestly:** consumer subscriptions alone don't reach breakeven even at 1M
-scans/month. Closing the last gap needs either (a) 2–3 API licences at ₹15–25L/year
+scans/month. Closing the last gap needs either (a) 2-3 API licences at ₹15-25L/year
 each, or (b) ~3M scans/month, or (c) higher conversion than 2%, which the allergen/
 diabetic wedge might actually deliver since those users have real willingness to pay.
 Seeding the catalogue and licensing the engine are the two highest-leverage moves.
 Neither is AI work.
 
-**[v1.1]** Shelf comparison multiplies scans per session (2–4 packs), mostly uncached in
+**[v1.1]** Shelf comparison multiplies scans per session (2-4 packs), mostly uncached in
 the beta. At ~₹0.53 per uncached scan (D-030) that is noise at beta scale, and every one
 of those scans adds a product to the catalogue.
 
@@ -953,7 +953,7 @@ holds an age band only; parental consent recorded at profile creation; Play targ
 audience declared as adults. **Photos** (D-080): keep evidence crops, delete full user
 originals at 30 days.
 
-**Observability — the metrics that matter more than latency:**
+**Observability - the metrics that matter more than latency:**
 
 | Metric | Target | Why |
 |---|---|---|
@@ -974,7 +974,7 @@ engine, and gate every rule and model change on it in CI. A regression that flip
 verdict on a popular biscuit is a public-trust event.
 
 **Human review queue**, priority-ordered: (1) new product versions on high-scan SKUs,
-(2) any R1/R2 contradiction on a product above a scan threshold — *no contradiction
+(2) any R1/R2 contradiction on a product above a scan threshold - *no contradiction
 ships on a high-traffic product unreviewed*, (3) low-confidence extractions,
 (4) user corrections, (5) unmatched ingredient tokens.
 
@@ -989,30 +989,30 @@ throughput lives.
 
 Ruthless list. Every item here is in the spec.
 
-- **Any numeric health score in the UI** — false precision, legally fragile (§2.3)
-- **Streaks, rewards, ₹10 credits** — generates junk scans that poison the catalogue
-- **Social sharing infrastructure** — a share sheet with a PNG is enough; no feeds, no
+- **Any numeric health score in the UI** - false precision, legally fragile (§2.3)
+- **Streaks, rewards, ₹10 credits** - generates junk scans that poison the catalogue
+- **Social sharing infrastructure** - a share sheet with a PNG is enough; no feeds, no
   profiles, no comments
-- **Vector database** — `pg_trgm` + alias tables solve ingredient matching; pgvector
+- **Vector database** - `pg_trgm` + alias tables solve ingredient matching; pgvector
   later if ever
-- **Microservices** — one Python service, one Postgres, one worker queue
-- **Search engine (ES/Typesense)** — Postgres FTS is fine to ~1M products
-- **B2B dashboard, in any form, before 500K scans/month** — nothing to sell
-- **Custom admin platform** — use Django admin/Retool
-- **Native app for v1** — PWA; native Android after retention is proven
-- **Multi-language UI at launch** — Indian packaged-food labels are in English by law;
+- **Microservices** - one Python service, one Postgres, one worker queue
+- **Search engine (ES/Typesense)** - Postgres FTS is fine to ~1M products
+- **B2B dashboard, in any form, before 500K scans/month** - nothing to sell
+- **Custom admin platform** - use Django admin/Retool
+- **Native app for v1** - PWA; native Android after retention is proven
+- **Multi-language UI at launch** - Indian packaged-food labels are in English by law;
   translate the *explanations* later, and only after the English ones are reviewed.
   **[v1.1]** "Later" = public launch: Hindi explanations and parent text then (D-079);
   UI chrome can stay English
-- **Named alternatives at launch** — require a populated category (≥80%). **[v1.1]**
+- **Named alternatives at launch** - require a populated category (≥80%). **[v1.1]**
   Shelf comparison ships in the beta instead (D-057)
-- **Nutrition-panel OCR at launch** — tabular OCR is materially harder than list OCR;
+- **Nutrition-panel OCR at launch** - tabular OCR is materially harder than list OCR;
   ingredient-list intelligence alone is a complete product. **[v1.1]** One exception
   after the beta: the added-sugar row, for "teaspoons in this pack" (D-081)
-- **Shopping lists** — Phase 3. **[v1.1]** Minimal household profiles move into the
+- **Shopping lists** - Phase 3. **[v1.1]** Minimal household profiles move into the
   beta (D-074)
-- **Brand-submitted data portal** — a trust liability before you have any leverage
-- **International architecture work** — keep `jurisdiction`/`locale` columns, build
+- **Brand-submitted data portal** - a trust liability before you have any leverage
+- **International architecture work** - keep `jurisdiction`/`locale` columns, build
   nothing else
 
 ---
@@ -1027,7 +1027,7 @@ Chosen to match what you already run, and to keep the surface small.
 | DB | Postgres 16 (Supabase or managed RDS) | Relational truth layer, `pg_trgm`, JSONB, RLS |
 | Cache | Redis | Hot product cache, rate limits |
 | Queue | Celery or RQ on Redis | **Not Airflow.** Airflow is for batch, not per-scan |
-| Object store | Cloudflare R2 | Zero egress fees — matters when serving evidence crops |
+| Object store | Cloudflare R2 | Zero egress fees - matters when serving evidence crops |
 | Client | PWA: React + Vite, MLKit/ZXing barcode, on-device canvas preprocessing | One codebase; installable on Android |
 | OCR | Cloud OCR behind a provider interface | Swappable |
 | VLM | Vision-language model behind the same interface | Swappable; pinned per version |
@@ -1037,16 +1037,16 @@ Chosen to match what you already run, and to keep the surface small.
 
 ```
 insidelabel/
-├── core/                 # segment-blind engine — the existing engine.py, hardened
+├── core/                 # segment-blind engine - the existing engine.py, hardened
 │   ├── tokenize.py  normalize.py  classify.py  rules/  findings.py
-├── data/                 # THE MOAT — versioned JSON → migrated into Postgres
+├── data/                 # THE MOAT - versioned JSON → migrated into Postgres
 │   ├── ingredients/  nova_markers.json  claims/  citations.json
 │   ├── allergens.json    # [v1.1] FSSAI reg. 5(14) categories + Indian aliases
 ├── extraction/
 │   ├── providers/        # ocr_*.py  vision_*.py  (interface-compatible)
 │   ├── preprocess.py  parse_nutrition.py  parse_ingredients.py  confidence.py
 ├── catalogue/            # product resolution, dedup, versioning, fingerprints
-├── lenses/               # age / repro / metabolic / goal / allergen — read-only
+├── lenses/               # age / repro / metabolic / goal / allergen - read-only
 │   ├── compare.py        # [v1.1] shelf comparison + kids lens (D-056, D-057)
 │   ├── allergens.py      # [v1.1] five-state allergen check (D-071)
 ├── api/                  # FastAPI routers, schemas, auth, rate limits
@@ -1064,18 +1064,18 @@ could rewrite in a month. Keep it that way.
 
 ---
 
-## 15. The MVP — be ruthless
+## 15. The MVP - be ruthless
 
 **Hypothesis to test:** *people will photograph a food label to find out whether the
 front of the pack is telling the truth, and will come back to do it again.*
 
 **[v1.1]** For allergy households and parents the question is *"is this right for my
-child — and which one should I pick?"* The beta tests whether they come back to ask it
+child - and which one should I pick?"* The beta tests whether they come back to ask it
 again.
 
 Nothing else is being tested. Cut anything that doesn't test it.
 
-**[v1.1] In scope — the 15-week plan in `STATE.md`** (D-007 early launch, D-084). This
+**[v1.1] In scope - the 15-week plan in `STATE.md`** (D-007 early launch, D-084). This
 replaces the original "300 SKUs before any user" scope:
 1. Catalogue of **50 SKUs**, 15 kids' biscuits first (D-058). Hand-checked.
 2. Barcode scan → cached result, with "last verified" and the allergy re-check (D-073).
@@ -1083,7 +1083,7 @@ replaces the original "300 SKUs before any user" scope:
    "send it to us" after failed retries (D-070).
 4. Allergen check first on every result (D-060, D-071, D-072).
 5. Result screen per §7: headline finding, "nothing wrong" state, plain band names,
-   per-person status, ordinary additives grouped (D-061–D-066).
+   per-person status, ordinary additives grouped (D-061 to D-066).
 6. Household profiles, up to 3, device-local nicknames (D-074); kids lens (D-056).
 7. Shelf comparison (D-057).
 8. Verdict → Why → Evidence screens, with photo crops.
@@ -1093,10 +1093,10 @@ replaces the original "300 SKUs before any user" scope:
 **Out of scope for the beta:** nutrition-panel OCR (including the added-sugar row,
 D-081), R1 rules, named alternatives, premium tier, accounts (device-local storage
 only), history sync, B2B anything, native app, share target and WhatsApp card (D-077,
-D-078 — after the W4 number, D-083), Hindi (D-079 — public launch).
+D-078 - after the W4 number, D-083), Hindi (D-079 - public launch).
 
 **Beta gate** (from `STATE.md`):
-- 50–100 users, **≥30% return in week 4** with ≥1 scan
+- 50-100 users, **≥30% return in week 4** with ≥1 scan
 - ≥2.5 scans per returning user per month
 - ≥95% ingredient match rate on the seeded categories
 - **<1% false-positive contradiction rate** on the golden set
@@ -1114,24 +1114,24 @@ engineering fixes it. Stop and rethink the wedge rather than building Phase 2.
 
 ## 16. Roadmap
 
-**[v1.1] Re-based on the 15-week beta.** Months 1–3 no longer run without users; the
+**[v1.1] Re-based on the 15-week beta.** Months 1-3 no longer run without users; the
 beta itself is the first phase.
 
 | When | Focus | Deliverable | Metric |
 |---|---|---|---|
-| Weeks 1–15 (Sep–Dec 2026) | Build + 4-week closed beta — see `STATE.md` | Beta on Play closed testing | **W4 retention ≥30%** |
+| Weeks 1-15 (Sep-Dec 2026) | Build + 4-week closed beta - see `STATE.md` | Beta on Play closed testing | **W4 retention ≥30%** |
 | Jan 2027 | Wave 2: share target, WhatsApp card (D-077, D-078); catalogue to 300 SKUs | Online-order path live | Share-target scans per week |
 | Feb 2027 | Wave 3: Hindi explanations (D-079); added-sugar row with its own eval (D-081) | **Public launch** to allergen, diabetic and parent communities | 500 users |
-| Mar 2027 | Corrections pipeline at scale; catalogue to 800 SKUs; FSSAI Schedule I/II retrieval | — | W4 retention holds at public scale |
+| Mar 2027 | Corrections pipeline at scale; catalogue to 800 SKUs; FSSAI Schedule I/II retrieval | - | W4 retention holds at public scale |
 | Apr 2027 | Nutrition-panel OCR → R1 regulatory rules | "High protein" checks live | Nutrition confidence >90% |
 | May 2027 | Formulation-change alerts; safety alerts free (D-075) | Alert system | Alert → open rate |
 | Jun 2027 | Named alternatives once 3 categories are ≥80% covered; category browse (free, D-059) | Alternatives live | Alternative tap-through |
 | Jul 2027 | Premium launch, scope per D-082 | Premium tier | Conversion ≥1.5% |
-| Aug–Sep 2027 | Engine API pilot with one health app | First B2B revenue | 1 signed pilot |
+| Aug-Sep 2027 | Engine API pilot with one health app | First B2B revenue | 1 signed pilot |
 
 ---
 
-## 17. Defensibility — honest version
+## 17. Defensibility - honest version
 
 **What is not defensible:** ingredient explanation. A photo into Gemini today already
 yields a reasonable explanation of INS 322. Any moat built on "we explain ingredients
@@ -1146,13 +1146,13 @@ with AI" is already gone. Do not position there.
 2. **Speed in the aisle.** Barcode → verdict in under a second beats
    photograph → upload → reason → read by roughly 15 seconds. Only a pre-resolved
    catalogue can do it.
-3. **The verified Indian SKU catalogue.** Not scrapeable — it comes from photographs
+3. **The verified Indian SKU catalogue.** Not scrapeable - it comes from photographs
    of physical packages. Every SKU is a unit of labour a competitor must repeat.
 4. **Claim criteria pinned to FSSAI Schedule I/II, versioned.** Boring, tedious,
    regulator-sourced, and it takes a competitor the same months it takes you.
 5. **Formulation history.** Uniquely non-replicable: it can only be accumulated in
    real time. A competitor launching in 2028 cannot reconstruct what a biscuit's
-   ingredient list said in 2026. This is the moat that genuinely deepens with age —
+   ingredient list said in 2026. This is the moat that genuinely deepens with age -
    and it's also the most saleable B2B asset, because brands themselves don't track
    competitor reformulation systematically.
 6. **Observed alias corpus.** Your "soya" → "soy" discovery is one row. Ten thousand
@@ -1176,13 +1176,13 @@ That's what makes it a business rather than a dataset.
    API licensing help, but this tension never fully resolves and one bad story about
    brand money ends the trust proposition in a week.
 
-2. **Retention is probably too low.** 2–4 scans/month is a notification-permission
+2. **Retention is probably too low.** 2-4 scans/month is a notification-permission
    business, not a habit business. If W4 retention comes in at 12%, the flywheel never
    spins, the catalogue never fills, cost per scan stays at ₹2, and the whole thing is
    a very well-engineered demo. This is the single most likely failure mode, and the
    spec doesn't currently have an answer for it.
 
-3. **One wrong verdict on a big brand — or one missed allergen.** A false "No Added
+3. **One wrong verdict on a big brand - or one missed allergen.** A false "No Added
    Sugar contradiction" on a Britannia SKU, screenshotted and shared, is simultaneously
    a legal letter and the end of your credibility. **[v1.1]** A missed allergen is worse:
    it's a child's health. Hence the five-state check, the stricter gate and a zero
@@ -1194,7 +1194,7 @@ That's what makes it a business rather than a dataset.
    split attention. What remains: a training business, SEBI RA registration, and
    ~2 hours a day. The 2026-09-24 review adds ~38 hours to the beta build (D-084).
    Originally: you're running a training business with a cohort in flight, building
-   ArthaIQ Labs, and pursuing SEBI RA registration. This blueprint's months 1–3 are
+   ArthaIQ Labs, and pursuing SEBI RA registration. This blueprint's months 1-3 are
    full-time, unglamorous catalogue labour with zero user-facing output. Split
    attention is how this becomes a half-built prototype in a repo, which is a more
    likely outcome than either success or failure.
@@ -1202,7 +1202,7 @@ That's what makes it a business rather than a dataset.
 5. **A large player ships 80% of it.** Google Lens, Zepto, Blinkit or BigBasket adding
    an "ingredients explained" panel captures the casual majority and leaves you the
    allergen/diabetic niche. **[v1.1]** Quick-commerce is also where parents now shop,
-   which is why the share-target path matters (D-077). That niche can be a good ₹2–5 crore business; it is
+   which is why the share-target path matters (D-077). That niche can be a good ₹2-5 crore business; it is
    probably not a large one.
 
 ### Five reasons this becomes large
@@ -1228,7 +1228,7 @@ That's what makes it a business rather than a dataset.
 5. **The engine is licensable.** Every Indian health app, diabetes app, insurer,
    corporate wellness platform and quick-commerce retailer needs exactly this
    capability and none will build it. That's a conflict-free B2B line with better
-   margins than consumer subscriptions and no trust cost — and it's reachable in
+   margins than consumer subscriptions and no trust cost - and it's reachable in
    12 months.
 
 ### The one thing to decide before writing any more code
@@ -1243,6 +1243,6 @@ and everything in this document is premature.
 
 **[v1.1] Working answer:** a mother in Bhubaneswar whose 6-year-old has a milk allergy.
 Her son's friend brought a new biscuit to school, he wants it too, and she is standing
-at the kirana counter with two packs. She opens the app to ask "can he have this — and
+at the kirana counter with two packs. She opens the app to ask "can he have this - and
 if not, which one here can he have?" That trigger repeats every time a new snack enters
 his world.

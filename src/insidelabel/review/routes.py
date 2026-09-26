@@ -140,7 +140,9 @@ def item(request: Request, item_id: int, name: str = Depends(reviewer), error: s
     }
     raw = (v or {}).get("raw_extraction") or {}
     verdict = engine.analyze(", ".join(ingredients)) if ingredients else None
-    return _page(request, "item.html", name, d=data, form=form, error=error,
+    # D-106: where the item's photos came from (camera or upload), as the app said.
+    sources = ((data["scan"] or {}).get("request") or {}).get("photo_sources") or {}
+    return _page(request, "item.html", name, d=data, form=form, error=error, sources=sources,
                  verdict=verdict, raw=raw, reliability=raw.get("_reliability") or {},
                  diff=_diff(data["current"]["ingredients"], ingredients) if data["current"] else None,
                  mine=data["item"]["status"] == "claimed" and data["item"]["claimed_by"] == name,

@@ -404,6 +404,119 @@ class Store:
                 (scan_id, product_version_id, cid, uid)).fetchone()["id"]
             return {"correction_id": cid, "review_id": rid}
 
+    # -- invite-only beta (D-102) -------------------------------------------
+
+    CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"     # no 0/O, 1/I/L: read aloud, typed from a message
+
+    @staticmethod
+    def clean_code(code):
+        return re.sub(r"[^A-Z0-9]", "", (code or "").upper())
+
+    def create_invites(self, n, label=None, max_devices=3):
+        import secrets
+        codes = []
+        with self._connect() as conn:
+            while len(codes) < n:
+                code = "".join(secrets.choice(self.CODE_ALPHABET) for _ in range(8))
+                if conn.execute("""INSERT INTO invites (code, label, max_devices) VALUES (%s, %s, %s)
+                                   ON CONFLICT DO NOTHING RETURNING code""",
+                                (code, label, max_devices)).fetchone():
+                    codes.append(code)
+        return codes
+
+    def join_invite(self, code, device_id):
+        """{"joined": True} or {"error": "bad_code" | "revoked" | "code_full"}."""
+        code = self.clean_code(code)
+        with self._connect() as conn:
+            inv = conn.execute("SELECT * FROM invites WHERE code = %s FOR UPDATE", (code,)).fetchone()
+            if inv is None:
+                return {"error": "bad_code"}
+            if inv["revoked_at"]:
+                return {"error": "revoked"}
+            uid = self._user(conn, device_id)
+            mine = conn.execute("SELECT code FROM invite_devices WHERE user_id = %s", (uid,)).fetchone()
+            if mine and mine["code"] == code:
+                return {"joined": True}
+            n = conn.execute("SELECT count(*) AS n FROM invite_devices WHERE code = %s", (code,)).fetchone()["n"]
+            if n >= inv["max_devices"]:
+                return {"error": "code_full"}
+            conn.execute("""INSERT INTO invite_devices (user_id, code) VALUES (%s, %s)
+                            ON CONFLICT (user_id) DO UPDATE SET code = EXCLUDED.code, joined_at = now()""",
+                         (uid, code))
+            return {"joined": True}
+
+    def invite_of(self, device_id):
+        """The active code this install joined with, or None."""
+        try:
+            uid = str(uuid.UUID(str(device_id)))
+        except (ValueError, TypeError):
+            return None
+        with self._connect() as conn:
+            r = conn.execute("""SELECT d.code FROM invite_devices d JOIN invites i ON i.code = d.code
+                                 WHERE d.user_id = %s AND i.revoked_at IS NULL""", (uid,)).fetchone()
+        return r["code"] if r else None
+
+    def agree(self, device_id, terms_version):
+        """D-105: this install accepted this version of 'Before you start'."""
+        with self._connect() as conn:
+            uid = self._user(conn, device_id)
+            conn.execute("""INSERT INTO agreements (user_id, terms_version) VALUES (%s, %s)
+                            ON CONFLICT DO NOTHING""", (uid, terms_version))
+
+    def has_agreed(self, device_id, terms_version):
+        try:
+            uid = str(uuid.UUID(str(device_id)))
+        except (ValueError, TypeError):
+            return False
+        with self._connect() as conn:
+            return conn.execute("SELECT 1 FROM agreements WHERE user_id = %s AND terms_version = %s",
+                                (uid, terms_version)).fetchone() is not None
+
+    def revoke_invite(self, code):
+        with self._connect() as conn:
+            return conn.execute("UPDATE invites SET revoked_at = now() WHERE code = %s RETURNING code",
+                                (self.clean_code(code),)).fetchone() is not None
+
+    def reset_invite(self, code):
+        """Forget the installs on a code (a tester's new phone, a cleared browser)."""
+        with self._connect() as conn:
+            return conn.execute("DELETE FROM invite_devices WHERE code = %s",
+                                (self.clean_code(code),)).rowcount
+
+    def save_feedback(self, *, device_id, comment, rating=None, screen=None, app_version=None):
+        code = self.invite_of(device_id)
+        with self._connect() as conn:
+            uid = self._user(conn, device_id)
+            return conn.execute(
+                """INSERT INTO feedback (user_id, invite_code, rating, comment, screen, app_version)
+                   VALUES (%s, %s, %s, %s, %s, %s) RETURNING id""",
+                (uid, code, rating, comment, screen, app_version)).fetchone()["id"]
+
+    def beta_testers(self):
+        """One row per code: installs, scans, days active, last scan, feedback - the W4 view (D-055)."""
+        with self._connect() as conn:
+            return conn.execute(
+                """SELECT i.code, i.label, i.revoked_at, i.created_at,
+                          count(DISTINCT d.user_id) AS devices,
+                          count(DISTINCT s.id) AS scans,
+                          count(DISTINCT s.created_at::date) AS days_active,
+                          min(s.created_at) AS first_scan, max(s.created_at) AS last_scan,
+                          (SELECT count(*) FROM feedback f WHERE f.invite_code = i.code) AS feedback,
+                          (SELECT max(a.agreed_at) FROM agreements a
+                             JOIN invite_devices d2 ON d2.user_id = a.user_id
+                            WHERE d2.code = i.code) AS agreed_at
+                     FROM invites i
+                     LEFT JOIN invite_devices d ON d.code = i.code
+                     LEFT JOIN scans s ON s.user_id = d.user_id
+                    GROUP BY i.code ORDER BY i.created_at, i.code""").fetchall()
+
+    def feedback_list(self, limit=100):
+        with self._connect() as conn:
+            return conn.execute(
+                """SELECT f.id, f.created_at, f.rating, f.comment, f.screen, f.invite_code, i.label
+                     FROM feedback f LEFT JOIN invites i ON i.code = f.invite_code
+                    ORDER BY f.created_at DESC LIMIT %s""", (limit,)).fetchall()
+
     # -- send it to us (D-070) ----------------------------------------------
 
     SEND_OUTCOMES = ("refused", "vision_failed")      # the read failed; a person can still read the photo
@@ -417,13 +530,17 @@ class Store:
         with self._connect() as conn:
             uid = self._user(conn, device_id)
             rows = conn.execute(
-                """SELECT id, user_id, outcome, back_image_key, created_at FROM scans
+                """SELECT id, user_id, outcome, error_code, back_image_key, created_at FROM scans
                     WHERE id = ANY(%s::uuid[]) ORDER BY created_at, id""", (scan_ids,)).fetchall()
             # Someone else's scan looks exactly like one that doesn't exist.
             if len(rows) != len(scan_ids) or any(str(r["user_id"]) != uid for r in rows):
                 return {"error": "not_found"}
             if any(r["outcome"] not in self.SEND_OUTCOMES for r in rows):
                 return {"error": "not_refused"}
+            # D-103: photos that aren't a pack (a screen, anything else) aren't
+            # a reviewer's job: there is no label in them to read.
+            if any(r["error_code"] in ("back_is_a_screen", "not_a_food_pack") for r in rows):
+                return {"error": "not_a_pack"}
             if len(rows) < 2:
                 return {"error": "need_two_attempts"}
             if not rows[-1]["back_image_key"]:

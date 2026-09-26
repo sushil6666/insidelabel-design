@@ -10,6 +10,7 @@ import psycopg
 from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 
+from insidelabel import barcode as barcode_rules
 from insidelabel.claims import checker as claim_checker
 from insidelabel.core import engine
 from insidelabel.db.store import Store, build_findings, claims_hash, ingredients_hash
@@ -46,7 +47,11 @@ class ReviewService:
         with self._connect() as c:
             return c.execute(
                 """SELECT q.id, q.kind, q.status, q.created_at, q.claimed_by,
-                          p.name AS product_name, p.barcode, b.name AS brand
+                          p.name AS product_name, p.barcode, b.name AS brand,
+                          -- D-106: any photo on this item uploaded rather than taken with the camera
+                          EXISTS (SELECT 1 FROM scans s
+                                   WHERE (s.id = q.scan_id OR s.id = ANY(q.attempt_scan_ids))
+                                     AND s.request->'photo_sources' @? '$.* ? (@ == "upload")') AS uploaded
                      FROM review_queue q
                      LEFT JOIN product_versions v ON v.id = q.product_version_id
                      LEFT JOIN products p ON p.id = v.product_id
@@ -76,7 +81,7 @@ class ReviewService:
                 scan = c.execute("SELECT * FROM scans WHERE id = %s", (q["scan_id"],)).fetchone()
             # D-070: the earlier refused attempts of a pack sent to us, oldest first.
             attempts = c.execute(
-                """SELECT id, back_image_key, front_image_key, created_at, error_code FROM scans
+                """SELECT id, back_image_key, front_image_key, created_at, error_code, request FROM scans
                     WHERE id = ANY(%s) ORDER BY created_at""",
                 (q.get("attempt_scan_ids") or [],)).fetchall()
             if q["correction_id"]:
@@ -165,6 +170,11 @@ class ReviewService:
         claims = _lines(form.get("front_claims"))
         statement = (form.get("allergen_statement") or "").strip() or None
         barcode = (form.get("barcode") or "").strip() or None
+        if barcode:
+            # D-103: a reviewer's typo would file the pack under someone else's product.
+            barcode, reason = barcode_rules.check(barcode)
+            if reason:
+                raise ReviewError(f"Barcode: {barcode_rules.MESSAGES[reason]}")
 
         with self._connect() as c:
             q = self._mine(c, item_id, reviewer)
@@ -225,7 +235,7 @@ class ReviewService:
         """Every FSSAI food category as (code, name, depth), in the regulation's order."""
         with self._connect() as c:
             rows = c.execute("SELECT code, name FROM categories").fetchall()
-        key = lambda r: [int(x) for x in r["code"].split(".")]      # noqa: E731 — 7.2.10 after 7.2.9
+        key = lambda r: [int(x) for x in r["code"].split(".")]      # noqa: E731 - 7.2.10 after 7.2.9
         return [(r["code"], r["name"], r["code"].count(".")) for r in sorted(rows, key=key)]
 
     def _save_product(self, c, pid, form, barcode):

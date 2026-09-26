@@ -1,4 +1,4 @@
--- 010_photo_retention.sql — D-080: a user's scan photos are deleted 30 days after
+-- 010_photo_retention.sql - D-080: a user's scan photos are deleted 30 days after
 -- the scan unless something still needs them (D-098, `tools/retention.py`).
 --
 -- The keys stay on the row after deletion: they are content hashes, so they

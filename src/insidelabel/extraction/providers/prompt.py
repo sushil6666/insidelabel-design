@@ -1,5 +1,5 @@
 """
-Inside Label — Gemini Flash vision layer: prompt + response schema.
+Inside Label - Gemini Flash vision layer: prompt + response schema.
 
 This module is DATA, not logic. No API client here on purpose: the prompt is
 the thing that determines whether every downstream verdict is built on real
@@ -44,7 +44,7 @@ MODEL = "gemini-3.6-flash"
 # 400 later. Removed rather than left as decoration.
 #
 # THINKING_LEVEL replaces the old thinking_budget. 3.6 Flash thinks by default,
-# and thinking tokens bill at OUTPUT rates — the most expensive tokens there
+# and thinking tokens bill at OUTPUT rates - the most expensive tokens there
 # are. Transcribing an ingredient list needs no reasoning, so this is set as
 # low as the API allows. Raise it only if the eval shows accuracy depends on it.
 GENERATION_CONFIG = {
@@ -99,7 +99,7 @@ RULES
    - Then set ingredient_count to the number of separate ingredients you can
      count across those lines, counting top-level commas plus one. Count them;
      do not estimate. If your ingredients array does not have exactly
-     ingredient_count entries, you have dropped or merged something — go back
+     ingredient_count entries, you have dropped or merged something - go back
      to ingredient_lines and fix the array.
    - Fill ingredient_lines FIRST, then ingredient_count, then the ingredients
      array. The array must contain every ingredient present in the lines and
@@ -152,13 +152,13 @@ RULES
 
    - Evidence that does NOT count, and must not be cited: a shared product
      category or type ("both are lemon drinks"); a shared parent company
-     ("both are Coca-Cola products") — one company owns many different
+     ("both are Coca-Cola products") - one company owns many different
      products; similar colours alone; the fact that the two images were
      supplied together.
 
    - manufacturer means the entity in a "Manufactured by" or "Marketed by"
      block, with its address. A trademark attribution ("X is a registered
-     trademark of Y") names the trademark HOLDER, not the manufacturer —
+     trademark of Y") names the trademark HOLDER, not the manufacturer -
      leave manufacturer null rather than filling it from a trademark line.
 
    - "match" requires POSITIVE evidence. Two images arriving together is not
@@ -167,7 +167,7 @@ RULES
      "indeterminate", not "match". Guessing "match" is the failure that lets
      one product's ingredients be reported under another product's name.
 
-   - "mismatch" also requires positive evidence — two DIFFERENT brand names,
+   - "mismatch" also requires positive evidence - two DIFFERENT brand names,
      two different manufacturers, two different licence numbers. Say what you
      saw.
 
@@ -176,7 +176,23 @@ RULES
      field null if that face does not show it. Do not copy a value from one
      face to the other.
 
-7. MISSING OR UNREADABLE FACES — SET STATUS HONESTLY.
+7a. WHAT EACH IMAGE SHOWS - DECIDE THIS FIRST (image_content).
+   For image_content.back and image_content.front, say what the image is:
+   - "food_pack": a photograph of a physical packaged food or drink, or of
+     its label, taken directly (held in a hand, on a shelf, on a table).
+   - "screen": a screenshot, or a photograph of a screen (phone, computer,
+     TV): a shop website, an app, a picture of a pack shown on a display.
+     Use "screen" even when a food pack or an ingredient list is visible on
+     that screen.
+   - "not_food": anything else: documents, software, people, rooms, a
+     product that is not food or drink (cosmetics, cleaning products,
+     medicines), a blank or unrecognisable image.
+   - "not_provided": that image was not supplied.
+   This describes the image, not the product. When the image is "screen" or
+   "not_food", still set the statuses below honestly and transcribe nothing
+   you cannot see printed on a physical pack.
+
+7. MISSING OR UNREADABLE FACES - SET STATUS HONESTLY.
    - front_status:       "read" | "not_provided" | "unreadable"
    - back_status:        "read" | "not_provided" | "unreadable"
    - ingredients_status: "read" | "partial" | "not_found" | "unreadable"
@@ -232,11 +248,23 @@ Correct allergen_statement:
 
 # Gemini responseSchema (OpenAPI 3.0 subset: no additionalProperties, no
 # oneOf). Everything is required so the client never has to distinguish
-# "the model omitted this" from "the model meant null" — an omitted status is
+# "the model omitted this" from "the model meant null" - an omitted status is
 # exactly the ambiguity that produces a false "clean" verdict downstream.
+_IMAGE_CONTENT = {
+    "type": "string",
+    "enum": ["food_pack", "screen", "not_food", "not_provided"],
+}
+
 VISION_RESPONSE_SCHEMA = {
     "type": "object",
     "properties": {
+        "image_content": {
+            "type": "object",
+            "description": "What each image is (rule 7a): a food pack photographed directly, a screen, or something else.",
+            "properties": {"back": _IMAGE_CONTENT, "front": _IMAGE_CONTENT},
+            "required": ["back", "front"],
+            "propertyOrdering": ["back", "front"],
+        },
         "front_status": {
             "type": "string",
             "enum": ["read", "not_provided", "unreadable"],
@@ -310,7 +338,7 @@ VISION_RESPONSE_SCHEMA = {
                         "The flavour or sub-variant line as printed, e.g. 'Masala', "
                         "'Diabetic Friendly', \"Lime 'n' Lemoni\". Put the descriptor "
                         "HERE, not in name. Never join name and variant into one "
-                        "string — a combined string appears nowhere on the pack."
+                        "string - a combined string appears nowhere on the pack."
                     ),
                 },
                 "net_quantity": {
@@ -376,6 +404,7 @@ VISION_RESPONSE_SCHEMA = {
         },
     },
     "required": [
+        "image_content",
         "front_status",
         "back_status",
         "ingredients_status",
@@ -393,6 +422,7 @@ VISION_RESPONSE_SCHEMA = {
         "confidence",
     ],
     "propertyOrdering": [
+        "image_content",
         "front_status",
         "back_status",
         "ingredients_status",

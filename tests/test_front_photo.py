@@ -26,8 +26,19 @@ from insidelabel.review import routes  # noqa: E402
 from insidelabel.review.service import ReviewService  # noqa: E402
 
 TOKEN = "test-token-front"
+def _jpeg():
+    """A real, readable-sized photo, different every run (D-103 checks the file)."""
+    import io
+    from PIL import Image
+    buf = io.BytesIO()
+    Image.effect_noise((800, 600), 60).convert("RGB").save(buf, "JPEG")
+    return buf.getvalue()
+
+
+# The back only travels with a recorded answer (no file check; OCR reads it, so
+# it stays tiny). The front also goes alone, down the no-model path, which checks it.
 BACK_JPEG = b"\xff\xd8\xff\xe0back" + uuid.uuid4().bytes
-FRONT_JPEG = b"\xff\xd8\xff\xe0front" + uuid.uuid4().bytes
+FRONT_JPEG = _jpeg()
 INGREDIENTS = ["Whole wheat flour", "Sugar", "Groundnut oil", "Salt"]
 
 
@@ -111,7 +122,7 @@ def front_items(uri, vid):
 
 
 def test_the_front_is_asked_for_once_and_recorded(env):
-    bc = "8900000009901"
+    bc = "8900000009909"
     vid = published(env, bc)
     assert post(barcode=bc).json()["catalogue"]["front_wanted"] is True
 
@@ -149,7 +160,7 @@ def test_the_front_is_asked_for_once_and_recorded(env):
 
 
 def test_a_front_with_no_claims_still_counts(env):
-    bc = "8900000009918"
+    bc = "8900000009916"
     vid = published(env, bc)
     post(barcode=bc, front=True)
     approve(front_items(env, vid)[0][0], front_claims="")
@@ -161,12 +172,12 @@ def test_a_front_alone_needs_the_pack_in_the_catalogue(env, monkeypatch):
     def no_model(*a, **k):
         raise AssertionError("the model must not be called for a front photo alone")
     monkeypatch.setattr(main.gemini, "analyze_images", no_model)
-    r = post(barcode="8900000009925", front=True)
+    r = post(barcode="8900000009923", front=True)
     assert r.status_code == 422 and r.json()["error"] == "back_required"
 
 
 def test_a_recheck_with_the_front_queues_it(env):
-    bc = "8900000009932"
+    bc = "8900000009930"
     vid = published(env, bc)
     j = post(back=True, front=True, barcode=bc, pairing_confirmed="true",
              replay=vision(front_status="read", front_claims=["No palm oil"],
@@ -174,7 +185,7 @@ def test_a_recheck_with_the_front_queues_it(env):
     assert j["catalogue"]["status"] == "published" and j["catalogue"]["queued_for_review"] == "front_photo"
     assert len(front_items(env, vid)) == 1
     # Without a confirmed pairing the front may be another pack's: not queued.
-    bc2 = "8900000009949"
+    bc2 = "8900000009947"
     vid2 = published(env, bc2)
     j2 = post(back=True, front=True, barcode=bc2,
               replay=vision(front_status="read", product_match={"status": "indeterminate", "evidence": []})).json()

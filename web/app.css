@@ -1,4 +1,4 @@
-/* app.css — one small stylesheet, system fonts, no web fonts to download.
+/* app.css - one small stylesheet, system fonts, no web fonts to download.
    Colour carries status on the people cards only; every status is also written
    out in words, so nothing depends on colour alone. */
 
@@ -121,7 +121,7 @@ legend { font-weight: 700; padding: 0 4px; }
 @keyframes pulse { 0%, 100% { transform: scale(.7); opacity: .5; } 50% { transform: scale(1); opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .pulse { animation: none; } }
 
-/* Result (D-060 – D-066) */
+/* Result (D-060 to D-066) */
 .product { font-weight: 700; color: var(--muted); text-transform: none; }
 .people > * + * { margin-top: 8px; }
 .person { border-radius: var(--radius); padding: 12px 14px; border-left: 6px solid var(--calm); background: var(--calm-bg); }
@@ -151,3 +151,20 @@ q { quotes: "“" "”"; }
 .foot { padding-top: 0; text-align: center; font-size: .9rem; }
 .foot a { color: var(--muted); }
 .preview { white-space: pre-wrap; word-break: break-all; max-height: 260px; overflow: auto; }
+
+/* D-102: photo upload on a computer - choose or drop. */
+.drop { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 16px;
+        border: 2px dashed var(--line); border-radius: var(--radius); }
+.drop.over { border-color: var(--brand); background: var(--calm-bg); }
+.drop .btn { width: auto; }
+.rating { flex-wrap: wrap; gap: 4px 16px; }
+.rating .choice { min-height: 36px; }
+
+/* D-104: the tick or cross under each photo. */
+.check { margin: 6px 0 0; padding: 8px 12px; border-radius: 8px; font-weight: 600; }
+.check.ok { background: var(--calm-bg); color: var(--calm); }
+.check.bad { background: var(--stop-bg); color: var(--stop); }
+.check.unknown { background: var(--unsure-bg); color: var(--unsure); font-weight: 400; }
+
+/* D-105: "Before you start". */
+.rules { padding-left: 22px; } .rules li { margin: 8px 0; }

@@ -59,6 +59,19 @@ RETAKE = {
     "ingredient_list_unreadable": "The ingredient list is too blurred or dark to read. Hold the "
                                   "phone steady, fill the frame with the list and avoid glare.",
 }
+RETAKE.update({
+    # D-103: not a pack at all. Named plainly; no tips about light or focus.
+    "back_is_a_screen": "This looks like a photo of a screen. Photograph the pack itself: we only read "
+                        "labels from real packs, so a website or app picture can't be used.",
+    "not_a_food_pack": "This doesn't look like a food pack. Photograph the ingredient list on the back "
+                       "of a packaged food or drink.",
+})
+# The headline for refusals that aren't about legibility.
+HEADLINE = {
+    "back_is_a_screen": "This is a photo of a screen, not a pack.",
+    "not_a_food_pack": "This doesn't look like a food pack.",
+}
+NOT_A_PACK = ("back_is_a_screen", "not_a_food_pack")
 RETAKE_DEFAULT = "We couldn't read this label. Retake the photo of the ingredient list."
 RETAKE_PARTIAL = "Part of the ingredient list was cut off or hard to read. Retake it to check the rest."
 
@@ -252,12 +265,16 @@ def build(*, verdict, display, claim_check, extracted, reliability, profiles,
                           for pr in profiles) if p]
 
     if verdict is None:
+        error = reliability.get("error")
         return {
             "state": "retake",
             "people": people,
-            "headline": {"text": "We couldn't read this label clearly.",
-                         "source": {"kind": "reliability", "ref": reliability.get("error")}},
-            "retake": RETAKE.get(reliability.get("error"), RETAKE_DEFAULT),
+            "headline": {"text": HEADLINE.get(error, "We couldn't read this label clearly."),
+                         "source": {"kind": "reliability", "ref": error}},
+            "retake": RETAKE.get(error, RETAKE_DEFAULT),
+            # D-096/D-103: a pack we couldn't read can go to a reviewer; a photo
+            # that isn't a pack can't.
+            "can_send": error not in NOT_A_PACK,
         }
 
     band = display["display_binary"]

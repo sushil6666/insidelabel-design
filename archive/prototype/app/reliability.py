@@ -1,5 +1,5 @@
 """
-Inside Label — reliability gate.
+Inside Label - reliability gate.
 
 Sits between the vision layer and the engine and answers one question: given
 how well the label was actually read, is a verdict safe to put in front of a
@@ -12,8 +12,8 @@ would be a lie.
 
 The asymmetry that drives rule 3: a partially-read ingredient list can only
 ever cause the engine to flag TOO LITTLE. Nothing you failed to read can add a
-flag. So on a partial read, "ultra-processed" is still true — the markers found
-are really there — but "clean" is unsupported, because the evidence that would
+flag. So on a partial read, "ultra-processed" is still true - the markers found
+are really there - but "clean" is unsupported, because the evidence that would
 have overturned it is exactly the evidence you could not read.
 """
 
@@ -128,7 +128,7 @@ def assess(vision):
     #     because the ingredient list is self-contained. A CLAIM CHECK needs
     #     both faces to belong to the same product, because it asserts that
     #     THIS pack's front contradicts THIS pack's ingredients. So an
-    #     unverified pairing does not block the verdict — it blocks only the
+    #     unverified pairing does not block the verdict - it blocks only the
     #     claim check.
     match = (vision.get("product_match") or {}).get("status", "indeterminate")
     reliability["product_match"] = match
@@ -171,7 +171,7 @@ def assess(vision):
     #     printed preservative in roughly 4 of 10 reads, and every self-check
     #     (confidence, raw declaration, self-count) reported success on those
     #     reads. So running WITHOUT the cross-check is running with a known,
-    #     unmitigated omission rate — that is a caveat, not a footnote, and a
+    #     unmitigated omission rate - that is a caveat, not a footnote, and a
     #     reassuring score must not be presented as if it were verified.
     ocr = vision.get("_ocr_cross_check") or {}
     if ocr and not ocr.get("available"):

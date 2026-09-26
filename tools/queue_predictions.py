@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Send recorded scans (photos/<id>-back|front.* + predictions/<id>.json) through
-/scan with the database on, so they land in the review queue — no vision call,
+/scan with the database on, so they land in the review queue - no vision call,
 no cost. The recorded model output is replayed; the real photos are stored for
 the reviewer to check against.
 

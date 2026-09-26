@@ -113,7 +113,7 @@ def test_photos_need_login_and_a_valid_key(env):
 # ---------------------------------------------------------------- the main path
 
 def test_scan_review_publish_then_barcode_lookup(env):
-    uri, bc, dev = env, "8901111111111", str(uuid.uuid4())
+    uri, bc, dev = env, "8901111111116", str(uuid.uuid4())
     # A reader typo the reviewer will fix: "Jeers" for "Jeera".
     j = scan(["Whole wheat flour (Atta)", "Sugar", "Palm oil", "Jeers (Cumin) 2%", "Salt"],
              barcode=bc, device_id=dev).json()
@@ -151,7 +151,7 @@ def test_scan_review_publish_then_barcode_lookup(env):
 
 
 def test_reformulation_shows_a_diff_and_keeps_history(env):
-    uri, bc = env, "8902222222222"
+    uri, bc = env, "8902222222227"
     scan(["Wheat flour", "Sugar", "Salt"], barcode=bc)
     c = client()
     approve(c, take_next(c), ingredients="Wheat flour\nSugar\nSalt", barcode=bc)
@@ -167,7 +167,7 @@ def test_reformulation_shows_a_diff_and_keeps_history(env):
 
 
 def test_reported_mistake_on_published_pack_creates_new_version(env):
-    uri, bc = env, "8903333333333"
+    uri, bc = env, "8903333333338"
     sid = scan(["Rice flour", "Salt"], barcode=bc).json()["scan_id"]
     c = client()
     approve(c, take_next(c), ingredients="Rice flour\nSalt", barcode=bc)
@@ -184,7 +184,7 @@ def test_reported_mistake_on_published_pack_creates_new_version(env):
 
 
 def test_unreadable_scan_can_be_transcribed_by_reviewer(env):
-    """D-070: 'send it to us' — the reviewer types the list from the stored photo."""
+    """D-070: 'send it to us' - the reviewer types the list from the stored photo."""
     uri = env
     r = scan(["x"], back_status="unreadable")
     sid = r.json()["scan_id"]
@@ -211,7 +211,7 @@ def test_reject_needs_a_reason_and_blocks_the_version(env):
 
 
 def test_barcode_belonging_to_another_product_is_refused(env):
-    bc = "8904444444444"
+    bc = "8904444444449"
     scan(["Oats"], barcode=bc)
     c = client()
     approve(c, take_next(c), name="Oats", ingredients="Oats", barcode=bc)
@@ -251,7 +251,7 @@ def test_fssai_categories_are_loaded(env):
 
 
 def test_approve_needs_a_known_category_and_stores_it(env):
-    bc = "8905555555555"
+    bc = "8905555555550"
     c = client()
     item_id = take(c, scan(["Wheat flour", "Sugar", "Cocoa solids"], barcode=bc))
     for bad in ("", "99.9"):
@@ -263,7 +263,7 @@ def test_approve_needs_a_known_category_and_stores_it(env):
 
 
 def test_page_preselects_the_stored_category(env):
-    bc = "8906666666666"
+    bc = "8906666666661"
     c = client()
     approve(c, take(c, scan(["Potato", "Palm oil", "Salt"], barcode=bc)), name="Chips", ingredients="Potato\nPalm oil\nSalt", barcode=bc, category="15.1")
     item_id = take(c, scan(["Potato", "Palm oil", "Salt", "Sugar"], barcode=bc))   # reformulation

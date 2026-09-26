@@ -13,7 +13,7 @@ from insidelabel.db import migrate  # noqa: E402
 
 @pytest.fixture(scope="module")
 def migrated(fresh_db):
-    return fresh_db             # (uri, applied, skipped) — see conftest.py
+    return fresh_db             # (uri, applied, skipped) - see conftest.py
 
 
 @pytest.fixture
