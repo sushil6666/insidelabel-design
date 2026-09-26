@@ -4,7 +4,7 @@ Architectural and product decisions for InsideLabel, with the reasoning attached
 Append-only. When a decision is reversed, mark it `SUPERSEDED` and add a new entry
 rather than editing the old one - the history is the point.
 
-**Last updated:** 2026-09-26 (D-102 to D-110 locked)
+**Last updated:** 2026-09-26 (D-102 to D-110 locked; D-111 recommended)
 
 **Status key:** `LOCKED` decided, don't relitigate · `OPEN` not yet decided ·
 `RECOMMENDED` proposed but not accepted · `SUPERSEDED` replaced
@@ -1155,6 +1155,52 @@ doesn't edit or delete it; Sushil removes it when the look is in `web/`.
 **Checks when built:** `tests/test_web.py` and the wording lint pass; a headless-Chromium
 walk of every screen at phone width in light and dark, with screenshots for Sushil
 before merge; `APP_VERSION` and the `sw.js` cache version bumped.
+
+### D-111 · Additive cards with a badge, in FSSAI's terms `RECOMMENDED` (2026-09-26)
+Direction from Sushil ("I liked their UI, banned / caution / safe kind of thing"), after
+screenshots of the SafeLabel Play Store listing; wording and conditions by Claude; mockup
+liked by Sushil 2026-09-26. **Not built; waiting for Sushil's "accepted".**
+
+SafeLabel shows each additive on its own card with a coloured stripe and a badge
+("Banned", "Caution", "Safe"), a "Risk level", and a banner ("All Clear - No Harmful
+Additives Detected. Enjoy your product with peace of mind!"). The layout is taken; the
+words are not. Its "Banned" sits on tartrazine, which our verified status table
+(`data/regulatory_status.json`, 2026-09-25) has as permitted with limits in India,
+permitted with a warning in the EU and permitted in the US; and "safe" is on the D-042
+list.
+
+- **Every additive on the result gets a card** (INS number, name, "On the label: ..."
+  quoting what was read, the row's `why` line, a badge). Plain ingredients (flour, salt,
+  oil) stay in the one grouped "look ordinary" line, so the screen doesn't grow by forty
+  cards.
+- **Three badges, each a fact with a source:**
+
+  | Badge | Colour | Shown when |
+  |---|---|---|
+  | Not permitted in India | red stripe, ✕ | the row's FSSAI basis says Appendix A gives it no use in any food (today 924a, 927a, 952) |
+  | Worth knowing | orange stripe, ! | concern `high` or `moderate`, FSSAI permits it |
+  | Permitted in India | green stripe, plain dot | concern `low` or `none` **and** `fssai_basis` is recorded on the row |
+
+  No tick mark (it reads as approval), no "risk level" (D-064), no "all clear" banner: the
+  existing "N other ingredients look ordinary" line stays. A row with no recorded FSSAI
+  basis gets no "Permitted" badge.
+- **"Not permitted" is the most serious thing the app says about a pack.** It shows only
+  on a complete read at confidence ≥ 0.95 (the allergen gate, D-060), quotes the label,
+  asks the user to check the pack ("if we misread it, tap Report a mistake"), and opens a
+  red banner above the cards: "An additive on this label isn't in FSSAI's permitted list".
+  It never names or judges the brand (D-042). With a barcode, the scan also goes to a
+  reviewer, like a pending version. A partial or low-confidence read shows the card as
+  "Worth knowing" with a note that the number needs checking.
+- **Built on the server** (D-091): `lenses/screen.py` adds `badge: {kind, text}` to each
+  additive item and the banner to the screen block; the PWA only lays it out. The wording
+  lint covers the new text. D-086 holds: EU/US status never picks a badge.
+- **First, the data.** 32 of 67 rows in `data/additives.json` (102 and 110 among them)
+  carry no `fssai_basis` / `verified_on`. They are verified against the FSSAI compendium
+  Appendix A (D-046) before the badges ship, or "Permitted" would be missing on most
+  common additives. No paid call is needed.
+
+Order when accepted: verify the 32 rows (its own commit, each row with `fssai_basis` and
+`verified_on`), then the badges with tests, then phone-width screenshots before merge.
 
 ---
 
