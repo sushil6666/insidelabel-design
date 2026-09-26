@@ -1248,11 +1248,15 @@ async def scan(
             "screen": result_screen.build(
                 verdict=None, display=None, claim_check=None, extracted=None,
                 reliability=reliability, profiles=people, allergen_confidence=0.0,
-                allergen_reliable=False, has_barcode=barcode is not None),
+                allergen_reliable=False, has_barcode=barcode is not None,
+                photos_sent=[r for _d, _m, r in images]),
             "scan_id": _str(scan_id),
             "request_id": tr["request_id"],
             "verdict": None,
-            "product": vision.get("product"),
+            # A refusal because a photo isn't a pack, or the photos are two packs,
+            # doesn't name a product: the name would come from the other photo.
+            "product": (None if reliability.get("error") in (*result_screen.NOT_A_PACK, "product_mismatch")
+                        else vision.get("product")),
             "reliability": reliability,
             "engine_version": ENGINE_VERSION,
         })
