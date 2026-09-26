@@ -389,7 +389,11 @@ the catalogue is a paid 8-15 s read.
   names) and two printed en dashes in the Ziggy gold transcription (eval unchanged:
   INS F1 1.000, ingredient 0.945, claims 0.883, 0 flips). `predictions/` and `reports/`
   are untracked recorded output, left verbatim.
-- Tests: 323 passing, 1 skipped.
+- **Live check of D-103 done** (9 Gemini calls, see D-103): 5 real packs pass with every
+  INS number read; all 3 screenshots refused; the Limca 1 L gold image is brand artwork,
+  not a pack photo, and is refused too (replace it in the gold set). A single-photo bug
+  it found is fixed.
+- Tests: 324 passing, 1 skipped.
 
 ### Input validation (2026-09-26, same branch, D-103 locked)
 

@@ -232,3 +232,13 @@ def test_the_smallest_gold_photos_pass():
     for p in shots:
         mime = "image/png" if p.endswith(".png") else "image/jpeg"
         assert photo_check.check(open(p, "rb").read(), mime, "back") is None, p
+
+
+def test_a_single_photo_described_under_the_other_role_still_counts():
+    # Gemini's real answer for a dbt screenshot sent alone (2026-09-26 live check):
+    # it isn't told which role the image has, and put its description under front.
+    r = c.post("/scan", files={"back": ("b.png", photo(fmt="PNG"), "image/png")},
+               data={"replay": vision(back_status="not_provided", ingredients_status="not_found", ingredients=[],
+                                      image_content={"back": "not_provided", "front": "not_food"})})
+    assert r.status_code == 422 and r.json()["reliability"]["error"] == "not_a_food_pack"
+    assert r.json()["screen"]["can_send"] is False

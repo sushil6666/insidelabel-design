@@ -904,9 +904,26 @@ accepted by Sushil 2026-09-26.
      `image_content`: they parse as before and no image rule fires. An out-of-vocabulary
      value becomes `unknown`, which no rule acts on.
 
-The prompt changed, so `PROMPT_VERSION` changed. **Not yet measured on the live model:**
-the 6 gold labels must still come back `food_pack` with the same reading, and real
-screenshots must come back `screen`. Needs a few paid Gemini calls - Sushil to approve.
+The prompt changed, so `PROMPT_VERSION` changed.
+
+**Measured on the live model, 2026-09-26** (9 Gemini calls, approved by Sushil; 5-8 s each):
+
+| Input | `image_content` | Outcome |
+|---|---|---|
+| 5 gold packs (Britannia, Limca 2.25 L, Maliban, Patanjali, Ziggy), back + front | food_pack / food_pack | result; 0 INS missed, 0 invented |
+| Limca 1 L gold "photo" | screen / screen | refused `back_is_a_screen` |
+| Sushil's dbt screenshot, alone | not_food | refused `not_a_food_pack` |
+| Shop-listing screenshot with a legible ingredient list | screen | refused `back_is_a_screen` |
+| Document screenshot, alone | not_food | refused `not_a_food_pack` |
+
+- The Limca 1 L gold image is flat brand artwork ("images for representation purposes
+  only"), not a photograph of a pack: the model is right, and D-089 agrees. The
+  published Limca record uses the real 2.25 L photos, so the catalogue is unaffected;
+  replace the 1 L gold image with a photo of a real bottle when the gold set grows.
+- Found and fixed: with a single photo the model isn't told its role, and described it
+  under `front` ({"back": "not_provided", "front": "not_food"}), which the first version
+  turned into `unknown` and let through. With one image, its description counts
+  whichever key the model used. The 9 recorded answers were replayed through the fix.
 The D-100 front-only path (barcode + front, no model call) gets the file check only;
 its reviewer rejects a front that isn't a pack.
 

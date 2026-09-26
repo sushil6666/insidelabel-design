@@ -496,6 +496,17 @@ def harden(vision, sent_front, sent_back):
     #     no rule acts on: a garbled answer must not refuse a real pack.
     if isinstance(v.get("image_content"), dict):
         ic = dict(v["image_content"])
+        if sent_back != sent_front:
+            # One image. The model isn't told which role we gave it (build_request
+            # sends no hints), so it may describe "the image" under the other role:
+            # measured 2026-09-26, a dbt screenshot sent as the back came back
+            # {"back": "not_provided", "front": "not_food"}. Its description of
+            # the only image is what counts, whichever key it used.
+            role, other = ("back", "front") if sent_back else ("front", "back")
+            said = [ic.get(k) for k in (role, other) if ic.get(k) in _IMAGE_CONTENT - {"not_provided"}]
+            if said and ic.get(role) != said[0]:
+                corrections.append(f"image_content for the only image read from {other}: {said[0]}")
+                ic[role] = said[0]
         for role, sent in (("back", sent_back), ("front", sent_front)):
             if not sent:
                 ic[role] = "not_provided"
