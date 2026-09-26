@@ -10,9 +10,10 @@ import {
   AGES, APP_VERSION, MAX_PROFILES, ApiError, addHistory, allergenList, clientInfo, compareRequest,
   deviceId, el, fill, history, historyItem, lastIncident, prepareImage, problemRequest, profileByRef,
   profiles, record, reportRequest, saveProfiles, scanRequest, sendToUsRequest, store, trailSnapshot,
+  accessRequest, feedbackRequest, joinRequest,
   updatesRequest, validGtin,
 } from "./lib.js";
-import { barcodeSupported, startScanner } from "./camera.js";
+import { barcodeFromImage, barcodeSupported, imageBarcodeSupported, startScanner } from "./camera.js";
 
 const main = document.getElementById("main");
 let stopCamera = null;
@@ -26,16 +27,33 @@ let pending = { barcode: null, back: null, front: null, pairing: false, attempts
 // ------------------------------------------------------------------ navigation
 const routes = {
   "": home, welcome, household, person, scan, photo, front, result, report, compare, problem, send,
+  join, feedback,
 };
 
-function go(path) { location.hash = "#/" + path; }
+// Setting the hash it already has fires no hashchange, so the page wouldn't
+// change (e.g. "Skip for now" on a welcome shown at #/ after joining).
+function go(path) {
+  const hash = "#/" + path;
+  if (location.hash === hash) route();
+  else location.hash = hash;
+}
 
 function route() {
   if (stopCamera) { stopCamera(); stopCamera = null; }
   const [name, arg] = location.hash.replace(/^#\/?/, "").split("/");
   // D-092: screens in the trail. `arg` is a scan id or a profile ref, never a name.
   record("route", { to: name || "home", arg: arg || undefined });
-  if (!store.get("welcomed", false) && name !== "welcome" && name !== "household" && name !== "person") {
+  if (name !== "feedback") store.set("lastScreen", name || "home");     // where feedback was sent from
+  // D-102: an invite-only server lets a phone in once it has joined with a code.
+  if (name !== "join" && name !== "problem" && !store.get("joined", false)) {
+    const seq = ++navSeq;
+    return checkAccess().then(ok => { if (seq === navSeq) (ok ? routeAfterJoin(name, arg) : show(join())); });
+  }
+  routeAfterJoin(name, arg);
+}
+
+function routeAfterJoin(name, arg) {
+  if (!store.get("welcomed", false) && !["welcome", "household", "person", "join"].includes(name)) {
     return show(welcome());
   }
   const seq = ++navSeq;
@@ -65,6 +83,98 @@ function productName(product) {
 
 function button(label, onclick, cls = "") {
   return el("button", { type: "button", class: "btn " + cls, onclick }, label);
+}
+
+// ------------------------------------------------------------------ invite-only beta (D-102)
+// Asked once per session; a phone that has joined remembers it. If the server
+// says otherwise later (403 invite_required), the flag is cleared and the
+// join screen comes back.
+let accessChecked = null;
+function checkAccess() {
+  if (!accessChecked) {
+    accessChecked = accessRequest().then(({ body }) => {
+      const ok = !body.invite_only || body.joined;
+      if (ok) store.set("joined", true);
+      return ok;
+    }).catch(() => true);            // offline: let the app open; the server still checks every scan
+  }
+  return accessChecked;
+}
+
+function needsInvite(e) {
+  if (e instanceof ApiError && e.body?.error === "invite_required") {
+    store.set("joined", false);
+    accessChecked = null;
+    return true;
+  }
+  return false;
+}
+
+function join(code) {
+  const input = el("input", { id: "invite", autocomplete: "off", autocapitalize: "characters",
+                              maxlength: "12", placeholder: "e.g. K7PM4QXT", value: code || "" });
+  const err = el("p", { class: "error", role: "alert" });
+  const go_ = el("button", { type: "submit", class: "btn primary" }, "Join the beta");
+  const form = el("form", { class: "stack" },
+    el("h1", {}, "Welcome to the InsideLabel beta"),
+    el("p", { class: "lead" }, "InsideLabel is being tried by a small group first. Your invite has a code; " +
+                               "the link in your message fills it in for you."),
+    el("label", { for: "invite" }, "Invite code"), input, err, go_);
+  const submit = async () => {
+    const typed = input.value.trim();
+    if (!typed) { err.textContent = "Type the code from your invite."; return; }
+    go_.disabled = true;
+    try {
+      await joinRequest(typed);
+      store.set("joined", true);
+      accessChecked = Promise.resolve(true);
+      record("joined", {});
+      go("");
+    } catch (ex) {
+      go_.disabled = false;
+      err.textContent = ex.status === 0 ? "No connection. Try again when you're online."
+        : (ex.body?.detail || "That didn't work. Check the code and try again.");
+    }
+  };
+  form.addEventListener("submit", e => { e.preventDefault(); submit(); });
+  if (code) setTimeout(submit, 0);          // opened from the invite link
+  return form;
+}
+
+function feedback() {
+  const from = store.get("lastScreen", "home");
+  const comment = el("textarea", { id: "fb", maxlength: "4000", rows: "5", required: true });
+  const err = el("p", { class: "error", role: "alert" });
+  let rating = null;
+  const stars = el("div", { class: "row rating", role: "radiogroup", "aria-label": "How useful is it so far?" },
+    [1, 2, 3, 4, 5].map(n => {
+      const r = el("input", { type: "radio", name: "rating", id: "r" + n, value: String(n),
+                              onchange: () => { rating = n; } });
+      return el("label", { for: "r" + n, class: "choice" }, r, " " + n);
+    }));
+  const form = el("form", { class: "stack" },
+    el("h1", {}, "Send feedback"),
+    el("p", {}, "What worked, what was confusing, what you wished it did. Every note is read."),
+    el("p", { class: "muted" }, "How useful is it so far? (1 = not at all, 5 = very)"), stars,
+    el("label", { for: "fb" }, "Your feedback"), comment,
+    err,
+    el("button", { type: "submit", class: "btn primary" }, "Send"),
+    button("Cancel", () => window.history.back(), "link"));
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    const text = comment.value.trim();
+    if (!text) { err.textContent = "Write a few words first."; return; }
+    try {
+      await feedbackRequest({ comment: text, rating, screen: from });
+      show(el("section", { class: "stack" }, el("h1", {}, "Thank you"),
+        el("p", {}, "We read every note. It shapes what we build next."),
+        button("Done", () => go(""), "primary")));
+    } catch (ex) {
+      if (needsInvite(ex)) return go("join");
+      err.textContent = ex.status === 0 ? "No connection. Try again when you're online." : apiMessage(ex);
+    }
+  });
+  return form;
 }
 
 // ------------------------------------------------------------------ first run (D-069, D-074)
@@ -243,14 +353,19 @@ async function scan() {
   const video = el("video", { class: "viewfinder", muted: true, playsinline: true, "aria-label": "Camera" });
   const status = el("p", { class: "muted", role: "status" }, "Starting the camera…");
   const manual = manualEntry();
+  const fromPhoto = el("div", {});
   const view = el("section", { class: "stack" },
     el("h1", {}, "Scan the barcode"),
     el("div", { class: "viewfinder-wrap" }, video, el("div", { class: "frame", "aria-hidden": "true" })),
     status,
     manual,
+    fromPhoto,
     button("No barcode? Photograph the ingredients", () => { pending.barcode = null; go("photo"); }, "link"));
 
   const seq = navSeq;
+  // D-102: a barcode can also come from a photo (saved earlier, or a laptop
+  // with no camera), where the browser can read one. Otherwise: type it.
+  if (await imageBarcodeSupported()) fromPhoto.append(barcodePhotoPicker());
   if (await barcodeSupported()) {
     startScanner(video, code => lookUp(code)).then(stop => {
       if (seq !== navSeq) return stop();          // the user left before the camera opened
@@ -265,9 +380,25 @@ async function scan() {
   } else {
     record("camera", { barcode_detector: false });
     video.parentElement.remove();
-    status.textContent = "This phone can't read barcodes in the browser. Type the number under the barcode.";
+    status.textContent = "This browser can't read barcodes with the camera. Type the number under the barcode.";
   }
   return view;
+}
+
+function barcodePhotoPicker() {
+  const err = el("p", { class: "error", role: "alert" });
+  const input = el("input", { type: "file", accept: "image/*", class: "sr", id: "barcode-photo" });
+  input.addEventListener("change", async () => {
+    const file = input.files && input.files[0];
+    if (!file) return;
+    err.textContent = "";
+    const code = await barcodeFromImage(file);
+    if (code && validGtin(code)) return lookUp(code, "photo");
+    record("barcode", { how: "photo", found: false });
+    err.textContent = "We couldn't find a barcode in that photo. Type the number printed under it instead.";
+  });
+  return el("div", {}, input,
+    el("label", { for: "barcode-photo", class: "btn link" }, "Use a photo of the barcode"), err);
 }
 
 function manualEntry() {
@@ -338,19 +469,45 @@ function photo() {
     go_);
 }
 
+// D-102: take a photo now, or upload one already on the phone or computer
+// (a saved picture, a pack photographed earlier). `capture` makes a phone open
+// the camera straight away, so the upload button is a second input without it.
+// On a computer (no touch screen) there is only "choose", and a photo can be
+// dropped onto the box.
+const TOUCH = window.matchMedia?.("(pointer: coarse)").matches ?? true;
+
 function photoPicker(role, label, preview, onPick) {
-  const input = el("input", { type: "file", accept: "image/*", capture: "environment", class: "sr",
-                              id: "pick-" + role });
-  input.addEventListener("change", async () => {
-    const file = input.files && input.files[0];
-    if (!file) return;
+  const use = async file => {
+    if (!file || !file.type.startsWith("image/")) return;
     preview.replaceChildren(el("p", { class: "muted" }, "Preparing photo…"));
     const blob = await prepareImage(file);
     onPick(blob);
     const url = URL.createObjectURL(blob);
     preview.replaceChildren(el("img", { src: url, alt: `Your ${role} photo` }));
-  });
-  return el("div", {}, input, el("label", { for: "pick-" + role, class: "btn" }, label));
+  };
+  const input = (id, capture) => {
+    const i = el("input", { type: "file", accept: "image/*", class: "sr", id, ...(capture ? { capture: "environment" } : {}) });
+    i.addEventListener("change", () => { record("photo_source", { role, source: capture ? "camera" : "upload" });
+                                         use(i.files && i.files[0]); });
+    return i;
+  };
+  const box = TOUCH
+    ? el("div", { class: "row" },
+        input("pick-" + role, true), el("label", { for: "pick-" + role, class: "btn" }, label),
+        input("upload-" + role, false), el("label", { for: "upload-" + role, class: "btn link" }, "Upload a photo"))
+    : el("div", { class: "drop" },
+        input("pick-" + role, false), el("label", { for: "pick-" + role, class: "btn" }, "Choose a photo"),
+        el("span", { class: "muted" }, " or drop one here"));
+  if (!TOUCH) {
+    box.addEventListener("dragover", e => { e.preventDefault(); box.classList.add("over"); });
+    box.addEventListener("dragleave", () => box.classList.remove("over"));
+    box.addEventListener("drop", e => {
+      e.preventDefault(); box.classList.remove("over");
+      record("photo_source", { role, source: "drop" });
+      use(e.dataTransfer?.files?.[0]);
+    });
+  }
+  return box;
 }
 
 // ------------------------------------------------------------------ the front alone (D-100)
@@ -697,6 +854,7 @@ function apiMessage(e) {
 }
 
 function apiErrorView(e, retry) {
+  if (needsInvite(e)) return join();          // D-102: this phone isn't (or is no longer) in the beta
   return el("section", { class: "stack" },
     el("h1", {}, "That didn't work"),
     el("p", {}, apiMessage(e)),

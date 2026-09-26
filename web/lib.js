@@ -12,7 +12,7 @@
 //    beyond the headline the user was shown.
 
 // Bump together with VERSION in sw.js: a report then says which shell was cached.
-export const APP_VERSION = "web-6";
+export const APP_VERSION = "web-7";
 
 // ------------------------------------------------------------------ storage
 // localStorage can throw (private mode, blocked site data); the app must still work.
@@ -211,6 +211,20 @@ export const problemRequest = payload =>
 export const sendToUsRequest = scanIds =>
   call("/send-to-us", { method: "POST", headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ device_id: deviceId(), scan_ids: scanIds }) });
+
+// D-102: the invite-only beta. The server says whether it needs a code and
+// whether this phone has joined; the code comes from the tester's link.
+export const accessRequest = () =>
+  call("/access?device_id=" + encodeURIComponent(deviceId()));
+
+export const joinRequest = code =>
+  call("/join", { method: "POST", headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ code, device_id: deviceId() }) });
+
+export const feedbackRequest = ({ comment, rating, screen }) =>
+  call("/feedback", { method: "POST", headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ comment, rating, screen, device_id: deviceId(),
+                                             app_version: APP_VERSION }) });
 
 export const updatesRequest = () =>
   call("/updates?device_id=" + encodeURIComponent(deviceId()));

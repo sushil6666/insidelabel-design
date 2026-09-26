@@ -4,7 +4,7 @@ Architectural and product decisions for InsideLabel, with the reasoning attached
 Append-only. When a decision is reversed, mark it `SUPERSEDED` and add a new entry
 rather than editing the old one — the history is the point.
 
-**Last updated:** 2026-09-25 (D-094–D-101 accepted by Sushil and locked)
+**Last updated:** 2026-09-26 (D-102 recommended: invite-only web beta)
 
 **Status key:** `LOCKED` decided, don't relitigate · `OPEN` not yet decided ·
 `RECOMMENDED` proposed but not accepted · `SUPERSEDED` replaced
@@ -835,6 +835,40 @@ the catalogue; it still fills the queue with junk at no cost to the sender.
   `queue_predictions.py`); the suite sets the variable in `tests/conftest.py`.
 - The public deploy never sets it. A local dev server that wants `replay` in `/docs`
   sets it explicitly.
+
+### D-102 · The beta launches on the web first, invite-only, one code per tester `RECOMMENDED` (2026-09-26)
+Direction from Sushil ("launch the website first, then the Android app"; "I will ask
+50 people to test and ask feedback"); design by Claude; awaiting Sushil.
+
+Consistent with D-010 (PWA first, then wrap it): the website *is* the app, and the
+Play Store build later wraps the same site, which must be live on the domain anyway.
+D-007's closed beta (50–100 testers, W4 retention) now starts on the web.
+
+- **Invite codes** (migration 012, `tools/beta.py`): one per **person**, 8 characters
+  without look-alikes (no 0/O, 1/I/L), sent as a link `…/app/#/join/CODE` that fills
+  it in. A code serves up to 3 devices (phone + laptop); `reset` clears them for a new
+  phone, `revoke` locks the tester out. Wrong codes are throttled.
+- **The gate**: with `INSIDELABEL_INVITE_ONLY=on`, `/scan`, `/send-to-us` and `/feedback`
+  refuse a phone that hasn't joined (403 `invite_required`), before anything is read
+  or stored — logged, not a scan row, like D-095/D-101. Without the database nobody
+  gets in. Off by default, so local work and tests are unchanged; **on at deploy**.
+  Landing, privacy, about, `/access` and "Report a problem" stay open.
+- **Retention per person**: `tools/beta.py list` shows each code's devices, scans, days
+  active, first/last scan and feedback: the D-055 W4 number counted per tester.
+- **Feedback** ("Send feedback" in the footer): comment + optional 1–5 rating + the
+  screen it came from, stored against the code. Separate from "Report a mistake"
+  (content, D-076) and "Report a problem" (app broke, D-092).
+- **Uploads**: every photo can be taken *or* uploaded (a phone's camera-only input
+  hid the gallery); on a computer, choose or drag-and-drop. A barcode can be read from
+  a photo where the browser can (Chrome on Android/Mac); otherwise it is typed —
+  never read by the AI, since a wrong barcode shows the wrong product.
+- **Public pages** at `/`, `/privacy`, `/about` (`web/site/`), wording-linted. Privacy
+  and about are **drafts** describing what the app does today; the bracketed parts
+  (who is behind it, retention of other data, contact, COI policy) are Sushil's to
+  write, and the privacy text needs a DPDP review before the beta opens.
+
+The tester label in `tools/beta.py` is for Sushil only (a first name or "T07"); no
+phone numbers or emails are stored.
 
 ---
 

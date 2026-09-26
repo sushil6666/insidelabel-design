@@ -15,6 +15,29 @@ export async function barcodeSupported() {
   } catch { return false; }
 }
 
+// Reading a barcode from a photo the user uploads (a saved picture, a laptop
+// without a camera). Needs only the detector, not the camera. Chrome has it on
+// Android and Mac; elsewhere the caller asks for the number instead.
+export async function imageBarcodeSupported() {
+  if (!("BarcodeDetector" in window)) return false;
+  try {
+    const have = await window.BarcodeDetector.getSupportedFormats();
+    return FORMATS.some(f => have.includes(f));
+  } catch { return false; }
+}
+
+// The digits of the first barcode in the image, or null.
+export async function barcodeFromImage(file) {
+  try {
+    const bmp = await createImageBitmap(file);
+    const codes = await new window.BarcodeDetector({ formats: FORMATS }).detect(bmp);
+    bmp.close && bmp.close();
+    const raw = codes[0]?.rawValue?.replace(/\D/g, "");
+    if (!raw) return null;
+    return codes[0].format === "upc_e" ? upcEtoA(raw) : raw;
+  } catch { return null; }
+}
+
 // Starts the camera in `video` and calls onCode(digits) once a code has been
 // read the same way twice in a row (one frame can misread). Returns stop().
 export async function startScanner(video, onCode) {

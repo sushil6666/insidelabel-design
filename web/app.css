@@ -151,3 +151,11 @@ q { quotes: "“" "”"; }
 .foot { padding-top: 0; text-align: center; font-size: .9rem; }
 .foot a { color: var(--muted); }
 .preview { white-space: pre-wrap; word-break: break-all; max-height: 260px; overflow: auto; }
+
+/* D-102: photo upload on a computer — choose or drop. */
+.drop { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 16px;
+        border: 2px dashed var(--line); border-radius: var(--radius); }
+.drop.over { border-color: var(--brand); background: var(--calm-bg); }
+.drop .btn { width: auto; }
+.rating { flex-wrap: wrap; gap: 4px 16px; }
+.rating .choice { min-height: 36px; }

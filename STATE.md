@@ -94,6 +94,8 @@ pytest -q                                    # 253 pass, 1 skipped; DB tests use
 | `INSIDELABEL_REVIEW_TOKEN` | reviewer screen **until the first account exists** (D-097) | then refused; accounts via `tools/reviewers.py` |
 | `INSIDELABEL_ALLOW_REPLAY` | the `replay` form field on `/scan` (D-101) | default off (403); `repro.py`, tools and tests switch it on in-process |
 | `INSIDELABEL_PROXY_HOPS` | rate limits behind a reverse proxy (D-095) | number of proxies; unset → the socket address, `X-Forwarded-For` ignored |
+| `INSIDELABEL_INVITE_ONLY` | the invite-only web beta (D-102) | `on` at deploy: only phones that joined with a code can scan; default off |
+| `INSIDELABEL_PUBLIC_URL` | join links printed by `tools/beta.py invite` | e.g. `https://yourdomain.in`; or pass `--base` |
 | `INSIDELABEL_TEST_PG` | run DB tests on a real server | must name a `*_test` database |
 | `INSIDELABEL_CLAIMS_TO_USERS` | show the claim check to users (D-051) | default `off`; turn on only after ≥ 5 claim packs with 0 false contradictions |
 | `INSIDELABEL_DATA` | alternate `data/` dir | rarely needed |
@@ -351,6 +353,28 @@ Keep this list — it is the cheapest way to not repeat a mistake.
 | A retention job run between "list" and "delete" could remove a photo a user had just re-sent (keys are content hashes) | Re-check each key right before deleting it; test the race with the check switched off. |
 
 ---
+
+## Web beta first (2026-09-26, branch `web-beta`, D-102 recommended)
+
+Sushil: launch the website first (domain ready), Android after; ~50 invited testers,
+feedback from each. Built, tested (267 passing), walked in headless Chromium against a
+faked API (link → join → welcome → home → scan → feedback → photo drop box):
+
+- **Invite codes + gate** — migration 012, `/access`, `/join`, `INSIDELABEL_INVITE_ONLY`;
+  `tools/beta.py invite | list | feedback | reset | revoke`.
+- **Send feedback** — footer link, comment + 1–5, stored against the tester's code.
+- **Take or upload** every photo; drag-and-drop on a computer; barcode from a photo where
+  Chrome supports it, otherwise typed.
+- **Landing page** at `/` + draft `/privacy` and `/about` (`web/site/`).
+- Found and fixed: `go()` to the page already showing did nothing (stuck on welcome after
+  joining).
+
+**Sushil, to launch:** accept D-102 → fill the `[To complete]` parts of `web/site/privacy.html`
+and `about.html` (and a DPDP review) → deploy (§8 item 13) with `INSIDELABEL_INVITE_ONLY=on`,
+then `migrate`, `tools/reviewers.py add`, `tools/beta.py invite 50 --base https://yourdomain`
+(one link per person, labels like "T01 Priya") → send the links → watch `tools/beta.py list`
+and `tools/beta.py feedback`. Seed the kids' biscuits first (§8 item 4): every pack not in
+the catalogue is a paid 8–15 s read.
 
 ## Waiting for Sushil (from the overnight session, 2026-09-26)
 

@@ -12,6 +12,8 @@ Inside Label — API (v0.1)
                        (+ barcode: a reviewed catalogue entry skips the vision call)
     POST /report       "Report a mistake" on a scan (D-076)
     POST /send-to-us   two refused scans -> the review queue (D-070)
+    GET  /access       invite-only? joined?   POST /join   a tester's code (D-102)
+    POST /feedback     a tester's comment + optional rating (D-102)
 
 THE GUARD THAT MATTERS
 ----------------------
@@ -37,7 +39,7 @@ import uuid  # noqa: E402
 from typing import Optional  # noqa: E402
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile  # noqa: E402
-from fastapi.responses import JSONResponse, RedirectResponse  # noqa: E402
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 from starlette.concurrency import run_in_threadpool  # noqa: E402
 
@@ -58,6 +60,8 @@ from insidelabel.extraction.schemas import (  # noqa: E402
     AllergenCheckRequest,
     AnalyzeRequest,
     CompareRequest,
+    FeedbackRequest,
+    JoinRequest,
     ProblemRequest,
     ReportRequest,
     SendToUsRequest,
@@ -100,6 +104,37 @@ def _replay_allowed():
     if REPLAY_ALLOWED is not None:
         return REPLAY_ALLOWED
     return os.environ.get("INSIDELABEL_ALLOW_REPLAY", "off").lower() == "on"
+
+
+# D-102: the web beta is invite-only: ~50 named testers, one code each. On a
+# server with INSIDELABEL_INVITE_ONLY=on a phone must join with a code before
+# it can scan, send photos or give feedback. Tests set INVITE_ONLY directly.
+INVITE_ONLY = None             # None: follow the environment, read per request
+
+
+def _invite_only():
+    if INVITE_ONLY is not None:
+        return INVITE_ONLY
+    return os.environ.get("INSIDELABEL_INVITE_ONLY", "off").lower() == "on"
+
+
+def _require_invite(device_id):
+    """
+    Refuse a phone that hasn't joined, before anything is read or stored (like
+    a 429, D-095; logged, not a scan row). Without a database nobody can be
+    checked, so nobody gets in.
+    """
+    if not _invite_only():
+        return
+    if STORE is None:
+        raise HTTPException(status_code=503, detail={
+            "error": "storage_unavailable", "detail": "Invites need the database (INSIDELABEL_DB is not set)."})
+    code = _persist(STORE.invite_of, device_id) if device_id else None
+    if code is None:
+        log.warning("no invite: device=%s", device_id)
+        raise HTTPException(status_code=403, detail={
+            "error": "invite_required",
+            "detail": "This beta is by invitation. Open the link from your invite, or type its code."})
 
 
 def _user_claim_check(cc, front_claims):
@@ -225,9 +260,22 @@ mimetypes.add_type("text/javascript", ".js")        # module scripts refuse othe
 if os.path.isdir(WEB_DIR):
     app.mount("/app", StaticFiles(directory=WEB_DIR, html=True), name="app")
 
-    @app.get("/", include_in_schema=False)
-    def root():
-        return RedirectResponse("/app/")
+    # D-102: the public pages around the app — landing, privacy, about. Plain
+    # HTML in web/site/, linted with the app's wording rules (tests/test_web.py).
+    SITE_DIR = os.path.join(WEB_DIR, "site")
+    _SITE_PAGES = {"/": "index.html", "/privacy": "privacy.html", "/about": "about.html",
+                   "/site.css": "site.css"}
+
+    def _site_page(path):
+        name = _SITE_PAGES[path]
+        full = os.path.join(SITE_DIR, name)
+        if not os.path.exists(full):
+            return RedirectResponse("/app/")
+        return FileResponse(full)
+
+    for _path in _SITE_PAGES:
+        app.add_api_route(_path, (lambda p: (lambda: _site_page(p)))(_path), methods=["GET"],
+                          include_in_schema=False)
 
 
 # ---------------------------------------------------------------------------
@@ -640,6 +688,7 @@ def send_to_us(req: SendToUsRequest, request: Request):
     reports back when the item is decided.
     """
     _rate_limit(request, "send_to_us", req.device_id, ratelimit.SEND_TEXT)
+    _require_invite(req.device_id)
     if STORE is None:
         raise HTTPException(status_code=503, detail={
             "error": "storage_unavailable",
@@ -655,6 +704,63 @@ def send_to_us(req: SendToUsRequest, request: Request):
         status, text = _SEND_ERRORS[out["error"]]
         raise HTTPException(status_code=status, detail={"error": out["error"], "detail": text})
     return {"status": "received", **out}
+
+
+# ---------------------------------------------------------------------------
+# Invite-only beta (D-102): join, access, feedback
+# ---------------------------------------------------------------------------
+_JOIN_ERRORS = {
+    "bad_code": (404, "That code doesn't match an invite. Check it against your message."),
+    "revoked": (410, "That invite has been closed. Ask the person who sent it."),
+    "code_full": (409, "That code is already in use on three devices. Ask for it to be reset."),
+}
+
+
+@app.get("/access")
+def access(device_id: str = ""):
+    """Does this server need an invite, and has this phone joined? The app asks on open."""
+    joined = bool(STORE and device_id and _persist(STORE.invite_of, device_id))
+    return {"invite_only": _invite_only(), "joined": joined}
+
+
+@app.post("/join")
+def join(req: JoinRequest, request: Request):
+    """A tester's code, from their link or typed. One code serves up to three devices."""
+    if STORE is None:
+        raise HTTPException(status_code=503, detail={
+            "error": "storage_unavailable", "detail": "Invites need the database (INSIDELABEL_DB is not set)."})
+    try:
+        device = str(uuid.UUID(req.device_id))
+    except ValueError:
+        raise HTTPException(status_code=422, detail={"error": "bad_device_id"})
+    ip = ratelimit.client_ip(request)
+    wait = ratelimit.LIMITER.wait("join_fail", device=device, ip=ip)
+    if wait:
+        raise HTTPException(status_code=429, headers={"Retry-After": str(int(wait) + 1)}, detail={
+            "error": "rate_limited", "detail": ratelimit.JOIN_TEXT, "retryable": True,
+            "retry_after_s": int(wait) + 1})
+    out = STORE.join_invite(req.code, device)
+    if "error" in out:
+        ratelimit.LIMITER.hit("join_fail", device=device, ip=ip)       # only failures count
+        status, text = _JOIN_ERRORS[out["error"]]
+        raise HTTPException(status_code=status, detail={"error": out["error"], "detail": text})
+    return {"status": "joined"}
+
+
+@app.post("/feedback")
+def feedback(req: FeedbackRequest, request: Request):
+    """D-102 "Send feedback": a tester's comment and optional 1–5 rating, stored against their code."""
+    _rate_limit(request, "feedback", req.device_id, ratelimit.FEEDBACK_TEXT)
+    _require_invite(req.device_id)
+    if STORE is None:
+        raise HTTPException(status_code=503, detail={
+            "error": "storage_unavailable", "detail": "Feedback needs the database (INSIDELABEL_DB is not set)."})
+    comment = (req.comment or "").strip()
+    if not comment:
+        raise HTTPException(status_code=422, detail={"error": "empty_feedback", "detail": "Write a few words first."})
+    fid = STORE.save_feedback(device_id=req.device_id, comment=comment, rating=req.rating,
+                              screen=req.screen, app_version=req.app_version)
+    return {"status": "received", "feedback_id": fid}
 
 
 # ---------------------------------------------------------------------------
@@ -775,6 +881,7 @@ async def scan(
     # costs nothing and has its own budget.
     lookup_only = bool(barcode and barcode.strip()) and back is None and front is None and replay is None
     _rate_limit(request, "lookup" if lookup_only else "scan", device_id, ratelimit.SCAN_TEXT)
+    _require_invite(device_id)            # D-102, before any photo is read
     avoid = avoid if avoid and avoid.strip() else None
     avoid_codes = parse_avoid(avoid)
     people = parse_profiles(profiles)
