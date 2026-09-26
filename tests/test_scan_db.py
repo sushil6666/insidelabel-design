@@ -209,8 +209,33 @@ def test_report_a_mistake(db):
     assert r.status_code == 200
     rid = r.json()["review_id"]
     assert q(db, "SELECT kind, status FROM review_queue WHERE id = %s", rid)[0] == ("correction", "open")
-    assert c.post("/report", json={"scan_id": str(uuid.uuid4()), "field": "x"}).status_code == 404
-    assert c.post("/report", json={"field": "x"}).status_code == 422
+    assert c.post("/report", json={"scan_id": str(uuid.uuid4()), "field": "x",
+                                   "note": "misread"}).status_code == 404
+    r = c.post("/report", json={"field": "x", "note": "misread"})
+    assert r.status_code == 422 and r.json()["error"] == "no_subject"
+
+
+def test_empty_report_refused_before_anything_is_stored(db):
+    """D-109: a report needs what the pack says or a note; the field alone isn't enough."""
+    sid = scan(replay=vision(["Rice flour", "Salt"])).json()["scan_id"]
+    before = q(db, "SELECT count(*) FROM review_queue")[0][0]
+    for body in ({}, {"note": None, "proposed_value": None}, {"note": "   ", "proposed_value": "\n"},
+                 {"note": "ok"}, {"proposed_value": " . "}):
+        r = c.post("/report", json={"scan_id": sid, "field": "other", **body})
+        assert r.status_code == 422, body
+        assert (r.json()["error"], r.json()["detail"]) == ("empty_report", main.EMPTY_REPORT)
+    assert q(db, "SELECT count(*) FROM review_queue")[0][0] == before
+    # An empty report about a scan that doesn't exist is still refused as empty, not 404.
+    r = c.post("/report", json={"scan_id": str(uuid.uuid4()), "field": "other"})
+    assert r.json()["error"] == "empty_report"
+
+
+def test_one_box_filled_is_enough(db):
+    """D-109: either box on its own, with real text, sends the report."""
+    sid = scan(replay=vision(["Rice flour", "Salt"])).json()["scan_id"]
+    assert c.post("/report", json={"scan_id": sid, "field": "other", "note": "  Has sesame  "}).status_code == 200
+    assert c.post("/report", json={"scan_id": sid, "field": "ingredients",
+                                   "proposed_value": "Rice flour, Salt, Sesame"}).status_code == 200
 
 
 def test_db_failure_never_costs_the_user_their_result(db, monkeypatch):

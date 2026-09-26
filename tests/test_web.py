@@ -130,3 +130,11 @@ def test_public_pages_pass_the_wording_lint():
 def test_invite_and_feedback_errors_pass_the_wording_lint():
     from insidelabel.api import main
     assert_clean([t for _s, t in main._JOIN_ERRORS.values()], "join errors")
+
+
+def test_empty_report_sentence_matches_the_server():
+    """D-109: the app refuses an empty report with the server's own sentence."""
+    from insidelabel.api.main import EMPTY_REPORT
+    src = open(os.path.join(WEB_DIR, "app.js"), encoding="utf-8").read()
+    assert f'"{EMPTY_REPORT}"' in src
+    assert '"empty_report"' in src
