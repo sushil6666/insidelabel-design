@@ -533,6 +533,8 @@ Nothing was blocked; all five items were built. These need you:
 - **D-053** premium pricing - ₹399-499/year recommended.
 - ~~**D-054** the "100% ATTA" ruling~~ ✅ decided 2026-09-25: about the flour, no finding.
 - **D-082** what Premium is for - interviews only.
+- **D-112** (RECOMMENDED 2026-09-26) the logo: barcode + gold magnifier on deep green (B1 of the
+  redraws of Sushil's Drive image, without its tick and "food guardian" tagline). Not built until accepted.
 - Concern levels on the 35 verified rows are judgement calls (e.g. sorbitol `low`) - review before launch.
 - **Gemini billing**: prepaid credit (can run out, as it did today) vs post-paid / auto top-up.
 - **A fallback model** for when `gemini-3.6-flash` is busy - only after `gemini-3.5-flash`
