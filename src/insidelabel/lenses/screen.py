@@ -72,6 +72,18 @@ HEADLINE = {
     "not_a_food_pack": "This doesn't look like a food pack.",
 }
 NOT_A_PACK = ("back_is_a_screen", "not_a_food_pack")
+# When a front was sent too, say which photo is the problem: the front may be a
+# perfectly good pack (Sushil's test: a screenshot back with a real Ziggy front).
+HEADLINE_BACK = {
+    "back_is_a_screen": "The back photo is a photo of a screen, not a pack.",
+    "not_a_food_pack": "The back photo isn't a food pack.",
+}
+RETAKE_BACK = {
+    "back_is_a_screen": "The back photo looks like a photo of a screen. Turn the pack over and photograph "
+                        "the ingredient list on the pack itself.",
+    "not_a_food_pack": "The back photo doesn't show a food pack. Turn the pack over and photograph the "
+                       "ingredient list, the part that starts with \"Ingredients\".",
+}
 RETAKE_DEFAULT = "We couldn't read this label. Retake the photo of the ingredient list."
 RETAKE_PARTIAL = "Part of the ingredient list was cut off or hard to read. Retake it to check the rest."
 
@@ -267,7 +279,8 @@ UNLISTED_NOTE = ("This pack has no barcode, so it isn't added to our catalogue. 
 
 
 def build(*, verdict, display, claim_check, extracted, reliability, profiles,
-          allergen_confidence, allergen_reliable, catalogue=None, has_barcode=True):
+          allergen_confidence, allergen_reliable, catalogue=None, has_barcode=True,
+          photos_sent=("back",)):
     """The `screen` block of a /scan response. verdict=None means the scan was refused."""
     ingredients = (extracted or {}).get("ingredients") or []
     statement = (extracted or {}).get("allergen_statement")
@@ -279,9 +292,11 @@ def build(*, verdict, display, claim_check, extracted, reliability, profiles,
         return {
             "state": "retake",
             "people": people,
-            "headline": {"text": HEADLINE.get(error, "We couldn't read this label clearly."),
+            "headline": {"text": (HEADLINE_BACK.get(error) if "front" in photos_sent else None)
+                                 or HEADLINE.get(error, "We couldn't read this label clearly."),
                          "source": {"kind": "reliability", "ref": error}},
-            "retake": RETAKE.get(error, RETAKE_DEFAULT),
+            "retake": (RETAKE_BACK.get(error) if "front" in photos_sent else None)
+                      or RETAKE.get(error, RETAKE_DEFAULT),
             # D-096/D-103: a pack we couldn't read can go to a reviewer; a photo
             # that isn't a pack can't, and neither can a pack without a barcode (D-107).
             "can_send": error not in NOT_A_PACK and error != "product_mismatch" and has_barcode,

@@ -376,6 +376,15 @@ then `migrate`, `tools/reviewers.py add`, `tools/beta.py invite 50 --base https:
 and `tools/beta.py feedback`. Seed the kids' biscuits first (§8 item 4): every pack not in
 the catalogue is a paid 8-15 s read.
 
+### Refusals name the wrong photo (2026-09-26, branch `refusal-labels`)
+
+Sushil's test (screenshot back + real Ziggy front) was refused correctly, but the history
+read "ZIGGY DONUT CAKE Choco Vanilla: This doesn't look like a food pack". Now, with two
+photos, the refusal says "The back photo isn't a food pack" (or "is a photo of a screen"),
+and a not-a-pack or two-pack refusal carries no product name. His "Report a mistake"
+(review item #9: field "other", no note) is still open for review. Server problem #1
+(UndefinedTable on /agree at 12:23, before migration 013) closed as fixed. Tests: 363.
+
 ### Front of one pack, back of another (2026-09-26, branch `pack-mismatch`, D-108 locked)
 
 Sushil found a Patanjali front + Maliban back went through. Gemini had said "mismatch";
