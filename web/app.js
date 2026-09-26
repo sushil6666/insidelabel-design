@@ -680,7 +680,12 @@ function result(id) {
   if (s.state === "retake") {
     put(
       el("p", { class: "card warn" }, s.retake),
-      button("Retake the photo", () => { pending.back = null; go("photo"); }, "primary"),
+      button("Retake the photo", () => {
+        pending.back = null;
+        // D-108: after "these look like different packs", neither photo can be trusted.
+        if (s.headline?.source?.ref === "product_mismatch") { pending.front = null; pending.pairing = false; }
+        go("photo");
+      }, "primary"),
       pending.attempts >= 2 && s.can_send !== false && el("p", { class: "muted" },
         "Still not working? Try daylight, or another pack. Some labels are printed too small or too shiny to read."),
       // D-070: after two refusals, a person reads the photos instead.
@@ -695,6 +700,7 @@ function result(id) {
     s.band.note && el("details", {}, el("summary", {}, "What does this mean?"), el("p", {}, s.band.note))));
   put(el("p", { class: "muted" }, s.checked, " ", s.scope));
   if (s.catalogue_note) put(el("p", { class: "card note" }, s.catalogue_note));      // D-107
+  if (s.front_note) put(el("p", { class: "card note" }, s.front_note));              // D-108
 
   if (s.retake) put(el("div", { class: "card warn" }, el("p", {}, s.retake),
     button("Retake the ingredients photo", () => { pending = { ...pending, back: null, barcode: h.barcode }; go("photo"); })));

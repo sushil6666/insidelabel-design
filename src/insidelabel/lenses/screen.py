@@ -256,6 +256,11 @@ def _headline(band, worth, claims, reliability):
     return {"text": BAND_LABEL.get(band, BAND_LABEL["mixed"]) + ".", "source": {"kind": "band", "ref": band}}
 
 
+# D-108: shown when a front photo was sent but couldn't be confirmed as this pack.
+FRONT_NOT_USED = ("We couldn't confirm that the front and back photos are of the same pack, so the "
+                  "front photo wasn't used. The result is from the back. If they are the same pack, "
+                  "tick \"Both photos are of the same pack\" next time.")
+
 # D-107: shown under a result for a pack without a barcode.
 UNLISTED_NOTE = ("This pack has no barcode, so it isn't added to our catalogue. The result above "
                  "is from your photo, just for you.")
@@ -279,7 +284,7 @@ def build(*, verdict, display, claim_check, extracted, reliability, profiles,
             "retake": RETAKE.get(error, RETAKE_DEFAULT),
             # D-096/D-103: a pack we couldn't read can go to a reviewer; a photo
             # that isn't a pack can't, and neither can a pack without a barcode (D-107).
-            "can_send": error not in NOT_A_PACK and has_barcode,
+            "can_send": error not in NOT_A_PACK and error != "product_mismatch" and has_barcode,
         }
 
     band = display["display_binary"]
@@ -321,4 +326,7 @@ def build(*, verdict, display, claim_check, extracted, reliability, profiles,
             out["recheck"] = "Packs change. Photograph the back of your pack to re-check the avoid list."
     if not has_barcode:
         out["catalogue_note"] = UNLISTED_NOTE
+    # D-108: a front that couldn't be tied to this back is not used; say so.
+    if any(c.get("code") == "product_pairing_unverified" for c in reliability.get("caveats", [])):
+        out["front_note"] = FRONT_NOT_USED
     return out

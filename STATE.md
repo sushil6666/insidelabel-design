@@ -376,6 +376,14 @@ then `migrate`, `tools/reviewers.py add`, `tools/beta.py invite 50 --base https:
 and `tools/beta.py feedback`. Seed the kids' biscuits first (§8 item 4): every pack not in
 the catalogue is a paid 8-15 s read.
 
+### Front of one pack, back of another (2026-09-26, branch `pack-mismatch`, D-108 locked)
+
+Sushil found a Patanjali front + Maliban back went through. Gemini had said "mismatch";
+the code discarded it (it demanded a matching anchor), and the "same pack" tick then
+attached Patanjali's claims to the wafer. Now a reasoned mismatch refuses the scan, the
+tick can't override it, and "can't tell" says on screen that the front wasn't used.
+All 12 genuine gold pair reads still pass. Tests: 358 passing.
+
 ### No barcode, no catalogue entry (2026-09-26, branch `no-barcode`, D-107 locked)
 
 "No barcode? Photograph the ingredients" moved up to a full button under the camera. A

@@ -694,6 +694,7 @@ _SEND_ERRORS = {
     "no_photo": (422, "We don't have the photo for that scan any more."),
     "not_a_pack": (422, "Those photos don't show a food pack, so there's nothing for our team to read."),
     "no_barcode": (422, "Our catalogue is filed by barcode, so a pack without one can't be sent to our team."),
+    "two_packs": (422, "Those photos show two different packs. Photograph the front and back of the same pack."),
 }
 
 
