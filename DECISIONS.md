@@ -4,7 +4,7 @@ Architectural and product decisions for InsideLabel, with the reasoning attached
 Append-only. When a decision is reversed, mark it `SUPERSEDED` and add a new entry
 rather than editing the old one - the history is the point.
 
-**Last updated:** 2026-09-26 (D-102 to D-107 locked; D-108 recommended)
+**Last updated:** 2026-09-26 (D-102 to D-108 locked)
 
 **Status key:** `LOCKED` decided, don't relitigate · `OPEN` not yet decided ·
 `RECOMMENDED` proposed but not accepted · `SUPERSEDED` replaced
@@ -1033,9 +1033,9 @@ scan, and two different packs couldn't be told apart.
 - `tools/queue_predictions.py` now reads each gold pack's barcode from its photos (or
   `--barcode ID=DIGITS`) and skips a pack without one.
 
-### D-108 · A front of one pack with the back of another is refused `RECOMMENDED` (2026-09-26)
+### D-108 · A front of one pack with the back of another is refused `LOCKED` (2026-09-26)
 Reported by Sushil ("front image of one product and back image of another, it's
-allowing"); cause and fix by Claude; awaiting Sushil. Amends D-035 (the user's "same pack"
+allowing"); cause and fix by Claude; accepted by Sushil 2026-09-26. Amends D-035 (the user's "same pack"
 tick resolves "can't tell", never "different packs").
 
 **Reproduced** on the live server: Patanjali Doodh Biscuits front + Maliban wafer back,
