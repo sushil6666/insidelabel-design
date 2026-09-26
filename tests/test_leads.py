@@ -50,8 +50,8 @@ def test_full_lead_lifecycle(db):
     assert lead["source_type"] == "marketplace_reference"
 
     assert L.pack_obtained(lead["id"])["evidence_status"] == "pack_obtained"
-    s = scan(db, "8900000000011")
-    linked = L.link(lead["id"], barcode="8900000000011")
+    s = scan(db, "8900000000012")
+    linked = L.link(lead["id"], barcode="8900000000012")
     assert linked["evidence_status"] == "label_captured"
     assert linked["product_version_id"] == s["product_version_id"]
 
@@ -62,14 +62,14 @@ def test_full_lead_lifecycle(db):
 
 def test_linking_to_an_already_published_version_closes_the_lead(db):
     L = Leads(db)
-    s = scan(db, "8900000000028")
+    s = scan(db, "8900000000029")
     q(db, "SELECT publish_version(%s, 'reviewer')", s["product_version_id"])
     lead = L.add(product="Lemon Drink", source_platform="Zepto", noted_by="t")
     assert L.link(lead["id"], product_version_id=s["product_version_id"])["evidence_status"] == "published"
 
 
 def test_a_listing_version_can_never_be_published(db):
-    s = scan(db, "8900000000035")
+    s = scan(db, "8900000000036")
     vid = s["product_version_id"]
     q(db, "UPDATE product_versions SET production_source = 'marketplace_listing' WHERE id = %s", vid)
     with pytest.raises(psycopg.errors.CheckViolation):
@@ -78,7 +78,7 @@ def test_a_listing_version_can_never_be_published(db):
 
 def test_a_lead_cannot_be_closed_by_a_listing_version(db):
     L = Leads(db)
-    s = scan(db, "8900000000042", ING[:3])
+    s = scan(db, "8900000000043", ING[:3])
     vid = s["product_version_id"]
     q(db, "UPDATE product_versions SET production_source = 'marketplace_listing' WHERE id = %s", vid)
     lead = L.add(product="Lemon Drink", source_platform="Blinkit", noted_by="t")
@@ -109,9 +109,9 @@ def test_status_rules(db):
 
 def test_duplicate_barcode_and_screenshot_are_refused(db, tmp_path):
     L = Leads(db)
-    L.add(product="Chips", barcode="8900000000059", source_platform="Amazon", noted_by="t")
+    L.add(product="Chips", barcode="8900000000050", source_platform="Amazon", noted_by="t")
     with pytest.raises(LeadError, match="already lead"):
-        L.add(product="Chips", barcode="8900000000059", source_platform="Zepto", noted_by="t")
+        L.add(product="Chips", barcode="8900000000050", source_platform="Zepto", noted_by="t")
 
     shot = tmp_path / "s.png"
     shot.write_bytes(b"not really a png")
@@ -124,7 +124,7 @@ def test_duplicate_barcode_and_screenshot_are_refused(db, tmp_path):
 
 def test_review_refuses_a_listing_version(db):
     from insidelabel.review.service import ReviewError, ReviewService
-    s = scan(db, "8900000000066", ING[:2])
+    s = scan(db, "8900000000067", ING[:2])
     vid = s["product_version_id"]
     q(db, "UPDATE product_versions SET production_source = 'marketplace_listing' WHERE id = %s", vid)
     rid = q(db, "SELECT id FROM review_queue WHERE product_version_id = %s", vid)[0][0]

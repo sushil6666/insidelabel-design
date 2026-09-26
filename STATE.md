@@ -376,6 +376,17 @@ then `migrate`, `tools/reviewers.py add`, `tools/beta.py invite 50 --base https:
 and `tools/beta.py feedback`. Seed the kids' biscuits first (§8 item 4): every pack not in
 the catalogue is a paid 8–15 s read.
 
+### Input validation (2026-09-26, same branch, D-103 recommended)
+
+Sushil's test scan (barcode `12222333333333` + two dbt/Snowflake screenshots) was paid
+for, answered "retake", counted towards "Send it to us" and got an empty mistake report
+(review item #8 on the local DB — reject it). Now: the server checks the barcode
+against GS1's tables, the photo file before any paid call, and what each photo shows
+(new prompt field `image_content`). 38 new tests; 305 passing. Existing tests' made-up
+barcodes had wrong check digits (the app always checked, the server never did): fixed.
+**Before launch:** run the new prompt on the 6 gold labels and 2–3 real screenshots
+(a few paid Gemini calls) to confirm `food_pack` / `screen` come back as expected.
+
 ## Waiting for Sushil (from the overnight session, 2026-09-26)
 
 Nothing was blocked; all five items were built. These need you:

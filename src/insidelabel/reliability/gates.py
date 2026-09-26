@@ -24,6 +24,31 @@ _REFUSE = {
 }
 
 
+# D-103: what the model says each photo shows. The model reads; these rules
+# decide. A photo of a screen is refused even when an ingredient list is
+# legible on it: a listing or a picture on a display is a lead, never the
+# record (D-089). Refusals for these codes can't go to "Send it to us".
+NOT_A_PACK = ("back_is_a_screen", "not_a_food_pack")
+
+
+def drop_unusable_front(vision):
+    """
+    A front photo that isn't a food pack is dropped, not fatal: the back still
+    carries the ingredient list. Mutates `vision`; returns a caveat or None.
+    """
+    seen = (vision.get("image_content") or {}).get("front")
+    if seen not in ("screen", "not_food"):
+        return None
+    vision["front_status"] = "not_provided"
+    vision["front_claims"], vision["front_claim_footnotes"] = [], []
+    vision["front_identity"] = None
+    vision["product_match"] = {"status": "single_image", "evidence": []}
+    return {"code": "front_not_a_pack",
+            "detail": "The front photo doesn't show a food pack"
+                      + (" (it looks like a screen)" if seen == "screen" else "")
+                      + ", so it wasn't used."}
+
+
 def assess(vision):
     """
     Returns (proceed: bool, reliability: dict).
@@ -32,6 +57,21 @@ def assess(vision):
     back = vision["back_status"]
     ing = vision["ingredients_status"]
     front = vision["front_status"]
+
+    # 0. Not a pack at all (D-103): say so, instead of "retake the photo".
+    seen = (vision.get("image_content") or {}).get("back")
+    if seen == "screen":
+        return False, {
+            "error": "back_is_a_screen",
+            "detail": "The back photo shows a screen, not the pack itself.",
+            "hint": "Photograph the physical pack; a listing or a picture on a screen isn't used.",
+        }
+    if seen == "not_food":
+        return False, {
+            "error": "not_a_food_pack",
+            "detail": "The back photo doesn't show a packaged food.",
+            "hint": "Photograph the ingredient list on the back of a food pack.",
+        }
 
     # 1. No usable ingredient list -> no verdict, at all.
     # Two different products is a user error worth naming, not something to

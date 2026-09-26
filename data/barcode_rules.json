@@ -1,0 +1,24 @@
+{
+  "_meta": {
+    "purpose": "Which barcodes identify a retail consumer pack (D-103). /scan and /review refuse the rest before anything is read.",
+    "source": "GS1 General Specifications Standard, Release 26.0, Ratified, Jan 2026 (ref.gs1.org/standards/genspecs): Table 1-4 Synopsis of GS1 Prefix ranges; Table 1-5 Synopsis of GS1-8 Prefixes; Table 1-6 Synopsis of U.P.C. Prefix ranges; section 2.1 Table 2-17 (GTIN-14 indicator digits 1-8 are trade item groupings, 9 is variable measure); retail consumer trade items carry a GTIN-13, GTIN-12 or GTIN-8.",
+    "verified_on": "2026-09-26",
+    "how": "A 12-digit UPC-A is read as a GTIN-13 with a leading 0 (GS1 Prefix = 0 + the U.P.C. prefix). A GTIN-14 with indicator 0 is the GTIN-13 inside it. Prefixes are matched longest first.",
+    "not_refused_on_purpose": "GS1 Prefix 05 (Table 1-4: used for GS1 Company Prefixes; Table 1-6 marks U.P.C. prefix 5 reserved) is allowed: refusing a real pack is worse than letting one odd code through to a 'not in catalogue' answer."
+  },
+  "gtin13_prefixes": {
+    "store_code": ["0000000", "02", "04", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29"],
+    "not_a_product": ["0000001", "0000002", "0000003", "0000004", "0000005", "0000006", "0000007", "0000008", "0000009",
+                      "951", "952", "977", "978", "979", "980", "981", "982", "983",
+                      "984", "985", "986", "987", "988", "989", "99"]
+  },
+  "gtin8_prefixes": {
+    "store_code": ["0", "2"],
+    "not_a_product": ["952", "977", "978", "979", "98", "99"]
+  },
+  "_notes": {
+    "gtin13_prefixes.not_a_product": "0000001-0000099 unused (collision with GTIN-8); 951 former EPC GID numbers; 952 demonstrations and examples; 977 ISSN (serials); 978-979 ISBN/ISMN (books, music); 980 refund receipts; 981-983 and 99 coupons; 984-989 reserved.",
+    "gtin8_prefixes.store_code": "000-099 and 200-299: Restricted Circulation Numbers within a company.",
+    "gtin8_prefixes.not_a_product": "952 demonstrations; 977-999 reserved for future use."
+  }
+}

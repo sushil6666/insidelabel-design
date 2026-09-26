@@ -52,7 +52,12 @@ except ImportError:                                              # pragma: no co
 
 _FENCE = re.compile(r"^\s*```(?:json)?\s*|\s*```\s*$", re.MULTILINE)
 
-REQUIRED_KEYS = set(VISION_RESPONSE_SCHEMA["required"])
+# D-103: Gemini must answer image_content (the schema requires it), but model
+# answers recorded before it existed (tests, saved regressions, predictions/)
+# don't have it, and still have to parse. Missing = unknown = no image rule.
+OPTIONAL_KEYS = {"image_content"}
+REQUIRED_KEYS = set(VISION_RESPONSE_SCHEMA["required"]) - OPTIONAL_KEYS
+_IMAGE_CONTENT = {"food_pack", "screen", "not_food", "not_provided"}
 
 _FRONT_STATUS = {"read", "not_provided", "unreadable"}
 _BACK_STATUS = {"read", "not_provided", "unreadable"}
@@ -486,6 +491,18 @@ def harden(vision, sent_front, sent_back):
     if v.get("ingredients_status") not in _ING_STATUS:
         corrections.append(f"ingredients_status {v.get('ingredients_status')!r} invalid -> unreadable")
         v["ingredients_status"] = "unreadable"
+
+    # 1b. What each image shows (D-103). Out-of-vocabulary is "unknown", which
+    #     no rule acts on: a garbled answer must not refuse a real pack.
+    if isinstance(v.get("image_content"), dict):
+        ic = dict(v["image_content"])
+        for role, sent in (("back", sent_back), ("front", sent_front)):
+            if not sent:
+                ic[role] = "not_provided"
+            elif ic.get(role) not in _IMAGE_CONTENT - {"not_provided"}:
+                corrections.append(f"image_content.{role} {ic.get(role)!r} invalid -> unknown")
+                ic[role] = "unknown"
+        v["image_content"] = ic
 
     # 2. The client knows how many images it sent. The model does not get to
     #    claim it read a face that was never transmitted.

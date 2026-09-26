@@ -584,7 +584,8 @@ function finish(body) {
   });
   if (body.screen?.state === "retake") {
     pending.attempts += 1;
-    if (body.scan_id) pending.refused.push(body.scan_id);
+    // D-103: a photo that isn't a pack (a screen, anything else) can't be sent to a reviewer.
+    if (body.scan_id && body.screen.can_send !== false) pending.refused.push(body.scan_id);
   }
   go("result/" + encodeURIComponent(id));
 }
@@ -610,7 +611,7 @@ function result(id) {
     put(
       el("p", { class: "card warn" }, s.retake),
       button("Retake the photo", () => { pending.back = null; go("photo"); }, "primary"),
-      pending.attempts >= 2 && el("p", { class: "muted" },
+      pending.attempts >= 2 && s.can_send !== false && el("p", { class: "muted" },
         "Still not working? Try daylight, or another pack. Some labels are printed too small or too shiny to read."),
       // D-070: after two refusals, a person reads the photos instead.
       pending.refused.length >= 2 && button("Send it to us", () => go("send")),
@@ -848,6 +849,9 @@ function apiMessage(e) {
   if (e.status === 503) return "The label reader is busy right now. Try again in a minute.";
   // D-095: the server's own text says how long to wait.
   if (e.status === 429) return e.body?.detail || "You've checked a lot of packs in a short time. Please wait a few minutes.";
+  // D-103: the server names what's wrong with a barcode or a photo file.
+  const own = ["bad_barcode", "not_an_image", "photo_too_small", "photo_blank", "back_required"];
+  if (own.includes(e.body?.error) && e.body.detail) return e.body.detail;
   if (e.status === 413) return "That photo is too large. Take it again a little further away.";
   if (e.status === 415) return "That file isn't a photo we can read. Use the camera instead.";
   return "Something went wrong on our side. Try again in a minute.";

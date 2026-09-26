@@ -511,13 +511,17 @@ class Store:
         with self._connect() as conn:
             uid = self._user(conn, device_id)
             rows = conn.execute(
-                """SELECT id, user_id, outcome, back_image_key, created_at FROM scans
+                """SELECT id, user_id, outcome, error_code, back_image_key, created_at FROM scans
                     WHERE id = ANY(%s::uuid[]) ORDER BY created_at, id""", (scan_ids,)).fetchall()
             # Someone else's scan looks exactly like one that doesn't exist.
             if len(rows) != len(scan_ids) or any(str(r["user_id"]) != uid for r in rows):
                 return {"error": "not_found"}
             if any(r["outcome"] not in self.SEND_OUTCOMES for r in rows):
                 return {"error": "not_refused"}
+            # D-103: photos that aren't a pack (a screen, anything else) aren't
+            # a reviewer's job: there is no label in them to read.
+            if any(r["error_code"] in ("back_is_a_screen", "not_a_food_pack") for r in rows):
+                return {"error": "not_a_pack"}
             if len(rows) < 2:
                 return {"error": "need_two_attempts"}
             if not rows[-1]["back_image_key"]:

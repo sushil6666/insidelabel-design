@@ -93,12 +93,12 @@ def test_problem_needs_the_database():
 def test_a_verdict_scan_can_be_replayed(db):
     rid, v = str(uuid.uuid4()), vision()
     prof = [{"ref": "p1", "age": "kid", "avoid": ["milk"]}]
-    r = scan(rid, replay=v, barcode="8901000000013", profiles=json.dumps(prof), who="Aarav")
+    r = scan(rid, replay=v, barcode="8901000000019", profiles=json.dumps(prof), who="Aarav")
     assert r.status_code == 200
     s = row(db, "SELECT * FROM scans WHERE id = %s", r.json()["scan_id"])
     assert s["request_id"] == rid and s["model_raw"] == v            # exactly what the model said
     assert s["build"] == trace.BUILD and s["data_version"] == trace.DATA_VERSION
-    assert s["request"]["profiles"] == prof and s["request"]["barcode"] == "8901000000013"
+    assert s["request"]["profiles"] == prof and s["request"]["barcode"] == "8901000000019"
     assert "who" not in s["request"] and "Aarav" not in json.dumps(s["request"])   # D-074
     assert "vision_ms" in s["timings"] and "ocr_ms" in s["timings"]
 
@@ -214,7 +214,7 @@ def test_a_stored_scan_replays_to_what_the_user_saw(db):
 
 def test_a_catalogue_hit_replays_from_its_own_version(db):
     from insidelabel import repro
-    bc = "8901000000020"
+    bc = "8901000000026"
     j = scan(str(uuid.uuid4()), replay=vision(), barcode=bc).json()
     with psycopg.connect(db) as conn:
         conn.execute("SELECT publish_version(%s, 'tester')", (j["catalogue"]["product_version_id"],))
@@ -293,8 +293,13 @@ def test_out_of_credit_alarms_once_and_tells_the_user_plainly(db, monkeypatch):
     with psycopg.connect(db) as conn:
         conn.execute("DELETE FROM problem_reports WHERE signature = 'vision_config:402'")
     rids = [str(uuid.uuid4()) for _ in range(3)]
+    import io
+    from PIL import Image
+    buf = io.BytesIO()
+    Image.effect_noise((800, 600), 60).convert("RGB").save(buf, "JPEG")   # D-103: a real photo reaches the model
     for rid in rids:
-        r = scan(rid)
+        r = c.post("/scan", files={"back": ("b.jpg", buf.getvalue(), "image/jpeg")},
+                   data={"device_id": DEV}, headers={"X-Request-ID": rid})
         assert r.status_code == 503 and r.json()["error"] == "vision_not_configured"
         assert "credit" not in r.json()["detail"]             # the user isn't told about our billing
     n = row(db, "SELECT count(*) AS n FROM problem_reports WHERE kind = 'server' AND signature = 'vision_config:402'")

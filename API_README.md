@@ -103,6 +103,18 @@ most once an hour. A busy model (429/5xx) is still retried and answers
 `503 vision_unavailable`. Cloud Vision setup failures don't fail the scan (it falls
 back to Tesseract) but file `ocr_config:<status>` the same way.
 
+## What `/scan` refuses before reading (D-103)
+
+| Error | Status | When |
+|---|---|---|
+| `bad_barcode` (+ `reason`: `length`, `check_digit`, `case_code`, `store_code`, `not_a_product`) | 422 | not a retail pack's GTIN (GS1 rules in `data/barcode_rules.json`) |
+| `not_an_image` | 415 | the file doesn't decode as a photo |
+| `photo_too_small`, `photo_blank` | 422 | under 480×240 px, or blank/black |
+
+After the model reads the photo: `back_is_a_screen` and `not_a_food_pack` are refusals
+(422 with a `screen`, `screen.can_send` false); a front that isn't a pack is set aside
+with the caveat `front_not_a_pack`.
+
 ## Rate limits (D-095)
 
 `/scan` and `/problem` are limited per install (`device_id`) **and** per IP, checked

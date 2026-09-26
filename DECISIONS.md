@@ -4,7 +4,7 @@ Architectural and product decisions for InsideLabel, with the reasoning attached
 Append-only. When a decision is reversed, mark it `SUPERSEDED` and add a new entry
 rather than editing the old one — the history is the point.
 
-**Last updated:** 2026-09-26 (D-102 recommended: invite-only web beta)
+**Last updated:** 2026-09-26 (D-102, D-103 recommended: invite-only web beta; only real packs get in)
 
 **Status key:** `LOCKED` decided, don't relitigate · `OPEN` not yet decided ·
 `RECOMMENDED` proposed but not accepted · `SUPERSEDED` replaced
@@ -869,6 +869,46 @@ D-007's closed beta (50–100 testers, W4 retention) now starts on the web.
 
 The tester label in `tools/beta.py` is for Sushil only (a first name or "T07"); no
 phone numbers or emails are stored.
+
+### D-103 · Only real packs get in: barcode, photo file and photo content are checked `RECOMMENDED` (2026-09-26)
+Direction from Sushil ("barcode, back and front photo should be valid, not any random
+pic"), after a test scan on 2026-09-26: barcode `12222333333333` + two screenshots of
+database software cost a Gemini read, came back as a generic "retake", counted
+towards "Send it to us", and was then reported as a mistake. Design by Claude;
+awaiting Sushil.
+
+1. **Barcode, on the server** (the app checked only the check digit; the server
+   checked only the length): check digit, then GS1's prefix tables
+   (`data/barcode_rules.json`, from the GS1 General Specifications Release 26.0,
+   Tables 1-4, 1-5, 1-6 and 2-17, read 2026-09-26). Refused with a plain reason: a
+   GTIN-14 with indicator 1–9 (a carton or case; that test code), a shop's in-store
+   code (02, 04, 20–29, RCN-8), a book/magazine (977–979), a coupon or refund receipt,
+   a demo or reserved number. A GTIN-14 with indicator 0 is looked up as the GTIN-13
+   inside it. GS1 Prefix 05 is allowed on purpose (the tables disagree; refusing a real
+   pack is worse). The reviewer's barcode field uses the same check.
+2. **Photo file, before any paid call** (`photo_check.py`): it must decode as an image,
+   be at least 480 px on the long edge and 240 on the short (below the smallest gold
+   photo Gemini read correctly, 528×572), and not be blank or black (grey-level
+   spread ≥ 8; the 12 gold photos measure 33–68). HEIC passes to the model undecoded.
+   Skipped for recorded answers (`replay`), which were read from photos checked then.
+3. **What the photo shows — the model reads, rules decide (D-004).** The prompt gains
+   rule 7a and a required `image_content` {back, front}: `food_pack`, `screen`
+   (a screenshot or a photo of a display, *even when an ingredient list is legible
+   on it*: D-089, a listing is a lead, never the record), `not_food`, `not_provided`.
+   - Back = screen → refused `back_is_a_screen`; back = not food → `not_a_food_pack`.
+     Each has its own headline and retake text, and **can't go to "Send it to us"**
+     (`screen.can_send` false; the server refuses them too).
+   - Front not a pack → the front is set aside (no claims, no pairing, not attached to
+     the version) with a caveat; the scan goes on from the back.
+   - Answers recorded before this (tests, regressions, `predictions/`) have no
+     `image_content`: they parse as before and no image rule fires. An out-of-vocabulary
+     value becomes `unknown`, which no rule acts on.
+
+The prompt changed, so `PROMPT_VERSION` changed. **Not yet measured on the live model:**
+the 6 gold labels must still come back `food_pack` with the same reading, and real
+screenshots must come back `screen`. Needs a few paid Gemini calls — Sushil to approve.
+The D-100 front-only path (barcode + front, no model call) gets the file check only;
+its reviewer rejects a front that isn't a pack.
 
 ---
 

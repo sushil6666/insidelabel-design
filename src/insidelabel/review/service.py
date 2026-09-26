@@ -10,6 +10,7 @@ import psycopg
 from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 
+from insidelabel import barcode as barcode_rules
 from insidelabel.claims import checker as claim_checker
 from insidelabel.core import engine
 from insidelabel.db.store import Store, build_findings, claims_hash, ingredients_hash
@@ -165,6 +166,11 @@ class ReviewService:
         claims = _lines(form.get("front_claims"))
         statement = (form.get("allergen_statement") or "").strip() or None
         barcode = (form.get("barcode") or "").strip() or None
+        if barcode:
+            # D-103: a reviewer's typo would file the pack under someone else's product.
+            barcode, reason = barcode_rules.check(barcode)
+            if reason:
+                raise ReviewError(f"Barcode: {barcode_rules.MESSAGES[reason]}")
 
         with self._connect() as c:
             q = self._mine(c, item_id, reviewer)

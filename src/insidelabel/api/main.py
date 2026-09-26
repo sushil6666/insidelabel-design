@@ -43,6 +43,8 @@ from fastapi.responses import FileResponse, JSONResponse, RedirectResponse  # no
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 from starlette.concurrency import run_in_threadpool  # noqa: E402
 
+from insidelabel import barcode as barcode_rules  # noqa: E402
+from insidelabel import photo_check  # noqa: E402
 from insidelabel import ratelimit  # noqa: E402
 from insidelabel import trace  # noqa: E402
 from insidelabel.core import engine  # noqa: E402
@@ -548,17 +550,17 @@ def http_exception_handler(request, exc):
 # ---------------------------------------------------------------------------
 # Scan helpers: barcode, timing, catalogue results (D-024, D-073)
 # ---------------------------------------------------------------------------
-_BARCODE = re.compile(r"^\d{8}$|^\d{12,14}$")      # EAN-8, UPC-A, EAN-13, GTIN-14
-
-
-def _clean_barcode(barcode):
-    if barcode is None or not barcode.strip():
+def _clean_barcode(code):
+    """
+    D-103: a retail pack's GTIN or a 422 naming what's wrong (check digit, a
+    carton code, a shop's in-store code, a book…), before anything is read.
+    """
+    if code is None or not code.strip():
         return None
-    b = re.sub(r"[\s-]", "", barcode)
-    if not _BARCODE.match(b):
+    b, reason = barcode_rules.check(code)
+    if reason:
         raise HTTPException(status_code=422, detail={
-            "error": "bad_barcode",
-            "detail": "barcode must be 8, 12, 13 or 14 digits (EAN/UPC).",
+            "error": "bad_barcode", "reason": reason, "detail": barcode_rules.MESSAGES[reason],
         })
     return b
 
@@ -677,6 +679,7 @@ _SEND_ERRORS = {
     "not_refused": (422, "Only scans we couldn't read can be sent."),
     "need_two_attempts": (422, "Try the photo twice first; then you can send it to us."),
     "no_photo": (422, "We don't have the photo for that scan any more."),
+    "not_a_pack": (422, "Those photos don't show a food pack, so there's nothing for our team to read."),
 }
 
 
@@ -895,6 +898,15 @@ async def scan(
         img = await _read_image(upload, role)
         if img:
             images.append(img)
+    # D-103: a file that can't be a readable label never costs a model read.
+    # Replayed answers skip it: they were read from photos checked at the time.
+    if replay is None:
+        for data, mime, role in images:
+            bad = photo_check.check(data, mime, role)
+            if bad:
+                log.warning("photo refused: %s %s", role, bad[0])
+                raise HTTPException(status_code=415 if bad[0] == "not_an_image" else 422, detail={
+                    "error": bad[0], "role": role, "detail": bad[1]})
 
     # D-092: everything needed to replay this scan, minus the photos (kept by
     # media) and the model's answer (added once we have it). `who` is left out:
@@ -1017,6 +1029,11 @@ async def scan(
 
     tr["timings"]["vision_ms"] = _ms(t_vision)
     tr["model_raw"] = vision.pop("_raw_text", None)
+    # D-103: a front photo that isn't a food pack is set aside before anything
+    # uses it (claims, pairing, identity); the back still decides the scan.
+    front_caveat = rel.drop_unusable_front(vision)
+    if front_caveat:
+        corrections.append("front photo is not a food pack: " + front_caveat["detail"])
     t_ocr = time.monotonic()
     if ocr_prefetch is not None:
         await ocr_prefetch                       # usually done already; never raises
@@ -1077,6 +1094,8 @@ async def scan(
     vision["_pairing_attested_by_user"] = pairing_confirmed
     proceed, reliability = rel.assess(vision)
     reliability["client_corrections"] = corrections
+    if front_caveat:
+        reliability.setdefault("caveats", []).append(front_caveat)
     reliability["ocr_cross_check"] = {
         k: v for k, v in ocr_result.items() if k != "ocr_text"
     }

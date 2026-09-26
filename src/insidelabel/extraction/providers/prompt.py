@@ -176,6 +176,22 @@ RULES
      field null if that face does not show it. Do not copy a value from one
      face to the other.
 
+7a. WHAT EACH IMAGE SHOWS — DECIDE THIS FIRST (image_content).
+   For image_content.back and image_content.front, say what the image is:
+   - "food_pack": a photograph of a physical packaged food or drink, or of
+     its label, taken directly (held in a hand, on a shelf, on a table).
+   - "screen": a screenshot, or a photograph of a screen (phone, computer,
+     TV): a shop website, an app, a picture of a pack shown on a display.
+     Use "screen" even when a food pack or an ingredient list is visible on
+     that screen.
+   - "not_food": anything else: documents, software, people, rooms, a
+     product that is not food or drink (cosmetics, cleaning products,
+     medicines), a blank or unrecognisable image.
+   - "not_provided": that image was not supplied.
+   This describes the image, not the product. When the image is "screen" or
+   "not_food", still set the statuses below honestly and transcribe nothing
+   you cannot see printed on a physical pack.
+
 7. MISSING OR UNREADABLE FACES — SET STATUS HONESTLY.
    - front_status:       "read" | "not_provided" | "unreadable"
    - back_status:        "read" | "not_provided" | "unreadable"
@@ -234,9 +250,21 @@ Correct allergen_statement:
 # oneOf). Everything is required so the client never has to distinguish
 # "the model omitted this" from "the model meant null" — an omitted status is
 # exactly the ambiguity that produces a false "clean" verdict downstream.
+_IMAGE_CONTENT = {
+    "type": "string",
+    "enum": ["food_pack", "screen", "not_food", "not_provided"],
+}
+
 VISION_RESPONSE_SCHEMA = {
     "type": "object",
     "properties": {
+        "image_content": {
+            "type": "object",
+            "description": "What each image is (rule 7a): a food pack photographed directly, a screen, or something else.",
+            "properties": {"back": _IMAGE_CONTENT, "front": _IMAGE_CONTENT},
+            "required": ["back", "front"],
+            "propertyOrdering": ["back", "front"],
+        },
         "front_status": {
             "type": "string",
             "enum": ["read", "not_provided", "unreadable"],
@@ -376,6 +404,7 @@ VISION_RESPONSE_SCHEMA = {
         },
     },
     "required": [
+        "image_content",
         "front_status",
         "back_status",
         "ingredients_status",
@@ -393,6 +422,7 @@ VISION_RESPONSE_SCHEMA = {
         "confidence",
     ],
     "propertyOrdering": [
+        "image_content",
         "front_status",
         "back_status",
         "ingredients_status",
