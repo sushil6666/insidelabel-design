@@ -4,7 +4,7 @@ Architectural and product decisions for InsideLabel, with the reasoning attached
 Append-only. When a decision is reversed, mark it `SUPERSEDED` and add a new entry
 rather than editing the old one - the history is the point.
 
-**Last updated:** 2026-09-26 (D-102 to D-110 locked; D-111 recommended)
+**Last updated:** 2026-09-26 (D-102 to D-111 locked)
 
 **Status key:** `LOCKED` decided, don't relitigate · `OPEN` not yet decided ·
 `RECOMMENDED` proposed but not accepted · `SUPERSEDED` replaced
@@ -1156,10 +1156,10 @@ doesn't edit or delete it; Sushil removes it when the look is in `web/`.
 walk of every screen at phone width in light and dark, with screenshots for Sushil
 before merge; `APP_VERSION` and the `sw.js` cache version bumped.
 
-### D-111 · Additive cards with a badge, in FSSAI's terms `RECOMMENDED` (2026-09-26)
+### D-111 · Additive cards with a badge, in FSSAI's terms `LOCKED` (2026-09-26)
 Direction from Sushil ("I liked their UI, banned / caution / safe kind of thing"), after
 screenshots of the SafeLabel Play Store listing; wording and conditions by Claude; mockup
-liked by Sushil 2026-09-26. **Not built; waiting for Sushil's "accepted".**
+liked by Sushil 2026-09-26; accepted by Sushil 2026-09-26.
 
 SafeLabel shows each additive on its own card with a coloured stripe and a badge
 ("Banned", "Caution", "Safe"), a "Risk level", and a banner ("All Clear - No Harmful
