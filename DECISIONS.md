@@ -4,7 +4,7 @@ Architectural and product decisions for InsideLabel, with the reasoning attached
 Append-only. When a decision is reversed, mark it `SUPERSEDED` and add a new entry
 rather than editing the old one - the history is the point.
 
-**Last updated:** 2026-09-26 (D-102 to D-108 locked)
+**Last updated:** 2026-09-26 (D-102 to D-108 locked; D-109 recommended)
 
 **Status key:** `LOCKED` decided, don't relitigate · `OPEN` not yet decided ·
 `RECOMMENDED` proposed but not accepted · `SUPERSEDED` replaced
@@ -1062,6 +1062,35 @@ were attached to the wafer. With a barcode they would have reached the review qu
 - **Measured:** 12 reads of the 6 genuine gold pairs (recorded + live today) all keep
   their result; the wrong pair is refused. 12 genuine reads is a small sample: watch
   `product_mismatch` refusals in the beta.
+
+### D-109 · "Report a mistake" needs a note or what the pack says `RECOMMENDED` (2026-09-26)
+Proposed by Sushil ("empty reports give reviewers nothing to act on"); details by
+Claude. **Not built; waiting for Sushil's "accepted".**
+
+Both reports on the local queue so far came in empty: #8 (D-103's screenshot test) and
+#9 (field "other", no note). Today the form sends a field from a drop-down plus two
+optional boxes, "What does the pack say?" (`proposed_value`) and "Anything else?"
+(`note`), and `ReportRequest` accepts both as `null`. A reviewer holding "Something
+else" and nothing more can only reject it, and the tester who sent it hears nothing
+useful back (D-076's "ready?" on `/updates`).
+
+- **The rule:** a report needs **at least one of** "What does the pack say?" or
+  "Anything else?" with real text (after trimming, at least 3 characters, so a single
+  "." or "ok" doesn't count). The field choice alone is not enough, whichever it is.
+- **In the app:** both boxes lose "(optional)"; a line above them says "Tell us what
+  the pack says, or what looks wrong. One of the two is enough." "Send to our team"
+  stays on, and tapping it with both empty shows that same line as the error, next
+  to the boxes, rather than a disabled button nobody can explain.
+- **On the server, too** (a client can skip the app's check): `/report` answers
+  **422 `empty_report`** with the same plain sentence, before anything is stored.
+  The check runs after `no_subject` and before the scan lookup.
+- **Nothing else changes:** no minimum length beyond the 3 characters, no per-field
+  wording, and the wording lint covers the new text. Existing tests that post a note
+  keep passing; the 404/422 cases in `test_scan_db.py` gain a note so they still test
+  what they name, and new tests cover empty, whitespace-only and one-box-filled.
+- **Not proposed:** requiring a photo with the report (it slows the only feedback path
+  on the result screen), or making the field more specific (the drop-down already says
+  where to look; the text says what's wrong).
 
 ---
 
