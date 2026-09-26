@@ -4,7 +4,7 @@ Architectural and product decisions for InsideLabel, with the reasoning attached
 Append-only. When a decision is reversed, mark it `SUPERSEDED` and add a new entry
 rather than editing the old one - the history is the point.
 
-**Last updated:** 2026-09-26 (D-102 to D-111 locked; D-112 recommended)
+**Last updated:** 2026-09-26 (D-102 to D-112 locked)
 
 **Status key:** `LOCKED` decided, don't relitigate · `OPEN` not yet decided ·
 `RECOMMENDED` proposed but not accepted · `SUPERSEDED` replaced
@@ -1202,11 +1202,11 @@ list.
 Order when accepted: verify the 32 rows (its own commit, each row with `fssai_basis` and
 `verified_on`), then the badges with tests, then phone-width screenshots before merge.
 
-### D-112 · The logo: barcode and a gold magnifier on deep green `RECOMMENDED` (2026-09-26)
+### D-112 · The logo: barcode and a gold magnifier on deep green `LOCKED` (2026-09-26)
 Direction from Sushil: a logo image in the Drive `InsideLabel` folder (a Gemini-made picture of
 two phones: a green circle, a barcode, a white tick, "INSIDE LABEL / YOUR FOOD GUARDIAN");
 then "B" of three redraws, "blending green with yellow or golden shades", then "B1".
-Drawing by Claude. **Not built; waiting for Sushil's "accepted".**
+Drawing by Claude; accepted by Sushil 2026-09-26 ("yes pls B1").
 
 - **The mark (B1):** a rounded deep-green tile (#07924f to #035c34) with white barcode bars
   on the left and a magnifier on the right: gold rim and handle (#ffd166 to #e9a91c), gold

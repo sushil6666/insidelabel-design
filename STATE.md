@@ -1,6 +1,6 @@
 # STATE.md - where InsideLabel is, and how to pick it up
 
-**Last updated:** 2026-09-26 (`main` = `93c47c1`; D-111 built on branch `additive-badges`) · **Owner:** Sushil · **Tests:** 375 passing, 1 skipped · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 6.9 s, Gemini + Cloud Vision, correct
+**Last updated:** 2026-09-26 (`main` = `93c47c1`; D-111 and D-112 built on branch `additive-badges`) · **Owner:** Sushil · **Tests:** 375 passing, 1 skipped · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 6.9 s, Gemini + Cloud Vision, correct
 
 This is the living status document. Read it first in any new session, then
 `DECISIONS.md` for the *why*. Update the "Last updated" line, the numbers and
@@ -377,6 +377,16 @@ then `migrate`, `tools/reviewers.py add`, `tools/beta.py invite 50 --base https:
 and `tools/beta.py feedback`. Seed the kids' biscuits first (§8 item 4): every pack not in
 the catalogue is a paid 8-15 s read.
 
+### D-112 built: the logo (2026-09-26, branch `additive-badges`)
+
+Sushil picked B1 of three redraws of his Drive logo image ("yes pls B1"): white barcode bars
+and a gold magnifier on a deep-green tile, no tick, no "food guardian". `web/icon.svg` and
+`icon-maskable.svg` redrawn; PNGs `icon-192.png`, `icon-512.png`, `icon-maskable-512.png`
+rendered from them (for Play, §8 item 14) and listed in the manifest; the header "IL" text
+mark is now the logo image in the app and on the landing, privacy and about pages.
+`APP_VERSION` web-16. Checked in headless Chromium: header on light and dark, the mark at
+16 to 192 px, the maskable icon cropped to a circle; the logo loads on every page.
+
 ### D-111 built: additive cards with a badge (2026-09-26, branch `additive-badges`)
 
 Accepted by Sushil and locked.
@@ -533,8 +543,6 @@ Nothing was blocked; all five items were built. These need you:
 - **D-053** premium pricing - ₹399-499/year recommended.
 - ~~**D-054** the "100% ATTA" ruling~~ ✅ decided 2026-09-25: about the flour, no finding.
 - **D-082** what Premium is for - interviews only.
-- **D-112** (RECOMMENDED 2026-09-26) the logo: barcode + gold magnifier on deep green (B1 of the
-  redraws of Sushil's Drive image, without its tick and "food guardian" tagline). Not built until accepted.
 - Concern levels on the 35 verified rows are judgement calls (e.g. sorbitol `low`) - review before launch.
 - **Gemini billing**: prepaid credit (can run out, as it did today) vs post-paid / auto top-up.
 - **A fallback model** for when `gemini-3.6-flash` is busy - only after `gemini-3.5-flash`
@@ -591,8 +599,8 @@ setup alarms.
     `tools/retention.py --apply` (D-098 - not an R2 lifecycle rule, which can't see holds),
     backups tested by a restore; `GEMINI_API_KEY`, `GOOGLE_VISION_KEY`, `INSIDELABEL_BUILD` as
     secrets (without the Vision key the server quietly falls back to slow Tesseract).
-14. **Play closed testing** (D-011): PNG icons 192/512 (Bubblewrap can make them from
-    `web/icon.svg`), check the current tester requirement in Play Console.
+14. **Play closed testing** (D-011): PNG icons 192/512 ✅ (D-112, `web/icon-192.png`, `icon-512.png`),
+    check the current tester requirement in Play Console.
 
 Later / not blocking the beta: share target (D-077, after W4); D-073 cheap Tesseract
 re-check; refresh EU rows from a current EUR-Lex text and check cyclamate's US status;
