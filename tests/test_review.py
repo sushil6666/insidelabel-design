@@ -10,6 +10,7 @@ psycopg = pytest.importorskip("psycopg")
 
 from fastapi.testclient import TestClient  # noqa: E402
 
+from gtins import gtin  # noqa: E402
 from insidelabel.api import main  # noqa: E402
 from insidelabel.db.store import Store  # noqa: E402
 from insidelabel.media import LocalMedia  # noqa: E402
@@ -63,6 +64,7 @@ def q(uri, sql, *args):
 
 
 def scan(ingredients, barcode=None, device_id=None, **kw):
+    barcode = barcode or gtin()            # D-107: only barcoded packs reach the review queue
     data = {"replay": vision(ingredients, **kw)}
     if barcode:
         data["barcode"] = barcode
@@ -186,14 +188,18 @@ def test_reported_mistake_on_published_pack_creates_new_version(env):
 def test_unreadable_scan_can_be_transcribed_by_reviewer(env):
     """D-070: 'send it to us' - the reviewer types the list from the stored photo."""
     uri = env
-    r = scan(["x"], back_status="unreadable")
+    code = gtin()
+    r = scan(["x"], barcode=code, back_status="unreadable")
     sid = r.json()["scan_id"]
     with psycopg.connect(uri) as c_:
         c_.execute("INSERT INTO review_queue (kind, scan_id) VALUES ('send_to_us', %s)", (sid,))
     c = client()
     item_id = take_next(c)
     assert "/review/media/" in c.get(f"/review/item/{item_id}").text     # the photo is there
-    approve(c, item_id, name="Plain Rusk", ingredients="Wheat flour\nSugar\nYeast")
+    # The page pre-fills the barcode the app read; a new product can't be published without it (D-107).
+    r = approve(c, item_id, name="Plain Rusk", ingredients="Wheat flour\nSugar\nYeast")
+    assert "barcode" in r.headers["location"].lower()
+    approve(c, item_id, name="Plain Rusk", ingredients="Wheat flour\nSugar\nYeast", barcode=code)
     assert q(uri, "SELECT resolution FROM review_queue WHERE id=%s", item_id)[0][0] == "published_new_version"
 
 

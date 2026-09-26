@@ -4,7 +4,7 @@ Architectural and product decisions for InsideLabel, with the reasoning attached
 Append-only. When a decision is reversed, mark it `SUPERSEDED` and add a new entry
 rather than editing the old one - the history is the point.
 
-**Last updated:** 2026-09-26 (D-102 to D-106 locked)
+**Last updated:** 2026-09-26 (D-102 to D-107 locked)
 
 **Status key:** `LOCKED` decided, don't relitigate · `OPEN` not yet decided ·
 `RECOMMENDED` proposed but not accepted · `SUPERSEDED` replaced
@@ -1007,6 +1007,31 @@ never from the live camera. The app already knows which button produced each pho
 - Not built: reading the camera details (EXIF) of an upload before the app re-encodes
   it. A real phone photo carries the phone model and the time taken; a screenshot or a
   generated picture usually carries none. Worth adding if uploads turn out common.
+
+### D-107 · No barcode: the user gets a result, the catalogue gets nothing `LOCKED` (2026-09-26)
+Direction from Sushil ("keep 'No barcode? Photograph the ingredients'; if there's no
+barcode, only ingredients, allow the user to scan but no entry in the database");
+details by Claude; accepted by Sushil 2026-09-26 (scan row kept for replay).
+
+The catalogue is filed by barcode (D-024): a record without one can't be found again by a
+scan, and two different packs couldn't be told apart.
+
+- **The button stays**, and moves up: "No barcode? Photograph the ingredients" is now a
+  full button right under the camera, above the barcode-photo option. It had been a small
+  link at the bottom of the screen, easy to miss on a phone.
+- **A scan without a barcode** is read and judged as before, and the user sees the result
+  with a note: "This pack has no barcode, so it isn't added to our catalogue. The result
+  above is from your photo, just for you." It creates **no product, no version and no
+  review item** (`catalogue.status: "not_saved"`).
+- **The scan row is kept** (outcome `unlisted`, migration 014), so a reported problem can
+  still be replayed (D-092); its photos are deleted at 30 days (D-098), since no version
+  holds them. *If "no entry" should mean no row at all, that is a one-line change, at the
+  cost of replaying those scans.*
+- **Nothing gets in another way**: "Send it to us" needs a barcode (the app doesn't offer
+  it; the server refuses `no_barcode`), and a reviewer can't create a new product without
+  a barcode (a "Report a mistake" on an unlisted scan can only be rejected).
+- `tools/queue_predictions.py` now reads each gold pack's barcode from its photos (or
+  `--barcode ID=DIGITS`) and skips a pack without one.
 
 ---
 

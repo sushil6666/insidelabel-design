@@ -6,7 +6,7 @@ PostgreSQL 19. Solo founder: Sushil.
 ## Start here
 
 1. Read `STATE.md` (status, setup, open items, lessons) and skim `DECISIONS.md`.
-2. `source .venv/bin/activate && pytest -q` - expect 343 passing (1 skipped) before you change anything.
+2. `source .venv/bin/activate && pytest -q` - expect 351 passing (1 skipped) before you change anything.
    `python tools/release_check.py` shows how far the beta is from release.
 3. The "Next" list in `STATE.md` §8 is the default work queue.
 
@@ -58,6 +58,8 @@ PostgreSQL 19. Solo founder: Sushil.
 - **No em dash or en dash anywhere** (Sushil, 2026-09-26): use `-`, `:` or "to".
   `tests/test_no_dashes.py` checks every tracked file. To match one in label text,
   write the escape (`"\u2013"`).
+- **No barcode, no catalogue entry (D-107).** A scan without one gets its result and an
+  `unlisted` scan row only; never create a product, version or review item for it.
 - **Barcodes are never typed (D-104).** Camera scanner or a photo read by `/check-photo`
   (zxing-cpp on the server); every barcode passes `barcode.check()` (GS1 rules, D-103).
 - **A gate with no data is TODO, never PASS** (`tools/release_check.py`).

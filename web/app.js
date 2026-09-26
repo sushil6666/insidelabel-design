@@ -418,6 +418,9 @@ async function scan() {
     el("h1", {}, "Scan the barcode"),
     el("div", { class: "viewfinder-wrap" }, video, el("div", { class: "frame", "aria-hidden": "true" })),
     status,
+    // D-107: a pack without a barcode can still be checked from its ingredients
+    // photo; it just isn't added to the catalogue. Kept near the top, where it's seen.
+    button("No barcode? Photograph the ingredients", () => { pending.barcode = null; go("photo"); }),
     el("h2", {}, "Or use a photo of the barcode"),
     photoPicker("barcode", "Take a photo of the barcode", preview, (_blob, res) => {
       next.replaceChildren();
@@ -426,8 +429,7 @@ async function scan() {
       }
     }),
     preview,
-    next,
-    button("No barcode? Photograph the ingredients", () => { pending.barcode = null; go("photo"); }, "link"));
+    next);
 
   const seq = navSeq;
   if (await barcodeSupported()) {
@@ -692,6 +694,7 @@ function result(id) {
     el("strong", {}, s.band.label),
     s.band.note && el("details", {}, el("summary", {}, "What does this mean?"), el("p", {}, s.band.note))));
   put(el("p", { class: "muted" }, s.checked, " ", s.scope));
+  if (s.catalogue_note) put(el("p", { class: "card note" }, s.catalogue_note));      // D-107
 
   if (s.retake) put(el("div", { class: "card warn" }, el("p", {}, s.retake),
     button("Retake the ingredients photo", () => { pending = { ...pending, back: null, barcode: h.barcode }; go("photo"); })));

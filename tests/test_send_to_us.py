@@ -15,6 +15,7 @@ psycopg = pytest.importorskip("psycopg")
 
 from fastapi.testclient import TestClient  # noqa: E402
 
+from gtins import gtin  # noqa: E402
 from insidelabel.api import main  # noqa: E402
 from insidelabel.db.store import Store  # noqa: E402
 from insidelabel.media import LocalMedia  # noqa: E402
@@ -64,6 +65,7 @@ def photo():
 
 
 def refused(dev, barcode=None):
+    barcode = barcode or gtin()            # D-107: only a barcoded pack can be sent to us
     data = {"replay": vision(back_status="unreadable"), "device_id": dev}
     if barcode:
         data["barcode"] = barcode

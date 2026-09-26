@@ -693,6 +693,7 @@ _SEND_ERRORS = {
     "need_two_attempts": (422, "Try the photo twice first; then you can send it to us."),
     "no_photo": (422, "We don't have the photo for that scan any more."),
     "not_a_pack": (422, "Those photos don't show a food pack, so there's nothing for our team to read."),
+    "no_barcode": (422, "Our catalogue is filed by barcode, so a pack without one can't be sent to our team."),
 }
 
 
@@ -1246,7 +1247,7 @@ async def scan(
             "screen": result_screen.build(
                 verdict=None, display=None, claim_check=None, extracted=None,
                 reliability=reliability, profiles=people, allergen_confidence=0.0,
-                allergen_reliable=False),
+                allergen_reliable=False, has_barcode=barcode is not None),
             "scan_id": _str(scan_id),
             "request_id": tr["request_id"],
             "verdict": None,
@@ -1296,12 +1297,21 @@ async def scan(
         else "pairing_unverified",
     )
 
-    saved = _persist(
-        STORE and STORE.save_scan, vision=vision, verdict=verdict, claim_check=claim_check,
-        claims_trusted=claims_trusted, reliability=reliability, barcode=barcode,
-        device_id=device_id, latency_ms=_ms(t0), model_name=vision.get("_model") or MODEL,
-        prompt_version=PROMPT_VERSION, engine_version=ENGINE_VERSION,
-        front_key=keys.get("front"), back_key=keys.get("back"), trace=tr)
+    if barcode is None:
+        # D-107: no barcode, no catalogue entry. The user gets the result; only
+        # the scan row is kept, so it can be replayed (D-092).
+        unlisted_id = _persist(STORE and STORE.record_unlisted_scan, device_id=device_id,
+                               latency_ms=_ms(t0), front_key=keys.get("front"),
+                               back_key=keys.get("back"), trace=tr)
+        saved = None
+    else:
+        unlisted_id = None
+        saved = _persist(
+            STORE and STORE.save_scan, vision=vision, verdict=verdict, claim_check=claim_check,
+            claims_trusted=claims_trusted, reliability=reliability, barcode=barcode,
+            device_id=device_id, latency_ms=_ms(t0), model_name=vision.get("_model") or MODEL,
+            prompt_version=PROMPT_VERSION, engine_version=ENGINE_VERSION,
+            front_key=keys.get("front"), back_key=keys.get("back"), trace=tr)
 
     display = rel.apply_display_rule(verdict, reliability)
     user_claims = _user_claim_check(claim_check, vision.get("front_claims", []))
@@ -1319,11 +1329,13 @@ async def scan(
         "screen": result_screen.build(
             verdict=verdict, display=display, claim_check=user_claims, extracted=extracted,
             reliability=reliability, profiles=people, allergen_confidence=allergen_confidence,
-            allergen_reliable=allergen_reliable),
-        "scan_id": saved["scan_id"] if saved else None,
+            allergen_reliable=allergen_reliable, has_barcode=barcode is not None),
+        "scan_id": saved["scan_id"] if saved else _str(unlisted_id),
         "catalogue": ({"source": "scan", "product_version_id": saved["product_version_id"],
                        "status": saved["version_status"], "queued_for_review": saved["queued"]}
-                      if saved else None),
+                      if saved else
+                      {"source": "scan", "status": "not_saved", "reason": "no_barcode"} if barcode is None
+                      else None),
         "product": vision.get("product"),
         "verdict": verdict,
         "display": display,

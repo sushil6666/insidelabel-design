@@ -188,6 +188,11 @@ class ReviewService:
                                   "Reject it and scan the physical label instead.")
 
             pid = v["product_id"] if v else None
+            if pid is None and not barcode:
+                # D-107: the catalogue is filed by barcode. A new product without
+                # one could never be found again by a scan.
+                raise ReviewError("A new product needs its barcode. Read it from the photos; "
+                                  "if no photo shows one, reject the item.")
             pid = self._save_product(c, pid, form, barcode)
             content = (ingredients_hash(ingredients), statement, claims_hash(claims))
 

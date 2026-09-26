@@ -13,6 +13,7 @@ psycopg = pytest.importorskip("psycopg")
 
 from fastapi.testclient import TestClient  # noqa: E402
 
+from gtins import gtin  # noqa: E402
 from insidelabel.api import main  # noqa: E402
 from insidelabel.db.store import Store, build_findings, ingredients_hash  # noqa: E402
 from insidelabel.core import engine  # noqa: E402
@@ -60,6 +61,8 @@ def q(uri, sql, *args):
 
 
 def scan(files=BACK, **data):
+    if data.get("replay"):
+        data.setdefault("barcode", gtin())   # D-107: only barcoded packs are catalogued
     return c.post("/scan", files=files, data=data)
 
 
