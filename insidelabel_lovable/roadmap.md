@@ -1,0 +1,3 @@
+- [x] Show the read label and supporting evidence beside scan findings.
+- [x] Make uncertain or partial reads explicit and avoid unsupported reassuring results.
+- [x] Verify the text scan experience in the running app; photo reading still needs a real-pack confirmation.
