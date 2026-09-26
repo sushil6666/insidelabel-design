@@ -4,7 +4,7 @@ Architectural and product decisions for InsideLabel, with the reasoning attached
 Append-only. When a decision is reversed, mark it `SUPERSEDED` and add a new entry
 rather than editing the old one — the history is the point.
 
-**Last updated:** 2026-09-26 (D-102, D-103 recommended: invite-only web beta; only real packs get in)
+**Last updated:** 2026-09-26 (D-103 locked; D-102, D-104 recommended)
 
 **Status key:** `LOCKED` decided, don't relitigate · `OPEN` not yet decided ·
 `RECOMMENDED` proposed but not accepted · `SUPERSEDED` replaced
@@ -870,12 +870,12 @@ D-007's closed beta (50–100 testers, W4 retention) now starts on the web.
 The tester label in `tools/beta.py` is for Sushil only (a first name or "T07"); no
 phone numbers or emails are stored.
 
-### D-103 · Only real packs get in: barcode, photo file and photo content are checked `RECOMMENDED` (2026-09-26)
+### D-103 · Only real packs get in: barcode, photo file and photo content are checked `LOCKED` (2026-09-26)
 Direction from Sushil ("barcode, back and front photo should be valid, not any random
 pic"), after a test scan on 2026-09-26: barcode `12222333333333` + two screenshots of
 database software cost a Gemini read, came back as a generic "retake", counted
 towards "Send it to us", and was then reported as a mistake. Design by Claude;
-awaiting Sushil.
+accepted by Sushil 2026-09-26.
 
 1. **Barcode, on the server** (the app checked only the check digit; the server
    checked only the length): check digit, then GS1's prefix tables
@@ -909,6 +909,40 @@ the 6 gold labels must still come back `food_pack` with the same reading, and re
 screenshots must come back `screen`. Needs a few paid Gemini calls — Sushil to approve.
 The D-100 front-only path (barcode + front, no model call) gets the file check only;
 its reviewer rejects a front that isn't a pack.
+
+### D-104 · Barcodes come from the camera or a photo, never typed; every photo gets a tick or a cross `RECOMMENDED` (2026-09-26)
+Direction from Sushil ("no manual barcode entry: it should come from an uploaded photo or
+the scanner, because a wrong entry will cost us… after uploading any picture, show a
+green tick or a red cross, and why"); details by Claude; awaiting Sushil.
+
+- **No typed barcode.** The app offers the live scanner (Chrome's detector, where the
+  browser has one) and "take or upload a photo of the barcode". "No barcode? Photograph
+  the ingredients" stays. A photo's barcode is read on the **server** with zxing-cpp, a
+  classical decoder (not a model: it reads the bars or reports nothing), so it works in
+  every browser, iPhone and desktop included. New dependency: `zxing-cpp` (a
+  self-contained wheel, no system library).
+- **`POST /check-photo`** (role barcode / back / front): the photo checks of D-103
+  (decodes, size, not blank; a barcode close-up has no size floor) plus any barcode on
+  it. No model call, nothing stored, rate-limited, invite-gated. A barcode photo is ✓
+  only with exactly one retail barcode that passes the GS1 rules; several different
+  ones, none, or a non-retail one (book, carton, in-store) is ✗ with the reason. A back
+  or front photo is ✓ when it is a readable picture ("we'll read the ingredient list
+  when you tap Check this pack": the tick is about the photo, not a promise about the
+  label, which only the model's read decides, D-103); a barcode found on it is used.
+- **In the app**, each photo shows the tick or cross with the server's reason under it.
+  A ✗ back keeps "Check this pack" off; a ✗ front is not sent. When the check can't run
+  (offline, server error) the photo is marked "couldn't check" and still allowed:
+  `/scan` checks it again.
+- **One key per pack**: a 12-digit UPC-A is stored as its 13-digit form (leading 0),
+  since the camera and zxing report it differently; UPC-E is expanded. No barcode was
+  on file yet, so nothing existing changes.
+- `/scan` takes `barcode_source` (`camera` or `photo`) and records it on the scan row;
+  anything else is refused. It can't prove where the number came from (an API client
+  could still send one); it records what the app says, for audits.
+
+On the 12 gold photos zxing found the one barcode that is in frame (Patanjali back,
+8906032018810) and nothing on the others; label photos rarely show the barcode, so
+the dedicated barcode photo is the main route and a barcode on the back is a bonus.
 
 ---
 

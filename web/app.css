@@ -159,3 +159,9 @@ q { quotes: "“" "”"; }
 .drop .btn { width: auto; }
 .rating { flex-wrap: wrap; gap: 4px 16px; }
 .rating .choice { min-height: 36px; }
+
+/* D-104: the tick or cross under each photo. */
+.check { margin: 6px 0 0; padding: 8px 12px; border-radius: 8px; font-weight: 600; }
+.check.ok { background: var(--calm-bg); color: var(--calm); }
+.check.bad { background: var(--stop-bg); color: var(--stop); }
+.check.unknown { background: var(--unsure-bg); color: var(--unsure); font-weight: 400; }

@@ -710,6 +710,63 @@ def send_to_us(req: SendToUsRequest, request: Request):
 
 
 # ---------------------------------------------------------------------------
+# Checking each photo as it's picked (D-104)
+# ---------------------------------------------------------------------------
+CHECK_MESSAGES = {
+    "barcode_ok": "Barcode {code} read from the photo.",
+    "no_barcode": "We couldn't find a barcode in this photo. Take it again close up and straight on, "
+                  "with the whole barcode and its numbers in the frame.",
+    "several_barcodes": "This photo shows more than one barcode. Take it again with only the pack's "
+                        "barcode in the frame.",
+    "back_ok": "Clear photo. We'll read the ingredient list when you tap Check this pack.",
+    "front_ok": "Clear photo of the front.",
+    "barcode_too": " Barcode {code} found on it too.",
+}
+
+
+@app.post("/check-photo")
+async def check_photo(
+    request: Request,
+    role: str = Form(..., description='"barcode", "back" or "front".'),
+    photo: Optional[UploadFile] = File(None),
+    device_id: Optional[str] = Form(None, examples=[""]),
+):
+    """
+    D-104: the tick or cross the app shows on each photo as soon as it is picked.
+    A barcode photo must show one retail barcode, read by zxing-cpp (never
+    typed, never read by the model); a label photo must be a readable picture.
+    No model call and nothing stored: this costs nothing but CPU.
+    """
+    _rate_limit(request, "check_photo", device_id, ratelimit.SCAN_TEXT)
+    _require_invite(device_id)
+    if role not in ("barcode", "back", "front"):
+        raise HTTPException(status_code=422, detail={"error": "bad_role", "detail": 'role is "barcode", "back" or "front".'})
+    img = await _read_image(photo, role)
+    if img is None:
+        raise HTTPException(status_code=422, detail={"error": "no_photo", "detail": "Send a photo."})
+    data, mime, _role = img
+    bad = photo_check.check(data, mime, role, min_size=role != "barcode")
+    if bad:
+        return {"role": role, "ok": False, "problem": bad[0], "message": bad[1], "barcode": None}
+    good, reasons = await run_in_threadpool(barcode_rules.read_from_photo, data)
+    code = good[0] if len(good) == 1 else None
+    if role == "barcode":
+        if len(good) > 1:
+            return {"role": role, "ok": False, "problem": "several_barcodes",
+                    "message": CHECK_MESSAGES["several_barcodes"], "barcode": None}
+        if code:
+            return {"role": role, "ok": True, "problem": None,
+                    "message": CHECK_MESSAGES["barcode_ok"].format(code=code), "barcode": code}
+        if reasons:                               # a barcode, but not a retail pack's (a book, a carton…)
+            return {"role": role, "ok": False, "problem": reasons[0],
+                    "message": barcode_rules.MESSAGES[reasons[0]], "barcode": None}
+        return {"role": role, "ok": False, "problem": "no_barcode",
+                "message": CHECK_MESSAGES["no_barcode"], "barcode": None}
+    msg = CHECK_MESSAGES[f"{role}_ok"] + (CHECK_MESSAGES["barcode_too"].format(code=code) if code else "")
+    return {"role": role, "ok": True, "problem": None, "message": msg, "barcode": code}
+
+
+# ---------------------------------------------------------------------------
 # Invite-only beta (D-102): join, access, feedback
 # ---------------------------------------------------------------------------
 _JOIN_ERRORS = {
@@ -858,6 +915,8 @@ async def scan(
                               description="Old clients only: a name for allergen text. The app sends none (D-074)."),
     compare_regulators: bool = Form(False, description="Also return EU and US status. Information only."),
     barcode: Optional[str] = Form(None, examples=[""], description="EAN/UPC digits from the pack, if the camera read one."),
+    barcode_source: Optional[str] = Form(None, examples=[""],
+                                         description='D-104: "camera" (live scanner) or "photo" (read by /check-photo).'),
     device_id: Optional[str] = Form(None, examples=[""], description="Anonymous install id (UUID). No personal data."),
     profiles: Optional[str] = Form(None, examples=[""],
                                    description='JSON [{"ref","age","avoid"}], up to 3. No names (D-074).'),
@@ -892,6 +951,12 @@ async def scan(
         # D-060: the top-level allergen block covers every profile's avoid list.
         avoid_codes = list(dict.fromkeys(c for p in people for c in p["avoid"]))
     barcode = _clean_barcode(barcode)
+    # D-104: where the barcode came from. The app offers only the live scanner
+    # and a photo read by /check-photo; typed numbers aren't accepted from it.
+    barcode_source = barcode_source if barcode_source and barcode_source.strip() else None
+    if barcode_source not in (None, "camera", "photo"):
+        raise HTTPException(status_code=422, detail={
+            "error": "bad_barcode_source", "detail": 'barcode_source is "camera" or "photo".'})
 
     images = []
     for upload, role in ((back, "back"), (front, "front")):
@@ -915,7 +980,8 @@ async def scan(
         "request_id": trace.current_request_id(), "build": trace.BUILD,
         "data_version": trace.DATA_VERSION, "engine_version": ENGINE_VERSION,
         "prompt_version": PROMPT_VERSION,
-        "request": {"barcode": barcode, "avoid": avoid_codes if avoid is not None else None,
+        "request": {"barcode": barcode, "barcode_source": barcode_source,
+                    "avoid": avoid_codes if avoid is not None else None,
                     "profiles": people, "pairing_confirmed": pairing_confirmed,
                     "compare_regulators": compare_regulators,
                     "images": [r for _d, _m, r in images], "replay": replay is not None},

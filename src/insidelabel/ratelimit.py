@@ -54,6 +54,8 @@ RULES = {
     # from 31, so this is about noise, not about guessing one.
     "join_fail": {"device": [(10, 3_600)], "ip": [(30, 3_600)]},
     "feedback": {"device": [(20, 86_400)], "ip": [(100, 86_400)]},
+    # Checking a photo as it's picked (D-104): no model call, a few per scan.
+    "check_photo": {"device": [(60, 600)], "ip": [(300, 600)]},
     # "Send it to us" (D-070): each is a reviewer's time.
     "send_to_us": {"device": [(10, 86_400)], "ip": [(50, 86_400)]},
 }

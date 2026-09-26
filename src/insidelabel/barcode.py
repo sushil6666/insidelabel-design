@@ -11,8 +11,13 @@ code). Neither is printed on a pack a shopper picks up.
 The rules are GS1's (data/barcode_rules.json, with the table numbers). No
 patterns here: digits are checked with str methods, so this file can't turn
 into a second number parser.
+
+Barcodes are read from photos here too (D-104), with zxing-cpp: a classical
+decoder, not a model, so it either reads the bars or reports nothing. The app
+no longer lets anyone type a barcode.
 """
 
+import io
 import json
 import os
 
@@ -63,5 +68,56 @@ def check(raw):
     if len(code) == 8:
         reason = _prefix_reason(code, RULES["gtin8_prefixes"])
     else:
-        reason = _prefix_reason(code.zfill(13), RULES["gtin13_prefixes"])
+        # D-104: one key per pack. The phone camera reports a UPC-A as 12
+        # digits, the photo reader as 13 with a leading 0; both become 13.
+        code = code.zfill(13)
+        reason = _prefix_reason(code, RULES["gtin13_prefixes"])
     return (None, reason) if reason else (code, None)
+
+
+def upce_to_upca(code):
+    """An 8-digit UPC-E (number system, 6 digits, check) as its 12-digit UPC-A (GS1 GenSpecs 5.2.2.4.2)."""
+    if len(code) != 8 or not code.isdigit():
+        return code
+    ns, d, check = code[0], code[1:7], code[7]
+    d1, d2, d3, d4, d5, d6 = d
+    if d6 in "012":
+        body = d1 + d2 + d6 + "0000" + d3 + d4 + d5
+    elif d6 == "3":
+        body = d1 + d2 + d3 + "00000" + d4 + d5
+    elif d6 == "4":
+        body = d1 + d2 + d3 + d4 + "00000" + d5
+    else:
+        body = d1 + d2 + d3 + d4 + d5 + "0000" + d6
+    return ns + body + check
+
+
+def read_from_photo(data):
+    """
+    Every retail barcode zxing-cpp finds in the photo: ([codes that pass
+    check()], [reasons for ones that don't]). ([], []) when none is found or
+    the photo can't be decoded here (HEIC).
+    """
+    try:
+        import zxingcpp
+        from PIL import Image
+        im = Image.open(io.BytesIO(data))
+        im.draft("L", (2400, 2400))                # JPEG: decode near the size needed, fast
+        im = im.convert("L")
+        im.thumbnail((2400, 2400))
+        formats = [zxingcpp.BarcodeFormat.EAN13, zxingcpp.BarcodeFormat.EAN8,
+                   zxingcpp.BarcodeFormat.UPCA, zxingcpp.BarcodeFormat.UPCE]
+        found = zxingcpp.read_barcodes(im, formats=formats)
+    except Exception:                              # noqa: BLE001 — undecodable image or no library: nothing read
+        return [], []
+    good, bad = [], []
+    for r in found:
+        raw = r.text
+        if r.format == zxingcpp.BarcodeFormat.UPCE:
+            raw = upce_to_upca(raw)
+        code, reason = check(raw)
+        if code and code not in good:
+            good.append(code)
+        elif reason:
+            bad.append(reason)
+    return good, bad

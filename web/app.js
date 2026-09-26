@@ -10,10 +10,10 @@ import {
   AGES, APP_VERSION, MAX_PROFILES, ApiError, addHistory, allergenList, clientInfo, compareRequest,
   deviceId, el, fill, history, historyItem, lastIncident, prepareImage, problemRequest, profileByRef,
   profiles, record, reportRequest, saveProfiles, scanRequest, sendToUsRequest, store, trailSnapshot,
-  accessRequest, feedbackRequest, joinRequest,
-  updatesRequest, validGtin,
+  accessRequest, checkPhotoRequest, feedbackRequest, joinRequest,
+  updatesRequest,
 } from "./lib.js";
-import { barcodeFromImage, barcodeSupported, imageBarcodeSupported, startScanner } from "./camera.js";
+import { barcodeSupported, startScanner } from "./camera.js";
 
 const main = document.getElementById("main");
 let stopCamera = null;
@@ -21,8 +21,8 @@ let navSeq = 0;               // async views check this so a late result can't r
 // The scan in progress: barcode (if read), photos, and how many times it was refused
 // (with the refused scans' ids, for "Send it to us", D-070).
 // frontWanted: offer the front photo (D-100); off for a re-check of a pack whose front is on file.
-let pending = { barcode: null, back: null, front: null, pairing: false, attempts: 0, refused: [],
-                frontWanted: true };
+let pending = { barcode: null, barcodeSource: null, back: null, front: null, pairing: false, attempts: 0,
+                refused: [], frontWanted: true };
 
 // ------------------------------------------------------------------ navigation
 const routes = {
@@ -345,29 +345,36 @@ function nextRef(list) {
 
 // ------------------------------------------------------------------ scan: barcode first (D-024)
 function resetPending() {
-  pending = { barcode: null, back: null, front: null, pairing: false, attempts: 0, refused: [],
-              frontWanted: true };
+  pending = { barcode: null, barcodeSource: null, back: null, front: null, pairing: false, attempts: 0,
+              refused: [], frontWanted: true };
 }
 
 async function scan() {
   const video = el("video", { class: "viewfinder", muted: true, playsinline: true, "aria-label": "Camera" });
   const status = el("p", { class: "muted", role: "status" }, "Starting the camera…");
-  const manual = manualEntry();
-  const fromPhoto = el("div", {});
+  // D-104: a barcode comes from the live scanner or from a photo read on the
+  // server, never typed: a mistyped number would file a pack under someone
+  // else's product.
+  const preview = el("div", { class: "thumb" });
+  const next = el("div", {});
   const view = el("section", { class: "stack" },
     el("h1", {}, "Scan the barcode"),
     el("div", { class: "viewfinder-wrap" }, video, el("div", { class: "frame", "aria-hidden": "true" })),
     status,
-    manual,
-    fromPhoto,
+    el("h2", {}, "Or use a photo of the barcode"),
+    photoPicker("barcode", "Take a photo of the barcode", preview, (_blob, res) => {
+      next.replaceChildren();
+      if (res?.ok && res.barcode) {
+        next.append(button("Look up this pack", () => lookUp(res.barcode, "photo"), "primary"));
+      }
+    }),
+    preview,
+    next,
     button("No barcode? Photograph the ingredients", () => { pending.barcode = null; go("photo"); }, "link"));
 
   const seq = navSeq;
-  // D-102: a barcode can also come from a photo (saved earlier, or a laptop
-  // with no camera), where the browser can read one. Otherwise: type it.
-  if (await imageBarcodeSupported()) fromPhoto.append(barcodePhotoPicker());
   if (await barcodeSupported()) {
-    startScanner(video, code => lookUp(code)).then(stop => {
+    startScanner(video, code => lookUp(code, "camera")).then(stop => {
       if (seq !== navSeq) return stop();          // the user left before the camera opened
       record("camera", { started: true });
       stopCamera = stop;
@@ -375,60 +382,29 @@ async function scan() {
     }).catch(e => {
       record("camera", { started: false, error: String(e?.name || e) });
       video.parentElement.remove();
-      status.textContent = "We couldn't open the camera. Type the number under the barcode instead.";
+      status.textContent = "We couldn't open the camera here. Take or upload a photo of the barcode instead.";
     });
   } else {
     record("camera", { barcode_detector: false });
     video.parentElement.remove();
-    status.textContent = "This browser can't read barcodes with the camera. Type the number under the barcode.";
+    status.textContent = "This browser can't read barcodes live. Take or upload a photo of the barcode instead.";
   }
   return view;
 }
 
-function barcodePhotoPicker() {
-  const err = el("p", { class: "error", role: "alert" });
-  const input = el("input", { type: "file", accept: "image/*", class: "sr", id: "barcode-photo" });
-  input.addEventListener("change", async () => {
-    const file = input.files && input.files[0];
-    if (!file) return;
-    err.textContent = "";
-    const code = await barcodeFromImage(file);
-    if (code && validGtin(code)) return lookUp(code, "photo");
-    record("barcode", { how: "photo", found: false });
-    err.textContent = "We couldn't find a barcode in that photo. Type the number printed under it instead.";
-  });
-  return el("div", {}, input,
-    el("label", { for: "barcode-photo", class: "btn link" }, "Use a photo of the barcode"), err);
-}
-
-function manualEntry() {
-  const input = el("input", { id: "code", inputmode: "numeric", autocomplete: "off", maxlength: "14",
-                              placeholder: "e.g. 8901063010321" });
-  const err = el("p", { class: "error", role: "alert" });
-  const form = el("form", { class: "row" },
-    el("label", { for: "code", class: "sr" }, "Barcode number"),
-    input, el("button", { type: "submit", class: "btn" }, "Look up"));
-  form.addEventListener("submit", e => {
-    e.preventDefault();
-    const code = input.value.replace(/\D/g, "");
-    if (!validGtin(code)) { err.textContent = "That number doesn't look right. Check the digits under the barcode."; return; }
-    lookUp(code, "typed");
-  });
-  return el("div", {}, form, err);
-}
-
-async function lookUp(code, how = "camera") {
+async function lookUp(code, how) {
   if (stopCamera) { stopCamera(); stopCamera = null; }
   record("barcode", { how, digits: code.length });
   pending.barcode = code;
+  pending.barcodeSource = how;
   show(working("Looking up this pack…", false));
   try {
-    const { body } = await scanRequest({ barcode: code });
+    const { body } = await scanRequest({ barcode: code, barcodeSource: how });
     finish(body);
   } catch (e) {
     // 404 not_in_catalogue: the normal first-time path, not an error (D-068).
     if (e instanceof ApiError && e.status === 404 && e.body.error === "not_in_catalogue") return go("photo");
-    show(apiErrorView(e, () => lookUp(code)));
+    show(apiErrorView(e, () => lookUp(code, how)));
   }
 }
 
@@ -456,7 +432,13 @@ function photo() {
     el("figure", { class: "sample" }, sampleBack(),
       el("figcaption", { class: "muted" }, "Fill the frame with the ingredient list. Hold steady and avoid glare.")),
     photoPicker("back", pending.back ? "Retake the ingredients photo" : "Take the ingredients photo", backPreview,
-                b => { pending.back = b; go_.disabled = false; }),
+                (b, res) => {
+                  // A red cross keeps "Check this pack" off; an unchecked photo (the
+                  // check couldn't run) is let through, and /scan checks it again anyway.
+                  pending.back = res && !res.ok ? null : b;
+                  go_.disabled = !pending.back;
+                  if (res?.barcode && !pending.barcode) { pending.barcode = res.barcode; pending.barcodeSource = "photo"; }
+                }),
     backPreview,
     // D-100: asked for once per pack, not once per scan. A re-check of a pack
     // whose front is already on file doesn't ask again.
@@ -464,7 +446,10 @@ function photo() {
       el("h2", {}, "The front of the pack"),
       el("p", { class: "muted" }, "Optional. The front shows the pack's name and what it promises. " +
                                   "Our team records it once for each pack."),
-      photoPicker("front", "Take the front photo", frontPreview, b => { pending.front = b; pairRow.hidden = false; }),
+      photoPicker("front", "Take the front photo", frontPreview, (b, res) => {
+        pending.front = res && !res.ok ? null : b;
+        pairRow.hidden = !pending.front;
+      }),
       frontPreview, pairRow),
     go_);
 }
@@ -476,14 +461,32 @@ function photo() {
 // dropped onto the box.
 const TOUCH = window.matchMedia?.("(pointer: coarse)").matches ?? true;
 
+// D-104: every photo is checked on the server as soon as it is picked, and
+// gets a green tick or a red cross with the reason. onPick(blob, result):
+// result is {ok, message, barcode}, or null when the check couldn't run.
 function photoPicker(role, label, preview, onPick) {
   const use = async file => {
     if (!file || !file.type.startsWith("image/")) return;
     preview.replaceChildren(el("p", { class: "muted" }, "Preparing photo…"));
     const blob = await prepareImage(file);
-    onPick(blob);
-    const url = URL.createObjectURL(blob);
-    preview.replaceChildren(el("img", { src: url, alt: `Your ${role} photo` }));
+    const img = el("img", { src: URL.createObjectURL(blob), alt: `Your ${role} photo` });
+    preview.replaceChildren(img, el("p", { class: "muted", role: "status" }, "Checking the photo…"));
+    let res = null;
+    try {
+      res = (await checkPhotoRequest(role, blob)).body;
+    } catch (e) {
+      if (needsInvite(e)) return go("join");
+      if (e.status === 429 || e.status === 413 || e.status === 415) res = { ok: false, message: apiMessage(e) };
+    }
+    record("photo_check", { role, ok: res ? res.ok : null, problem: res?.problem || null, barcode: !!res?.barcode });
+    const line = res === null
+      ? el("p", { class: "check unknown", role: "status" },
+          role === "barcode" ? "We couldn't check this photo just now. Try again in a moment."
+                             : "We couldn't check this photo just now. It will be checked when you continue.")
+      : el("p", { class: "check " + (res.ok ? "ok" : "bad"), role: "status" },
+          el("span", { "aria-hidden": "true" }, res.ok ? "✓ " : "✗ "), res.message);
+    preview.replaceChildren(img, line);
+    onPick(blob, res);
   };
   const input = (id, capture) => {
     const i = el("input", { type: "file", accept: "image/*", class: "sr", id, ...(capture ? { capture: "environment" } : {}) });
@@ -532,7 +535,10 @@ function front(id) {
     el("h1", {}, "Photograph the front"),
     el("p", { class: "product" }, productName(h.product)),
     el("p", { class: "lead" }, "Fill the frame with the front of the pack, including any words printed on it."),
-    photoPicker("front", "Take the front photo", preview, b => { blob = b; send.disabled = false; }),
+    photoPicker("front", "Take the front photo", preview, (b, res) => {
+      blob = res && !res.ok ? null : b;
+      send.disabled = !blob;
+    }),
     preview,
     send,
     button("Not now", () => go("result/" + encodeURIComponent(id)), "link"));
@@ -850,7 +856,7 @@ function apiMessage(e) {
   // D-095: the server's own text says how long to wait.
   if (e.status === 429) return e.body?.detail || "You've checked a lot of packs in a short time. Please wait a few minutes.";
   // D-103: the server names what's wrong with a barcode or a photo file.
-  const own = ["bad_barcode", "not_an_image", "photo_too_small", "photo_blank", "back_required"];
+  const own = ["bad_barcode", "not_an_image", "photo_too_small", "photo_blank", "back_required", "rate_limited"];
   if (own.includes(e.body?.error) && e.body.detail) return e.body.detail;
   if (e.status === 413) return "That photo is too large. Take it again a little further away.";
   if (e.status === 415) return "That file isn't a photo we can read. Use the camera instead.";

@@ -12,7 +12,7 @@
 //    beyond the headline the user was shown.
 
 // Bump together with VERSION in sw.js: a report then says which shell was cached.
-export const APP_VERSION = "web-8";
+export const APP_VERSION = "web-9";
 
 // ------------------------------------------------------------------ storage
 // localStorage can throw (private mode, blocked site data); the app must still work.
@@ -171,11 +171,12 @@ async function call(path, opts = {}) {
   return { status: res.status, body };
 }
 
-export async function scanRequest({ barcode, back, front, pairing }) {
+export async function scanRequest({ barcode, barcodeSource, back, front, pairing }) {
   const fd = new FormData();
   fd.append("device_id", deviceId());
   fd.append("profiles", JSON.stringify(profilesForServer()));
   if (barcode) fd.append("barcode", barcode);
+  if (barcode && barcodeSource) fd.append("barcode_source", barcodeSource);     // D-104: camera or photo
   if (back) fd.append("back", back, "back.jpg");
   if (front) fd.append("front", front, "front.jpg");
   if (front && pairing) fd.append("pairing_confirmed", "true");
@@ -212,6 +213,16 @@ export const sendToUsRequest = scanIds =>
   call("/send-to-us", { method: "POST", headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ device_id: deviceId(), scan_ids: scanIds }) });
 
+// D-104: the tick or cross on a photo as soon as it is picked. The server
+// reads any barcode on it (never typed) and checks the file; no model call.
+export async function checkPhotoRequest(role, blob) {
+  const fd = new FormData();
+  fd.append("device_id", deviceId());
+  fd.append("role", role);
+  fd.append("photo", blob, role + ".jpg");
+  return call("/check-photo", { method: "POST", body: fd });
+}
+
 // D-102: the invite-only beta. The server says whether it needs a code and
 // whether this phone has joined; the code comes from the tester's link.
 export const accessRequest = () =>
@@ -229,16 +240,7 @@ export const feedbackRequest = ({ comment, rating, screen }) =>
 export const updatesRequest = () =>
   call("/updates?device_id=" + encodeURIComponent(deviceId()));
 
-// ------------------------------------------------------------------ barcodes
-// GTIN check digit (EAN-8, UPC-A, EAN-13, GTIN-14): catches a mistyped digit
-// before it becomes a "we haven't checked this pack" answer.
-export function validGtin(code) {
-  if (!/^(\d{8}|\d{12,14})$/.test(code)) return false;
-  const d = [...code].map(Number);
-  const check = d.pop();
-  const sum = d.reverse().reduce((s, x, i) => s + x * (i % 2 === 0 ? 3 : 1), 0);
-  return (10 - (sum % 10)) % 10 === check;
-}
+// Barcodes are checked on the server (D-103), from the camera or a photo (D-104).
 
 // ------------------------------------------------------------------ images
 // Phone photos are 3–12 MB; the label only needs ~1600 px on the long edge.

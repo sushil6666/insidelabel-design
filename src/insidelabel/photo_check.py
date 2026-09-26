@@ -32,8 +32,11 @@ MESSAGES = {
 }
 
 
-def check(data, mime, role):
-    """None when the photo can go to the model, else (code, message)."""
+def check(data, mime, role, min_size=True):
+    """
+    None when the photo can go to the model, else (code, message). A close-up
+    of a barcode needs no label-sized pixels (min_size=False, D-104).
+    """
     if mime in _UNDECODED:
         return None
     try:
@@ -41,7 +44,7 @@ def check(data, mime, role):
             im.verify()                          # a truncated or fake file fails here
         im = Image.open(io.BytesIO(data))
         w, h = im.size
-        if max(w, h) < MIN_LONG_EDGE or min(w, h) < MIN_SHORT_EDGE:
+        if min_size and (max(w, h) < MIN_LONG_EDGE or min(w, h) < MIN_SHORT_EDGE):
             return "photo_too_small", MESSAGES["photo_too_small"].format(role=role)
         im.draft("L", (400, 400))                # JPEG: decode small, fast
         grey = im.convert("L")

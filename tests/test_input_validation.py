@@ -88,7 +88,7 @@ def test_codes_that_are_not_a_retail_pack(code, reason):
 @pytest.mark.parametrize("code, normal", [
     (gtin("890106301032"), None),                       # GS1 India
     (gtin("500015940402"), None),                       # GS1 UK
-    (gtin("01234567890"), None),                        # UPC-A, U.P.C. prefix 0
+    (gtin("01234567890"), "0" + gtin("01234567890")),  # UPC-A, stored as its GTIN-13 (D-104)
     ("0" + gtin("890106301032"), gtin("890106301032")),  # GTIN-14 with indicator 0 = the GTIN-13 inside
     (gtin("5012345"), None),                            # GTIN-8
 ])
