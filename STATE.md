@@ -1,6 +1,6 @@
 # STATE.md - where InsideLabel is, and how to pick it up
 
-**Last updated:** 2026-09-26 (`main` = `93c47c1`; D-111 and D-112 built on branch `additive-badges`) · **Owner:** Sushil · **Tests:** 375 passing, 1 skipped · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 6.9 s, Gemini + Cloud Vision, correct
+**Last updated:** 2026-09-26 (`main` = `1230699`: D-109 to D-112 locked, built and merged, PRs #14, #15) · **Owner:** Sushil · **Tests:** 375 passing, 1 skipped · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 6.9 s, Gemini + Cloud Vision, correct
 
 This is the living status document. Read it first in any new session, then
 `DECISIONS.md` for the *why*. Update the "Last updated" line, the numbers and
@@ -660,7 +660,7 @@ retention test. Public launch comes after the W4 number (D-083).
 | D-051, D-052, D-055 decided | locked | ✅ locked 2026-09-25 |
 | Published catalogue | ≥ 50 SKUs | ❌ 5 (queue empty; no barcodes yet) |
 | Kids' biscuits published (D-058) | ≥ 15 in 7.2.1 / 7.2.2 | ❌ 0 (category picker ready) |
-| Test suite (`--with-tests`) | green | ✅ 375, 1 skipped (branch `additive-badges`, 2026-09-26) |
+| Test suite (`--with-tests`) | green | ✅ 375, 1 skipped (`main`, 2026-09-26) |
 
 ### Manual gates - tick when done
 
