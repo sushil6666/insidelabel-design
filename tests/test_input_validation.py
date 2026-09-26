@@ -189,8 +189,9 @@ def test_even_a_readable_list_on_a_screen_is_refused():
 
 
 def test_an_ordinary_refusal_can_still_be_sent_to_us():
+    from gtins import gtin
     r = c.post("/scan", files={"back": ("b.png", photo(fmt="PNG"), "image/png")},
-               data={"replay": vision(back_status="unreadable", ingredients_status="unreadable", ingredients=[],
+               data={"barcode": gtin(), "replay": vision(back_status="unreadable", ingredients_status="unreadable", ingredients=[],
                                       image_content={"back": "food_pack", "front": "not_provided"})})
     assert r.status_code == 422 and r.json()["screen"]["can_send"] is True
 

@@ -376,6 +376,14 @@ then `migrate`, `tools/reviewers.py add`, `tools/beta.py invite 50 --base https:
 and `tools/beta.py feedback`. Seed the kids' biscuits first (§8 item 4): every pack not in
 the catalogue is a paid 8-15 s read.
 
+### No barcode, no catalogue entry (2026-09-26, branch `no-barcode`, D-107 recommended)
+
+"No barcode? Photograph the ingredients" moved up to a full button under the camera. A
+scan without a barcode shows its result with a note and creates no product, version or
+review item (scan row kept for replay, migration 014). "Send it to us" and reviewer
+publishing need a barcode. `queue_predictions.py` reads barcodes from the gold photos.
+Tests: 351 passing.
+
 ### Uploads marked for reviewers (2026-09-26, same branch, D-106 locked)
 
 D-102 and D-105 accepted. Each photo now says where it came from (camera or upload); the

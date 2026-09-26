@@ -17,6 +17,7 @@ psycopg = pytest.importorskip("psycopg")
 from fastapi.testclient import TestClient  # noqa: E402
 from PIL import Image  # noqa: E402
 
+from gtins import gtin  # noqa: E402
 from insidelabel.api import main  # noqa: E402
 from insidelabel.db.store import Store  # noqa: E402
 from insidelabel.media import LocalMedia  # noqa: E402
@@ -63,6 +64,7 @@ def env(fresh_db, tmp_path_factory):
 
 
 def scan(**data):
+    data.setdefault("barcode", gtin())     # D-107: only barcoded packs reach the review queue
     files = {"back": ("b.jpg", jpeg(), "image/jpeg")}
     return c.post("/scan", files=files, data={"replay": vision(product={"brand": "Testco",
                   "name": f"Source {uuid.uuid4().hex[:6]}", "variant": None, "net_quantity": None,

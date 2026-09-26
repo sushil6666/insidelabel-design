@@ -8,3 +8,10 @@ Requires-Dist: uvicorn
 Requires-Dist: python-multipart
 Requires-Dist: google-genai
 Requires-Dist: Pillow
+Requires-Dist: psycopg[binary]>=3.2
+Requires-Dist: jinja2>=3.1
+Requires-Dist: zxing-cpp>=3.1
+Provides-Extra: dev
+Requires-Dist: pytest; extra == "dev"
+Requires-Dist: httpx; extra == "dev"
+Requires-Dist: pgserver; extra == "dev"

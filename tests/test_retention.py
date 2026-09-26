@@ -19,6 +19,7 @@ psycopg = pytest.importorskip("psycopg")
 
 from fastapi.testclient import TestClient  # noqa: E402
 
+from gtins import gtin  # noqa: E402
 from insidelabel import retention  # noqa: E402
 from insidelabel.api import main  # noqa: E402
 from insidelabel.db.store import Store  # noqa: E402
@@ -64,6 +65,7 @@ def scan(dev=None, photo=None, refused=True, days_old=31, uri=None):
     photo = photo or (b"\xff\xd8\xff\xe0" + uuid.uuid4().bytes)
     r = c.post("/scan", files={"back": ("b.jpg", photo, "image/jpeg")},
                data={"replay": vision(back_status="unreadable") if refused else vision(),
+                     "barcode": gtin(),               # D-107: only barcoded packs get a version
                      "device_id": dev or str(uuid.uuid4())})
     sid = r.json()["scan_id"]
     rows = sql(uri, "UPDATE scans SET created_at = now() - make_interval(days => %s) WHERE id = %s "

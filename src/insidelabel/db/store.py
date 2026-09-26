@@ -251,6 +251,22 @@ class Store:
             self._set_trace(conn, sid, trace)
             return sid
 
+    def record_unlisted_scan(self, *, device_id=None, latency_ms=None, front_key=None, back_key=None,
+                             trace=None):
+        """
+        D-107: a result for a pack without a barcode. Only the scan row, for
+        replay (D-092): no product, version or review item.
+        """
+        with self._connect() as conn:
+            uid = self._user(conn, device_id)
+            sid = conn.execute(
+                """INSERT INTO scans (user_id, resolved_via, cache_hit, outcome, latency_ms,
+                                      front_image_key, back_image_key)
+                   VALUES (%s, 'no_barcode', false, 'unlisted', %s, %s, %s) RETURNING id""",
+                (uid, latency_ms, front_key, back_key)).fetchone()["id"]
+            self._set_trace(conn, sid, trace)
+            return sid
+
     def save_scan(self, *, vision, verdict, claim_check, claims_trusted, reliability,
                   barcode=None, device_id=None, latency_ms=None,
                   model_name=None, prompt_version=None, engine_version=None,
@@ -530,7 +546,7 @@ class Store:
         with self._connect() as conn:
             uid = self._user(conn, device_id)
             rows = conn.execute(
-                """SELECT id, user_id, outcome, error_code, back_image_key, created_at FROM scans
+                """SELECT id, user_id, outcome, error_code, back_image_key, created_at, request FROM scans
                     WHERE id = ANY(%s::uuid[]) ORDER BY created_at, id""", (scan_ids,)).fetchall()
             # Someone else's scan looks exactly like one that doesn't exist.
             if len(rows) != len(scan_ids) or any(str(r["user_id"]) != uid for r in rows):
@@ -541,6 +557,9 @@ class Store:
             # a reviewer's job: there is no label in them to read.
             if any(r["error_code"] in ("back_is_a_screen", "not_a_food_pack") for r in rows):
                 return {"error": "not_a_pack"}
+            # D-107: the catalogue is filed by barcode; a reviewer can't file a pack without one.
+            if not any((r["request"] or {}).get("barcode") for r in rows):
+                return {"error": "no_barcode"}
             if len(rows) < 2:
                 return {"error": "need_two_attempts"}
             if not rows[-1]["back_image_key"]:

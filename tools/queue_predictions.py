@@ -9,6 +9,10 @@ the reviewer to check against.
         python tools/queue_predictions.py [--ids limca-pet-1l ...]
 
 Safe to re-run: an identical version already waiting for review is reused.
+
+D-107: the catalogue is filed by barcode, so a pack is only queued with one. It
+is read from the pack photos (the same reader as /check-photo, D-104) or given
+with --barcode ID=DIGITS; a pack without either is skipped, not queued.
 """
 import argparse
 import glob
@@ -25,11 +29,15 @@ def main():
     ap.add_argument("--ids", nargs="*", help="prediction ids (default: all in predictions/)")
     ap.add_argument("--pred", default=os.path.join(ROOT, "predictions"))
     ap.add_argument("--photos", default=os.path.join(ROOT, "photos"))
+    ap.add_argument("--barcode", action="append", default=[], metavar="ID=DIGITS",
+                    help="the barcode for a pack whose photos don't show one")
     args = ap.parse_args()
+    given = dict(b.split("=", 1) for b in args.barcode)
     if not os.environ.get("INSIDELABEL_DB"):
         sys.exit("Set INSIDELABEL_DB to the Postgres URI to queue into.")
 
     from fastapi.testclient import TestClient
+    from insidelabel import barcode as barcodes
     from insidelabel.api import main as api
 
     api.REPLAY_ALLOWED = True      # D-101: a local tool, in-process
@@ -48,8 +56,16 @@ def main():
         if "back" not in files:
             print(f"  skip {pid}: no back photo")
             continue
+        code = given.get(pid)
+        if not code:
+            found = sorted({c for _n, data, _m in files.values() for c in barcodes.read_from_photo(data)[0]})
+            code = found[0] if len(found) == 1 else None
+        if not code:
+            print(f"  skip {pid}: no barcode on its photos (D-107); pass --barcode {pid}=DIGITS")
+            continue
         # The recorded front was read from the same pack, so the pairing is attested.
-        r = client.post("/scan", files=files, data={"replay": replay, "pairing_confirmed": "true"})
+        r = client.post("/scan", files=files, data={"replay": replay, "pairing_confirmed": "true",
+                                                    "barcode": code, "barcode_source": "photo"})
         j = r.json()
         cat = j.get("catalogue") or {}
         print(f"  {pid:34} HTTP {r.status_code}  version={cat.get('product_version_id')}  "

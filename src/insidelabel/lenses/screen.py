@@ -256,8 +256,13 @@ def _headline(band, worth, claims, reliability):
     return {"text": BAND_LABEL.get(band, BAND_LABEL["mixed"]) + ".", "source": {"kind": "band", "ref": band}}
 
 
+# D-107: shown under a result for a pack without a barcode.
+UNLISTED_NOTE = ("This pack has no barcode, so it isn't added to our catalogue. The result above "
+                 "is from your photo, just for you.")
+
+
 def build(*, verdict, display, claim_check, extracted, reliability, profiles,
-          allergen_confidence, allergen_reliable, catalogue=None):
+          allergen_confidence, allergen_reliable, catalogue=None, has_barcode=True):
     """The `screen` block of a /scan response. verdict=None means the scan was refused."""
     ingredients = (extracted or {}).get("ingredients") or []
     statement = (extracted or {}).get("allergen_statement")
@@ -273,8 +278,8 @@ def build(*, verdict, display, claim_check, extracted, reliability, profiles,
                          "source": {"kind": "reliability", "ref": error}},
             "retake": RETAKE.get(error, RETAKE_DEFAULT),
             # D-096/D-103: a pack we couldn't read can go to a reviewer; a photo
-            # that isn't a pack can't.
-            "can_send": error not in NOT_A_PACK,
+            # that isn't a pack can't, and neither can a pack without a barcode (D-107).
+            "can_send": error not in NOT_A_PACK and has_barcode,
         }
 
     band = display["display_binary"]
@@ -314,4 +319,6 @@ def build(*, verdict, display, claim_check, extracted, reliability, profiles,
         # D-073: a barcode can outlive a recipe. Ask anyone with an avoid list for one back photo.
         if any(p["avoid"] for p in profiles):
             out["recheck"] = "Packs change. Photograph the back of your pack to re-check the avoid list."
+    if not has_barcode:
+        out["catalogue_note"] = UNLISTED_NOTE
     return out
