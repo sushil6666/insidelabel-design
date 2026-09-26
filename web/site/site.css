@@ -1,27 +1,54 @@
-/* The public pages around the app (D-102): landing, privacy, about. Same colours as app.css. */
+/* The public pages around the app (D-102): landing, privacy, about. Same colours,
+   fonts and shapes as app.css (D-110); the fonts are the app's own files. */
+@font-face { font-family: "DM Sans"; font-weight: 400; font-style: normal; font-display: swap; src: url("/app/fonts/dm-sans-400.woff2") format("woff2"); }
+@font-face { font-family: "DM Sans"; font-weight: 600; font-style: normal; font-display: swap; src: url("/app/fonts/dm-sans-600.woff2") format("woff2"); }
+@font-face { font-family: "DM Sans"; font-weight: 700; font-style: normal; font-display: swap; src: url("/app/fonts/dm-sans-700.woff2") format("woff2"); }
+@font-face { font-family: "Bricolage Grotesque"; font-weight: 800; font-style: normal; font-display: swap; src: url("/app/fonts/bricolage-grotesque-800.woff2") format("woff2"); }
+
 :root {
   color-scheme: light dark;
-  --bg: #f6f7f9; --surface: #ffffff; --ink: #16202b; --muted: #5a6776; --line: #d9dee5;
-  --brand: #1b3a5c; --brand-ink: #ffffff; --accent: #e0a526; --note-bg: #fff4dc; --note: #8a5a00;
+  --bg: #fbf9ee; --surface: #ffffff; --ink: #244b6b; --muted: #57768c; --line: #c9e3ec;
+  --brand: #048149; --brand-ink: #fcfcf8; --ring: #008cba; --mint: #c4f6d4; --aqua: #d5f7f4;
+  --note-bg: #ffefcd; --note: #6c380d;
+  --shadow: 0 1px 2px rgba(36, 75, 107, .06), 0 12px 32px -12px rgba(36, 75, 107, .18);
+  --hero: radial-gradient(60% 60% at 15% 10%, rgba(196, 246, 212, .7), transparent 70%),
+          radial-gradient(50% 50% at 90% 20%, rgba(196, 234, 250, .7), transparent 70%);
+  --font: "DM Sans", system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", sans-serif;
+  --display: "Bricolage Grotesque", var(--font);
 }
 @media (prefers-color-scheme: dark) {
-  :root { --bg: #0f1419; --surface: #182029; --ink: #e8edf2; --muted: #9aa7b5; --line: #2c3845;
-          --brand: #8fb8e0; --brand-ink: #0f1419; --note-bg: #3a2f17; --note: #f0c060; }
+  :root { --bg: #193043; --surface: #234058; --ink: #e0f2f6; --muted: #a3c4d1; --line: #3e6378;
+          --brand: #66c189; --brand-ink: #042234; --ring: #7dccda; --mint: #28523c; --aqua: #265368;
+          --note-bg: #674420; --note: #ffd791;
+          --shadow: 0 1px 2px rgba(0, 0, 0, .2), 0 12px 32px -12px rgba(0, 0, 0, .45);
+          --hero: radial-gradient(60% 60% at 15% 10%, rgba(40, 82, 60, .8), transparent 70%),
+                  radial-gradient(50% 50% at 90% 20%, rgba(38, 83, 104, .8), transparent 70%); }
 }
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--ink); line-height: 1.55;
-       font: 17px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", sans-serif; }
+html { background: var(--bg); }   /* keeps the gradient at the top only */
+body { margin: 0; min-height: 100vh; color: var(--ink); font: 17px/1.55 var(--font);
+       background: var(--hero) no-repeat top / 100% 520px; }
 .wrap { max-width: 760px; margin: 0 auto; padding: 0 16px; }
-header { padding: 20px 0; } header a { color: var(--ink); font-weight: 700; text-decoration: none; font-size: 20px; }
-h1 { font-size: clamp(28px, 6vw, 40px); line-height: 1.15; margin: 24px 0 12px; }
-h2 { font-size: 20px; margin: 32px 0 8px; }
+header.wrap { padding-top: 20px; padding-bottom: 4px; }   /* .wrap alone would zero it */
+.brand { display: inline-flex; align-items: center; gap: 8px; color: var(--ink); text-decoration: none;
+         font: 800 22px/1 var(--display); letter-spacing: -.01em; }
+.mark { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px;
+        border-radius: 10px; background: var(--brand); color: var(--brand-ink); font: 800 14px/1 var(--display); }
+h1, h2 { font-family: var(--display); font-weight: 800; letter-spacing: -.015em; }
+h1 { font-size: clamp(32px, 7vw, 46px); line-height: 1.05; margin: 24px 0 12px; }
+h2 { font-size: 22px; margin: 36px 0 10px; }
 .lead { font-size: 19px; color: var(--muted); }
-.cta { display: inline-block; background: var(--brand); color: var(--brand-ink); padding: 14px 22px;
-       border-radius: 12px; font-weight: 600; text-decoration: none; margin: 16px 0 8px; }
+.cta { display: inline-block; background: var(--brand); color: var(--brand-ink); padding: 15px 26px;
+       border-radius: 16px; font-weight: 700; text-decoration: none; margin: 16px 0 8px; box-shadow: var(--shadow);
+       transition: transform 120ms ease; }
+.cta:active { transform: translateY(2px) scale(.99); }
 .steps { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); padding: 0; list-style: none; }
-.steps li { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
-.steps b { display: block; margin-bottom: 4px; }
-.draft { background: var(--note-bg); color: var(--note); border-radius: 12px; padding: 12px 16px; font-weight: 600; }
+.steps li { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px;
+            box-shadow: var(--shadow); }
+.steps b { display: block; margin-bottom: 4px; font-family: var(--display); font-weight: 800; font-size: 18px; }
+.draft { background: var(--note-bg); color: var(--note); border-radius: 16px; padding: 12px 16px; font-weight: 600; }
 a { color: var(--brand); }
+a:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
 footer { margin: 48px auto 32px; color: var(--muted); font-size: 15px; }
 footer a { color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { .cta { transition: none; } }

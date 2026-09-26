@@ -810,17 +810,24 @@ function report(id) {
   const said = el("textarea", { id: "said", maxlength: "4000", rows: "3" });
   const note = el("textarea", { id: "note", maxlength: "2000", rows: "3" });
   const err = el("p", { class: "error", role: "alert" });
+  // D-109: one of the two boxes needs real text; the server says the same sentence.
+  const needText = "Tell us what the pack says, or what looks wrong. One of the two is enough.";
   const form = el("form", { class: "stack" },
     el("h1", {}, "Report a mistake"),
     el("p", { class: "muted" }, productName(h.product)),
     el("label", { for: "field" }, "What's wrong?"), field,
-    el("label", { for: "said" }, "What does the pack say? (optional)"), said,
-    el("label", { for: "note" }, "Anything else? (optional)"), note,
+    el("p", { class: "small muted" }, needText),
+    el("label", { for: "said" }, "What does the pack say?"), said,
+    el("label", { for: "note" }, "What looks wrong?"), note,
     err,
     el("button", { type: "submit", class: "btn primary" }, "Send to our team"),
     button("Cancel", () => window.history.back(), "link"));
   form.addEventListener("submit", async e => {
     e.preventDefault();
+    if (said.value.trim().length < 3 && note.value.trim().length < 3) {
+      err.textContent = needText;
+      return (said.value.trim() ? note : said).focus();
+    }
     try {
       await reportRequest({ scan_id: h.scan_id, field: field.value,
                             proposed_value: said.value.trim() || null, note: note.value.trim() || null });
@@ -829,7 +836,8 @@ function report(id) {
         button("Done", () => go(""), "primary")));
     } catch (ex) {
       err.textContent = ex.status === 0 ? "No connection. Try again when you're online."
-                                        : "We couldn't send that just now. Try again in a minute.";
+                      : ex.body?.error === "empty_report" ? needText
+                      : "We couldn't send that just now. Try again in a minute.";
     }
   });
   return form;

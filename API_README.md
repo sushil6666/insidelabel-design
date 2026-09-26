@@ -28,7 +28,7 @@ pip install -e . && uvicorn insidelabel.api.main:app --reload
 | `GET /regulators`, `GET /regulators/{ins}` | live | India vs EU vs US status per additive, information only (D-086) |
 | `GET /updates` | live (needs DB) | `?device_id=` → this install's packs that review has decided (D-070) |
 | `GET /review` | live (needs DB + a reviewer account) | reviewer screen, HTTP Basic, one login per reviewer (D-097) |
-| `POST /report` | live (needs DB) | "Report a mistake": `{scan_id, field, proposed_value?, note?}` → correction + review queue (D-076) |
+| `POST /report` | live (needs DB) | "Report a mistake": `{scan_id, field, proposed_value?, note?}` → correction + review queue (D-076); `proposed_value` or `note` needs 3+ characters, else 422 `empty_report` (D-109) |
 | `GET /app/` | live | the PWA (`web/`, D-090); `/` redirects here |
 | `POST /send-to-us` | live (needs DB) | "Send it to us" after two refused scans: `{device_id, scan_ids[]}` (this install's own, all refused, ≥ 2) → one `send_to_us` review item with every attempt's photos, held past retention; `/updates` reports back (D-070, D-096) |
 | `GET /access`, `POST /join` | live (join needs DB) | invite-only beta (D-102): `?device_id=` → `{invite_only, joined}`; `{code, device_id}` → joined / 404 / 409 full / 410 revoked |

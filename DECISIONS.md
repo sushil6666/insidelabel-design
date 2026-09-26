@@ -4,7 +4,7 @@ Architectural and product decisions for InsideLabel, with the reasoning attached
 Append-only. When a decision is reversed, mark it `SUPERSEDED` and add a new entry
 rather than editing the old one - the history is the point.
 
-**Last updated:** 2026-09-26 (D-102 to D-108 locked; D-109, D-110 recommended)
+**Last updated:** 2026-09-26 (D-102 to D-110 locked)
 
 **Status key:** `LOCKED` decided, don't relitigate · `OPEN` not yet decided ·
 `RECOMMENDED` proposed but not accepted · `SUPERSEDED` replaced
@@ -1063,9 +1063,9 @@ were attached to the wafer. With a barcode they would have reached the review qu
   their result; the wrong pair is refused. 12 genuine reads is a small sample: watch
   `product_mismatch` refusals in the beta.
 
-### D-109 · "Report a mistake" needs a note or what the pack says `RECOMMENDED` (2026-09-26)
+### D-109 · "Report a mistake" needs a note or what the pack says `LOCKED` (2026-09-26)
 Proposed by Sushil ("empty reports give reviewers nothing to act on"); details by
-Claude. **Not built; waiting for Sushil's "accepted".**
+Claude; accepted by Sushil 2026-09-26.
 
 Both reports on the local queue so far came in empty: #8 (D-103's screenshot test) and
 #9 (field "other", no note). Today the form sends a field from a drop-down plus two
@@ -1092,9 +1092,9 @@ useful back (D-076's "ready?" on `/updates`).
   on the result screen), or making the field more specific (the drop-down already says
   where to look; the text says what's wrong).
 
-### D-110 · The website takes the Lovable look, not the Lovable app `RECOMMENDED` (2026-09-26)
+### D-110 · The website takes the Lovable look, not the Lovable app `LOCKED` (2026-09-26)
 Direction from Sushil ("implement the look and feel [of `insidelabel_lovable`] in our
-website"); review and details by Claude. **Not built; waiting for Sushil's "accepted".**
+website"); review and details by Claude; accepted by Sushil 2026-09-26.
 
 `insidelabel_lovable/` is a second, complete app (TanStack Start, React, Tailwind,
 Supabase, 40+ UI components), not a theme. It carries its own TypeScript copy of the

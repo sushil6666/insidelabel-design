@@ -662,9 +662,22 @@ def updates(device_id: str):
         for r in rows]}
 
 
+# D-109: the app shows the same sentence when both boxes are empty.
+EMPTY_REPORT = "Tell us what the pack says, or what looks wrong. One of the two is enough."
+
+
+def _has_text(value: Optional[str]) -> bool:
+    """D-109: at least 3 characters after trimming, so "." or "ok" doesn't count."""
+    return len((value or "").strip()) >= 3
+
+
 @app.post("/report")
 def report(req: ReportRequest):
-    """D-076: "Report a mistake" on any result. Goes to the review queue."""
+    """D-076: "Report a mistake" on any result. Goes to the review queue.
+
+    D-109: a report needs what the pack says or a note. A field choice alone
+    ("Something else") leaves the reviewer nothing to act on.
+    """
     if STORE is None:
         raise HTTPException(status_code=503, detail={
             "error": "storage_unavailable",
@@ -674,6 +687,8 @@ def report(req: ReportRequest):
         raise HTTPException(status_code=422, detail={
             "error": "no_subject", "detail": "Send the scan_id (or product_version_id) being reported.",
         })
+    if not (_has_text(req.proposed_value) or _has_text(req.note)):
+        raise HTTPException(status_code=422, detail={"error": "empty_report", "detail": EMPTY_REPORT})
     out = STORE.report(scan_id=req.scan_id, product_version_id=req.product_version_id,
                        device_id=req.device_id, field=req.field,
                        proposed_value=req.proposed_value, note=req.note)

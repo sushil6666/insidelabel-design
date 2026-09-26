@@ -1,6 +1,6 @@
 # STATE.md - where InsideLabel is, and how to pick it up
 
-**Last updated:** 2026-09-26 (`main` = `784f209`: D-102 to D-108 locked and merged; D-109 and D-110 recommended) · **Owner:** Sushil · **Tests:** 363 passing, 1 skipped · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 6.9 s, Gemini + Cloud Vision, correct
+**Last updated:** 2026-09-26 (`main` = `cf9aab0`; D-109 and D-110 locked and built on branch `report-note-and-look`) · **Owner:** Sushil · **Tests:** 366 passing, 1 skipped · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 6.9 s, Gemini + Cloud Vision, correct
 
 This is the living status document. Read it first in any new session, then
 `DECISIONS.md` for the *why*. Update the "Last updated" line, the numbers and
@@ -82,7 +82,7 @@ sudo PG19_PORT=5432 bash tools/install_pg19.sh   # adds apt.postgresql.org, crea
 createdb insidelabel && createdb insidelabel_test
 python -m insidelabel.db.migrate "postgresql:///insidelabel?host=/var/run/postgresql"
 
-pytest -q                                    # 363 pass, 1 skipped; DB tests use embedded Postgres
+pytest -q                                    # 366 pass, 1 skipped; DB tests use embedded Postgres
 ```
 
 **Environment variables**
@@ -377,6 +377,27 @@ then `migrate`, `tools/reviewers.py add`, `tools/beta.py invite 50 --base https:
 and `tools/beta.py feedback`. Seed the kids' biscuits first (§8 item 4): every pack not in
 the catalogue is a paid 8-15 s read.
 
+### D-109 and D-110 built (2026-09-26, branch `report-note-and-look`)
+
+Both accepted by Sushil and locked.
+
+- **D-109:** `/report` refuses a report whose "What does the pack say?" and "What looks wrong?"
+  both have fewer than 3 characters (422 `empty_report`, before anything is stored); the app
+  shows the same sentence above the boxes and as the error. 3 tests (one checks the app's
+  sentence matches the server's); the new refusal test failed on the old code.
+- **D-110:** the Lovable look in `web/app.css` and `web/site/site.css` only (no JS logic
+  change): cream, deep blue, leafy green, Bricolage Grotesque + DM Sans self-hosted in
+  `web/fonts/` (96 KB, OFL licences beside them, cached by `sw.js`), soft shadows, pill nav,
+  the "IL" mark, green app icon. Colours in hex (older Chrome has no `oklch()`); every text
+  pair 4.5:1 or better in light and dark. `APP_VERSION` web-14, `sw.js` il-shell-14.
+- **Walked** in headless Chromium at 390 px, light and dark, 13 screens each (landing,
+  privacy, about, home, photo, household, a real result and a refused result from recorded
+  reads, report with an empty send, compare, feedback, agree, problem) + welcome: no page
+  errors, no stray `false`/`undefined`/`{name}`, no sideways scroll, fonts loaded. Found and
+  fixed: the header pills wrapped at 390 px; the gradient repeated under short pages; the
+  landing header had no top padding (`.wrap` overrode it, older than this change).
+- `insidelabel_lovable/` is still in the repo as the reference (Sushil removes it when done).
+
 ### Session start, and D-109 proposed (2026-09-26, branch `report-needs-content`)
 
 - PR #9 (`refusal-labels`, `05ba1fa`) and PR #10 are merged; local `main` = `origin/main` =
@@ -482,13 +503,6 @@ Nothing was blocked; all five items were built. These need you:
 - **D-053** premium pricing - ₹399-499/year recommended.
 - ~~**D-054** the "100% ATTA" ruling~~ ✅ decided 2026-09-25: about the flour, no finding.
 - **D-082** what Premium is for - interviews only.
-- **D-110** (RECOMMENDED 2026-09-26) the website takes the look of `insidelabel_lovable/`
-  (palette, self-hosted fonts, shapes), with three colours deepened to pass WCAG AA; not its
-  app, engine, wording, verdict banner or paste mode. Not built until accepted.
-  `insidelabel_lovable/` stays in the repo as the reference until the port is done;
-  Sushil is adding to it by hand and will remove it himself. Don't edit or delete it.
-- **D-109** (RECOMMENDED 2026-09-26) "Report a mistake" needs a note or what the pack says;
-  the server refuses an empty report (422 `empty_report`). Not built until accepted.
 - Concern levels on the 35 verified rows are judgement calls (e.g. sorbitol `low`) - review before launch.
 - **Gemini billing**: prepaid credit (can run out, as it did today) vs post-paid / auto top-up.
 - **A fallback model** for when `gemini-3.6-flash` is busy - only after `gemini-3.5-flash`
@@ -576,7 +590,7 @@ drop PG18 after PG19 GA.
 | `src/insidelabel/` | the package (core, extraction, reliability, claims, lenses, db, review, api) + `trace.py` / `repro.py` (D-092); OCR readers in `extraction/providers/` (`cloud_vision.py`, `ocr_check.py`) |
 | `data/` | the knowledge tables - the moat |
 | `migrations/` | Postgres schema, plain SQL, applied in order |
-| `tests/` | 363 tests (+ `regression/problems/`, D-092); `conftest.py` gives each DB test module its own database and resets the rate limits (D-095) |
+| `tests/` | 366 tests (+ `regression/problems/`, D-092); `conftest.py` gives each DB test module its own database and resets the rate limits (D-095) |
 | `tools/` | release gate, leads (D-089), `repro.py` (D-092), `compare_ocr.py` (D-093), `reviewers.py` (D-097), `retention.py` (D-098), eval, batch scan, gold stubs, queue predictions, PG19 installer |
 | `gold/`, `photos/`, `predictions/` | 6 real labels: hand transcription, photos, recorded model output |
 | `research/` | private marketplace screenshots behind leads (git-ignored; never published - D-089) |
@@ -606,7 +620,7 @@ retention test. Public launch comes after the W4 number (D-083).
 | D-051, D-052, D-055 decided | locked | ✅ locked 2026-09-25 |
 | Published catalogue | ≥ 50 SKUs | ❌ 5 (queue empty; no barcodes yet) |
 | Kids' biscuits published (D-058) | ≥ 15 in 7.2.1 / 7.2.2 | ❌ 0 (category picker ready) |
-| Test suite (`--with-tests`) | green | ✅ 363, 1 skipped (`main`, 2026-09-26) |
+| Test suite (`--with-tests`) | green | ✅ 366, 1 skipped (branch `report-note-and-look`, 2026-09-26) |
 
 ### Manual gates - tick when done
 
