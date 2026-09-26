@@ -397,6 +397,9 @@ Both accepted by Sushil and locked.
   fixed: the header pills wrapped at 390 px; the gradient repeated under short pages; the
   landing header had no top padding (`.wrap` overrode it, older than this change).
 - `insidelabel_lovable/` is still in the repo as the reference (Sushil removes it when done).
+- **SafeLabel** (Play Store, screenshots in Sushil's Drive `InsideLabel` folder, not in the repo):
+  per-additive cards with Banned / Caution / Safe badges, E-numbers, a US-style pack. Its
+  "Banned" on tartrazine is wrong (permitted in India, EU, US). Its layout became D-111.
 
 ### Session start, and D-109 proposed (2026-09-26, branch `report-needs-content`)
 
@@ -503,6 +506,9 @@ Nothing was blocked; all five items were built. These need you:
 - **D-053** premium pricing - ₹399-499/year recommended.
 - ~~**D-054** the "100% ATTA" ruling~~ ✅ decided 2026-09-25: about the flour, no finding.
 - **D-082** what Premium is for - interviews only.
+- **D-111** (RECOMMENDED 2026-09-26) additive cards with a badge ("Not permitted in India" /
+  "Worth knowing" / "Permitted in India"), SafeLabel's layout in FSSAI's terms. Needs the 32
+  additive rows without `fssai_basis` verified first. Not built until accepted.
 - Concern levels on the 35 verified rows are judgement calls (e.g. sorbitol `low`) - review before launch.
 - **Gemini billing**: prepaid credit (can run out, as it did today) vs post-paid / auto top-up.
 - **A fallback model** for when `gemini-3.6-flash` is busy - only after `gemini-3.5-flash`
