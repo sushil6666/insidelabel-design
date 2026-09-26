@@ -4,7 +4,7 @@ Architectural and product decisions for InsideLabel, with the reasoning attached
 Append-only. When a decision is reversed, mark it `SUPERSEDED` and add a new entry
 rather than editing the old one - the history is the point.
 
-**Last updated:** 2026-09-26 (D-102 to D-106 locked; D-107 recommended)
+**Last updated:** 2026-09-26 (D-102 to D-107 locked)
 
 **Status key:** `LOCKED` decided, don't relitigate · `OPEN` not yet decided ·
 `RECOMMENDED` proposed but not accepted · `SUPERSEDED` replaced
@@ -1008,10 +1008,10 @@ never from the live camera. The app already knows which button produced each pho
   it. A real phone photo carries the phone model and the time taken; a screenshot or a
   generated picture usually carries none. Worth adding if uploads turn out common.
 
-### D-107 · No barcode: the user gets a result, the catalogue gets nothing `RECOMMENDED` (2026-09-26)
+### D-107 · No barcode: the user gets a result, the catalogue gets nothing `LOCKED` (2026-09-26)
 Direction from Sushil ("keep 'No barcode? Photograph the ingredients'; if there's no
 barcode, only ingredients, allow the user to scan but no entry in the database");
-details by Claude; awaiting Sushil.
+details by Claude; accepted by Sushil 2026-09-26 (scan row kept for replay).
 
 The catalogue is filed by barcode (D-024): a record without one can't be found again by a
 scan, and two different packs couldn't be told apart.

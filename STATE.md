@@ -376,7 +376,7 @@ then `migrate`, `tools/reviewers.py add`, `tools/beta.py invite 50 --base https:
 and `tools/beta.py feedback`. Seed the kids' biscuits first (§8 item 4): every pack not in
 the catalogue is a paid 8-15 s read.
 
-### No barcode, no catalogue entry (2026-09-26, branch `no-barcode`, D-107 recommended)
+### No barcode, no catalogue entry (2026-09-26, branch `no-barcode`, D-107 locked)
 
 "No barcode? Photograph the ingredients" moved up to a full button under the camera. A
 scan without a barcode shows its result with a note and creates no product, version or
