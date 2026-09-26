@@ -4,7 +4,7 @@ Architectural and product decisions for InsideLabel, with the reasoning attached
 Append-only. When a decision is reversed, mark it `SUPERSEDED` and add a new entry
 rather than editing the old one - the history is the point.
 
-**Last updated:** 2026-09-26 (D-103 locked; D-102, D-104 recommended)
+**Last updated:** 2026-09-26 (D-103, D-104 locked; D-102 recommended)
 
 **Status key:** `LOCKED` decided, don't relitigate · `OPEN` not yet decided ·
 `RECOMMENDED` proposed but not accepted · `SUPERSEDED` replaced
@@ -910,10 +910,10 @@ screenshots must come back `screen`. Needs a few paid Gemini calls - Sushil to a
 The D-100 front-only path (barcode + front, no model call) gets the file check only;
 its reviewer rejects a front that isn't a pack.
 
-### D-104 · Barcodes come from the camera or a photo, never typed; every photo gets a tick or a cross `RECOMMENDED` (2026-09-26)
+### D-104 · Barcodes come from the camera or a photo, never typed; every photo gets a tick or a cross `LOCKED` (2026-09-26)
 Direction from Sushil ("no manual barcode entry: it should come from an uploaded photo or
 the scanner, because a wrong entry will cost us… after uploading any picture, show a
-green tick or a red cross, and why"); details by Claude; awaiting Sushil.
+green tick or a red cross, and why"); details by Claude; accepted by Sushil 2026-09-26.
 
 - **No typed barcode.** The app offers the live scanner (Chrome's detector, where the
   browser has one) and "take or upload a photo of the barcode". "No barcode? Photograph

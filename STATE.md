@@ -378,7 +378,7 @@ the catalogue is a paid 8-15 s read.
 
 ### Barcodes, photo ticks, no dashes (2026-09-26, same branch)
 
-- **D-103 locked** (Sushil). **D-104** (recommended): no typed barcode; the camera or a
+- **D-103 and D-104 locked** (Sushil). D-104: no typed barcode; the camera or a
   photo read on the server (zxing-cpp, new dependency); `POST /check-photo` gives every
   photo a green tick or a red cross with the reason as soon as it is picked; a crossed
   back photo keeps "Check this pack" off. UPC-A stored as 13 digits. Walked in headless
