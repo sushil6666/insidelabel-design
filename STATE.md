@@ -485,6 +485,8 @@ Nothing was blocked; all five items were built. These need you:
 - **D-110** (RECOMMENDED 2026-09-26) the website takes the look of `insidelabel_lovable/`
   (palette, self-hosted fonts, shapes), with three colours deepened to pass WCAG AA; not its
   app, engine, wording, verdict banner or paste mode. Not built until accepted.
+  `insidelabel_lovable/` stays in the repo as the reference until the port is done;
+  Sushil is adding to it by hand and will remove it himself. Don't edit or delete it.
 - **D-109** (RECOMMENDED 2026-09-26) "Report a mistake" needs a note or what the pack says;
   the server refuses an empty report (422 `empty_report`). Not built until accepted.
 - Concern levels on the 35 verified rows are judgement calls (e.g. sorbitol `low`) - review before launch.

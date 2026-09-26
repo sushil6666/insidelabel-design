@@ -1148,6 +1148,10 @@ The "system fonts, no web fonts" note in `app.css` is replaced.
 - **AI-drafted claim rules** (Lovable's admin): legal facts come from primary documents
   (D-046), and the claim check is in shadow (D-051).
 
+**The folder stays until the port is done** (Sushil, 2026-09-26: "keep it till we are
+done, then will remove"; he is adding to it by hand). Claude reads it as a reference and
+doesn't edit or delete it; Sushil removes it when the look is in `web/`.
+
 **Checks when built:** `tests/test_web.py` and the wording lint pass; a headless-Chromium
 walk of every screen at phone width in light and dark, with screenshots for Sushil
 before merge; `APP_VERSION` and the `sw.js` cache version bumped.
