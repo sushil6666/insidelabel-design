@@ -10,6 +10,7 @@ sends them to a person. Shadow mode only: drafts are stored and shown on
     python tools/review_agent.py run --item 12 --item 13
     python tools/review_agent.py run --include-decided  # also items a person already decided (the measurement set)
     python tools/review_agent.py run --item 12 --replay answer.json   # a recorded answer, no Gemini call
+    python tools/review_agent.py recheck 12 13          # the stored answer through today's checker (free)
     python tools/review_agent.py show 12                # the newest draft and its checks
     python tools/review_agent.py measure                # the drafts against people's decisions (D-117 point 4)
     python tools/review_agent.py mark-drafted --by claude 3 4 5    # who drafted versions published before 015
@@ -63,6 +64,8 @@ def main(argv=None):
     run.add_argument("--item", type=int, action="append", help="these items only")
     run.add_argument("--include-decided", action="store_true")
     run.add_argument("--replay", help="a recorded Gemini answer (JSON file) instead of a call")
+    sub.add_parser("recheck", help="replay stored answers through the current checker (no Gemini call)"
+                   ).add_argument("items", type=int, nargs="+")
     sub.add_parser("show").add_argument("item", type=int)
     sub.add_parser("measure")
     mk = sub.add_parser("mark-drafted")
@@ -89,6 +92,18 @@ def main(argv=None):
                 print(f"item {item_id}: {row['outcome']}"
                       + (f" ({', '.join(failed)})" if failed else "")
                       + (f" {row['error']}" if row["error"] else ""))
+        elif a.cmd == "recheck":
+            media = LocalMedia(a.media)
+            for item_id in a.items:
+                old = service.latest_draft(item_id)
+                if old is None or not old["model_raw"]:
+                    print(f"item {item_id}: no stored answer to recheck")
+                    continue
+                row = agent.draft_item(service, media, item_id, mode="shadow",
+                                       call=lambda _p, _i, raw=old["model_raw"]: raw)
+                failed = [c["check"] for c in row["checks"] or [] if not c["ok"]]
+                print(f"item {item_id}: {old['outcome']} -> {row['outcome']}"
+                      + (f" ({', '.join(failed)})" if failed else ""))
         elif a.cmd == "show":
             row = service.latest_draft(a.item)
             if row is None:

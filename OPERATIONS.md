@@ -261,6 +261,7 @@ sudo systemd-run --wait --pipe --quiet -p User=insidelabel -p WorkingDirectory=/
 
 ```bash
 il tools/review_agent.py show 12        # an item's newest draft and every check
+il tools/review_agent.py recheck 12 13  # stored answers through the current checker (after a fix; no Gemini call)
 il tools/review_agent.py measure        # drafts against your decisions: the D-117 gate
 ```
 

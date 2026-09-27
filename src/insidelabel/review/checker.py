@@ -17,6 +17,7 @@ import difflib
 import json
 import os
 import re
+import unicodedata
 
 from insidelabel import barcode as barcode_rules
 from insidelabel.trace import DATA_DIR
@@ -29,23 +30,39 @@ _SUGARS = sorted({s.lower() for s in _NORM["sugar_aliases"]["added_sugar"]} | {"
 _CLAIM_RULES = json.load(open(os.path.join(DATA_DIR, "claim_rules.json"), encoding="utf-8"))["rules"]
 
 # "PEANUT BASED SPREAD (Proprietary Food - 4.2.2.5 Spread)": the pack's own category.
-_DECLARED = re.compile(r"proprietary\s+food\s*[-:(–]?\s*(\d{1,2}(?:\.\d{1,2}){1,4})", re.I)
+_DECLARED = re.compile(r"proprietary\s+food\s*[-:(\u2013]?\s*(\d{1,2}(?:\.\d{1,2}){1,4})", re.I)
 # D-116: an AYUSH drug licence. Its *absence* of an FSSAI number is never used.
 _AYUSH = re.compile(r"\b(ayurvedic|siddha|unani)\s+(proprietary\s+)?medicine", re.I)
 _WORD = re.compile(r"[a-z]{3,}")
 _BRACKETS = {"(": ")", "[": "]", "{": "}"}
 
 # Where an ingredient list ends on Indian packs, and the words around it that
-# aren't ingredients. Tuned from the first run; the shadow measurement tunes it more.
+# aren't ingredients. Tuned on the first shadow run (2026-09-27, items 12 to 16):
+# a recipe printed near the list, a nutrition panel Cloud Vision reads in among
+# it, "Net Weight" after it.
 _SECTION_END = ("nutrition", "allergen", "storage", "store in", "manufactured", "mfd", "marketed",
-                "mkt", "best before", "net qty", "net quantity", "serving size", "for complaints",
-                "consumer care", "customer care")
+                "mkt", "best before", "net qty", "net quantity", "net weight", "net wt", "serving size",
+                "for complaints", "consumer care", "customer care")
 _NOT_INGREDIENTS = {"ingredients", "ingredient", "contains", "contain", "and", "the", "with", "numbers",
                     "brackets", "are", "per", "international", "numbering", "system", "each", "approx"}
+# Nutrition-panel words. Cloud Vision can read a curved panel into the middle of
+# the list, often cut short ("energ", "satur"), so a prefix counts too.
+_NUTRITION = ("energy", "kcal", "saturated", "serving", "servings", "recommended", "carbohydrate",
+              "carbohydrates", "total", "trans", "nutrition", "nutritional", "dietary", "cholesterol")
+
+
+def _fold(text):
+    """Lower case without accents: CRÈME and creme are the same word."""
+    return "".join(ch for ch in unicodedata.normalize("NFKD", (text or "").lower())
+                   if not unicodedata.combining(ch))
 
 
 def _words(text):
-    return _WORD.findall((text or "").lower())
+    return _WORD.findall(_fold(text))
+
+
+def _nutrition_word(w):
+    return len(w) >= 4 and any(n.startswith(w) or w.startswith(n) for n in _NUTRITION)
 
 
 def _found(word, pool):
@@ -81,8 +98,8 @@ def declared_category(ocr_text):
 
 def rule_category(name, variant, ingredients, ocr_text):
     """The category the word table gives, or None when no rule, or rules that disagree, apply."""
-    title = f"{name or ''} {variant or ''}".lower()
-    label = (ocr_text or "").lower()
+    title = _fold(f"{name or ''} {variant or ''}")
+    label = _fold(ocr_text)
     codes = set()
     for r in _RULES:
         if "name_any" in r and not any(p in title for p in r["name_any"]):
@@ -102,13 +119,35 @@ def rule_category(name, variant, ingredients, ocr_text):
     return codes.pop() if len(codes) == 1 else None
 
 
-def _ingredient_section(ocr_text):
-    low = (ocr_text or "").lower()
-    start = low.find("ingredient")
-    if start < 0:
+def _ingredient_section(ocr_text, ingredients):
+    """
+    The part of Cloud Vision's text that holds the ingredient list, or "".
+
+    Starts at the "ingredients" heading nearest before the draft's first
+    ingredient (a recipe on the pack can say "ingredients" too). Ends where the
+    draft's last ingredient ends, plus the rest of that sentence (up to 80
+    characters), so words the draft dropped from the end of the list still show;
+    and never past a heading like "Nutrition" or "Net Weight".
+    """
+    low = _fold(ocr_text)
+    starts = [m.start() for m in re.finditer("ingredient", low)]
+    if not starts:
         return ""
-    ends = [i for i in (low.find(t, start + 10) for t in _SECTION_END) if i > 0]
-    return low[start:min(ends) if ends else len(low)]
+    first = (_words(ingredients[0]) or [""])[0] if ingredients else ""
+
+    def gap(s):
+        i = low.find(first, s) if first else -1
+        return i - s if i >= 0 else len(low)
+
+    start = min(starts, key=gap)
+    stop = min([i for i in (low.find(t, start + 10) for t in _SECTION_END) if i > 0] or [len(low)])
+    last = (_words(ingredients[-1]) or [""])[-1] if ingredients else ""
+    j = low.rfind(last, start, stop) if last else -1
+    if j < 0:
+        return low[start:stop]
+    end = j + len(last)
+    tail = re.search(r"(?<!\d)\.(?!\d)|\n\s*\n", low[end:end + 80])
+    return low[start:min(stop, end + (tail.start() if tail else 80))]
 
 
 def _claim_rule_hits(claims):
@@ -155,8 +194,9 @@ def check(draft, ctx):
     add("brackets_balance", not unbalanced,
         f"unbalanced: {'; '.join(unbalanced[:3])}" if unbalanced else "")
     covered = sorted(set(_words(" ".join(ingredients + [draft.get("allergen_statement") or ""]))))
-    section = _ingredient_section(ocr)
-    lost = sorted({w for w in _words(section) if w not in _NOT_INGREDIENTS and not _found(w, covered)})
+    section = _ingredient_section(ocr, ingredients)
+    lost = sorted({w for w in _words(section)
+                   if w not in _NOT_INGREDIENTS and not _nutrition_word(w) and not _found(w, covered)})
     add("nothing_lost", bool(section) and not lost,
         "no ingredient list found in Cloud Vision's text" if not section else
         (f"in Cloud Vision's ingredient list but not in the draft: {', '.join(lost[:12])}" if lost else ""))

@@ -145,7 +145,12 @@ def test_the_word_table_on_the_first_runs_packs():
     assert rc("Biscoff", "CARAMELIZED COOKIE", ["Refined Wheat Flour (Maida)", "Sugar"], "") == "7.2.1"
     assert rc("Eat Fit Sugar Free", "Masala Cracker", ["REFINED WHEAT FLOUR (MAIDA) (68.3%)", "YEAST", "SALT"],
               "") == "7.1.2"
-    assert rc("Tangy Twist", "", ["Sugar", "Liquid Glucose"], "SUGAR BOILED CONFECTIONARY INGREDIENTS") == "5.2.1"
+    assert rc("Mint Drops", "", ["Sugar", "Liquid Glucose"], "HARD BOILED SWEETS INGREDIENTS") == "5.2.1"
+    # FSSAI 2.7.1: "sugar boiled confectionery" covers toffees too, so it says nothing
+    # about hard or soft (shadow run item 16, a butter toffee).
+    assert rc("Tangy Twist", "", ["Sugar", "Liquid Glucose"], "SUGAR BOILED CONFECTIONARY INGREDIENTS") is None
+    assert rc("Butter Toffee", "", ["Sugar", "Liquid Glucose", "Milk Solids (4.7%)"],
+              "SUGAR BOILED CONFECTIONERY") is None
     assert rc("Peanut Butter", "Chocolate Crunchy", ["Roasted Peanut (83%)"], "") == "4.2.2.5"
     assert rc("Limca", "", ["CARBONATED WATER", "SUGAR"], "") == "14.1.4.1"
     # Judgement calls get no answer, so a person decides.
@@ -326,3 +331,75 @@ def test_the_measurement_compares_drafts_with_decisions(env):
     ids = {d["id"] for d in r["disagreements"]}
     assert other in ids and same not in ids
     assert r["gate_passes"] is False                                  # far fewer than 30 items
+
+
+# ---------------------------------------------------------------- the first shadow run (items 12 to 16)
+
+BISCUIT = ["REFINED WHEAT FLOUR (MAIDA)", "SUGAR", "FRACTIONATED FAT", "PALMOLEIN", "INVERT SUGAR",
+           "COCOA SOLIDS (2%*)", "LEAVENING AGENTS (500(ii), 503(ii))", "STARCH", "IODISED SALT",
+           "EMULSIFIER (322)", "NATURE IDENTICAL FLAVOURING SUBSTANCES"]
+BISCUIT_OCR = ("INGREDIENTS: REFINED WHEAT FLOUR (MAIDA), SUGAR, FRACTIONATED FAT, PALMOLEIN, INVERT SUGAR, "
+               "COCOA SOLIDS (2%*), LEAVENING AGENTS (500(ii), 503(ii)), STARCH, IODISED SALT, "
+               "EMULSIFIER (322), NATURE IDENTICAL FLAVOURING SUBSTANCES.")
+
+
+def biscuit(**kw):
+    fields = {"name": "Cream Biscuit", "variant": "", "ingredients": BISCUIT, "allergen_statement": None}
+    fields.update(kw)
+    return with_(**fields)
+
+
+def test_a_recipe_on_the_pack_is_not_the_ingredient_list():
+    # Item 12: the pack's recipe also says "ingredients", and it came first.
+    ocr = ("Try Biscuit Balls! Ingredients: 10 biscuits, cream cheese. Crush the biscuits fine, "
+           "make balls between your palms, dip in chocolate. " + BISCUIT_OCR)
+    assert "nothing_lost" not in failed(biscuit(), ctx(ocr=ocr))
+    after = BISCUIT_OCR + " Cheesecake cookies: crush a brick of biscuits fine, dip in chocolate."
+    assert "nothing_lost" not in failed(biscuit(), ctx(ocr=after))
+
+
+def test_a_nutrition_panel_read_into_the_list_is_not_lost_ingredients():
+    # Item 13: Cloud Vision read the curved panel in among the list, words cut short.
+    ocr = BISCUIT_OCR.replace("STARCH,", "STARCH, Energ 480 Satur 9 Servin 25 Total Trans 0 Recomme,")
+    assert "nothing_lost" not in failed(biscuit(), ctx(ocr=ocr))
+
+
+def test_accents_and_net_weight():
+    # Item 15: CRÈME on the draft, CREME in Cloud Vision's text; "Net Weight" after the list.
+    d = biscuit(ingredients=["CHOCO CRÈME (38.0%) {SUGAR, COCOA SOLIDS}"] + BISCUIT)
+    ocr = "INGREDIENTS: CHOCO CREME (38.0%) {SUGAR, COCOA SOLIDS}, " + BISCUIT_OCR[13:] + " Net Weight 120 g"
+    assert "nothing_lost" not in failed(d, ctx(ocr=ocr))
+    assert "ingredients_in_ocr" not in failed(d, ctx(ocr=ocr))
+
+
+def test_words_dropped_at_the_end_are_still_caught():
+    # The Bisk Farm garble again, with the list ending mid-sentence.
+    ocr = BISCUIT_OCR[:-1] + ", CONTAINS ARTIFICIAL FOOD COLOUR (102) AND ADDED ARTIFICIAL FLAVOURS (CHEESE)."
+    d = biscuit(ingredients=BISCUIT + ["CONTAARTIFICIAL FOOD COLOUR (102)"])
+    detail = next(c["detail"] for c in checker.check(d, ctx(ocr=ocr)) if c["check"] == "nothing_lost")
+    assert "added" in detail and "flavours" in detail
+
+
+def test_a_list_cloud_vision_did_not_read_goes_to_a_person():
+    # Item 14: Gemini read words Cloud Vision never saw, and there was no list to compare.
+    assert {"ingredients_in_ocr", "nothing_lost"} <= failed(biscuit(), ctx(ocr="Net Weight 100 g. Best before 6 months."))
+
+
+def test_recheck_replays_the_stored_answer_for_free(env, capsys):
+    import sys as _sys
+    _sys.path.insert(0, str(__import__("pathlib").Path(__file__).parents[1] / "tools"))
+    import review_agent
+    svc = ReviewService(env, main.ENGINE_VERSION)
+    item = new_item(env)
+    agent.draft_item(svc, main.MEDIA, item, call=lambda p, i: json.dumps(MALIBAN))
+
+    def no_gemini(*a, **k):
+        raise AssertionError("recheck must not call Gemini")
+    mp = pytest.MonkeyPatch()
+    mp.setattr(agent.gemini, "call_gemini_json", no_gemini)
+    try:
+        review_agent.main(["--db", env, "--media", main.MEDIA.root, "recheck", str(item)])
+    finally:
+        mp.undo()
+    assert f"item {item}: confirmed -> confirmed" in capsys.readouterr().out
+    assert len(q(env, "SELECT id FROM review_drafts WHERE review_item_id = %s", item)) == 2
