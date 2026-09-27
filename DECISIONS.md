@@ -4,7 +4,7 @@ Architectural and product decisions for InsideLabel, with the reasoning attached
 Append-only. When a decision is reversed, mark it `SUPERSEDED` and add a new entry
 rather than editing the old one - the history is the point.
 
-**Last updated:** 2026-09-27 (D-102 to D-113 locked; D-001's chatbot clause superseded; D-114 hosting locked)
+**Last updated:** 2026-09-27 (D-102 to D-113 locked; D-001's chatbot clause superseded; D-114 hosting and D-115 marker wording locked)
 
 **Status key:** `LOCKED` decided, don't relitigate · `OPEN` not yet decided ·
 `RECOMMENDED` proposed but not accepted · `SUPERSEDED` replaced
@@ -1323,9 +1323,10 @@ for deletion" (30 days' grace), and a suspended billing account stops every link
 Nothing ties us to Google: plain Ubuntu, PostgreSQL and S3-compatible storage, so moving
 (to Lightsail or anywhere) is a restore.
 
-### D-115 · Processing markers are shown in the pack's words, not our table's `RECOMMENDED` (2026-09-27)
+### D-115 · Processing markers are shown in the pack's words, not our table's `LOCKED` (2026-09-27)
 Found by Claude on the first real scan on the live site (Sushil's phone, an Organic India
 Tulsi Mulethi pack, 2026-09-27); Sushil asked for it to be fixed before invites ("yes please").
+**Accepted by Sushil 2026-09-27** ("accepted").
 
 The headline read "Made with industrial ingredients, such as added flavour
 (natural/artificial/nature-identical)", and the "Worth knowing" card showed
