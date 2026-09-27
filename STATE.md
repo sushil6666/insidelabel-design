@@ -434,6 +434,12 @@ Both accepted by Sushil and locked.
   fixed: the header pills wrapped at 390 px; the gradient repeated under short pages; the
   landing header had no top padding (`.wrap` overrode it, older than this change).
 - `insidelabel_lovable/` is still in the repo as the reference (Sushil removes it when done).
+- **Sushil, 2026-09-27: "We will not copy anyone, SafeLabel or TruthIn. We will work with the best we
+  can give to the consumer."** Competitors are context, never a source of features, wording or data.
+- **TruthIn** (truthin.ai, India, 1M+ downloads claimed): barcode or name search, a "TruthIn Rating"
+  reviewed by nutritionists, healthier alternatives, TruthIn Plus with the "TIA" assistant; FoodPharmer
+  (Revant Himatsingka) on its advisory board. InsideLabel differs on purpose: no score (D-064), any pack
+  by photo, front vs back (D-001, D-051), every finding traced to the label and FSSAI (D-043, D-111).
 - **SafeLabel** (Play Store, screenshots in Sushil's Drive `InsideLabel` folder, not in the repo):
   per-additive cards with Banned / Caution / Safe badges, E-numbers, a US-style pack. Its
   "Banned" on tartrazine is wrong (permitted in India, EU, US). Its layout became D-111.
@@ -543,6 +549,9 @@ Nothing was blocked; all five items were built. These need you:
 - **D-053** premium pricing - ₹399-499/year recommended.
 - ~~**D-054** the "100% ATTA" ruling~~ ✅ decided 2026-09-25: about the flour, no finding.
 - **D-082** what Premium is for - interviews only.
+- **D-113** (LOCKED 2026-09-27) a Pro chatbot, "ask about this pack", personalised with age band and
+  avoid list; explains, never judges (D-004). Supersedes D-001's "not a chatbot". Not built. Open:
+  when to build it (D-113 says after W4, per D-083; Sushil wants it to sell subscriptions).
 - Concern levels on the 35 verified rows are judgement calls (e.g. sorbitol `low`) - review before launch.
 - **Gemini billing**: prepaid credit (can run out, as it did today) vs post-paid / auto top-up.
 - **A fallback model** for when `gemini-3.6-flash` is busy - only after `gemini-3.5-flash`
@@ -558,15 +567,31 @@ to see where each gate stands. §11 has the full list. Done today: D-051/52/55 d
 food categories, PWA built, D-092 reproduction, D-093 Cloud Vision, scan speed,
 setup alarms.
 
-**Tomorrow (2026-09-27), agreed with Sushil before he signed off:**
+**NEXT SESSION STARTS HERE (Sushil, 2026-09-27): host `insidelabel.ai` first, then the rest.**
+
+1. **Hosting, first and only until it is live.** Ask Sushil which host (suggested: one small
+   Ubuntu VPS in Mumbai, 2 GB). Record **D-114** (host; PostgreSQL 18 on the server until 19 is
+   released, changing D-087; photos on the server disk until R2 is built; `insidelabel.ai` main,
+   `insidelabel.in` and `www.` redirect). Write `deploy/` + `DEPLOY.md` (Caddy HTTPS, systemd one
+   process, settings template with `INSIDELABEL_INVITE_ONLY=on`, replay off, `INSIDELABEL_PROXY_HOPS=1`,
+   `INSIDELABEL_PUBLIC_URL=https://insidelabel.ai`, daily retention + backup, restore test). Then
+   deploy with Sushil: DNS, keys as secrets, `migrate`, `tools/reviewers.py add sushil`, one real scan.
+2. Then the DPDP data map, and the other items below.
+
+**Earlier list (2026-09-27), still valid:**
 
 - **Claude: a one-page DPDP data map** from the code: every piece of personal data
   (label photos, device id, invite code and tester label, feedback and problem-report text,
   household profiles: a child's age band and avoid list, D-074), where it is stored, who sees
   it (Google as processor for Gemini and Cloud Vision), and when it is deleted (D-098). Sushil
   hands it to the DPDP reviewer with `web/site/privacy.html`. About 30 minutes.
+- **Domains bought (2026-09-26): `insidelabel.ai` and `insidelabel.in`. Sushil: `.ai` is the main
+  address** ("we are claiming for chatbot and all in future plan"). `insidelabel.in` and `www.` of
+  both redirect to it permanently; `INSIDELABEL_PUBLIC_URL=https://insidelabel.ai`; contact such as
+  `privacy@insidelabel.ai`. Goes into D-114 with the host. The chatbot plan (Pro) is D-113,
+  LOCKED; it supersedes D-001's "not a chatbot". Auto-renew both domains.
 - **Sushil: pick the host** (suggested: one small Ubuntu VPS in Mumbai, 2 GB). Then Claude
-  records **D-113** (hosting; PostgreSQL 18 on the server until 19 is released, which changes
+  records **D-114** (hosting; PostgreSQL 18 on the server until 19 is released, which changes
   D-087; photos on the server disk until R2 is built) and writes `deploy/`: Caddy (HTTPS),
   a systemd service (one process, D-095), a settings template (`INSIDELABEL_INVITE_ONLY=on`,
   replay off, `INSIDELABEL_PROXY_HOPS=1`), daily retention and backup jobs, a restore test,

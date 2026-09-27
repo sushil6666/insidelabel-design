@@ -4,7 +4,7 @@ Architectural and product decisions for InsideLabel, with the reasoning attached
 Append-only. When a decision is reversed, mark it `SUPERSEDED` and add a new entry
 rather than editing the old one - the history is the point.
 
-**Last updated:** 2026-09-26 (D-102 to D-112 locked)
+**Last updated:** 2026-09-26 (D-102 to D-113 locked; D-001's chatbot clause superseded)
 
 **Status key:** `LOCKED` decided, don't relitigate · `OPEN` not yet decided ·
 `RECOMMENDED` proposed but not accepted · `SUPERSEDED` replaced
@@ -13,7 +13,7 @@ rather than editing the old one - the history is the point.
 
 ## Product
 
-### D-001 · Positioning `LOCKED`
+### D-001 · Positioning `LOCKED`; its "not a chatbot" clause `SUPERSEDED` by D-113 (2026-09-27)
 InsideLabel reads the front and back of an Indian packaged-food label and tells the
 consumer where they disagree. Not a health scorer, not a barcode scanner, not a
 chatbot.
@@ -1223,6 +1223,30 @@ Drawing by Claude; accepted by Sushil 2026-09-26 ("yes pls B1").
   theme colour unchanged.
 - **Checks when built:** the mark at 16, 32, 48, 192 and 512 px on light and dark; screenshots
   of the header before merge; `APP_VERSION` and the `sw.js` cache bumped.
+
+### D-113 · A Pro chatbot, "ask about this pack", personalised `LOCKED` (2026-09-27)
+Direction from Sushil ("[not a chatbot] was the initial one; now the plan is to give this to a
+Pro user as per their plan and personalization"; the reason `insidelabel.ai` is the main
+address). Conditions by Claude; accepted by Sushil 2026-09-27 ("need to change now, as in this
+way people will buy subscriptions"). D-001's "not a chatbot" clause is superseded by this entry;
+the rest of D-001 stands. Not built yet.
+
+- **Pro only, after the W4 retention answer** (D-083: Wave 2 waits for the W4 number). It is a
+  candidate answer to D-082 (what Premium is for) and part of D-053 (pricing), both still open.
+  The free product stays as it is: scans stay free and uncapped (D-053).
+- **It explains; it never judges (D-004).** It answers only from what InsideLabel already holds:
+  the scan's `screen` block and evidence, the data tables and their FSSAI basis (D-046, D-086).
+  It may explain why a finding is there and quote the label; it never makes a new verdict,
+  concern level or allergen state, and never says "safe" (D-042).
+- **Personalised with what the app already keeps:** a profile's age band and avoid list, never a
+  nickname (D-074). Allergen answers keep the 0.95 gate and "can't confirm" (D-060); below it,
+  the answer says the label couldn't be read well enough.
+- **Every answer passes the wording lint before it is shown** (`tests/test_wording.py` rules at
+  run time); a failing answer is not shown. Not medical advice: health questions get the same
+  line the landing page uses.
+- **Replayable like a scan** (D-092): question, context and the model's raw answer are stored.
+- **A second DPDP check before launch**: it uses children's data (age band, avoid list) in a new
+  way.
 
 ---
 
