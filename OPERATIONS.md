@@ -54,6 +54,8 @@ Pick the project in the top bar ("Insidelabel") before looking for anything.
 | Server keys | `server-vision` (Cloud Vision only, from 8.234.95.74 only); `gcp_website` (Gemini, made in AI Studio, in this project) | APIs and services, Credentials |
 | Older keys to review | `testing`, `insidelabel` (made before today; restrict or delete) | APIs and services, Credentials |
 | Billing | the account linked to this project; free-trial credit until upgraded | Billing |
+| Uptime check | `insidelabel health`: `https://insidelabel.ai/health` every 5 minutes from all regions, HTTPS certificate validated, must contain `"status":"ok"` | Monitoring, Uptime checks |
+| Alert | `insidelabel health uptime failure`: emails isushilb@gmail.com after 60 s of failed checks, and again when it recovers | Monitoring, Alerting |
 
 ### Outside Google
 
@@ -132,6 +134,20 @@ gcloud compute ssh insidelabel-1 --zone=asia-south1-a
 ---
 
 ## 5. Everyday tasks (on the server unless it says Cloud Shell)
+
+### How you hear that the site is down
+
+Google checks `https://insidelabel.ai/health` every 5 minutes from several countries (the uptime
+check `insidelabel health`, created 2026-09-27). If it fails for a minute, an email arrives from
+Google Cloud Monitoring; a second one when it's back. It also fails if the HTTPS certificate
+breaks or `/health` stops saying `"status":"ok"`. The Google Cloud app on the phone can show the
+same alerts as notifications. On the email: start at §6, "The site doesn't open".
+
+Cost (Google's pricing page, 2026-09-27): uptime checks free up to 1 million runs a month per
+project (this one is about 52,000); alerting free until at least 1 September 2027, then $0.35 a
+month per condition.
+
+A losing SSH session is different: the prompt goes back to `isushilb@cloudshell`; reconnect (§4).
 
 ### Is it up? Which version?
 
