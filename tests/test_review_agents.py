@@ -82,7 +82,7 @@ def test_words_dropped_from_the_list_go_to_a_person():
     bad = failed(d, ctx(ocr=ocr))
     assert "nothing_lost" in bad
     detail = next(c["detail"] for c in checker.check(d, ctx(ocr=ocr)) if c["check"] == "nothing_lost")
-    assert "added" in detail and "flavours" in detail
+    assert "flavours" in detail and "butter" in detail          # "added" is a panel word (item 13)
 
 
 def test_a_word_cloud_vision_never_saw_goes_to_a_person():
@@ -364,6 +364,25 @@ def test_a_nutrition_panel_read_into_the_list_is_not_lost_ingredients():
     assert "nothing_lost" not in failed(biscuit(), ctx(ocr=ocr))
 
 
+def test_item_13_as_cloud_vision_read_it():
+    # The server's text for item 13 (2026-09-27): "added" and "sodium" are panel rows.
+    ing = ["Refined Wheat Flour (Maida)", "Sugar", "Fractionated Vegetable Fat", "Refined Palmolein Oil",
+           "Starch", "Invert Sugar Syrup", "Iodized Salt",
+           "Flavours (Nature-Identical, Artificial (Vanilla) Flavouring Substances)",
+           "Leavening Agents (500(ii),503(ii))", "Emulsifier (322)"]
+    ocr = ("ingredients: refined wheat flour\nservin\n(maida), sugar, fractionated vegetable\n"
+           "fat, refined palmolein oil, starch, invert\nsugar syrup, lodized salt, flavours\nenerg\nadded\n"
+           "(nature-identical, artificial (vanilla)\nflavouring substances), leavening\ntotal\nsatur\n"
+           "trans\nsodium\nrecomme\nagents (500(ii),503(ii)), emulsifier (322)")
+    assert checker.independent_read(ing, ocr) == (True, [], [])
+
+
+def test_a_dropped_sodium_salt_is_still_caught():
+    ocr = BISCUIT_OCR[:-1] + ", SODIUM BICARBONATE."
+    detail = next(c["detail"] for c in checker.check(biscuit(), ctx(ocr=ocr)) if c["check"] == "nothing_lost")
+    assert "bicarbonate" in detail
+
+
 def test_accents_and_net_weight():
     # Item 15: CRÈME on the draft, CREME in Cloud Vision's text; "Net Weight" after the list.
     d = biscuit(ingredients=["CHOCO CRÈME (38.0%) {SUGAR, COCOA SOLIDS}"] + BISCUIT)
@@ -377,7 +396,7 @@ def test_words_dropped_at_the_end_are_still_caught():
     ocr = BISCUIT_OCR[:-1] + ", CONTAINS ARTIFICIAL FOOD COLOUR (102) AND ADDED ARTIFICIAL FLAVOURS (CHEESE)."
     d = biscuit(ingredients=BISCUIT + ["CONTAARTIFICIAL FOOD COLOUR (102)"])
     detail = next(c["detail"] for c in checker.check(d, ctx(ocr=ocr)) if c["check"] == "nothing_lost")
-    assert "added" in detail and "flavours" in detail
+    assert "flavours" in detail and "cheese" in detail          # "added" is a panel word (item 13)
 
 
 def test_a_list_cloud_vision_did_not_read_goes_to_a_person():
