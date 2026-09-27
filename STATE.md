@@ -319,6 +319,81 @@ the unattended session wasn't disturbed.
   removed `INSIDELABEL_REVIEW_TOKEN` from `~/.bashrc`, and cleared the review queue
   (#1, 3, 4, 5, 6 published; #2 and #7 rejected as duplicates).
 
+### First supermarket run on the live site (2026-09-27, Sushil in the shop, Claude reviewing)
+
+Sushil scanned real packs on https://insidelabel.ai and published them through `/review`, sending a
+screenshot of each item. Findings, in the order they were found. **Nothing here is fixed yet except
+the decimal split.**
+
+**Categories assigned** (keep these for consistency when the same products come back):
+
+| Pack | Category | How it was decided |
+|---|---|---|
+| ORGANIC INDIA Tulsi Mulethi | none: **rejected** | AYUSH medicine licence, no FSSAI licence (D-116) |
+| DiSano Peanut Butter Chocolate Crunchy | 4.2.2.5 | **the pack declares it**: "Proprietary Food - 4.2.2.5 Spread" |
+| Maliban Wafer Cheese Flavour | 7.2.1 | Codex descriptor: sweet biscuit. 7.2.2's "wafers" means ice cream wafers/cones |
+| Sundrop POPZ Chocolatey Crunch | 6.3 | judgement call: extruded multigrain from flour. 15.1 is savoury snacks only |
+| Sunfeast farmlite Oats & Chocolate Cookies | 7.2.1 | Codex descriptor: cookies |
+| Lotus Biscoff Caramelized Cookie | 7.2.1 | Codex descriptor: sweet biscuit |
+| Anmol dream LITE | 7.2.1 | sugar and liquid glucose 3rd and 4th, so not a 7.1.2 cracker |
+| Bisk Farm TOP GOLD | 7.2.1 | sugar 3rd, despite cheese and butter flavour |
+
+**1. Data gaps in `data/additives.json`** (each needs Appendix A verification before it is added, D-046):
+
+- **INS 319 (TBHQ)** has no row. Seen twice: Sundrop POPZ ("Antioxidant (TBHQ)") and Bisk Farm
+  TOP GOLD ("ANTIOXIDANT (319)", inside the oil). It passes silently even when numbered.
+- **INS 472(e)** has no row. Seen on Anmol dream LITE and Bisk Farm TOP GOLD.
+- **Sub-forms have no rows of their own**: 503(ii), 500(ii), 450(i), 1101(i), 322(i). They match the
+  parent number today, which is probably right, but it has never been decided.
+
+**2. The biggest one: a missing sugar name changes a verdict.** "Candy Sugar Syrup" is not in
+`normalization.json` `sugar_aliases.added_sugar`, so **Lotus Biscoff reads as clean, grade A, score
+100** while its own panel declares **36 g added sugars per 100 g** (sugar is the 2nd ingredient,
+candy sugar syrup the 4th). Compare Anmol dream LITE the same afternoon: grade D, score 44. Same
+category, opposite results. Fixing this changes verdicts on real packs, so: collect the missing
+names, re-run the gold set, show Sushil what moves, then his decision.
+
+**3. Tokenizer, two more bracket bugs** (the decimal split was found and fixed the same day):
+
+- **Nested square brackets aren't handled.** `EMULSIFIERS [450(i), 472(e)]` and
+  `PLAIN CHOCOLATE CHIPS (6.2%) [SUGAR, ... EMULSIFIER [LECITHIN (FROM SOYBEAN)], ...]` give
+  fragments: `emulsifier ]`, `natural flavours and natural flavouring substances]`, `ins 503(ii`,
+  `ins 450]`, `ins 472(e`.
+- **Braces `{ }` are not treated as brackets at all** (only `( )` and `[ ]`), so Sundrop POPZ gave
+  `multigrain flour mix {rice meal`, `oat meal }`, `antioxidant }`.
+- **Why it matters now:** D-115 shows the label's own words on the result screen, so a user can see
+  "such as emulsifier ]". Fix both together, with a gold-set re-run, like the decimal fix.
+
+**4. Reader (Gemini) mistakes seen, none of them caught by a check:**
+
+- **Compound ingredients split into separate top-level entries** at a bracket or brace: Sundrop POPZ,
+  Sunfeast farmlite, ORGANIC INDIA Tulsi. The most common error of the day.
+- **Text garbled and dropped**: Bisk Farm TOP GOLD produced `CONTAARTIFICIAL FOOD COLOUR (102)`,
+  losing "AND ADDED ARTIFICIAL FLAVOURS (CHEESE, BUTTER)" entirely.
+- **Wrong character**: Tulsi pack, `#` where the pack prints `*` (the organic marker).
+- **Two ingredients joined on one line**: Tulsi, Sundrop POPZ.
+
+**5. What users see (Sushil, in the shop): "not much useful for a user."** Not a bug report: a
+product criticism of the result screen. To discuss with mockups. His examples come from packs where
+the screen described the label instead of answering what a shopper wants to know. See also the
+DiSano jar, where one ingredient (Stabilizer INS 471) produced two findings, a processing marker and
+the additive itself, which may read as the same thing counted twice.
+
+**6. Two useful facts about Indian packs, now proven in the shop:**
+
+- **Proprietary foods often declare their own Appendix A category** (DiSano: "Proprietary Food -
+  4.2.2.5 Spread"). Read it from the OCR text before guessing: it is the pack's own statement.
+- **The FSSAI licence can be on any of the four sides, or behind a QR code** (Maliban: "scan the QR
+  code and enter the first two characters of the batch no."). So **absence of a visible FSSAI number
+  is never evidence that a pack is not food**. The D-116 check may only fire on an AYUSH licence
+  being *found*.
+
+**7. Assisted review, proposed as D-117** (not written up yet): the licence check, a comparison of
+Gemini's list against the Cloud Vision text already stored on every scan (it would have caught the
+Bisk Farm garble and the split compounds), the declared category read from the pack with a word
+table as fallback, and a quick lane with one "Confirm and publish" button for items where the two
+reads agree.
+
 ## 6. What went wrong, and what we learned
 
 Keep this list - it is the cheapest way to not repeat a mistake.
@@ -634,7 +709,23 @@ from all regions and emails Sushil after 60 s of failure (OPERATIONS.md §5). Fr
    expected failure in `tests/test_tokenize_decimals.py`. Today's scans will show how common it is.
    **Also:** the server's catalogue starts fresh; the 5 products on the laptop's database are not
    moved (Sushil re-scans, which also gets their barcodes).
-5. Then the DPDP data map, and the other items below (invites only after the privacy page and the
+5. **From the first supermarket run (2026-09-27), in priority order** (full detail in the session
+   log, "First supermarket run on the live site"):
+   a. **A missing sugar name changed a verdict**: Lotus Biscoff reads clean, grade A, score 100 with
+      36 g added sugars per 100 g, because "candy sugar syrup" is not in `sugar_aliases`. Collect the
+      missing names, re-run the gold set, show Sushil what moves, then his decision. **Before invites.**
+   b. **Tokenizer: nested square brackets and braces** give fragments like `emulsifier ]` and
+      `antioxidant }`, which D-115 can now show to a user. Fix with a gold-set re-run. **Before invites.**
+   c. **Additive rows missing**: INS 319 (TBHQ, seen on two packs) and INS 472(e); and a decision on
+      sub-forms (503(ii), 450(i), 1101(i), 322(i)) that today match only their parent number.
+      Each new row needs its Appendix A basis (D-046).
+   d. **The result screen** ("not much useful for a user", Sushil): options and mockups to discuss.
+   e. **D-117 RECOMMENDED: review agents** (Sushil: "one agent will draft and another agent will
+      confirm; if any ambiguity then human will review"; drafter Gemini). Gemini drafts every new
+      item; a rules checker confirms against Cloud Vision's text; anything doubtful goes to Sushil
+      with the draft filled in. Shadow first; publishing switches on after 30 of Sushil's reviews
+      agree at 95 %. Remaining queue items (about 38) wait for it. **Needs Sushil's "accepted".**
+6. Then the DPDP data map, and the other items below (invites only after the privacy page and the
    DPDP review).
 
 **Earlier list (2026-09-27), still valid:**
