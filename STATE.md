@@ -759,8 +759,13 @@ from all regions and emails Sushil after 60 s of failure (OPERATIONS.md §5). Fr
       server into one back photo (`photo_join.py`), so the frozen reading prompt, storage, replay and
       retention are unchanged; one photo is today's scan byte for byte. 8 tests; walked in headless
       Chromium (part 2 sent as `back2`). Amended the same day: the app asks "Is the whole ingredient
-      list in this photo?" and shows the part camera only on "No". App `web-18`. **Before relying on it:**
-      the overlap check on 3 gold labels cut in two (about Rs 1.50, paid, Sushil's go-ahead).
+      list in this photo?" and shows the part camera only on "No". App `web-18`. **Overlap check PASSED** (2026-09-27, Sushil's
+      go-ahead, 3 Gemini calls): Britannia Treat, Ziggy donut and Maliban wafer backs cut into two
+      overlapping parts (one printed line in both), app-sized, joined by `photo_join`; each reading was
+      identical, word for word, to the single-photo reading, with no duplicated ingredient. Against gold:
+      verdict-changing rate 0%, INS F1 1.000, score drift 0 (Britannia's ingredient F1 0.8 is the
+      known brace-nesting split, the same on the single photo). Tesseract cross-check only, no Cloud
+      Vision call. Output in a scratch path, not `reports/`.
 6. Then the DPDP data map, and the other items below (invites only after the privacy page and the
    DPDP review).
 

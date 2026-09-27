@@ -1542,6 +1542,8 @@ the letters are too small for either reader. Today the app takes exactly one bac
   photo?" with "Yes, one photo is enough" and "No, add part 2"; the part camera appears only on
   "No". After part 2, "Is that the end of the list?" the same way. Not answering means one photo,
   so the common case costs no extra tap.
+- **Measured 2026-09-27:** 3 gold labels cut into two overlapping parts and joined: every reading
+  identical to the single photo's, no word read twice, verdict-changing rate 0%, INS F1 1.000.
 
 ---
 
