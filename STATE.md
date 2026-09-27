@@ -543,6 +543,8 @@ Nothing was blocked; all five items were built. These need you:
 - **D-053** premium pricing - ₹399-499/year recommended.
 - ~~**D-054** the "100% ATTA" ruling~~ ✅ decided 2026-09-25: about the flour, no finding.
 - **D-082** what Premium is for - interviews only.
+- **D-113** (RECOMMENDED 2026-09-27) a Pro chatbot, "ask about this pack", personalised with age band
+  and avoid list; explains, never judges (D-004); after W4 (D-083). Not built until accepted.
 - Concern levels on the 35 verified rows are judgement calls (e.g. sorbitol `low`) - review before launch.
 - **Gemini billing**: prepaid credit (can run out, as it did today) vs post-paid / auto top-up.
 - **A fallback model** for when `gemini-3.6-flash` is busy - only after `gemini-3.5-flash`
@@ -568,11 +570,10 @@ setup alarms.
 - **Domains bought (2026-09-26): `insidelabel.ai` and `insidelabel.in`. Sushil: `.ai` is the main
   address** ("we are claiming for chatbot and all in future plan"). `insidelabel.in` and `www.` of
   both redirect to it permanently; `INSIDELABEL_PUBLIC_URL=https://insidelabel.ai`; contact such as
-  `privacy@insidelabel.ai`. Goes into D-113 with the host. Noted for later: a chatbot conflicts with
-  D-001 ("not a chatbot") and needs its own decision; D-004 still holds (it may explain rules, never
-  give a verdict). Auto-renew both domains.
+  `privacy@insidelabel.ai`. Goes into D-114 with the host. The chatbot plan (Pro) is D-113,
+  RECOMMENDED; it would supersede D-001's "not a chatbot". Auto-renew both domains.
 - **Sushil: pick the host** (suggested: one small Ubuntu VPS in Mumbai, 2 GB). Then Claude
-  records **D-113** (hosting; PostgreSQL 18 on the server until 19 is released, which changes
+  records **D-114** (hosting; PostgreSQL 18 on the server until 19 is released, which changes
   D-087; photos on the server disk until R2 is built) and writes `deploy/`: Caddy (HTTPS),
   a systemd service (one process, D-095), a settings template (`INSIDELABEL_INVITE_ONLY=on`,
   replay off, `INSIDELABEL_PROXY_HOPS=1`), daily retention and backup jobs, a restore test,
