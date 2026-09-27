@@ -47,8 +47,11 @@ _NOT_INGREDIENTS = {"ingredients", "ingredient", "contains", "contain", "and", "
                     "brackets", "are", "per", "international", "numbering", "system", "each", "approx"}
 # Nutrition-panel words. Cloud Vision can read a curved panel into the middle of
 # the list, often cut short ("energ", "satur"), so a prefix counts too.
+# "Added" (sugars) and "sodium" are panel rows too (item 13); a dropped "sodium
+# bicarbonate" is still caught by its second word.
 _NUTRITION = ("energy", "kcal", "saturated", "serving", "servings", "recommended", "carbohydrate",
-              "carbohydrates", "total", "trans", "nutrition", "nutritional", "dietary", "cholesterol")
+              "carbohydrates", "total", "trans", "nutrition", "nutritional", "dietary", "cholesterol",
+              "added", "sodium")
 
 
 def _fold(text):

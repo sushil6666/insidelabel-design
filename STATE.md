@@ -1,6 +1,6 @@
 # STATE.md - where InsideLabel is, and how to pick it up
 
-**Last updated:** 2026-09-27 (**https://insidelabel.ai is live**, `main` = `45f9feb`, PR #18; branch `live`: notes from the deploy) · **Owner:** Sushil · **Tests:** 529 passing, 8 skipped, 1 expected failure · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 5.7 s on the live server (2026-09-27), Gemini + Cloud Vision, `verdict`
+**Last updated:** 2026-09-27 (**https://insidelabel.ai is live**, `main` = `45f9feb`, PR #18; branch `live`: notes from the deploy) · **Owner:** Sushil · **Tests:** 531 passing, 8 skipped, 1 expected failure · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 5.7 s on the live server (2026-09-27), Gemini + Cloud Vision, `verdict`
 
 This is the living status document. Read it first in any new session, then
 `DECISIONS.md` for the *why*. Update the "Last updated" line, the numbers and
@@ -747,7 +747,9 @@ from all regions and emails Sushil after 60 s of failure (OPERATIONS.md §5). Fr
       (free) shows what the tuned checker makes of the same answers.
       **Recheck after tuning (free):** 12 and 15 confirmed, and Sushil published both unchanged (the
       first two agreements for the D-117 gate); 14 and 16 rightly still need a person; 13 still
-      fails `nothing_lost` (to look at: `show 13`). **D-118 RECOMMENDED:** ask for a clearer photo
+      failed `nothing_lost` on "added" and "sodium": the server's text showed them as nutrition-panel
+      rows read in among the list, so both joined the panel-word list (a dropped "sodium bicarbonate"
+      is still caught by "bicarbonate"; 2 tests). After deploy, `il tools/review_agent.py recheck 13`. **D-118 RECOMMENDED:** ask for a clearer photo
       at scan time when Cloud Vision can't confirm a new pack's list (Sushil: before the result).
       **D-118 LOCKED and built** (branch `retake-at-scan`): the review checker's independent-read test
       is shared (`checker.independent_read`); `/scan` asks only for a pack that would add a catalogue
