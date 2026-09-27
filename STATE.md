@@ -434,6 +434,12 @@ Both accepted by Sushil and locked.
   fixed: the header pills wrapped at 390 px; the gradient repeated under short pages; the
   landing header had no top padding (`.wrap` overrode it, older than this change).
 - `insidelabel_lovable/` is still in the repo as the reference (Sushil removes it when done).
+- **Sushil, 2026-09-27: "We will not copy anyone, SafeLabel or TruthIn. We will work with the best we
+  can give to the consumer."** Competitors are context, never a source of features, wording or data.
+- **TruthIn** (truthin.ai, India, 1M+ downloads claimed): barcode or name search, a "TruthIn Rating"
+  reviewed by nutritionists, healthier alternatives, TruthIn Plus with the "TIA" assistant; FoodPharmer
+  (Revant Himatsingka) on its advisory board. InsideLabel differs on purpose: no score (D-064), any pack
+  by photo, front vs back (D-001, D-051), every finding traced to the label and FSSAI (D-043, D-111).
 - **SafeLabel** (Play Store, screenshots in Sushil's Drive `InsideLabel` folder, not in the repo):
   per-additive cards with Banned / Caution / Safe badges, E-numbers, a US-style pack. Its
   "Banned" on tartrazine is wrong (permitted in India, EU, US). Its layout became D-111.
