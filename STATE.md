@@ -567,7 +567,18 @@ to see where each gate stands. §11 has the full list. Done today: D-051/52/55 d
 food categories, PWA built, D-092 reproduction, D-093 Cloud Vision, scan speed,
 setup alarms.
 
-**Tomorrow (2026-09-27), agreed with Sushil before he signed off:**
+**NEXT SESSION STARTS HERE (Sushil, 2026-09-27): host `insidelabel.ai` first, then the rest.**
+
+1. **Hosting, first and only until it is live.** Ask Sushil which host (suggested: one small
+   Ubuntu VPS in Mumbai, 2 GB). Record **D-114** (host; PostgreSQL 18 on the server until 19 is
+   released, changing D-087; photos on the server disk until R2 is built; `insidelabel.ai` main,
+   `insidelabel.in` and `www.` redirect). Write `deploy/` + `DEPLOY.md` (Caddy HTTPS, systemd one
+   process, settings template with `INSIDELABEL_INVITE_ONLY=on`, replay off, `INSIDELABEL_PROXY_HOPS=1`,
+   `INSIDELABEL_PUBLIC_URL=https://insidelabel.ai`, daily retention + backup, restore test). Then
+   deploy with Sushil: DNS, keys as secrets, `migrate`, `tools/reviewers.py add sushil`, one real scan.
+2. Then the DPDP data map, and the other items below.
+
+**Earlier list (2026-09-27), still valid:**
 
 - **Claude: a one-page DPDP data map** from the code: every piece of personal data
   (label photos, device id, invite code and tester label, feedback and problem-report text,
