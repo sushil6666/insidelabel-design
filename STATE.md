@@ -576,6 +576,7 @@ setup alarms.
 **NEXT SESSION STARTS HERE (2026-09-27): the site is live; finish its loose ends, then the DPDP data map.**
 
 **Done 2026-09-27: https://insidelabel.ai is live** (D-114, DEPLOY.md steps 1 to 10, with Sushil).
+**For anything on the server or Google Cloud, start with `OPERATIONS.md`** (the day's full log is its §9).
 Project `insidelabel`, VM `insidelabel-1` in
 `asia-south1-a`, `e2-medium`, static IP `8.234.95.74`; SSH with `gcloud compute ssh insidelabel-1`
 from Cloud Shell. Cloudflare DNS for `insidelabel.ai` and `www` (DNS only). Checked from outside:
@@ -707,6 +708,7 @@ drop PG18 after PG19 GA.
 | `API_README.md` | endpoints, database, reviewer screen, regulator comparison |
 | `RUNBOOK.md` | how to photograph, transcribe and score a gold batch |
 | `CLAUDE.md` | working rules for AI coding sessions |
+| `OPERATIONS.md` | **running the live site**: what exists on Google Cloud and where, GCP words in plain language, everyday commands, what to do when something breaks, money, security rules, the log of 2026-09-27 |
 | `DEPLOY.md`, `deploy/` | the server (D-114): step-by-step setup, Caddy, systemd units, backup/restore/update scripts, settings templates |
 | `src/insidelabel/` | the package (core, extraction, reliability, claims, lenses, db, review, api) + `trace.py` / `repro.py` (D-092); OCR readers in `extraction/providers/` (`cloud_vision.py`, `ocr_check.py`) |
 | `data/` | the knowledge tables - the moat |

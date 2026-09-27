@@ -9,6 +9,8 @@ PostgreSQL 19. Solo founder: Sushil.
 2. `source .venv/bin/activate && pytest -q` - expect 482 passing (8 skipped) before you change anything.
    `python tools/release_check.py` shows how far the beta is from release.
 3. The "Next" list in `STATE.md` §8 is the default work queue.
+4. The live site (https://insidelabel.ai, Google Cloud, D-114): `OPERATIONS.md` to run it,
+   `DEPLOY.md` to build it. Code reaches it only through `main` and `deploy/update.sh`.
 
 ## Rules that are easy to break
 
