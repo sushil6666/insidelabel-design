@@ -611,7 +611,19 @@ one invite (Sushil's own), and **one real scan from the phone**: `verdict`, 5.7 
    and every verdict, is unchanged. 103 new tests (82 fail on the old code); the six gold labels'
    headlines unchanged, their quotes now the pack's words. **Sushil: merge, then
    `sudo /opt/insidelabel/app/deploy/update.sh` on the server.** Before invites.
-3. Then the DPDP data map, and the other items below (invites only after the privacy page and the
+3. **D-116 RECOMMENDED** (branch `ayush-products`): review item 2 on the live server (ORGANIC INDIA
+   Tulsi Mulethi) carries only an Ayurvedic medicine licence, no FSSAI licence. The FSS Act 2006
+   s.3(1)(j) (read from FSSAI's copy) excludes "drugs and medicinal products" from "food", so such
+   packs stay out of the catalogue; the reviewer rejects them with the D-116 reason. Item 2 is
+   **put back in the queue** until Sushil accepts. The user-facing note for such packs is a
+   separate proposal, not built.
+4. **Tokenizer bug found on the same pack (not fixed yet):** `core/tokenize.py` splits at every
+   decimal point, so "Natural Mint Flavour 0.010g" becomes "natural mint flavour 0" and "Wheat flour
+   (Atta) 58.3%" becomes "wheat flour 58" + "atta". Older than today (gold-set verdicts are still
+   right), but since D-115 shows the ingredient as read, a fragment like "natural mint flavour 0"
+   can reach the headline. Fix before invites, with tests and a gold-set re-run (D-099: the one
+   INS parser lives there).
+5. Then the DPDP data map, and the other items below (invites only after the privacy page and the
    DPDP review).
 
 **Earlier list (2026-09-27), still valid:**
