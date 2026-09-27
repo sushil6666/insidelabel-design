@@ -108,7 +108,7 @@ dig +short insidelabel.in; dig +short www.insidelabel.in
 ## 4. Server packages (SSH)
 
 ```bash
-gcloud compute ssh insidelabel-1          # from Cloud Shell
+gcloud compute ssh insidelabel-1 --zone=asia-south1-a          # from Cloud Shell
 ```
 
 On the server:

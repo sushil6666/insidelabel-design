@@ -578,7 +578,7 @@ setup alarms.
 **Done 2026-09-27: https://insidelabel.ai is live** (D-114, DEPLOY.md steps 1 to 10, with Sushil).
 **For anything on the server or Google Cloud, start with `OPERATIONS.md`** (the day's full log is its §9).
 Project `insidelabel`, VM `insidelabel-1` in
-`asia-south1-a`, `e2-medium`, static IP `8.234.95.74`; SSH with `gcloud compute ssh insidelabel-1`
+`asia-south1-a`, `e2-medium`, static IP `8.234.95.74`; SSH with `gcloud compute ssh insidelabel-1 --zone=asia-south1-a`
 from Cloud Shell. Cloudflare DNS for `insidelabel.ai` and `www` (DNS only). Checked from outside:
 Let's Encrypt certificate (to 2026-12-26, Caddy renews), http to https, `www` 301 to the main
 address, security headers, no `Server` header, `/review` asks for a login, a scan without an invite
