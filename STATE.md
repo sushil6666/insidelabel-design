@@ -1,6 +1,6 @@
 # STATE.md - where InsideLabel is, and how to pick it up
 
-**Last updated:** 2026-09-26 (`main` = `93c47c1`; D-111 and D-112 built on branch `additive-badges`) · **Owner:** Sushil · **Tests:** 375 passing, 1 skipped · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 6.9 s, Gemini + Cloud Vision, correct
+**Last updated:** 2026-09-26 (`main` = `1230699`: D-109 to D-112 locked, built and merged, PRs #14, #15) · **Owner:** Sushil · **Tests:** 375 passing, 1 skipped · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 6.9 s, Gemini + Cloud Vision, correct
 
 This is the living status document. Read it first in any new session, then
 `DECISIONS.md` for the *why*. Update the "Last updated" line, the numbers and
@@ -558,6 +558,26 @@ to see where each gate stands. §11 has the full list. Done today: D-051/52/55 d
 food categories, PWA built, D-092 reproduction, D-093 Cloud Vision, scan speed,
 setup alarms.
 
+**Tomorrow (2026-09-27), agreed with Sushil before he signed off:**
+
+- **Claude: a one-page DPDP data map** from the code: every piece of personal data
+  (label photos, device id, invite code and tester label, feedback and problem-report text,
+  household profiles: a child's age band and avoid list, D-074), where it is stored, who sees
+  it (Google as processor for Gemini and Cloud Vision), and when it is deleted (D-098). Sushil
+  hands it to the DPDP reviewer with `web/site/privacy.html`. About 30 minutes.
+- **Sushil: pick the host** (suggested: one small Ubuntu VPS in Mumbai, 2 GB). Then Claude
+  records **D-113** (hosting; PostgreSQL 18 on the server until 19 is released, which changes
+  D-087; photos on the server disk until R2 is built) and writes `deploy/`: Caddy (HTTPS),
+  a systemd service (one process, D-095), a settings template (`INSIDELABEL_INVITE_ONLY=on`,
+  replay off, `INSIDELABEL_PROXY_HOPS=1`), daily retention and backup jobs, a restore test,
+  and `DEPLOY.md`. About 1 to 2 hours; the first deploy with Sushil another 1 to 2.
+- **Sushil:** the FSSAI 2025 amendment PDF (browser download); privacy/about `[To complete]`
+  and a DPDP reviewer; Gemini auto top-up and a budget alert; review item #9 (still `open`
+  on the local DB).
+
+Estimate given: live on the domain in one working day; invites in 2 to 4 days, mostly
+waiting on the DPDP review.
+
 **This week - only Sushil can do these (they unblock the most):**
 
 1. **Housekeeping (10 minutes):** delete the two old Gemini key lines in `~/.bashrc`
@@ -660,7 +680,7 @@ retention test. Public launch comes after the W4 number (D-083).
 | D-051, D-052, D-055 decided | locked | ✅ locked 2026-09-25 |
 | Published catalogue | ≥ 50 SKUs | ❌ 5 (queue empty; no barcodes yet) |
 | Kids' biscuits published (D-058) | ≥ 15 in 7.2.1 / 7.2.2 | ❌ 0 (category picker ready) |
-| Test suite (`--with-tests`) | green | ✅ 375, 1 skipped (branch `additive-badges`, 2026-09-26) |
+| Test suite (`--with-tests`) | green | ✅ 375, 1 skipped (`main`, 2026-09-26) |
 
 ### Manual gates - tick when done
 
