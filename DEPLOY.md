@@ -33,11 +33,11 @@ Cloudflare: DNS only (grey cloud). insidelabel.in, www.* ──301──> https:
 1. **Billing:** upgrade the free-trial account to a **paid account with automatic
    card payment**. The credit is kept and spent first. Without the upgrade, the server
    stops when the trial ends and its disk is marked for deletion (D-114).
-2. **Project:** create `insidelabel-prod` and link it to that billing account. The
-   Gemini key's project stays separate.
+2. **Project:** the server lives in the **`insidelabel`** project (created 2026-09-27),
+   not the old "Default Gemini Project" (`gen-lang-client-0397832999`).
 3. **Budget alert:** Billing, then Budgets and alerts: about ₹1,500 a month, emails at
    50 %, 90 % and 100 %.
-4. **Compute Engine API:** open Compute Engine once in `insidelabel-prod` to enable it.
+4. **Compute Engine API:** `gcloud services enable compute.googleapis.com` (step 2).
 
 The commands below run in **Cloud Shell** (the `>_` button in the console), which
 already has `gcloud` and your login.
@@ -45,9 +45,10 @@ already has `gcloud` and your login.
 ## 2. Static IP, server, firewall, snapshots (Cloud Shell)
 
 ```bash
-gcloud config set project insidelabel-prod
+gcloud config set project insidelabel
 gcloud config set compute/region asia-south1
 gcloud config set compute/zone asia-south1-a
+gcloud services enable compute.googleapis.com
 
 # A fixed public address, so DNS never has to change.
 gcloud compute addresses create insidelabel-ip --region=asia-south1
@@ -113,21 +114,25 @@ gcloud compute ssh insidelabel-1          # from Cloud Shell
 On the server:
 
 ```bash
-sudo apt update && sudo apt -y upgrade
-sudo apt install -y git curl python3.12-venv tesseract-ocr
+df -h /                                     # about 29G: the image grew to fill the 30 GB disk
+
+# NEEDRESTART_MODE=a: answer Ubuntu's "restart which services?" dialog automatically.
+export NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive
+sudo -E apt update && sudo -E apt -y upgrade
+sudo -E apt install -y git curl python3.12-venv tesseract-ocr
 
 # PostgreSQL 18 from the PostgreSQL project's repository (postgresql.org/download/linux/ubuntu)
-sudo apt install -y postgresql-common
-sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh
-sudo apt install -y postgresql-18
+sudo -E apt install -y postgresql-common
+sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+sudo -E apt install -y postgresql-18
 pg_lsclusters                               # 18 main 5432 online
 
 # Caddy from its official repository (caddyserver.com/docs/install)
-sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https
+sudo -E apt install -y debian-keyring debian-archive-keyring apt-transport-https
 curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
 curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
 sudo chmod o+r /usr/share/keyrings/caddy-stable-archive-keyring.gpg /etc/apt/sources.list.d/caddy-stable.list
-sudo apt update && sudo apt install -y caddy
+sudo -E apt update && sudo -E apt install -y caddy
 ```
 
 Ubuntu installs security updates by itself (`unattended-upgrades`); leave it on.
@@ -183,15 +188,32 @@ sudoedit /etc/insidelabel/secrets.env          # type the two keys after the = s
 public address; replay, the claim check and the review token stay unset (D-101,
 D-051, D-097). `tests/test_deploy.py` keeps the template that way.
 
-**Keys for the server** (Google Cloud console, APIs and services, Credentials):
-- Best is a **new pair** used only by the server, so a key on a laptop can be revoked
-  without taking the site down.
-- **Cloud Vision key:** API restriction "Cloud Vision API"; application restriction
-  "IP addresses" = the server IP.
-- **Gemini key:** API restriction "Generative Language API"; IP restriction as well if
-  the key's page offers it.
-- Without `GOOGLE_VISION_KEY` scans still work but fall back to Tesseract, about 20 s
-  slower (D-093).
+**Keys for the server**: a **new pair** used only by the server, so a key on a laptop
+can be revoked without taking the site down. Both live in the `insidelabel` project, so
+Gemini and Cloud Vision are billed with the server. Create them in **Cloud Shell** (as
+yourself), not on the server: the VM's own account is rightly not allowed to manage keys.
+
+```bash
+gcloud services enable vision.googleapis.com apikeys.googleapis.com
+# Cloud Vision: this API only, from the server's IP only.
+gcloud services api-keys create --display-name="server-vision" \
+  --allowed-ips=<server IP> --api-target=service=vision.googleapis.com
+#   -> keyString: copy it straight into secrets.env on the server
+# Gemini: create the key in AI Studio (in the insidelabel project), then restrict it:
+gcloud services api-keys list --format="table(uid,displayName)"
+gcloud services api-keys update <uid> \
+  --allowed-ips=<server IP> --api-target=service=generativelanguage.googleapis.com
+```
+
+Copy keys from Cloud Shell or AI Studio **straight into the server file**: not into a
+chat, a screenshot or a note. Check without showing them:
+
+```bash
+sudo awk -F= '/^[A-Z]/{print $1, (length($2)>20 ? "set" : "EMPTY")}' /etc/insidelabel/secrets.env
+```
+
+Without `GOOGLE_VISION_KEY` scans still work but fall back to Tesseract, about 20 s
+slower (D-093).
 
 ## 8. Services, first start, HTTPS
 
@@ -208,6 +230,10 @@ sudo /opt/insidelabel/app/deploy/update.sh
 # HTTPS: only once step 3's DNS answers with the server IP.
 sudo cp /opt/insidelabel/app/deploy/Caddyfile /etc/caddy/Caddyfile
 sudo systemctl reload caddy
+# Until a name resolves (insidelabel.in was on GoDaddy "client hold" on 2026-09-27),
+# leave it out, or Caddy retries its certificate all day:
+#   sed 's/^www\.insidelabel\.ai, insidelabel\.in, www\.insidelabel\.in {$/www.insidelabel.ai {/' \
+#     /opt/insidelabel/app/deploy/Caddyfile | sudo tee /etc/caddy/Caddyfile > /dev/null
 journalctl -u caddy -n 30 --no-pager      # "certificate obtained successfully" for all four names
 ```
 
@@ -259,9 +285,16 @@ On the phone: open the link, agree to "Before you start" (D-105), scan a real pa
 (barcode, then the back photo). Then on the server:
 
 ```bash
-il tools/repro.py list                    # the scan is there, with its trace (D-092)
-journalctl -u insidelabel -n 50 --no-pager | grep -i "SETUP ALARM" || echo "no setup alarms"
+il tools/beta.py list                     # the code: 1 device, 1 scan, agreed today
+sudo -u insidelabel psql -d insidelabel -c "SELECT created_at, outcome, latency_ms, build,
+  ocr->'back'->>'reader' AS reader, length(ocr->'back'->>'text') AS ocr_chars
+  FROM scans ORDER BY created_at DESC LIMIT 3"
+#   outcome verdict (or unlisted without a barcode), reader cloud_vision (tesseract
+#   means the Vision key was refused), build = the deployed commit
+journalctl -u insidelabel -n 50 --no-pager | grep -iE "SETUP ALARM|error" || echo "no setup alarms or errors"
 ```
+
+(`il tools/repro.py list` shows problem reports, not scans.)
 
 The site is live. Invites to testers wait for the privacy page and the DPDP review
 (STATE.md §8).

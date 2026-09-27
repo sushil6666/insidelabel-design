@@ -17,6 +17,20 @@ def _is_nova(token, canonical, nova_lookup):
     return _nova_marker(token, canonical, nova_lookup) is not None
 
 
+def _label_term(token, marker):
+    """
+    D-115: the words to show for a marker, always words on the pack. The token
+    as read when it is a whole term; for a fragment such as "flavours (natural",
+    the longest of the row's own known names found inside it. Never the row's
+    name, which is a category ("Added flavour (natural/artificial/...)") and
+    would put words on the screen that the label doesn't say.
+    """
+    if not any(ch in token for ch in "()[]{}"):
+        return token
+    inside = [al.lower() for al in marker["aliases"] if al.lower() in token]
+    return max(inside, key=len) if inside else token
+
+
 def classify_token(
     token,
     synonym_lookup,
@@ -77,6 +91,7 @@ def classify_token(
         return {
             "ingredient": token,
             "matched_as": f"NOVA marker: {marker['name']}",
+            "label_term": _label_term(token, marker),
             "type": "nova_marker",
             "concern": (
                 "moderate"

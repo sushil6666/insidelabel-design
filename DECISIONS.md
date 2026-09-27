@@ -1323,6 +1323,50 @@ for deletion" (30 days' grace), and a suspended billing account stops every link
 Nothing ties us to Google: plain Ubuntu, PostgreSQL and S3-compatible storage, so moving
 (to Lightsail or anywhere) is a restore.
 
+### D-115 · Processing markers are shown in the pack's words, not our table's `RECOMMENDED` (2026-09-27)
+Found by Claude on the first real scan on the live site (Sushil's phone, an Organic India
+Tulsi Mulethi pack, 2026-09-27); Sushil asked for it to be fixed before invites ("yes please").
+
+The headline read "Made with industrial ingredients, such as added flavour
+(natural/artificial/nature-identical)", and the "Worth knowing" card showed
+`On the label: "added flavour (natural/artificial/nature-identical)"` **in quotation marks**.
+Neither came from the pack: both are the name of the matching row in
+`data/nova_markers.json`. `lenses/screen.py` used table names on purpose (an ingredient as read
+can be a fragment like "flavours (natural"), but the side effect breaks D-042/D-071 ("quote the
+label; don't characterise it"): whatever the pack says, even only "natural flavour", the screen
+put "artificial" next to a named brand's product, and presented it as a quote. Six of the 17 row
+names carry words a pack may not say:
+
+| Row name | A pack may print | Words the screen added |
+|---|---|---|
+| Added flavour (natural/artificial/nature-identical) | "natural flavour" | artificial, nature-identical |
+| Artificial / non-sugar sweetener | a sweetener's name | artificial |
+| Hydrogenated / interesterified oil | "hydrogenated vegetable oil" | interesterified |
+| Stabiliser / thickener / humectant (cosmetic use) | "thickener" | cosmetic use, our label |
+| Whey protein isolate (as additive) | "whey protein isolate" | as additive, our label |
+| Bulking / anti-caking / glazing agents | "anti-caking agent" | bulking, glazing |
+
+- **The fix:** each marker finding carries `label_term`, the words to show. It is the ingredient
+  **as read** when that is a whole term (no bracket characters); when it is a fragment, the
+  longest of **that row's own known names** found inside it (for "flavours (natural", "flavour").
+  Both are words on the pack. The headline and the card's `On the label: "..."` use it.
+- **Nothing that judges changes:** which row matches, the band, the verdict, the concern and the
+  score are computed exactly as before (D-004). Only the words shown change.
+- **The table name stays where it is a reference, not a quote:** the card's technical line
+  ("NOVA group 4 markers: ...", our table row), the reviewer's finding text and rule code
+  (`db/store.py`), and the compare screen (which shows only "N ultra-processed ingredients").
+- **Tests:** for every known name of every row, a label printing it gives a headline and a quote
+  made only of words from that label; the six rows above never show their added words unless
+  the label prints them; the Tulsi Mulethi case shows "natural flavour".
+- **Checked on the six gold labels** (recorded readings replayed, no model call): every headline
+  and verdict unchanged; only the quotes changed, and on every label, not just rows with a slash:
+  Britannia "glucose syrup, ..., added flavour (natural/artificial/nature-identical)" became
+  "liquid glucose, emulsifiers, anticaking agent, humectant, flavouring"; Patanjali's became
+  "liquid glucose, invert syrup, artificial flavour, emulsifier"; both Limca labels "flavour".
+- **Not proposed:** renaming the table rows (the names are right as categories for reviewers
+  and the technical line), or changing what the rows match (a separate question: today "stevia",
+  "sucralose" and "interesterified vegetable fat" match no marker row).
+
 ---
 
 ## Open and pending

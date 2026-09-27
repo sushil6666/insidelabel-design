@@ -1,6 +1,6 @@
 # STATE.md - where InsideLabel is, and how to pick it up
 
-**Last updated:** 2026-09-27 (`main` = `32ff63a`, PR #17 merged; branch `hosting`: D-114 locked, `deploy/` + `DEPLOY.md` written, not yet deployed) · **Owner:** Sushil · **Tests:** 379 passing, 1 skipped · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 6.9 s, Gemini + Cloud Vision, correct
+**Last updated:** 2026-09-27 (**https://insidelabel.ai is live**, `main` = `45f9feb`, PR #18; branch `live`: notes from the deploy) · **Owner:** Sushil · **Tests:** 482 passing, 8 skipped · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 5.7 s on the live server (2026-09-27), Gemini + Cloud Vision, `verdict`
 
 This is the living status document. Read it first in any new session, then
 `DECISIONS.md` for the *why*. Update the "Last updated" line, the numbers and
@@ -54,7 +54,8 @@ over our data tables make every judgement** (D-004), and every judgement uses
 | "Send it to us" after two refused scans (D-070, D-096) | ✅ overnight; walked in headless Chromium against a faked API, not on a phone | `POST /send-to-us`, migration 008, `web/app.js` |
 | One login per reviewer (D-097); shared token only until the first account | ✅ overnight | migration 009, `review/accounts.py`, `tools/reviewers.py` |
 | Photo retention job, 30 days, holds respected (D-080, D-098) | ✅ overnight; runs nowhere yet (cron at deploy) | migration 010, `retention.py`, `tools/retention.py` |
-| Web app / PWA: barcode → back photo on 404 → result; household profiles + consent; compare; report a mistake; `/updates` on open; offline shell | ✅ built, **not yet tried on a real phone**; stack is D-090 | `web/`, served at `/app/` |
+| Web app / PWA: barcode → back photo on 404 → result; household profiles + consent; compare; report a mistake; `/updates` on open; offline shell | ✅ built; **first real-phone scan on the live site 2026-09-27** (invite link, "Before you start", barcode, back photo, result); profiles, compare and report not yet walked on a phone; stack is D-090 | `web/`, served at `/app/` |
+| Hosting (D-114): Google Cloud VM `insidelabel-1`, Mumbai, `e2-medium`, Ubuntu 24.04; Caddy HTTPS, one uvicorn, PostgreSQL 18; nightly backup + photo cleanup; daily disk snapshot | ✅ **live 2026-09-27** at https://insidelabel.ai (IP `8.234.95.74`); restore test PASS 2026-09-27 | `DEPLOY.md`, `deploy/` |
 
 **Accuracy on the gold set (6 real labels, `tools/eval_vision.py`):** 0 verdict
 flips, INS F1 1.000 (0 missed, 0 hallucinated), ingredient F1 0.945, front-claim
@@ -572,26 +573,45 @@ to see where each gate stands. §11 has the full list. Done today: D-051/52/55 d
 food categories, PWA built, D-092 reproduction, D-093 Cloud Vision, scan speed,
 setup alarms.
 
-**NEXT SESSION STARTS HERE (Sushil, 2026-09-27): host `insidelabel.ai` first, then the rest.**
+**NEXT SESSION STARTS HERE (2026-09-27): the site is live; finish its loose ends, then the DPDP data map.**
 
-1. **Hosting, first and only until it is live.** 2026-09-27: host chosen, **Google Cloud Compute Engine, Mumbai** (Lightsail was first, then Sushil
-   chose Google Cloud for the account and credit he already has)
-   (Cloudflare checked and can't run the app or the database: see D-114); `insidelabel.ai` is
-   registered at Cloudflare, `insidelabel.in` at GoDaddy. **D-114 LOCKED** (accepted 2026-09-27).
-   **`deploy/` + `DEPLOY.md` written** (branch `hosting`): Caddyfile (redirects done by Caddy, so the
-   Cloudflare proxy can stay off), `insidelabel.service` (one process, localhost, hardened), daily
-   backup 02:30 and retention 04:00 India time, `backup.sh`, `restore_test.sh`, `update.sh`, the `il`
-   tool wrapper, settings/secrets templates, `tests/test_deploy.py`. Checked locally: backup and
-   restore test PASS on PostgreSQL 18 (and FAIL on a cut dump), `caddy validate` (2.11.4), a spoofed
-   `X-Forwarded-For` dropped by Caddy, `systemd-analyze verify`, the app with server settings on a
-   spare port. **Next: deploy with Sushil, DEPLOY.md steps 1 to 10** (step 10 is a paid scan, Sushil's). Was: ask Sushil which host (suggested: one small
-   Ubuntu VPS in Mumbai, 2 GB). Record **D-114** (host; PostgreSQL 18 on the server until 19 is
-   released, changing D-087; photos on the server disk until R2 is built; `insidelabel.ai` main,
-   `insidelabel.in` and `www.` redirect). Write `deploy/` + `DEPLOY.md` (Caddy HTTPS, systemd one
-   process, settings template with `INSIDELABEL_INVITE_ONLY=on`, replay off, `INSIDELABEL_PROXY_HOPS=1`,
-   `INSIDELABEL_PUBLIC_URL=https://insidelabel.ai`, daily retention + backup, restore test). Then
-   deploy with Sushil: DNS, keys as secrets, `migrate`, `tools/reviewers.py add sushil`, one real scan.
-2. Then the DPDP data map, and the other items below.
+**Done 2026-09-27: https://insidelabel.ai is live** (D-114, DEPLOY.md steps 1 to 10, with Sushil).
+Project `insidelabel`, VM `insidelabel-1` in
+`asia-south1-a`, `e2-medium`, static IP `8.234.95.74`; SSH with `gcloud compute ssh insidelabel-1`
+from Cloud Shell. Cloudflare DNS for `insidelabel.ai` and `www` (DNS only). Checked from outside:
+Let's Encrypt certificate (to 2026-12-26, Caddy renews), http to https, `www` 301 to the main
+address, security headers, no `Server` header, `/review` asks for a login, a scan without an invite
+gets `invite_required`, `replay` gets `replay_disabled`. On the server: 14 migrations on
+PostgreSQL 18, build `45f9feb078dc`, reviewer `sushil` (logged in), first backup and **restore test
+PASS**, timers (backup 02:30, photo cleanup about 04:00 India time; disk snapshot 03:30, kept 7 days),
+one invite (Sushil's own), and **one real scan from the phone**: `verdict`, 5.7 s, Cloud Vision read
+1,717 characters in parallel with Gemini, no retries, no setup alarms.
+
+1. **Loose ends from the deploy (Sushil):**
+   - **Billing:** confirm the account is upgraded from the free trial to paid with automatic payment
+     (Billing, Overview: no "Activate" button). **Must be done before invites**, or the VM stops and
+     its disk is deleted when the trial ends. Budget alert about ₹1,500 a month.
+   - **`insidelabel.in` is on GoDaddy `client hold`** since 2026-09-12 (the `.in` registry's record:
+     registered 2026-09-07, paid to 2029-09-07), so it resolves nowhere. Usually the registrant email
+     verification: GoDaddy, Domain settings, Contact information, resend and click. Then move its
+     nameservers to Cloudflare, add `A @` and `A www` to `8.234.95.74` (DNS only), and put the full
+     `deploy/Caddyfile` back on the server (the server's copy leaves the `.in` names out for now).
+   - **Keys:** the server has its own pair in the `insidelabel` project: `server-vision` (Cloud Vision
+     only, IP `8.234.95.74` only) and `gcp_website` (Gemini, AI Studio). Confirm the Gemini key's
+     restriction went through (`gcloud services api-keys list` in Cloud Shell), and check the two older
+     keys in the project, `testing` and `insidelabel`: restrict or delete whichever the laptop doesn't
+     use. The Vision key's value appeared in the chat; it only works from the server, so keeping it is
+     acceptable; rotate it if preferred.
+   - Walk the rest of the app on the phone (profiles, compare, report a mistake, report a problem):
+     the manual gate in §11.
+2. **D-115 RECOMMENDED, built** (branch `nova-label-words`): the first live scan's headline and
+   "On the label" quote showed our table's row name ("added flavour (natural/artificial/
+   nature-identical)"), not the pack's words. Now both use the words as read; which row matches,
+   and every verdict, is unchanged. 103 new tests (82 fail on the old code); the six gold labels'
+   headlines unchanged, their quotes now the pack's words. **Sushil: accept, merge, then
+   `sudo /opt/insidelabel/app/deploy/update.sh` on the server.** Before invites.
+3. Then the DPDP data map, and the other items below (invites only after the privacy page and the
+   DPDP review).
 
 **Earlier list (2026-09-27), still valid:**
 
@@ -728,12 +748,12 @@ retention test. Public launch comes after the W4 number (D-083).
 - [ ] PWA built ✅ (`web/`) and tested on a low-end Android phone ⏳ (camera, barcode, result, profiles, compare, report)
 - [ ] Share target (if D-088 accepted)
 - [ ] "Send it to us" - built ✅ (D-096); tried on a phone ⏳
-- [ ] Individual reviewer logins - built ✅ (D-097); accounts created on the deployed server ⏳
-- [ ] Photo retention 30 days (D-080) - job built ✅ (D-098); daily cron at deploy ⏳
-- [ ] Rate limit on `/scan` and `/problem` - built ✅ (D-095); proxy hops set, one process at deploy ⏳; error monitoring ✅ built in (D-092 reports + setup alarms), Sentry optional
+- [x] Individual reviewer logins - built ✅ (D-097); `sushil` created on the live server 2026-09-27 ✅
+- [x] Photo retention 30 days (D-080) - job built ✅ (D-098); daily systemd timer on the live server 2026-09-27 ✅
+- [ ] Rate limit on `/scan` and `/problem` - built ✅ (D-095); proxy hops 1 and one process on the live server 2026-09-27 ✅; error monitoring ✅ built in (D-092 reports + setup alarms), Sentry optional
 - [ ] Privacy policy (DPDP; children's data; parental consent at profile creation)
 - [ ] COI policy, methodology, who is behind the app, "last verified" dates (D-076)
-- [ ] Deployed: PostgreSQL 19, HTTPS, R2, backups tested by restoring one
+- [ ] Deployed: HTTPS ✅ and backups tested by restoring one ✅ (2026-09-27); PostgreSQL **18** until 19 is released (D-114); R2 ⏳
 - [ ] Play Console: account verified, closed-testing requirement met, audience = adults
 - [x] D-055 stop number written down before launch (continue ≥ 30 %, retest 20-30 %, stop < 20 %)
 
