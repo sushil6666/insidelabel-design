@@ -4,7 +4,7 @@ Architectural and product decisions for InsideLabel, with the reasoning attached
 Append-only. When a decision is reversed, mark it `SUPERSEDED` and add a new entry
 rather than editing the old one - the history is the point.
 
-**Last updated:** 2026-09-26 (D-102 to D-113 locked; D-001's chatbot clause superseded)
+**Last updated:** 2026-09-27 (D-102 to D-113 locked; D-001's chatbot clause superseded; D-114 hosting locked)
 
 **Status key:** `LOCKED` decided, don't relitigate · `OPEN` not yet decided ·
 `RECOMMENDED` proposed but not accepted · `SUPERSEDED` replaced
@@ -430,7 +430,7 @@ in `additives.json`: 171 re-based `high` → `moderate` and `fssai_status` `chec
 foreign-ban wording removed from `why`. The kids lens (D-056) still mentions the EU
 warning as labelled context. Accepted by Sushil 2026-09-25.
 
-### D-087 · PostgreSQL 19 `LOCKED` (2026-09-25)
+### D-087 · PostgreSQL 19 `LOCKED` (2026-09-25); the server runs 18 until 19 is released, see D-114 (2026-09-27)
 Target PostgreSQL 19. Installed locally as 19~beta4 from the official PostgreSQL apt
 repository (`tools/install_pg19.sh`), side by side with 16 (which stays on 5432 until
 19 is proven). GA is expected by end of October 2026, before the beta users arrive.
@@ -1247,6 +1247,81 @@ the rest of D-001 stands. Not built yet.
 - **Replayable like a scan** (D-092): question, context and the model's raw answer are stored.
 - **A second DPDP check before launch**: it uses children's data (age band, avoid list) in a new
   way.
+
+### D-114 · Hosting: one Google Cloud server in Mumbai, DNS on Cloudflare `LOCKED` (2026-09-27)
+Direction from Sushil ("host the web beta on insidelabel.ai"; asked whether Cloudflare could
+host it; first chose AWS Lightsail, then Google Cloud: "go with google cloud for now, will change
+in future if any issue", 2026-09-27). Details by Claude. Checked on the providers' own pages
+2026-09-27. **Accepted by Sushil 2026-09-27** ("accepted").
+
+**Why not Cloudflare for the app.** Python Workers run pure-Python or Pyodide-built packages
+only; we need `psycopg`, `zxing-cpp`, Pillow and Tesseract. Cloudflare Containers run any image,
+but "All disk is ephemeral. When a Container instance goes to sleep, the next time it is
+started, it will have a fresh disk": the database, the photos and the in-memory rate limits
+(D-095) would be lost. Hyperdrive only speeds up a database hosted elsewhere. Cloudflare is used
+for what it fits: DNS now, R2 for photos later.
+
+**Why Google Cloud.** Sushil already has the account (the Gemini and Cloud Vision keys) and
+free-trial credit on it. Google Cloud India bills an Indian address in INR with 18 % GST.
+The runner-up was AWS Lightsail, Mumbai: $12/mo for 2 GB, 2 vCPU, 60 GB and 1.5 TB transfer in
+one fixed price (compared with Vultr, Akamai/Linode and DigitalOcean the same day). Google
+charges the VM, disk, static IP and outbound traffic separately; the monthly total is read from
+Google's pricing calculator, not recorded here. Moving to Lightsail later is a restore.
+
+**Conditions, because of the billing (from Google's free-trial page):** at the end of a trial
+"All resources you created during the trial are stopped" and Compute Engine data "is marked
+for deletion" (30 days' grace), and a suspended billing account stops every linked project. So:
+- The billing account is **upgraded to a paid account with automatic card payment (post-paid)
+  before invites go out**. Upgrading keeps the unused credit until it expires; the credit is
+  spent first. Not the prepaid kind the Gemini key's project uses (it ran out on 2026-09-25).
+- The server lives in **its own project** (`insidelabel-prod`), apart from the key project.
+- A **budget alert** on the billing account (about ₹1,500 a month to start).
+
+**The beta setup (step 1):**
+- **One Compute Engine VM**, Mumbai (`asia-south1`), Ubuntu 24.04 LTS, **`e2-medium`** (2 vCPU
+  sharing one full core, bursting; 4 GB), 30 GB balanced disk, a static external IP. Two vCPUs
+  because Gemini and Cloud Vision run on worker threads per scan, PostgreSQL shares the box, and
+  the Tesseract fallback is CPU-heavy (D-093). `e2-small` (2 GB, half a core) is the cheaper
+  step down if the credit ends and the load allows; resizing is stop, change type, start.
+  The Always Free `e2-micro` is only offered in three US regions, so it doesn't apply.
+- **Firewall:** 22 (SSH, keys only), 80 and 443; nothing else. PostgreSQL listens on localhost.
+- **Caddy** in front for HTTPS (automatic certificates), then **one uvicorn process** under
+  systemd (one process because the rate limits live in memory, D-095).
+  `INSIDELABEL_PROXY_HOPS=1` (Caddy is the only proxy).
+- **PostgreSQL 18 on the server** (18.6 in the PGDG apt repository for noble, checked
+  2026-09-27), not 19: 19 is still a beta, and D-087 itself keeps the schema portable to 16-18 for
+  a host without 19. Move to 19 by dump and restore once it is released (expected end October),
+  in its own step. D-087's heading now points here; local work stays on 19.
+- **Photos on the server disk** (`INSIDELABEL_MEDIA`) until R2 is built.
+- **Settings in one root-only file** read by systemd, never in the repo: `GEMINI_API_KEY`,
+  `GOOGLE_VISION_KEY` (D-093), `INSIDELABEL_DB`, `INSIDELABEL_MEDIA`, `INSIDELABEL_BUILD`,
+  `INSIDELABEL_INVITE_ONLY=on` (D-102), `INSIDELABEL_PROXY_HOPS=1`,
+  `INSIDELABEL_PUBLIC_URL=https://insidelabel.ai` (invite links, `tools/beta.py`).
+  `INSIDELABEL_ALLOW_REPLAY` and `INSIDELABEL_CLAIMS_TO_USERS` are never set (D-101, D-051), and
+  `INSIDELABEL_REVIEW_TOKEN` is not set: reviewers log in with accounts (D-097).
+- **Daily jobs** (systemd timers): `tools/retention.py --apply` (D-098), and a `pg_dump` kept 14
+  days on the server. A daily **disk snapshot schedule** (Compute Engine) holds the off-server
+  copy until backups go to R2. One restore of a dump into a scratch database is done before
+  invites go out, and written down in `DEPLOY.md`.
+- **Domains:** `insidelabel.ai` (registered at Cloudflare) is the main address. `insidelabel.in`
+  stays registered at GoDaddy with its nameservers moved to Cloudflare, so DNS and redirects live
+  in one place. `insidelabel.in`, `www.insidelabel.in` and `www.insidelabel.ai` redirect
+  permanently (301) to `https://insidelabel.ai`. Cloudflare proxy **off** (DNS only) at first.
+  Both domains on auto-renew.
+
+**Later, each its own decision when its signal shows up:**
+1. **Weeks after launch:** PostgreSQL 19 once released; photos and backups to R2 (retention
+   still runs our job, D-098); Cloudflare proxy on, with Caddy trusting Cloudflare's ranges and
+   the proxy hops changed, so testers don't share one IP's rate limit.
+2. **After the W4 answer (D-055):** below 20 %, stop and spend nothing more on hosting. At 30 %
+   or more, and only when slow scans, memory, CPU or disk say so: a bigger machine type first;
+   then rate-limit counters in PostgreSQL (D-095) and a second app process; then the database
+   on its own server or Cloud SQL in Mumbai with point-in-time recovery.
+3. **Pro and the chatbot (D-113):** more app servers behind Cloudflare, and a job queue (RQ on
+   Redis) for the slow model calls.
+
+Nothing ties us to Google: plain Ubuntu, PostgreSQL and S3-compatible storage, so moving
+(to Lightsail or anywhere) is a restore.
 
 ---
 

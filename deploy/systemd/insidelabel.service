@@ -1,0 +1,41 @@
+# /etc/systemd/system/insidelabel.service (D-114)
+# The API, the reviewer screen and the PWA in one uvicorn process on localhost;
+# Caddy is the only way in.
+[Unit]
+Description=InsideLabel API and web app
+After=network-online.target postgresql.service
+Wants=network-online.target postgresql.service
+
+[Service]
+Type=exec
+User=insidelabel
+Group=insidelabel
+WorkingDirectory=/opt/insidelabel/app
+# settings.env: no secrets (root:insidelabel 0640). secrets.env: the two Google
+# keys (root 0600, read by systemd only). build.env: the commit, from update.sh.
+EnvironmentFile=/etc/insidelabel/settings.env
+EnvironmentFile=/etc/insidelabel/secrets.env
+EnvironmentFile=-/etc/insidelabel/build.env
+Environment=PYTHONUNBUFFERED=1
+# D-095: exactly one process. The rate limits live in this process's memory;
+# a second worker would double every limit.
+# No access log: it would hold every caller's IP address (see the Caddyfile).
+ExecStart=/opt/insidelabel/venv/bin/uvicorn insidelabel.api.main:app \
+    --host 127.0.0.1 --port 8000 --workers 1 --no-access-log --no-server-header
+Restart=on-failure
+RestartSec=3
+
+# The app writes only photos (INSIDELABEL_MEDIA); everything else is read-only.
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/var/lib/insidelabel
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+
+[Install]
+WantedBy=multi-user.target
