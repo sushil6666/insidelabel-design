@@ -1545,6 +1545,33 @@ the letters are too small for either reader. Today the app takes exactly one bac
 - **Measured 2026-09-27:** 3 gold labels cut into two overlapping parts and joined: every reading
   identical to the single photo's, no word read twice, verdict-changing rate 0%, INS F1 1.000.
 
+### D-120 · "Candy sugar syrup" and "sugar syrup" count as added sugar; bare "malt" does not `RECOMMENDED` (2026-09-27)
+Found by Sushil in the shop (Lotus Biscoff, 2026-09-27). Recommended by Claude; **not yet accepted.**
+
+**The basis (primary source, read 2026-09-27).** FSS (Labelling and Display) Regulations 2020,
+compendium version I (23.09.2021), page 9: "'sugars' means all monosaccharides (glucose, fructose,
+etc.) and disaccharides (maltose, sucrose, lactose, etc.)" and "'added sugars' means
+monosaccharides and disaccharides added to foods and beverages".
+
+- **Add "candy sugar syrup" and "sugar syrup"** to `normalization.json` `sugar_aliases.added_sugar`.
+  Both are sucrose, or sucrose split into glucose and fructose, in water: added sugars under the
+  definition above.
+- **Don't add bare "malt".** On the sugar-free masala cracker it is malted grain, used for flavour
+  and for the dough: an ingredient of flour, not a mono- or disaccharide added as such. "Malt
+  extract" and "barley malt", the syrups, are already on the list. Counting bare "malt" would put
+  "Sugar under 2 names" on a pack that says "Sugar Free" with no sugar on its list.
+
+**What it changes, measured (engine and `/scan`, no paid call).** Biscoff today: "No concerns found
+in the ingredients.", score 100. With the names: the headline becomes "Sugar appears under 2
+names: candy sugar syrup, sugar.", score 92, still grade A. No gold-set or test label contains
+either name, so nothing else moves.
+
+**What it doesn't fix, said plainly.** The engine counts sugar *names*, not sugar *amounts*: a pack
+with one sugar name and 36 g per 100 g still reads clean. Amounts need the nutrition panel, read
+after the beta (D-081). And the band under that headline still says "No concerns found in the
+ingredients", which reads as contradicting it; that wording belongs to the result-screen
+discussion Sushil asked for, not to this entry.
+
 ---
 
 ## Open and pending

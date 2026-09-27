@@ -714,6 +714,9 @@ from all regions and emails Sushil after 60 s of failure (OPERATIONS.md §5). Fr
    a. **A missing sugar name changed a verdict**: Lotus Biscoff reads clean, grade A, score 100 with
       36 g added sugars per 100 g, because "candy sugar syrup" is not in `sugar_aliases`. Collect the
       missing names, re-run the gold set, show Sushil what moves, then his decision. **Before invites.**
+      **D-120 RECOMMENDED** (2026-09-27): add "candy sugar syrup" and "sugar syrup" (FSSAI L&D 2020
+      definition of added sugars); not bare "malt". Biscoff's headline becomes "Sugar appears under 2
+      names"; its band stays "No concerns found" (for the result-screen discussion). Waiting on Sushil.
    b. **Tokenizer: nested square brackets and braces** give fragments like `emulsifier ]` and
       `antioxidant }`, which D-115 can now show to a user. Fix with a gold-set re-run. **Before invites.**
    c. **Additive rows missing**: INS 319 (TBHQ, seen on two packs) and INS 472(e); and a decision on
