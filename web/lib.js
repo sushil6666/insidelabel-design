@@ -12,7 +12,7 @@
 //    beyond the headline the user was shown.
 
 // Bump together with VERSION in sw.js: a report then says which shell was cached.
-export const APP_VERSION = "web-16";
+export const APP_VERSION = "web-18";
 
 // ------------------------------------------------------------------ storage
 // localStorage can throw (private mode, blocked site data); the app must still work.
@@ -171,18 +171,26 @@ async function call(path, opts = {}) {
   return { status: res.status, body };
 }
 
-export async function scanRequest({ barcode, barcodeSource, back, front, pairing, backSource, frontSource }) {
+export async function scanRequest({ barcode, barcodeSource, back, front, pairing, backSource, frontSource,
+                                     acceptUnconfirmed, parts = [], partSources = [] }) {
   const fd = new FormData();
   fd.append("device_id", deviceId());
   fd.append("profiles", JSON.stringify(profilesForServer()));
   if (barcode) fd.append("barcode", barcode);
   if (barcode && barcodeSource) fd.append("barcode_source", barcodeSource);     // D-104: camera or photo
   if (back) fd.append("back", back, "back.jpg");
+  // D-119: the list's 2nd and 3rd parts; the server joins them to the back photo.
+  parts.slice(0, 2).forEach((p, i) => {
+    fd.append(`back${i + 2}`, p, `back${i + 2}.jpg`);
+    if (partSources[i]) fd.append(`back${i + 2}_source`, partSources[i]);
+  });
   if (front) fd.append("front", front, "front.jpg");
   if (front && pairing) fd.append("pairing_confirmed", "true");
   // D-106: taken with the camera or uploaded, so reviewers can look closer at uploads.
   if (back && backSource) fd.append("back_source", backSource);
   if (front && frontSource) fd.append("front_source", frontSource);
+  // D-118: "use this one anyway" after a request for a clearer photo.
+  if (acceptUnconfirmed) fd.append("accept_unconfirmed", "true");
   return call("/scan", { method: "POST", body: fd });
 }
 

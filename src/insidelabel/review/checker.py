@@ -150,6 +150,29 @@ def _ingredient_section(ocr_text, ingredients):
     return low[start:min(stop, end + (tail.start() if tail else 80))]
 
 
+def independent_read(ingredients, ocr_text, allergen_statement=None):
+    """
+    Does Cloud Vision's text of the back photo confirm this ingredient list?
+    Returns (section_found, missing, lost): whether the text holds an
+    ingredient list at all; the list's words Cloud Vision never saw; and the
+    words of Cloud Vision's list the given list doesn't have. Confirmed when
+    section_found and both lists are empty. Used by the review checker (D-117)
+    and by /scan, to ask for a clearer photo of a new pack (D-118).
+    """
+    pool = sorted(set(_words(ocr_text)))
+    missing = sorted({w for w in _words(" ".join(ingredients)) if pool and not _found(w, pool)})
+    covered = sorted(set(_words(" ".join(list(ingredients) + [allergen_statement or ""]))))
+    section = _ingredient_section(ocr_text, ingredients)
+    lost = sorted({w for w in _words(section)
+                   if w not in _NOT_INGREDIENTS and not _nutrition_word(w) and not _found(w, covered)})
+    return bool(section), (missing if pool else ["(no text)"]), lost
+
+
+def independent_read_confirmed(ingredients, ocr_text, allergen_statement=None):
+    found, missing, lost = independent_read(ingredients, ocr_text, allergen_statement)
+    return found and not missing and not lost
+
+
 def _claim_rule_hits(claims):
     hits = []
     for c in claims or []:
@@ -185,19 +208,16 @@ def check(draft, ctx):
     add("independent_text", bool(ocr.strip()),
         "" if ocr.strip() else "no Cloud Vision text on the scan: nothing independent to check against")
 
-    # Ingredients against the independent reader, both ways.
+    # Ingredients against the independent reader, both ways (shared with /scan, D-118).
     pool = sorted(set(_words(ocr)))
-    missing = sorted({w for w in _words(" ".join(ingredients)) if pool and not _found(w, pool)})
+    section, missing, lost = independent_read(ingredients, ocr, draft.get("allergen_statement"))
+    missing = missing if pool else []
     add("ingredients_in_ocr", pool and not missing,
         f"not in Cloud Vision's text: {', '.join(missing[:12])}" if missing else "")
     unbalanced = [x for x in ingredients if not _balanced(x)]
     add("brackets_balance", not unbalanced,
         f"unbalanced: {'; '.join(unbalanced[:3])}" if unbalanced else "")
-    covered = sorted(set(_words(" ".join(ingredients + [draft.get("allergen_statement") or ""]))))
-    section = _ingredient_section(ocr, ingredients)
-    lost = sorted({w for w in _words(section)
-                   if w not in _NOT_INGREDIENTS and not _nutrition_word(w) and not _found(w, covered)})
-    add("nothing_lost", bool(section) and not lost,
+    add("nothing_lost", section and not lost,
         "no ingredient list found in Cloud Vision's text" if not section else
         (f"in Cloud Vision's ingredient list but not in the draft: {', '.join(lost[:12])}" if lost else ""))
 

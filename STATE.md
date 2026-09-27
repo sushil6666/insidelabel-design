@@ -1,6 +1,6 @@
 # STATE.md - where InsideLabel is, and how to pick it up
 
-**Last updated:** 2026-09-27 (**https://insidelabel.ai is live**, `main` = `45f9feb`, PR #18; branch `live`: notes from the deploy) · **Owner:** Sushil · **Tests:** 516 passing, 8 skipped, 1 expected failure · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 5.7 s on the live server (2026-09-27), Gemini + Cloud Vision, `verdict`
+**Last updated:** 2026-09-27 (**https://insidelabel.ai is live**, `main` = `45f9feb`, PR #18; branch `live`: notes from the deploy) · **Owner:** Sushil · **Tests:** 529 passing, 8 skipped, 1 expected failure · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 5.7 s on the live server (2026-09-27), Gemini + Cloud Vision, `verdict`
 
 This is the living status document. Read it first in any new session, then
 `DECISIONS.md` for the *why*. Update the "Last updated" line, the numbers and
@@ -749,6 +749,23 @@ from all regions and emails Sushil after 60 s of failure (OPERATIONS.md §5). Fr
       first two agreements for the D-117 gate); 14 and 16 rightly still need a person; 13 still
       fails `nothing_lost` (to look at: `show 13`). **D-118 RECOMMENDED:** ask for a clearer photo
       at scan time when Cloud Vision can't confirm a new pack's list (Sushil: before the result).
+      **D-118 LOCKED and built** (branch `retake-at-scan`): the review checker's independent-read test
+      is shared (`checker.independent_read`); `/scan` asks only for a pack that would add a catalogue
+      version, only when Cloud Vision read the photo; "Use this one anyway" (`accept_unconfirmed`) is
+      recorded on the scan. 5 tests; walked in headless Chromium at phone width (retake screen, both
+      buttons, the flag sent on the second request). App `web-17`.
+      **D-119 LOCKED and built** (branch `multi-photo-list`, Sushil in the shop: the Britannia 50-50
+      Cheeze Dipped list doesn't fit one photo): up to three photos of the list, joined on the
+      server into one back photo (`photo_join.py`), so the frozen reading prompt, storage, replay and
+      retention are unchanged; one photo is today's scan byte for byte. 8 tests; walked in headless
+      Chromium (part 2 sent as `back2`). Amended the same day: the app asks "Is the whole ingredient
+      list in this photo?" and shows the part camera only on "No". App `web-18`. **Overlap check PASSED** (2026-09-27, Sushil's
+      go-ahead, 3 Gemini calls): Britannia Treat, Ziggy donut and Maliban wafer backs cut into two
+      overlapping parts (one printed line in both), app-sized, joined by `photo_join`; each reading was
+      identical, word for word, to the single-photo reading, with no duplicated ingredient. Against gold:
+      verdict-changing rate 0%, INS F1 1.000, score drift 0 (Britannia's ingredient F1 0.8 is the
+      known brace-nesting split, the same on the single photo). Tesseract cross-check only, no Cloud
+      Vision call. Output in a scratch path, not `reports/`.
 6. Then the DPDP data map, and the other items below (invites only after the privacy page and the
    DPDP review).
 

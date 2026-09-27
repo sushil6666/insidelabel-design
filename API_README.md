@@ -117,6 +117,19 @@ After the model reads the photo: `back_is_a_screen` and `not_a_food_pack` are re
 (422 with a `screen`, `screen.can_send` false); a front that isn't a pack is set aside
 with the caveat `front_not_a_pack`.
 
+**A long list in parts (D-119).** `back2` and `back3` (with `back2_source`, `back3_source`)
+carry the list's next parts, in order. Each part passes the checks above on its own (a refusal
+names `role: "back2"`), then the server joins them into one back photo, and the scan goes on
+as with one photo; the scan's trace records `back_parts`. `parts_out_of_order` (422): a part
+without the one before it. `parts_unreadable` (415): a part that can't be decoded for joining
+(send JPEG, PNG or WebP).
+
+**One clearer photo (D-118).** A scan that would add a catalogue version, where Cloud Vision's
+text doesn't confirm Gemini's ingredient list, answers 422 with `screen.state: "retake"`,
+headline "One clearer photo, please." and `screen.can_use_anyway: true`, before any result.
+Sending the same photos again with `accept_unconfirmed=true` gives the result as usual, and the
+flag is kept on the scan.
+
 ## Rate limits (D-095)
 
 `/scan` and `/problem` are limited per install (`device_id`) **and** per IP, checked
