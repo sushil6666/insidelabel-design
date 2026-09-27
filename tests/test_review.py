@@ -275,4 +275,7 @@ def test_page_preselects_the_stored_category(env):
     item_id = take(c, scan(["Potato", "Palm oil", "Salt", "Sugar"], barcode=bc))   # reformulation
     page = c.get(f"/review/item/{item_id}").text
     assert re.search(r'<option value="15\.1" selected>', page)
-    assert len(re.findall(r"<option [^>]*selected", page)) == 1
+    # Selected once, not under both "Common" and "All categories". (The page has
+    # other dropdowns since D-117, each with its own selection.)
+    category_select = re.search(r'<select id="category".*?</select>', page, re.S).group(0)
+    assert len(re.findall(r"<option [^>]*selected", category_select)) == 1

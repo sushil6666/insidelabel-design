@@ -24,6 +24,12 @@ def _lines(text):
     return [ln.strip() for ln in (text or "").splitlines() if ln.strip()]
 
 
+# D-117 point 7: who wrote a published version's content, besides the reviewer
+# who pressed publish. A draft pasted from a Claude session, or the agent's.
+AI_DRAFTERS = ("claude", "gemini")
+CATEGORY_SOURCES = ("pack_declared", "codex_descriptor", "reviewer")
+
+
 class ReviewService:
     def __init__(self, conninfo, engine_version):
         self.conninfo = conninfo
@@ -159,8 +165,16 @@ class ReviewService:
     def approve(self, item_id, reviewer, form):
         """
         form: name, brand, variant, barcode, ingredients (one per line),
-              allergen_statement, front_claims (one per line), category (FSSAI code), note
+              allergen_statement, front_claims (one per line), category (FSSAI code), note,
+              drafted_by (the reviewer, 'claude' or 'gemini'; default the reviewer),
+              category_source (pack_declared | codex_descriptor | reviewer; default reviewer)
         """
+        drafted_by = (form.get("drafted_by") or "").strip() or reviewer
+        if drafted_by not in (reviewer,) + AI_DRAFTERS:
+            raise ReviewError("Drafted by: yourself, Claude or Gemini.")
+        category_source = (form.get("category_source") or "").strip() or "reviewer"
+        if category_source not in CATEGORY_SOURCES:
+            raise ReviewError("Category source: from the pack, from the Codex descriptors, or your choice.")
         ingredients = _lines(form.get("ingredients"))
         if not ingredients:
             raise ReviewError("The ingredient list is empty. Transcribe it from the photo.")
@@ -227,12 +241,90 @@ class ReviewService:
                 c.execute("SELECT publish_version(%s, %s)", (vid, reviewer))
                 resolution = "published_new_version"
 
+            if resolution != "no_change":
+                # D-117: publish_version() recorded who published; this, who wrote it.
+                c.execute("""UPDATE product_versions SET drafted_by = %s, category_source = %s
+                              WHERE id = %s""", (drafted_by, category_source, vid))
             if q["correction_id"]:
                 c.execute("""UPDATE corrections SET status = %s, reviewed_by = %s, reviewed_at = now()
                               WHERE id = %s""",
                           ("rejected" if resolution == "no_change" else "accepted", reviewer, q["correction_id"]))
             self._close(c, item_id, "done", resolution, (form.get("note") or "").strip() or None, vid)
             return {"product_version_id": vid, "resolution": resolution}
+
+    # ---------------------------------------------------------------- D-117
+
+    def mark_drafted(self, item_ids, drafted_by):
+        """
+        Record who drafted versions published before `drafted_by` existed: the
+        items Sushil published on 2026-09-27 from Claude's drafts. Only versions
+        a person published and nobody has marked yet. Returns the item ids marked.
+        """
+        if drafted_by not in AI_DRAFTERS:
+            raise ReviewError(f"drafted_by is one of {', '.join(AI_DRAFTERS)}.")
+        with self._connect() as c:
+            rows = c.execute(
+                """UPDATE product_versions v SET drafted_by = %s
+                     FROM review_queue q
+                    WHERE q.id = ANY(%s) AND q.status = 'done'
+                      AND v.id = q.resolved_product_version_id
+                      AND v.drafted_by IS NULL AND v.verified_by IS DISTINCT FROM 'agent'
+                RETURNING q.id""", (drafted_by, list(item_ids))).fetchall()
+        return sorted(r["id"] for r in rows)
+
+    def save_draft(self, item_id, *, drafter, model, prompt_version, build, model_raw, draft, checks,
+                   outcome, error, mode):
+        """Store one agent draft (never edited afterwards) and return it."""
+        with self._connect() as c:
+            return c.execute(
+                """INSERT INTO review_drafts (review_item_id, drafter, model, prompt_version, build,
+                                              model_raw, draft, checks, outcome, error, mode)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING *""",
+                (item_id, drafter, model, prompt_version, build, model_raw, Jsonb(draft), Jsonb(checks),
+                 outcome, error, mode)).fetchone()
+
+    def items_to_draft(self, prompt_version, limit=5, include_decided=False):
+        """
+        Queue items the agents should draft: in scope (checker.IN_SCOPE_KINDS),
+        open (or, for the shadow measurement, already decided by a person), and
+        with no draft yet from this prompt version. Oldest first.
+        """
+        from insidelabel.review.checker import IN_SCOPE_KINDS
+        with self._connect() as c:
+            rows = c.execute(
+                """SELECT q.id FROM review_queue q
+                    WHERE q.kind = ANY(%s)
+                      AND (q.status IN ('open', 'claimed') OR (%s AND q.status IN ('done', 'rejected')))
+                      AND NOT EXISTS (SELECT 1 FROM review_drafts d
+                                       WHERE d.review_item_id = q.id AND d.prompt_version = %s)
+                    ORDER BY q.created_at, q.id LIMIT %s""",
+                (list(IN_SCOPE_KINDS), include_decided, prompt_version, limit)).fetchall()
+        return [r["id"] for r in rows]
+
+    def decided_with_drafts(self):
+        """
+        Items a person decided that also have an agent draft: the shadow
+        measurement's set (D-117 point 4). The newest draft per item, and what
+        the person published (or that they rejected it).
+        """
+        with self._connect() as c:
+            return c.execute(
+                """SELECT DISTINCT ON (q.id)
+                          q.id, q.status, q.claimed_by, d.draft, d.outcome, d.checks, d.prompt_version,
+                          v.ingredients, v.front_claims, v.drafted_by, k.code AS category
+                     FROM review_queue q
+                     JOIN review_drafts d ON d.review_item_id = q.id AND d.outcome <> 'error'
+                     LEFT JOIN product_versions v ON v.id = q.resolved_product_version_id
+                     LEFT JOIN products p ON p.id = v.product_id
+                     LEFT JOIN categories k ON k.id = p.category_id
+                    WHERE q.status IN ('done', 'rejected') AND q.claimed_by IS DISTINCT FROM 'agent'
+                    ORDER BY q.id, d.created_at DESC, d.id DESC""").fetchall()
+
+    def latest_draft(self, item_id):
+        """The newest agent draft for an item, or None."""
+        with self._connect() as c:
+            return c.execute("""SELECT * FROM review_drafts WHERE review_item_id = %s
+                                 ORDER BY created_at DESC, id DESC LIMIT 1""", (item_id,)).fetchone()
 
     # ---------------------------------------------------------------- helpers
 

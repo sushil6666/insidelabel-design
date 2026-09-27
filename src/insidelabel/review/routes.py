@@ -137,7 +137,25 @@ def item(request: Request, item_id: int, name: str = Depends(reviewer), error: s
         "ingredients": "\n".join(ingredients),
         "allergen_statement": (v or {}).get("allergen_statement") or "",
         "front_claims": "\n".join((v or {}).get("front_claims") or []),
+        "note": "",
+        "drafted_by": name,
+        "category_source": "reviewer",
     }
+    # D-117: an agent draft, when there is one, fills the form in; its checks
+    # are shown above it, so a review is a correction, not a blank form.
+    draft = SERVICE.latest_draft(item_id)
+    if draft and draft["outcome"] != "error" and data["item"]["status"] in ("open", "claimed"):
+        dd = draft["draft"]
+        form.update({
+            "name": dd.get("name") or form["name"], "brand": dd.get("brand") or form["brand"],
+            "variant": dd.get("variant") or "", "barcode": dd.get("barcode") or form["barcode"],
+            "category": dd.get("category") or form["category"],
+            "ingredients": "\n".join(dd.get("ingredients") or []) or form["ingredients"],
+            "allergen_statement": dd.get("allergen_statement") or "",
+            "front_claims": "\n".join(dd.get("front_claims") or []),
+            "note": dd.get("note") or "", "drafted_by": "gemini",
+            "category_source": dd.get("category_source") or "codex_descriptor",
+        })
     raw = (v or {}).get("raw_extraction") or {}
     verdict = engine.analyze(", ".join(ingredients)) if ingredients else None
     # D-106: where the item's photos came from (camera or upload), as the app said.
@@ -146,7 +164,7 @@ def item(request: Request, item_id: int, name: str = Depends(reviewer), error: s
                  verdict=verdict, raw=raw, reliability=raw.get("_reliability") or {},
                  diff=_diff(data["current"]["ingredients"], ingredients) if data["current"] else None,
                  mine=data["item"]["status"] == "claimed" and data["item"]["claimed_by"] == name,
-                 correction=corr, categories=SERVICE.categories(), common=COMMON)
+                 correction=corr, categories=SERVICE.categories(), common=COMMON, draft=draft)
 
 
 @router.post("/item/{item_id}/claim")

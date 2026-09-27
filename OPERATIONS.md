@@ -215,6 +215,59 @@ il tools/repro.py show <id>                 # a report's timeline and a replay (
 
 `reader` should say `cloud_vision`. `tesseract` means the Vision key was refused (§6).
 
+### The review agents (D-117), in shadow
+
+Gemini drafts each new queue item (category, ingredients, claims, note); a rules checker confirms
+it against Cloud Vision's text or sends it to a person. **Shadow mode: nothing is published.** The
+draft fills in the form on `/review`, with the failed checks listed above it. The form also asks
+**who drafted** the record (you, Claude or Gemini) and **where the category came from**.
+
+**Once, after the build with migration 015 is live** (`update.sh` applies the migration):
+
+```bash
+sudo cp /opt/insidelabel/app/deploy/systemd/insidelabel-review-agent.* /etc/systemd/system/
+sudo systemctl daemon-reload
+```
+
+**Record who drafted items published before the column existed** (the 2026-09-27 run was
+drafted by Claude). List them, then mark by item number:
+
+```bash
+sudo -u insidelabel psql -d insidelabel -c "SELECT q.id, p.name, q.resolved_at::date
+  FROM review_queue q JOIN product_versions v ON v.id = q.resolved_product_version_id
+  JOIN products p ON p.id = v.product_id WHERE q.status = 'done' ORDER BY q.id"
+il tools/review_agent.py mark-drafted --by claude 3 4 5      # the item numbers
+```
+
+**Drafting costs one paid Gemini call per item** (about as much as a scan):
+
+```bash
+sudo systemctl start insidelabel-review-agent                  # draft up to 5 open items now
+journalctl -u insidelabel-review-agent -n 20 --no-pager        # item N: confirmed / needs_person (checks)
+sudo systemctl enable --now insidelabel-review-agent.timer     # every 10 minutes from now on
+sudo systemctl disable --now insidelabel-review-agent.timer    # stop
+```
+
+Draft items you already decided, for the measurement (paid; the agent needs the Gemini key,
+which only systemd can read, hence `systemd-run`):
+
+```bash
+sudo systemd-run --wait --pipe --quiet -p User=insidelabel -p WorkingDirectory=/opt/insidelabel/app \
+  -p EnvironmentFile=/etc/insidelabel/settings.env -p EnvironmentFile=/etc/insidelabel/secrets.env \
+  /opt/insidelabel/venv/bin/python tools/review_agent.py run --include-decided --limit 20
+```
+
+**Look and measure** (free):
+
+```bash
+il tools/review_agent.py show 12        # an item's newest draft and every check
+il tools/review_agent.py measure        # drafts against your decisions: the D-117 gate
+```
+
+Publishing switches on only when `measure` says **PASSES** (at least 30 of your reviews, 95 %
+agreement on category and ingredients, none confirmed-but-corrected), and after the publish step
+is built (undo, and a list of agent-published items).
+
 ### Backups
 
 ```bash

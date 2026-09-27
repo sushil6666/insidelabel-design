@@ -222,6 +222,8 @@ sudo cp /opt/insidelabel/app/deploy/systemd/* /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable insidelabel insidelabel-backup.timer insidelabel-retention.timer
 sudo systemctl start insidelabel-backup.timer insidelabel-retention.timer
+# The review-agent timer (D-117) is NOT enabled here: each run is a paid Gemini call.
+# See OPERATIONS.md, "The review agents".
 
 # Install dependencies, migrate, record the build, start the app, check /health:
 sudo /opt/insidelabel/app/deploy/update.sh

@@ -1,0 +1,23 @@
+# /etc/systemd/system/insidelabel-review-agent.service (D-117)
+# Gemini drafts up to 5 open review items; the checker confirms each or sends it
+# to a person. SHADOW ONLY: drafts are stored and shown on /review, nothing is
+# published. Each draft is a paid Gemini call (about as much as a scan).
+# Run once by hand:  sudo systemctl start insidelabel-review-agent
+[Unit]
+Description=InsideLabel review agents (shadow drafts)
+After=postgresql.service
+
+[Service]
+Type=oneshot
+User=insidelabel
+Group=insidelabel
+WorkingDirectory=/opt/insidelabel/app
+# settings.env for the database and photos, secrets.env for GEMINI_API_KEY.
+EnvironmentFile=/etc/insidelabel/settings.env
+EnvironmentFile=/etc/insidelabel/secrets.env
+EnvironmentFile=-/etc/insidelabel/build.env
+ExecStart=/opt/insidelabel/venv/bin/python tools/review_agent.py run --limit 5
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes

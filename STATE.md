@@ -1,6 +1,6 @@
 # STATE.md - where InsideLabel is, and how to pick it up
 
-**Last updated:** 2026-09-27 (**https://insidelabel.ai is live**, `main` = `45f9feb`, PR #18; branch `live`: notes from the deploy) · **Owner:** Sushil · **Tests:** 488 passing, 8 skipped, 1 expected failure · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 5.7 s on the live server (2026-09-27), Gemini + Cloud Vision, `verdict`
+**Last updated:** 2026-09-27 (**https://insidelabel.ai is live**, `main` = `45f9feb`, PR #18; branch `live`: notes from the deploy) · **Owner:** Sushil · **Tests:** 510 passing, 8 skipped, 1 expected failure · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 5.7 s on the live server (2026-09-27), Gemini + Cloud Vision, `verdict`
 
 This is the living status document. Read it first in any new session, then
 `DECISIONS.md` for the *why*. Update the "Last updated" line, the numbers and
@@ -724,7 +724,16 @@ from all regions and emails Sushil after 60 s of failure (OPERATIONS.md §5). Fr
       confirm; if any ambiguity then human will review"; drafter Gemini). Gemini drafts every new
       item; a rules checker confirms against Cloud Vision's text; anything doubtful goes to Sushil
       with the draft filled in. Shadow first; publishing switches on after 30 of Sushil's reviews
-      agree at 95 %. Remaining queue items (about 38) wait for it. Accepted; being built.
+      agree at 95 %. Remaining queue items (about 38) wait for it. **Phase A built** (branch
+      `review-agents`): migration 015 (`drafted_by`, `category_source`, `review_drafts`); the
+      drafter (`review/agent.py`, prompt `review/draft_prompt.py`); the checker (`review/checker.py`,
+      15 checks, word table `data/category_words.json`); the item page shows the draft and fills
+      the form; "Drafted by" and "Category came from" on every publish; `tools/review_agent.py`
+      (run, show, measure, mark-drafted); a shadow timer, **not enabled** (paid). 21 tests; no paid
+      call made. **Next (Sushil):** merge, `update.sh`, copy the new units, mark the 2026-09-27
+      items `--by claude`, then agree to the first paid drafting run (OPERATIONS.md §5).
+      **Phase B, before publishing:** the agent publishing through `approve()`, one-click undo, the
+      agent-published list for spot checks.
 6. Then the DPDP data map, and the other items below (invites only after the privacy page and the
    DPDP review).
 
@@ -822,6 +831,7 @@ drop PG18 after PG19 GA.
 | `API_README.md` | endpoints, database, reviewer screen, regulator comparison |
 | `RUNBOOK.md` | how to photograph, transcribe and score a gold batch |
 | `CLAUDE.md` | working rules for AI coding sessions |
+| `src/insidelabel/review/agent.py`, `checker.py`, `draft_prompt.py`, `tools/review_agent.py` | the review agents (D-117): Gemini drafts, the rules checker confirms or sends to a person; shadow mode |
 | `OPERATIONS.md` | **running the live site**: what exists on Google Cloud and where, GCP words in plain language, everyday commands, what to do when something breaks, money, security rules, the log of 2026-09-27 |
 | `DEPLOY.md`, `deploy/` | the server (D-114): step-by-step setup, Caddy, systemd units, backup/restore/update scripts, settings templates |
 | `src/insidelabel/` | the package (core, extraction, reliability, claims, lenses, db, review, api) + `trace.py` / `repro.py` (D-092); OCR readers in `extraction/providers/` (`cloud_vision.py`, `ocr_check.py`) |

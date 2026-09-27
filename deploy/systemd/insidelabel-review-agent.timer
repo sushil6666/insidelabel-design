@@ -1,0 +1,12 @@
+# /etc/systemd/system/insidelabel-review-agent.timer (D-117): every 10 minutes,
+# drafts whatever new items arrived. NOT enabled by DEPLOY.md step 8: switch it
+# on only once Sushil has agreed to the paid drafting runs (OPERATIONS.md §5).
+[Unit]
+Description=Draft new InsideLabel review items every 10 minutes (shadow)
+
+[Timer]
+OnCalendar=*:0/10
+Persistent=false
+
+[Install]
+WantedBy=timers.target
