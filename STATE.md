@@ -732,6 +732,10 @@ from all regions and emails Sushil after 60 s of failure (OPERATIONS.md §5). Fr
       (run, show, measure, mark-drafted); a shadow timer, **not enabled** (paid). 21 tests; no paid
       call made. **Next (Sushil):** merge, `update.sh`, copy the new units, mark the 2026-09-27
       items `--by claude`, then agree to the first paid drafting run (OPERATIONS.md §5).
+      **Timer switched on by Sushil 2026-09-27** ("Automatic", for the 50-pack day): drafts up to
+      5 new items every 10 minutes, about 50 paise each, shadow only. Each item is drafted once per
+      prompt version (a failed draft is stored as `error`, never retried). Item 13 confirmed after the
+      panel-word fix (PR #31); 12, 13 and 15 are the first agreements toward the 30-item gate.
       **Phase B, before publishing:** the agent publishing through `approve()`, one-click undo, the
       agent-published list for spot checks.
       **First shadow run, 2026-09-27 16:57 (paid, 5 items, 12 to 16): all five "needs a person".**
