@@ -232,8 +232,10 @@ def _findings(verdict, sure=True):
         (worth if f["concern"] in ("moderate", "high") else ordinary).append(item)
     worth.sort(key=lambda i: i["concern"] != "high")
     if nova:
-        # Table names, not tokens: a token can be a fragment like "flavours (natural".
-        names = list(dict.fromkeys(f["matched_as"].removeprefix("NOVA marker: ").lower() for f in nova))
+        # D-115: the pack's words (label_term), never the table row's name, which
+        # is a category and would show words the label doesn't say. The row name
+        # stays in "technical", marked as ours.
+        names = list(dict.fromkeys(f.get("label_term") or f["ingredient"] for f in nova))
         worth.append({
             "name": "Industrial ingredients",
             "label_text": ", ".join(names),

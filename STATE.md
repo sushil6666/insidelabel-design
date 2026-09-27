@@ -1,6 +1,6 @@
 # STATE.md - where InsideLabel is, and how to pick it up
 
-**Last updated:** 2026-09-27 (**https://insidelabel.ai is live**, `main` = `45f9feb`, PR #18; branch `live`: notes from the deploy) · **Owner:** Sushil · **Tests:** 379 passing, 1 skipped · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 5.7 s on the live server (2026-09-27), Gemini + Cloud Vision, `verdict`
+**Last updated:** 2026-09-27 (**https://insidelabel.ai is live**, `main` = `45f9feb`, PR #18; branch `live`: notes from the deploy) · **Owner:** Sushil · **Tests:** 482 passing, 8 skipped · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 5.7 s on the live server (2026-09-27), Gemini + Cloud Vision, `verdict`
 
 This is the living status document. Read it first in any new session, then
 `DECISIONS.md` for the *why*. Update the "Last updated" line, the numbers and
@@ -604,7 +604,13 @@ one invite (Sushil's own), and **one real scan from the phone**: `verdict`, 5.7 
      acceptable; rotate it if preferred.
    - Walk the rest of the app on the phone (profiles, compare, report a mistake, report a problem):
      the manual gate in §11.
-2. Then the DPDP data map, and the other items below (invites only after the privacy page and the
+2. **D-115 RECOMMENDED, built** (branch `nova-label-words`): the first live scan's headline and
+   "On the label" quote showed our table's row name ("added flavour (natural/artificial/
+   nature-identical)"), not the pack's words. Now both use the words as read; which row matches,
+   and every verdict, is unchanged. 103 new tests (82 fail on the old code); the six gold labels'
+   headlines unchanged, their quotes now the pack's words. **Sushil: accept, merge, then
+   `sudo /opt/insidelabel/app/deploy/update.sh` on the server.** Before invites.
+3. Then the DPDP data map, and the other items below (invites only after the privacy page and the
    DPDP review).
 
 **Earlier list (2026-09-27), still valid:**
