@@ -259,6 +259,11 @@ sudo systemctl enable --now insidelabel-review-agent.timer     # every 10 minute
 sudo systemctl disable --now insidelabel-review-agent.timer    # stop
 ```
 
+The timer is **on** since 2026-09-27 (Sushil). Each item is drafted once per prompt version,
+failed drafts included, so it never pays twice for one item; the most it spends is 5 drafts
+every 10 minutes, and only while new packs are waiting. `systemctl list-timers
+insidelabel-review-agent.timer` shows the next run.
+
 Draft items you already decided, for the measurement (paid; the agent needs the Gemini key,
 which only systemd can read, hence `systemd-run`):
 
