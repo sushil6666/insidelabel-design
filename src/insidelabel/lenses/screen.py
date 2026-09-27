@@ -63,6 +63,9 @@ RETAKE = {
                                   "phone steady, fill the frame with the list and avoid glare.",
 }
 RETAKE.update({
+    # D-118: a new pack, and our second reader couldn't confirm the ingredient list.
+    "independent_read_failed": "We need one clearer photo of the ingredient list to add this pack. "
+                               "Hold it flat and close, without glare.",
     # D-103: not a pack at all. Named plainly; no tips about light or focus.
     "back_is_a_screen": "This looks like a photo of a screen. Photograph the pack itself: we only read "
                         "labels from real packs, so a website or app picture can't be used.",
@@ -73,6 +76,8 @@ RETAKE.update({
 HEADLINE = {
     "back_is_a_screen": "This is a photo of a screen, not a pack.",
     "not_a_food_pack": "This doesn't look like a food pack.",
+    # D-118: we read the label, but a second reader couldn't confirm the list.
+    "independent_read_failed": "One clearer photo, please.",
 }
 NOT_A_PACK = ("back_is_a_screen", "not_a_food_pack")
 # When a front was sent too, say which photo is the problem: the front may be a

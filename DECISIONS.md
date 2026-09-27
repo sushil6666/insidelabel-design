@@ -1483,9 +1483,10 @@ The shadow measurement (point 4) is then reported per drafter.
 privacy page); letting the agents handle reports or send-to-us; publishing without the shadow
 measurement.
 
-### D-118 · A new pack whose ingredient list Cloud Vision can't confirm: ask for a clearer photo before the result `RECOMMENDED` (2026-09-27)
+### D-118 · A new pack whose ingredient list Cloud Vision can't confirm: ask for a clearer photo before the result `LOCKED` (2026-09-27)
 Direction from Sushil after the first shadow run ("14 needs a new photo; should come while photo
-taken"); choice of "ask before the result" by Sushil; details by Claude.
+taken"); choice of "ask before the result" by Sushil; details by Claude. **Accepted by Sushil
+2026-09-27** ("accepted").
 
 **Why.** Review item 14 reached the review agents with an ingredient list only Gemini had read:
 Cloud Vision's text of the same photo held no ingredient list, so nothing independent could check

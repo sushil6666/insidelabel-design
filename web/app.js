@@ -21,8 +21,10 @@ let navSeq = 0;               // async views check this so a late result can't r
 // The scan in progress: barcode (if read), photos, and how many times it was refused
 // (with the refused scans' ids, for "Send it to us", D-070).
 // frontWanted: offer the front photo (D-100); off for a re-check of a pack whose front is on file.
+// acceptUnconfirmed: "use this one anyway" after a request for a clearer photo (D-118).
 let pending = { barcode: null, barcodeSource: null, back: null, front: null, backSource: null,
-                frontSource: null, pairing: false, attempts: 0, refused: [], frontWanted: true };
+                frontSource: null, pairing: false, attempts: 0, refused: [], frontWanted: true,
+                acceptUnconfirmed: false };
 
 // ------------------------------------------------------------------ navigation
 const routes = {
@@ -403,7 +405,8 @@ function nextRef(list) {
 // ------------------------------------------------------------------ scan: barcode first (D-024)
 function resetPending() {
   pending = { barcode: null, barcodeSource: null, back: null, front: null, backSource: null,
-              frontSource: null, pairing: false, attempts: 0, refused: [], frontWanted: true };
+              frontSource: null, pairing: false, attempts: 0, refused: [], frontWanted: true,
+              acceptUnconfirmed: false };
 }
 
 async function scan() {
@@ -682,10 +685,17 @@ function result(id) {
       el("p", { class: "card warn" }, s.retake),
       button("Retake the photo", () => {
         pending.back = null;
+        pending.acceptUnconfirmed = false;
         // D-108: after "these look like different packs", neither photo can be trusted.
         if (s.headline?.source?.ref === "product_mismatch") { pending.front = null; pending.pairing = false; }
         go("photo");
       }, "primary"),
+      // D-118: our second reader couldn't confirm a new pack's list. The person
+      // can still have their result from these photos.
+      s.can_use_anyway && pending.back && button("Use this one anyway", () => {
+        pending.acceptUnconfirmed = true;
+        sendPhotos();
+      }),
       pending.attempts >= 2 && s.can_send !== false && el("p", { class: "muted" },
         "Still not working? Try daylight, or another pack. Some labels are printed too small or too shiny to read."),
       // D-070: after two refusals, a person reads the photos instead.

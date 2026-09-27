@@ -162,6 +162,23 @@ class Store:
                            WHERE fq.kind = 'front_photo' AND fq.product_version_id = v.id
                              AND fq.status IN ('open', 'claimed')) AS front_wanted"""
 
+    def adds_version(self, barcode, ingredients):
+        """
+        Would save_scan() add a catalogue version for this pack (a new product
+        or a reformulation), rather than match the published version or one
+        already waiting? Read-only; D-118 asks for a clearer photo only then.
+        """
+        ihash = ingredients_hash(ingredients)
+        with self._connect() as conn:
+            product = conn.execute("SELECT id FROM products WHERE barcode = %s", (barcode,)).fetchone()
+            if product is None:
+                return True
+            same = conn.execute(
+                """SELECT 1 FROM product_versions
+                    WHERE product_id = %s AND ingredients_hash = %s
+                      AND (is_current OR status = 'pending_review')""", (product["id"], ihash)).fetchone()
+            return same is None
+
     def find_current(self, barcode):
         """The published, current version for a barcode, or None (D-024)."""
         with self._connect() as conn:

@@ -215,6 +215,17 @@ il tools/repro.py show <id>                 # a report's timeline and a replay (
 
 `reader` should say `cloud_vision`. `tesseract` means the Vision key was refused (§6).
 
+**D-118, "One clearer photo, please":** a new pack whose list Cloud Vision can't confirm is asked
+for one clearer photo before the result. How often, and how often people chose "Use this one
+anyway" (watch it: if testers meet it often, revisit):
+
+```bash
+sudo -u insidelabel psql -d insidelabel -c "SELECT created_at::date AS day,
+  count(*) FILTER (WHERE error_code = 'independent_read_failed') AS asked,
+  count(*) FILTER (WHERE (request->>'accept_unconfirmed')::boolean) AS used_anyway,
+  count(*) AS scans FROM scans GROUP BY 1 ORDER BY 1 DESC LIMIT 14"
+```
+
 ### The review agents (D-117), in shadow
 
 Gemini drafts each new queue item (category, ingredients, claims, note); a rules checker confirms

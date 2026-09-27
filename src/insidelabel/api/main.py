@@ -54,6 +54,7 @@ from insidelabel.lenses import compare as shelf  # noqa: E402
 from insidelabel.lenses import regulators  # noqa: E402
 from insidelabel.lenses import screen as result_screen  # noqa: E402
 from insidelabel.reliability import gates as rel  # noqa: E402
+from insidelabel.review import checker as review_checker  # noqa: E402
 from insidelabel.extraction.providers import cloud_vision  # noqa: E402
 from insidelabel.extraction.providers import gemini  # noqa: E402
 from insidelabel.extraction.providers import ocr_check  # noqa: E402
@@ -980,6 +981,7 @@ async def scan(
     device_id: Optional[str] = Form(None, examples=[""], description="Anonymous install id (UUID). No personal data."),
     profiles: Optional[str] = Form(None, examples=[""],
                                    description='JSON [{"ref","age","avoid"}], up to 3. No names (D-074).'),
+    accept_unconfirmed: bool = Form(False, description="D-118: 'use this one anyway' after a clearer-photo request."),
 ):
     """
     barcode -> reviewed catalogue entry, else images -> Gemini -> engine -> claim check.
@@ -1057,7 +1059,8 @@ async def scan(
                     "avoid": avoid_codes if avoid is not None else None,
                     "profiles": people, "pairing_confirmed": pairing_confirmed,
                     "compare_regulators": compare_regulators,
-                    "images": [r for _d, _m, r in images], "replay": replay is not None},
+                    "images": [r for _d, _m, r in images], "replay": replay is not None,
+                    "accept_unconfirmed": accept_unconfirmed},
         "timings": {},
     }
 
@@ -1290,6 +1293,32 @@ async def scan(
                  front_key=keys.get("front"), back_key=keys.get("back"), trace=tr)
         raise
     verdict = engine.analyze(raw)
+
+    # D-118: a pack this scan would add to the catalogue, whose ingredient list
+    # Cloud Vision can't confirm, gets one request for a clearer photo, before
+    # the result, while it is still in hand. "Use this one anyway" goes on.
+    # Only when Cloud Vision read the photo: no independent read, nothing to fail.
+    ocr_text = ((tr.get("ocr") or {}).get("back") or {})
+    if (barcode and STORE and not accept_unconfirmed and ocr_text.get("reader") == "cloud_vision"
+            and (ocr_text.get("text") or "").strip()
+            and not review_checker.independent_read_confirmed(
+                vision["ingredients"], ocr_text["text"], vision.get("allergen_statement"))
+            and _persist(STORE.adds_version, barcode, vision["ingredients"])):
+        reliability["error"] = "independent_read_failed"
+        scan_id = _persist(STORE.record_failed_scan, "refused", error_code="independent_read_failed",
+                           device_id=device_id, latency_ms=_ms(t0), front_key=keys.get("front"),
+                           back_key=keys.get("back"), trace=tr)
+        screen = result_screen.build(
+            verdict=None, display=None, claim_check=None, extracted=None, reliability=reliability,
+            profiles=people, allergen_confidence=0.0, allergen_reliable=False,
+            has_barcode=True, photos_sent=[r for _d, _m, r in images])
+        screen["can_use_anyway"] = True
+        return JSONResponse(status_code=422, content={
+            "allergens": allergen_block(avoid_codes, [], None, reliable=False, who=who),
+            "screen": screen, "scan_id": _str(scan_id), "request_id": tr["request_id"],
+            "verdict": None, "product": vision.get("product"), "reliability": reliability,
+            "engine_version": ENGINE_VERSION,
+        })
 
     # D-072: allergen output needs a reliable scan AND a complete list AND
     # ingredient confidence >= 0.95. The general gate's reasoning about
