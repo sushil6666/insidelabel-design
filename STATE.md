@@ -1,6 +1,6 @@
 # STATE.md - where InsideLabel is, and how to pick it up
 
-**Last updated:** 2026-09-26 (`main` = `1230699`: D-109 to D-112 locked, built and merged, PRs #14, #15) · **Owner:** Sushil · **Tests:** 375 passing, 1 skipped · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 6.9 s, Gemini + Cloud Vision, correct
+**Last updated:** 2026-09-27 (`main` = `32ff63a`, PR #17 merged; branch `hosting`: D-114 recommended) · **Owner:** Sushil · **Tests:** 375 passing, 1 skipped · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 6.9 s, Gemini + Cloud Vision, correct
 
 This is the living status document. Read it first in any new session, then
 `DECISIONS.md` for the *why*. Update the "Last updated" line, the numbers and
@@ -549,6 +549,10 @@ Nothing was blocked; all five items were built. These need you:
 - **D-053** premium pricing - ₹399-499/year recommended.
 - ~~**D-054** the "100% ATTA" ruling~~ ✅ decided 2026-09-25: about the flour, no finding.
 - **D-082** what Premium is for - interviews only.
+- **D-114** (RECOMMENDED 2026-09-27) hosting: one AWS Lightsail server in Mumbai (2 GB, 2 vCPU,
+  Ubuntu 24.04), Caddy + one uvicorn + PostgreSQL 18, photos on disk until R2; DNS for both domains
+  on Cloudflare (proxy off at first; `.in` stays at GoDaddy with Cloudflare nameservers); later
+  steps each wait for their own signal. Waiting for Sushil's "accepted"; then `deploy/` + `DEPLOY.md`.
 - **D-113** (LOCKED 2026-09-27) a Pro chatbot, "ask about this pack", personalised with age band and
   avoid list; explains, never judges (D-004). Supersedes D-001's "not a chatbot". Not built. Open:
   when to build it (D-113 says after W4, per D-083; Sushil wants it to sell subscriptions).
@@ -569,7 +573,10 @@ setup alarms.
 
 **NEXT SESSION STARTS HERE (Sushil, 2026-09-27): host `insidelabel.ai` first, then the rest.**
 
-1. **Hosting, first and only until it is live.** Ask Sushil which host (suggested: one small
+1. **Hosting, first and only until it is live.** 2026-09-27: host chosen, **AWS Lightsail, Mumbai**
+   (Cloudflare checked and can't run the app or the database: see D-114); `insidelabel.ai` is
+   registered at Cloudflare, `insidelabel.in` at GoDaddy. **D-114 RECOMMENDED** on branch `hosting`;
+   after "accepted", `deploy/` + `DEPLOY.md`, then the deploy. Was: ask Sushil which host (suggested: one small
    Ubuntu VPS in Mumbai, 2 GB). Record **D-114** (host; PostgreSQL 18 on the server until 19 is
    released, changing D-087; photos on the server disk until R2 is built; `insidelabel.ai` main,
    `insidelabel.in` and `www.` redirect). Write `deploy/` + `DEPLOY.md` (Caddy HTTPS, systemd one
