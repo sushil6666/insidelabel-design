@@ -132,7 +132,10 @@ def tokenize(raw):
 
     # A spaced "&" separates entries: "PRESERVATIVES (282 & 202)". An
     # unspaced one is part of a name ("fd&c yellow 5") and is left alone.
-    parts = re.split(r"[,;.\n]|\s+&\s+", raw)
+    # A full stop ends an entry, but not a decimal point between two digits:
+    # "58.3%" and "0.504g" are amounts, and splitting them left fragments such
+    # as "wheat flour 58" that D-115 would show as the label's words.
+    parts = re.split(r"[,;\n]|(?<!\d)\.|\.(?!\d)|\s+&\s+", raw)
     tokens = []
 
     for p in parts:

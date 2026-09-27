@@ -1,6 +1,6 @@
 # STATE.md - where InsideLabel is, and how to pick it up
 
-**Last updated:** 2026-09-27 (**https://insidelabel.ai is live**, `main` = `45f9feb`, PR #18; branch `live`: notes from the deploy) · **Owner:** Sushil · **Tests:** 482 passing, 8 skipped · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 5.7 s on the live server (2026-09-27), Gemini + Cloud Vision, `verdict`
+**Last updated:** 2026-09-27 (**https://insidelabel.ai is live**, `main` = `45f9feb`, PR #18; branch `live`: notes from the deploy) · **Owner:** Sushil · **Tests:** 488 passing, 8 skipped, 1 expected failure · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 5.7 s on the live server (2026-09-27), Gemini + Cloud Vision, `verdict`
 
 This is the living status document. Read it first in any new session, then
 `DECISIONS.md` for the *why*. Update the "Last updated" line, the numbers and
@@ -617,12 +617,18 @@ one invite (Sushil's own), and **one real scan from the phone**: `verdict`, 5.7 
    packs stay out of the catalogue; the reviewer rejects them with the D-116 reason. Item 2 was
    **rejected** on the live server with the D-116 reason. The user-facing note for such packs is a
    separate proposal, not built.
-4. **Tokenizer bug found on the same pack (not fixed yet):** `core/tokenize.py` splits at every
-   decimal point, so "Natural Mint Flavour 0.010g" becomes "natural mint flavour 0" and "Wheat flour
-   (Atta) 58.3%" becomes "wheat flour 58" + "atta". Older than today (gold-set verdicts are still
-   right), but since D-115 shows the ingredient as read, a fragment like "natural mint flavour 0"
-   can reach the headline. Fix before invites, with tests and a gold-set re-run (D-099: the one
-   INS parser lives there).
+4. **Decimal-point split: FIXED** (branch `decimal-split`, not yet merged): `core/tokenize.py` split at
+   every ".", so "Natural Mint Flavour 0.010g" became "natural mint flavour 0" and "58.3%" became
+   "58" + a fragment. A full stop now splits only when it isn't between two digits. Gold set and
+   recorded readings: every band, score, verdict and flag identical; `eval_vision.py` identical
+   (ingredient F1 0.945, INS F1 1.000, 0 flips). **Sushil: merge, then `update.sh` on the server,
+   ideally before today's 50 scans are reviewed.**
+   **Known, older, not fixed:** an amount after a name *without* brackets ("Sugar 25.5%") stops the
+   exact match, so that sugar isn't counted (score 88 instead of 80). Fixing it changes judgements on
+   real packs, so it needs its own check against the gold set and Sushil's decision; pinned as an
+   expected failure in `tests/test_tokenize_decimals.py`. Today's scans will show how common it is.
+   **Also:** the server's catalogue starts fresh; the 5 products on the laptop's database are not
+   moved (Sushil re-scans, which also gets their barcodes).
 5. Then the DPDP data map, and the other items below (invites only after the privacy page and the
    DPDP review).
 
