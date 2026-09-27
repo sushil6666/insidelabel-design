@@ -611,11 +611,11 @@ one invite (Sushil's own), and **one real scan from the phone**: `verdict`, 5.7 
    and every verdict, is unchanged. 103 new tests (82 fail on the old code); the six gold labels'
    headlines unchanged, their quotes now the pack's words. **Sushil: merge, then
    `sudo /opt/insidelabel/app/deploy/update.sh` on the server.** Before invites.
-3. **D-116 RECOMMENDED** (branch `ayush-products`): review item 2 on the live server (ORGANIC INDIA
+3. **D-116 LOCKED 2026-09-27**: review item 2 on the live server (ORGANIC INDIA
    Tulsi Mulethi) carries only an Ayurvedic medicine licence, no FSSAI licence. The FSS Act 2006
    s.3(1)(j) (read from FSSAI's copy) excludes "drugs and medicinal products" from "food", so such
-   packs stay out of the catalogue; the reviewer rejects them with the D-116 reason. Item 2 is
-   **put back in the queue** until Sushil accepts. The user-facing note for such packs is a
+   packs stay out of the catalogue; the reviewer rejects them with the D-116 reason. Item 2 was
+   **rejected** on the live server with the D-116 reason. The user-facing note for such packs is a
    separate proposal, not built.
 4. **Tokenizer bug found on the same pack (not fixed yet):** `core/tokenize.py` splits at every
    decimal point, so "Natural Mint Flavour 0.010g" becomes "natural mint flavour 0" and "Wheat flour

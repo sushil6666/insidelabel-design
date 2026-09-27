@@ -4,7 +4,7 @@ Architectural and product decisions for InsideLabel, with the reasoning attached
 Append-only. When a decision is reversed, mark it `SUPERSEDED` and add a new entry
 rather than editing the old one - the history is the point.
 
-**Last updated:** 2026-09-27 (D-102 to D-113 locked; D-001's chatbot clause superseded; D-114 hosting and D-115 marker wording locked)
+**Last updated:** 2026-09-27 (D-102 to D-113 locked; D-001's chatbot clause superseded; D-114 hosting, D-115 marker wording and D-116 AYUSH packs locked)
 
 **Status key:** `LOCKED` decided, don't relitigate · `OPEN` not yet decided ·
 `RECOMMENDED` proposed but not accepted · `SUPERSEDED` replaced
@@ -1368,11 +1368,12 @@ names carry words a pack may not say:
   and the technical line), or changing what the rows match (a separate question: today "stevia",
   "sucralose" and "interesterified vegetable fat" match no marker row).
 
-### D-116 · A pack licensed only as an AYUSH medicine is not food: it stays out of the catalogue `RECOMMENDED` (2026-09-27)
+### D-116 · A pack licensed only as an AYUSH medicine is not food: it stays out of the catalogue `LOCKED` (2026-09-27)
 Found by Sushil and Claude reviewing the first live item (review item 2 on the server,
 ORGANIC INDIA Tulsi Mulethi, barcode 0801541605019, 2026-09-27). Its back prints "Ayurvedic
 Medicine Mfg. Lic. No. A-2755" and "Certified Organic as per NPOP"; Sushil checked the whole
-pack: **no FSSAI logo or licence number anywhere**.
+pack: **no FSSAI logo or licence number anywhere**. **Accepted by Sushil 2026-09-27** by rejecting
+item 2 on this ground ("done. rejected").
 
 **The law, read from the primary text** (Food Safety and Standards Act 2006, section 3(1)(j),
 FSSAI's own copy, fssai.gov.in/upload/uploadfiles/files/FOOD-ACT.pdf, read 2026-09-27): "food"
