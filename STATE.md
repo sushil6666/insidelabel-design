@@ -590,6 +590,8 @@ one invite (Sushil's own), and **one real scan from the phone**: `verdict`, 5.7 
 **Reboot test, 2026-09-27 09:13 UTC** (the kernel from the morning's upgrade): the site was down under
 a minute and every service came back by itself (app, Caddy, PostgreSQL, both timers). Five tester
 invites made on the server, labelled T01 to T05 (codes not recorded here).
+**Uptime check** (2026-09-27): Cloud Monitoring checks `https://insidelabel.ai/health` every 5 minutes
+from all regions and emails Sushil after 60 s of failure (OPERATIONS.md §5). Free at this size.
 
 1. **Loose ends from the deploy (Sushil):**
    - **Billing:** confirm the account is upgraded from the free trial to paid with automatic payment
