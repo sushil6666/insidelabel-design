@@ -745,6 +745,10 @@ from all regions and emails Sushil after 60 s of failure (OPERATIONS.md §5). Fr
       earlier advice for item 11 (Candzey, 5.2.1) used that same wrong reasoning:** check whether
       it is a hard or a chewy sweet; if chewy, 5.2.2. After deploying: `recheck 12 13 14 15 16`
       (free) shows what the tuned checker makes of the same answers.
+      **Recheck after tuning (free):** 12 and 15 confirmed, and Sushil published both unchanged (the
+      first two agreements for the D-117 gate); 14 and 16 rightly still need a person; 13 still
+      fails `nothing_lost` (to look at: `show 13`). **D-118 RECOMMENDED:** ask for a clearer photo
+      at scan time when Cloud Vision can't confirm a new pack's list (Sushil: before the result).
 6. Then the DPDP data map, and the other items below (invites only after the privacy page and the
    DPDP review).
 

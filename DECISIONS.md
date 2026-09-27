@@ -1483,6 +1483,31 @@ The shadow measurement (point 4) is then reported per drafter.
 privacy page); letting the agents handle reports or send-to-us; publishing without the shadow
 measurement.
 
+### D-118 · A new pack whose ingredient list Cloud Vision can't confirm: ask for a clearer photo before the result `RECOMMENDED` (2026-09-27)
+Direction from Sushil after the first shadow run ("14 needs a new photo; should come while photo
+taken"); choice of "ask before the result" by Sushil; details by Claude.
+
+**Why.** Review item 14 reached the review agents with an ingredient list only Gemini had read:
+Cloud Vision's text of the same photo held no ingredient list, so nothing independent could check
+it, and the item needed a person and a new photo. By then the pack was back on the shelf. The
+person scanning is the only one holding the pack, so ask them, then.
+
+- **When:** a scan that would add to the catalogue (it creates a new-product or reformulation
+  version), where Cloud Vision read the back photo and the review checker's independent-read test
+  fails: its text holds no ingredient list, or words of Gemini's list aren't in it (the same logic
+  as `ingredients_in_ocr` and `nothing_lost`, shared, not copied). Packs already in the catalogue
+  are never asked. When Cloud Vision didn't run (the Tesseract fallback, D-093), nothing is asked:
+  there is no independent read to fail.
+- **What the person sees, before the result:** "We need one clearer photo of the ingredient list to
+  add this pack. Hold it flat and close, without glare." with **Retake the photo** and **Use this
+  one anyway**. Nobody is kept from a result: "Use this one anyway" shows it as today, and the review
+  item is marked that the independent read failed.
+- **Traced like any refusal** (D-092): the first attempt is stored as a scan row with its reason;
+  two failed attempts offer "Send it to us" as today (D-070).
+- **Cost:** none. Cloud Vision already reads every back photo; no extra Gemini call.
+- **Watch it:** how often it fires, and how often people choose "Use this one anyway". If testers
+  meet it often, revisit before the beta's W4 measurement (D-055).
+
 ---
 
 ## Open and pending
