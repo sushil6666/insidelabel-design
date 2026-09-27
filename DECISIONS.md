@@ -1509,6 +1509,34 @@ person scanning is the only one holding the pack, so ask them, then.
 - **Watch it:** how often it fires, and how often people choose "Use this one anyway". If testers
   meet it often, revisit before the beta's W4 measurement (D-055).
 
+### D-119 · A long ingredient list can be photographed in two or three parts, joined on the server `RECOMMENDED` (2026-09-27)
+Direction from Sushil in the shop ("BRITANNIA 50 50 Cheeze DIPPED: the ingredients written on the
+packet are lengthier as the packet is bigger; taking everything in a single photo is difficult;
+any other way, like 2 photos for ingredients?"). Design by Claude.
+
+**Why.** On a big pack the list either doesn't fit one photo, or fits only from so far away that
+the letters are too small for either reader. Today the app takes exactly one back photo.
+
+- **In the app:** after the back photo, "The list continues? Add the next part" offers up to two
+  more photos (three parts in all), with the hint "Start where the last photo ended; a little
+  overlap is fine." One part stays the normal case and looks exactly as today.
+- **On the server:** each part passes the photo checks (D-103) on its own; then the parts are
+  joined, one above the other in the order taken, into one tall image. From there nothing changes:
+  that image is the back photo for Gemini, for Cloud Vision (one read), for storage, the review
+  screen, replay (D-092) and the 30-day cleanup (D-098). The reading prompt stays frozen (D-081),
+  and a scan with one part is byte-for-byte the scan of today.
+- **Why not send the parts to Gemini separately:** it needs a change to the frozen reading prompt,
+  a full gold-set re-run, and a second back photo through storage, replay and retention: more work
+  and risk for no gain in what is read.
+- **The risk, measured before release:** words photographed twice where the parts overlap. Before
+  it ships, a few gold labels are cut into two overlapping halves and rejoined; the reading must
+  match the hand transcription as the single photo does (`eval_vision.py`, written to a scratch
+  path). That is a paid Gemini call per label, about 50 paise, asked for first. The review checker
+  and D-118 compare against Cloud Vision's text of the same joined image, so an overlap that
+  confuses the reading is caught there too.
+- **Limits:** three parts; each part the size the app already sends; the joined image is shrunk if
+  it exceeds what Gemini and Cloud Vision accept. Costs nothing extra beyond a slightly larger image.
+
 ---
 
 ## Open and pending
