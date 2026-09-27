@@ -549,8 +549,9 @@ Nothing was blocked; all five items were built. These need you:
 - **D-053** premium pricing - ₹399-499/year recommended.
 - ~~**D-054** the "100% ATTA" ruling~~ ✅ decided 2026-09-25: about the flour, no finding.
 - **D-082** what Premium is for - interviews only.
-- **D-114** (RECOMMENDED 2026-09-27) hosting: one AWS Lightsail server in Mumbai (2 GB, 2 vCPU,
-  Ubuntu 24.04), Caddy + one uvicorn + PostgreSQL 18, photos on disk until R2; DNS for both domains
+- **D-114** (RECOMMENDED 2026-09-27) hosting: one Google Cloud VM in Mumbai (`e2-medium`, 4 GB,
+  Ubuntu 24.04, own project, billing upgraded to post-paid before invites; free-trial credit spent
+  first), Caddy + one uvicorn + PostgreSQL 18, photos on disk until R2; DNS for both domains
   on Cloudflare (proxy off at first; `.in` stays at GoDaddy with Cloudflare nameservers); later
   steps each wait for their own signal. Waiting for Sushil's "accepted"; then `deploy/` + `DEPLOY.md`.
 - **D-113** (LOCKED 2026-09-27) a Pro chatbot, "ask about this pack", personalised with age band and
@@ -573,7 +574,8 @@ setup alarms.
 
 **NEXT SESSION STARTS HERE (Sushil, 2026-09-27): host `insidelabel.ai` first, then the rest.**
 
-1. **Hosting, first and only until it is live.** 2026-09-27: host chosen, **AWS Lightsail, Mumbai**
+1. **Hosting, first and only until it is live.** 2026-09-27: host chosen, **Google Cloud Compute Engine, Mumbai** (Lightsail was first, then Sushil
+   chose Google Cloud for the account and credit he already has)
    (Cloudflare checked and can't run the app or the database: see D-114); `insidelabel.ai` is
    registered at Cloudflare, `insidelabel.in` at GoDaddy. **D-114 RECOMMENDED** on branch `hosting`;
    after "accepted", `deploy/` + `DEPLOY.md`, then the deploy. Was: ask Sushil which host (suggested: one small

@@ -1248,10 +1248,11 @@ the rest of D-001 stands. Not built yet.
 - **A second DPDP check before launch**: it uses children's data (age band, avoid list) in a new
   way.
 
-### D-114 · Hosting: one Lightsail server in Mumbai, DNS on Cloudflare `RECOMMENDED` (2026-09-27)
+### D-114 · Hosting: one Google Cloud server in Mumbai, DNS on Cloudflare `RECOMMENDED` (2026-09-27)
 Direction from Sushil ("host the web beta on insidelabel.ai"; asked whether Cloudflare could
-host it; chose AWS Lightsail from the comparison, 2026-09-27). Details by Claude. Checked on the
-providers' own pages 2026-09-27.
+host it; first chose AWS Lightsail, then Google Cloud: "go with google cloud for now, will change
+in future if any issue", 2026-09-27). Details by Claude. Checked on the providers' own pages
+2026-09-27.
 
 **Why not Cloudflare for the app.** Python Workers run pure-Python or Pyodide-built packages
 only; we need `psycopg`, `zxing-cpp`, Pillow and Tesseract. Cloudflare Containers run any image,
@@ -1260,24 +1261,30 @@ started, it will have a fresh disk": the database, the photos and the in-memory 
 (D-095) would be lost. Hyperdrive only speeds up a database hosted elsewhere. Cloudflare is used
 for what it fits: DNS now, R2 for photos later.
 
-**Why Lightsail.** Compared on 2026-09-27 (2 GB plans, Mumbai unless stated):
+**Why Google Cloud.** Sushil already has the account (the Gemini and Cloud Vision keys) and
+free-trial credit on it. Google Cloud India bills an Indian address in INR with 18 % GST.
+The runner-up was AWS Lightsail, Mumbai: $12/mo for 2 GB, 2 vCPU, 60 GB and 1.5 TB transfer in
+one fixed price (compared with Vultr, Akamai/Linode and DigitalOcean the same day). Google
+charges the VM, disk, static IP and outbound traffic separately; the monthly total is read from
+Google's pricing calculator, not recorded here. Moving to Lightsail later is a restore.
 
-| Provider | Price | vCPU | Disk | Transfer |
-|---|---|---|---|---|
-| **AWS Lightsail, Mumbai** | $12/mo | 2 | 60 GB | 1.5 TB (Mumbai gets half the listed 3 TB) |
-| Vultr, Mumbai | $10 (1 vCPU) or $15 (2 vCPU) | 1 or 2 | 55 or 65 GB | 2 or 3 TB |
-| Akamai/Linode, Mumbai | $12 | 1 | 50 GB | 2 TB |
-| DigitalOcean | $12, Bangalore only | 1 | 50 GB | 2 TB |
-
-Two cores for the price of one: Gemini and Cloud Vision run on worker threads per scan,
-PostgreSQL shares the box, and the Tesseract fallback is CPU-heavy (D-093). An India billing
-address puts the account with AWS India: billed in INR with GST tax invoices (turn on e-mandate,
-or the bill is paid by hand each month). Mumbai also has managed PostgreSQL (RDS) for later.
+**Conditions, because of the billing (from Google's free-trial page):** at the end of a trial
+"All resources you created during the trial are stopped" and Compute Engine data "is marked
+for deletion" (30 days' grace), and a suspended billing account stops every linked project. So:
+- The billing account is **upgraded to a paid account with automatic card payment (post-paid)
+  before invites go out**. Upgrading keeps the unused credit until it expires; the credit is
+  spent first. Not the prepaid kind the Gemini key's project uses (it ran out on 2026-09-25).
+- The server lives in **its own project** (`insidelabel-prod`), apart from the key project.
+- A **budget alert** on the billing account (about ₹1,500 a month to start).
 
 **The beta setup (step 1):**
-- **One Lightsail instance**, Mumbai (`ap-south-1`), Ubuntu 24.04 LTS, 2 GB / 2 vCPU / 60 GB, with
-  a static IP. Lightsail firewall: 22 (SSH, keys only), 80 and 443; nothing else, PostgreSQL
-  listens on localhost only.
+- **One Compute Engine VM**, Mumbai (`asia-south1`), Ubuntu 24.04 LTS, **`e2-medium`** (2 vCPU
+  sharing one full core, bursting; 4 GB), 30 GB balanced disk, a static external IP. Two vCPUs
+  because Gemini and Cloud Vision run on worker threads per scan, PostgreSQL shares the box, and
+  the Tesseract fallback is CPU-heavy (D-093). `e2-small` (2 GB, half a core) is the cheaper
+  step down if the credit ends and the load allows; resizing is stop, change type, start.
+  The Always Free `e2-micro` is only offered in three US regions, so it doesn't apply.
+- **Firewall:** 22 (SSH, keys only), 80 and 443; nothing else. PostgreSQL listens on localhost.
 - **Caddy** in front for HTTPS (automatic certificates), then **one uvicorn process** under
   systemd (one process because the rate limits live in memory, D-095).
   `INSIDELABEL_PROXY_HOPS=1` (Caddy is the only proxy).
@@ -1293,9 +1300,9 @@ or the bill is paid by hand each month). Mumbai also has managed PostgreSQL (RDS
   `INSIDELABEL_ALLOW_REPLAY` and `INSIDELABEL_CLAIMS_TO_USERS` are never set (D-101, D-051), and
   `INSIDELABEL_REVIEW_TOKEN` is not set: reviewers log in with accounts (D-097).
 - **Daily jobs** (systemd timers): `tools/retention.py --apply` (D-098), and a `pg_dump` kept 14
-  days on the server. Lightsail automatic daily snapshots hold the off-server copy until backups
-  go to R2. One restore of a dump into a scratch database is done before invites go out, and
-  written down in `DEPLOY.md`.
+  days on the server. A daily **disk snapshot schedule** (Compute Engine) holds the off-server
+  copy until backups go to R2. One restore of a dump into a scratch database is done before
+  invites go out, and written down in `DEPLOY.md`.
 - **Domains:** `insidelabel.ai` (registered at Cloudflare) is the main address. `insidelabel.in`
   stays registered at GoDaddy with its nameservers moved to Cloudflare, so DNS and redirects live
   in one place. `insidelabel.in`, `www.insidelabel.in` and `www.insidelabel.ai` redirect
@@ -1307,14 +1314,14 @@ or the bill is paid by hand each month). Mumbai also has managed PostgreSQL (RDS
    still runs our job, D-098); Cloudflare proxy on, with Caddy trusting Cloudflare's ranges and
    the proxy hops changed, so testers don't share one IP's rate limit.
 2. **After the W4 answer (D-055):** below 20 %, stop and spend nothing more on hosting. At 30 %
-   or more, and only when slow scans, memory, CPU or disk say so: a bigger Lightsail plan first;
+   or more, and only when slow scans, memory, CPU or disk say so: a bigger machine type first;
    then rate-limit counters in PostgreSQL (D-095) and a second app process; then the database
-   on its own server or RDS in Mumbai with point-in-time recovery.
+   on its own server or Cloud SQL in Mumbai with point-in-time recovery.
 3. **Pro and the chatbot (D-113):** more app servers behind Cloudflare, and a job queue (RQ on
    Redis) for the slow model calls.
 
-Nothing ties us to AWS: plain Ubuntu, PostgreSQL and S3-compatible storage, so moving is a
-restore.
+Nothing ties us to Google: plain Ubuntu, PostgreSQL and S3-compatible storage, so moving
+(to Lightsail or anywhere) is a restore.
 
 ---
 
