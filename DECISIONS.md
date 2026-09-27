@@ -1467,6 +1467,18 @@ systemd timer on the server drafts new items every few minutes, one at a time, o
 process (D-095 stays one web process). No new processor of personal data: label photos already go
 to Google for Gemini and Cloud Vision, as the privacy page says.
 
+**7. Every published version records who drafted it and who published it** (Sushil, 2026-09-27:
+"who published ... keep, Claude or Gemini or Sushil"). A new migration adds to `product_versions`:
+- `drafted_by`: `sushil`, `claude` or `gemini`: who wrote the category, ingredient lines, claims
+  and note. On `/review` it is a required choice next to the category, defaulting to `gemini`
+  when the agent's draft is used, else to the reviewer; the reviewer sets `claude` when pasting a
+  draft from a Claude session.
+- `category_source`: `pack_declared`, `codex_descriptor` or `reviewer`.
+- `verified_by` (exists) keeps who published: a reviewer's name, or `agent`.
+The items Sushil published on 2026-09-27 from Claude's drafts are marked `drafted_by = claude`
+by their review numbers, with a one-off command, so the history is honest from the first day.
+The shadow measurement (point 4) is then reported per drafter.
+
 **Not proposed:** a second AI as the checker (same blind spots, or a new processor to name in the
 privacy page); letting the agents handle reports or send-to-us; publishing without the shadow
 measurement.
