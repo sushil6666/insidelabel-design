@@ -587,6 +587,9 @@ PostgreSQL 18, build `45f9feb078dc`, reviewer `sushil` (logged in), first backup
 PASS**, timers (backup 02:30, photo cleanup about 04:00 India time; disk snapshot 03:30, kept 7 days),
 one invite (Sushil's own), and **one real scan from the phone**: `verdict`, 5.7 s, Cloud Vision read
 1,717 characters in parallel with Gemini, no retries, no setup alarms.
+**Reboot test, 2026-09-27 09:13 UTC** (the kernel from the morning's upgrade): the site was down under
+a minute and every service came back by itself (app, Caddy, PostgreSQL, both timers). Five tester
+invites made on the server, labelled T01 to T05 (codes not recorded here).
 
 1. **Loose ends from the deploy (Sushil):**
    - **Billing:** confirm the account is upgraded from the free trial to paid with automatic payment

@@ -212,6 +212,16 @@ In Cloud Shell: `gcloud compute snapshots list` shows the daily disk snapshots.
 
 Run the restore test after any big change, and at least once a month.
 
+### Reboot (for example when the login says "System restart required")
+
+```bash
+sudo reboot            # the session drops; wait a minute, reconnect from Cloud Shell
+uptime; systemctl is-active insidelabel caddy postgresql insidelabel-backup.timer insidelabel-retention.timer
+```
+
+Everything starts by itself: tested 2026-09-27, the site was back in under a minute. Reboot when
+no one is likely to be scanning.
+
 ### Disk space, memory
 
 ```bash
