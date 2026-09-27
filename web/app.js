@@ -490,24 +490,41 @@ function photo() {
                              onclick: () => sendPhotos() }, "Check this pack");
 
   // D-119: a long list in up to three photos; the server joins them into one.
+  // Most lists fit one photo, so the app asks first and shows the part camera
+  // only on "No" (Sushil, 2026-09-27). Not answering means one photo.
   const parts = el("div", { class: "stack" });
+  let more = false;              // "No, it continues" for the part now being asked about
   const drawParts = () => {
     parts.replaceChildren();
     if (!pending.back) return;
     pending.parts.forEach((_b, i) => parts.append(
       el("p", { class: "check ok", role: "status" }, el("span", { "aria-hidden": "true" }, "✓ "),
          `Part ${i + 2} of the list added.`)));
-    if (pending.parts.length >= 2) return;
+    if (pending.parts.length >= 2 || more === null) return;
     const n = pending.parts.length + 2;
+    const ask = n === 2 ? "Is the whole ingredient list in this photo?" : "Is that the end of the list?";
+    if (!more) {
+      parts.append(el("div", { class: "card" },
+        el("h2", {}, ask),
+        el("p", { class: "muted" }, n === 2
+          ? "On a big pack the list may not fit one clear photo. You can take it in parts instead."
+          : "You can add one more part if the list still goes on."),
+        el("div", { class: "row wrap" },
+          el("button", { type: "button", class: "btn", onclick: () => { more = null; drawParts(); } },
+             n === 2 ? "Yes, one photo is enough" : "Yes, that's all"),
+          el("button", { type: "button", class: "btn", onclick: () => { more = true; drawParts(); } },
+             `No, add part ${n}`))));
+      return;
+    }
     const prev = el("div", { class: "thumb" });
     parts.append(el("div", { class: "card" },
-      el("h2", {}, n === 2 ? "The list continues?" : "Still more of the list?"),
-      el("p", { class: "muted" }, "If the ingredient list doesn't fit one photo, add the next part. " +
-                                  "Start where the last photo ended; a little overlap is fine."),
-      photoPicker("back" + n, `Add part ${n} of the list`, prev, (b, res, source) => {
+      el("h2", {}, `Part ${n} of the list`),
+      el("p", { class: "muted" }, "Start where the last photo ended; a little overlap is fine."),
+      photoPicker("back" + n, `Take part ${n} of the list`, prev, (b, res, source) => {
         if (!b || (res && !res.ok)) return;
         pending.parts.push(b);
         pending.partSources.push(source);
+        more = false;            // ask again about the next part
         drawParts();
       }, "back"),
       prev));
@@ -526,7 +543,7 @@ function photo() {
                   pending.back = res && !res.ok ? null : b;
                   pending.backSource = source;
                   // A new first photo starts the list again (D-119).
-                  pending.parts = []; pending.partSources = [];
+                  pending.parts = []; pending.partSources = []; more = false;
                   drawParts();
                   go_.disabled = !pending.back;
                   if (res?.barcode && !pending.barcode) { pending.barcode = res.barcode; pending.barcodeSource = "photo"; }

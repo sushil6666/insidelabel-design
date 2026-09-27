@@ -1537,6 +1537,11 @@ the letters are too small for either reader. Today the app takes exactly one bac
   confuses the reading is caught there too.
 - **Limits:** three parts; each part the size the app already sends; the joined image is shrunk if
   it exceeds what Gemini and Cloud Vision accept. Costs nothing extra beyond a slightly larger image.
+- **Amended 2026-09-27 by Sushil** ("not for all. give the option, do u like to part it or single
+  image is ok"): the app asks first. After the back photo, "Is the whole ingredient list in this
+  photo?" with "Yes, one photo is enough" and "No, add part 2"; the part camera appears only on
+  "No". After part 2, "Is that the end of the list?" the same way. Not answering means one photo,
+  so the common case costs no extra tap.
 
 ---
 

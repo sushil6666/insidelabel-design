@@ -758,7 +758,8 @@ from all regions and emails Sushil after 60 s of failure (OPERATIONS.md §5). Fr
       Cheeze Dipped list doesn't fit one photo): up to three photos of the list, joined on the
       server into one back photo (`photo_join.py`), so the frozen reading prompt, storage, replay and
       retention are unchanged; one photo is today's scan byte for byte. 8 tests; walked in headless
-      Chromium ("The list continues?", part 2 sent as `back2`). App `web-18`. **Before relying on it:**
+      Chromium (part 2 sent as `back2`). Amended the same day: the app asks "Is the whole ingredient
+      list in this photo?" and shows the part camera only on "No". App `web-18`. **Before relying on it:**
       the overlap check on 3 gold labels cut in two (about Rs 1.50, paid, Sushil's go-ahead).
 6. Then the DPDP data map, and the other items below (invites only after the privacy page and the
    DPDP review).
