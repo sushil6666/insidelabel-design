@@ -113,9 +113,12 @@ Pick the project in the top bar ("Insidelabel") before looking for anything.
 **The server:** open Cloud Shell, then
 
 ```bash
-gcloud compute ssh insidelabel-1
+gcloud compute ssh insidelabel-1 --zone=asia-south1-a
 ```
 
+- **Always give the zone.** A new Cloud Shell tab can forget the default and guess another zone:
+  on 2026-09-27 it offered `asia-southeast1-b` (Singapore) and found nothing. Ours is
+  **`asia-south1-a` (Mumbai)**. To save it again: `gcloud config set compute/zone asia-south1-a`.
 - The first time on a new Cloud Shell it makes an SSH key and asks for a passphrase: **press
   Enter twice**. Nothing shows on screen while you type at that prompt; it is waiting, not frozen.
 - **Look at the prompt to know where you are:**
@@ -268,7 +271,7 @@ are cleaned after 30 days and backups after 14; if it still fills, make the disk
 (console, Compute Engine, Disks, `insidelabel-1`, Edit, size), then on the server
 `sudo growpart /dev/sda 1 && sudo resize2fs /dev/sda1` (check the device name with `lsblk` first).
 
-**I lost access over SSH.** Cloud Shell: `gcloud compute ssh insidelabel-1` again (it re-sends
+**I lost access over SSH.** Cloud Shell: `gcloud compute ssh insidelabel-1 --zone=asia-south1-a` again (it re-sends
 your key). Still failing: console, VM instances, the SSH button in the row.
 
 **A key has leaked** (pasted in a chat, a screenshot, a commit). In Cloud Shell:
