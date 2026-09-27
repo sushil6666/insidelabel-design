@@ -1,6 +1,6 @@
 # STATE.md - where InsideLabel is, and how to pick it up
 
-**Last updated:** 2026-09-27 (**https://insidelabel.ai is live**, `main` = `45f9feb`, PR #18; branch `live`: notes from the deploy) · **Owner:** Sushil · **Tests:** 510 passing, 8 skipped, 1 expected failure · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 5.7 s on the live server (2026-09-27), Gemini + Cloud Vision, `verdict`
+**Last updated:** 2026-09-27 (**https://insidelabel.ai is live**, `main` = `45f9feb`, PR #18; branch `live`: notes from the deploy) · **Owner:** Sushil · **Tests:** 516 passing, 8 skipped, 1 expected failure · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 5.7 s on the live server (2026-09-27), Gemini + Cloud Vision, `verdict`
 
 This is the living status document. Read it first in any new session, then
 `DECISIONS.md` for the *why*. Update the "Last updated" line, the numbers and
@@ -734,6 +734,17 @@ from all regions and emails Sushil after 60 s of failure (OPERATIONS.md §5). Fr
       items `--by claude`, then agree to the first paid drafting run (OPERATIONS.md §5).
       **Phase B, before publishing:** the agent publishing through `approve()`, one-click undo, the
       agent-published list for spot checks.
+      **First shadow run, 2026-09-27 16:57 (paid, 5 items, 12 to 16): all five "needs a person".**
+      One was right for the right reason (item 14: Cloud Vision hadn't read the ingredient list, so
+      nothing could check Gemini). The other four exposed checker rules, fixed on branch
+      `review-agent-tuning`: a recipe on the pack that also says "ingredients" (12); a nutrition
+      panel Cloud Vision read in among the list (13); an accent, CRÈME vs creme, and "Net Weight"
+      after the list (15); and a **wrong word rule** (16): "sugar boiled confectionery" is not hard
+      candy, since **FSSAI 2.7.1** (Food Products Standards, read from FSSAI's PDF) defines it to
+      include "toffee or milk toffee"; Gemini's 5.2.2 for a butter toffee was right. **Claude's
+      earlier advice for item 11 (Candzey, 5.2.1) used that same wrong reasoning:** check whether
+      it is a hard or a chewy sweet; if chewy, 5.2.2. After deploying: `recheck 12 13 14 15 16`
+      (free) shows what the tuned checker makes of the same answers.
 6. Then the DPDP data map, and the other items below (invites only after the privacy page and the
    DPDP review).
 

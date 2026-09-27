@@ -32,8 +32,8 @@
     },
     {
       "code": "5.2.1",
-      "label_any": ["sugar boiled confectionery", "sugar boiled confectionary", "hard boiled sweets", "hard boiled candy"],
-      "basis": "Codex 05.2.1 is hard candy; a sugar boiled confectionery is a hard boiled sweet. Seen: Candzey Tangy Twist ('SUGAR BOILED CONFECTIONARY')."
+      "label_any": ["hard boiled sweets", "hard boiled candy", "hard boiled sugar confectionery"],
+      "basis": "Codex 05.2.1 is hard candy. NOT 'sugar boiled confectionery': FSSAI's standard 2.7.1 (Food Products Standards, read 2026-09-27) defines it to cover 'hard boiled sugar confectionery or pan goods confectionery or toffee or milk toffee or modified toffee or lacto-bon-bon', so it doesn't say hard or soft. The first shadow run's butter toffee (item 16) showed the earlier rule was wrong."
     },
     {
       "code": "6.4",

@@ -213,6 +213,12 @@ def call_gemini_json(prompt_text, images, schema, api_key=None):
             "response_mime_type": "application/json",
             "response_schema": schema,
         }
+        # No tools are ever passed, so automatic function calling has nothing to do;
+        # switching it off also stops the SDK's warning in every server log line.
+        try:
+            cfg_kwargs["automatic_function_calling"] = genai_types.AutomaticFunctionCallingConfig(disable=True)
+        except Exception:                                        # noqa: BLE001 - older SDKs
+            pass
         # thinking_level is 3.x-only; older SDKs and models reject it.
         try:
             cfg = genai_types.GenerateContentConfig(
