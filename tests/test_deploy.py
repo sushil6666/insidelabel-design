@@ -63,3 +63,12 @@ def test_caddy_trusts_no_forwarded_header():
     assert "trusted_proxies" not in caddy
     assert "reverse_proxy 127.0.0.1:8000" in caddy
     assert re.search(r"redir https://insidelabel\.ai\{uri\} permanent", caddy)
+
+
+def test_the_review_agents_only_draft():
+    # D-117: shadow until the measurement passes; publishing isn't even built yet.
+    unit = _read("systemd", "insidelabel-review-agent.service")
+    start = re.search(r"^ExecStart=(.*)$", unit, re.M).group(1)
+    assert "tools/review_agent.py run" in start and "publish" not in start
+    assert "EnvironmentFile=/etc/insidelabel/secrets.env" in unit      # it calls Gemini
+    assert "ReadWritePaths" not in unit                                # writes only to the database

@@ -6,7 +6,7 @@ PostgreSQL 19. Solo founder: Sushil.
 ## Start here
 
 1. Read `STATE.md` (status, setup, open items, lessons) and skim `DECISIONS.md`.
-2. `source .venv/bin/activate && pytest -q` - expect 488 passing (8 skipped, 1 xfailed) before you change anything.
+2. `source .venv/bin/activate && pytest -q` - expect 510 passing (8 skipped, 1 xfailed) before you change anything.
    `python tools/release_check.py` shows how far the beta is from release.
 3. The "Next" list in `STATE.md` §8 is the default work queue.
 4. The live site (https://insidelabel.ai, Google Cloud, D-114): `OPERATIONS.md` to run it,
@@ -39,7 +39,9 @@ PostgreSQL 19. Solo founder: Sushil.
 - **Allergens are the first key** of every `/scan` response (D-060); never output
   "free from"/"safe"; below confidence 0.95 or on a partial read → `cannot_confirm`.
 - **The catalogue is reviewed data.** Scans create `pending_review` versions; only
-  `/review` (→ `publish_version()`) publishes. Don't add another path.
+  `ReviewService.approve()` (→ `publish_version()`) publishes: a person on `/review`, or, under
+  D-117, the review agents when every check passes and publishing is switched on. Don't add
+  another path. Every published version records `drafted_by` and `verified_by`.
 - **Result-screen text is built in `lenses/screen.py` (D-091).** The PWA (`web/`)
   renders `/scan`'s `screen` block; don't compose findings in JS, never read `score`
   there, and never send a profile nickname (`profiles` = ref/age/avoid only, D-074).

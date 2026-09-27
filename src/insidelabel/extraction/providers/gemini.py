@@ -181,6 +181,16 @@ SDK_TIMEOUT_MS = 120_000
 
 def call_gemini_sdk(images, api_key=None):
     """Preferred path. The SDK handles both AIza and AQ. credential types."""
+    return call_gemini_json(VISION_PROMPT, images, VISION_RESPONSE_SCHEMA, api_key=api_key)
+
+
+def call_gemini_json(prompt_text, images, schema, api_key=None):
+    """
+    One JSON answer from Gemini for a prompt and some photos, with the same
+    client, timeout and error mapping as the label reader: a busy model raises
+    VisionUnavailable (retry it), a key or credit problem VisionConfigError
+    (a setup alarm, not a retry). The review drafter (D-117) uses it too.
+    """
     api_key = api_key or os.environ.get("GEMINI_API_KEY")
     if not api_key:
         raise VisionConfigError("GEMINI_API_KEY is not set.")
@@ -194,14 +204,14 @@ def call_gemini_sdk(images, api_key=None):
         # Older SDK versions may not accept http_options; an unbounded client
         # is worse than none, but better than not running at all.
         client = genai.Client(api_key=api_key)
-    parts = [genai_types.Part.from_text(text=VISION_PROMPT)]
+    parts = [genai_types.Part.from_text(text=prompt_text)]
     for data, mime, _role in images:
         parts.append(genai_types.Part.from_bytes(data=data, mime_type=mime))
 
     try:
         cfg_kwargs = {
             "response_mime_type": "application/json",
-            "response_schema": VISION_RESPONSE_SCHEMA,
+            "response_schema": schema,
         }
         # thinking_level is 3.x-only; older SDKs and models reject it.
         try:

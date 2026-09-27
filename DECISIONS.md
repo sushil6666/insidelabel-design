@@ -4,7 +4,7 @@ Architectural and product decisions for InsideLabel, with the reasoning attached
 Append-only. When a decision is reversed, mark it `SUPERSEDED` and add a new entry
 rather than editing the old one - the history is the point.
 
-**Last updated:** 2026-09-27 (D-102 to D-113 locked; D-001's chatbot clause superseded; D-114 hosting, D-115 marker wording and D-116 AYUSH packs locked)
+**Last updated:** 2026-09-27 (D-102 to D-113 locked; D-001's chatbot clause superseded; D-114 hosting, D-115 marker wording, D-116 AYUSH packs and D-117 review agents locked)
 
 **Status key:** `LOCKED` decided, don't relitigate · `OPEN` not yet decided ·
 `RECOMMENDED` proposed but not accepted · `SUPERSEDED` replaced
@@ -1401,10 +1401,10 @@ judgement uses FSSAI rules only (D-086), and those rules don't cover it.
 - **No judgement of the brand or the product** (D-042): the reason states the licence, as
   printed, and the Act's definition; nothing about the product's quality.
 
-### D-117 · Review agents: Gemini drafts, a checker confirms, a person sees only the doubtful items `RECOMMENDED` (2026-09-27)
+### D-117 · Review agents: Gemini drafts, a checker confirms, a person sees only the doubtful items `LOCKED` (2026-09-27)
 Direction from Sushil, after reviewing the first run by hand ("one agent will draft and another
 agent will confirm; if any ambiguity then human will review"; drafter: Gemini). Details and
-safeguards by Claude.
+safeguards by Claude. **Accepted by Sushil 2026-09-27** ("accepted"), with point 7 added at his request.
 
 **Why.** On 2026-09-27 every item of the first supermarket run needed the same mechanical work:
 rejoin compound ingredients the reader split at a bracket, split two ingredients the pack ran

@@ -119,6 +119,25 @@
       </div>
     {% endif %}
 
+    {% if draft %}
+    <div class="panel" id="agent-draft">
+      <h3 style="margin-top:0">Agent draft ({{ draft.mode }}, {{ draft.created_at.strftime('%Y-%m-%d %H:%M') }} UTC):
+        {% if draft.outcome == "confirmed" %}all checks passed
+        {% elif draft.outcome == "needs_person" %}needs a person
+        {% else %}failed{% endif %}</h3>
+      {% if draft.error %}<p>{{ draft.error }}</p>{% endif %}
+      {% set failed = draft.checks|rejectattr("ok")|list %}
+      {% if failed %}<p><strong>Look at:</strong></p>
+      <ul>{% for c in failed %}<li><code>{{ c.check }}</code>: {{ c.detail }}</li>{% endfor %}</ul>{% endif %}
+      {% if draft.draft.category_reason %}<p><strong>Category:</strong> {{ draft.draft.category }} ({{ draft.draft.category_source }}). {{ draft.draft.category_reason }}</p>{% endif %}
+      {% if draft.draft.changes %}<p><strong>Changed from the reading:</strong></p>
+      <ul>{% for x in draft.draft.changes %}<li>{{ x }}</li>{% endfor %}</ul>{% endif %}
+      {% if draft.draft.doubts %}<p><strong>Doubts:</strong></p>
+      <ul>{% for x in draft.draft.doubts %}<li>{{ x }}</li>{% endfor %}</ul>{% endif %}
+      <p class="muted">The form below is the draft. Correct it, then publish or reject. Nothing is published by the agent in shadow mode (D-117).</p>
+    </div>
+    {% endif %}
+
     <form method="post" action="/review/item/{{ q.id }}/approve" class="panel">
       <input type="hidden" name="csrf" value="{{ csrf }}">
       <fieldset {% if not mine %}disabled{% endif %} style="border:0;padding:0;margin:0">
@@ -138,6 +157,20 @@
             {% set common_codes = common|map("first")|list %}{% for code, cname, depth in categories %}<option value="{{ code }}" {% if form.category == code and code not in common_codes %}selected{% endif %}>{{ "  " * depth }}{{ code }} {{ cname|truncate(90) }}</option>{% endfor %}
           </optgroup>
         </select>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px">
+          <div><label for="category_source">Category came from</label>
+            <select id="category_source" name="category_source">
+              <option value="reviewer" {% if form.category_source == "reviewer" %}selected{% endif %}>My choice</option>
+              <option value="pack_declared" {% if form.category_source == "pack_declared" %}selected{% endif %}>The pack declares it</option>
+              <option value="codex_descriptor" {% if form.category_source == "codex_descriptor" %}selected{% endif %}>Codex descriptor</option>
+            </select></div>
+          <div><label for="drafted_by">Drafted by (who wrote this record)</label>
+            <select id="drafted_by" name="drafted_by">
+              <option value="{{ reviewer }}" {% if form.drafted_by == reviewer %}selected{% endif %}>Me ({{ reviewer }})</option>
+              <option value="claude" {% if form.drafted_by == "claude" %}selected{% endif %}>Claude</option>
+              <option value="gemini" {% if form.drafted_by == "gemini" %}selected{% endif %}>Gemini (agent draft)</option>
+            </select></div>
+        </div>
         <label for="ingredients">Ingredients: one entry per line, in printed order, spelled as printed</label>
         <textarea id="ingredients" name="ingredients" rows="12" required>{{ form.ingredients }}</textarea>
         <label for="allergen_statement">Allergen line (“Contains… / May contain…”), exactly as printed</label>
@@ -145,7 +178,7 @@
         <label for="front_claims">Front-of-pack claims: one per line (only if the front photo is this pack)</label>
         <textarea id="front_claims" name="front_claims" rows="3">{{ form.front_claims }}</textarea>
         <label for="note">Note (optional, kept with the decision)</label>
-        <input type="text" id="note" name="note">
+        <input type="text" id="note" name="note" value="{{ form.note }}">
         <div class="actions">
           <button class="primary" type="submit">Publish to catalogue</button>
         </div>
