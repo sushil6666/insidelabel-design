@@ -22,9 +22,10 @@ let navSeq = 0;               // async views check this so a late result can't r
 // (with the refused scans' ids, for "Send it to us", D-070).
 // frontWanted: offer the front photo (D-100); off for a re-check of a pack whose front is on file.
 // acceptUnconfirmed: "use this one anyway" after a request for a clearer photo (D-118).
+// parts: the ingredient list's 2nd and 3rd photos, when it doesn't fit one (D-119).
 let pending = { barcode: null, barcodeSource: null, back: null, front: null, backSource: null,
                 frontSource: null, pairing: false, attempts: 0, refused: [], frontWanted: true,
-                acceptUnconfirmed: false };
+                acceptUnconfirmed: false, parts: [], partSources: [] };
 
 // ------------------------------------------------------------------ navigation
 const routes = {
@@ -406,7 +407,7 @@ function nextRef(list) {
 function resetPending() {
   pending = { barcode: null, barcodeSource: null, back: null, front: null, backSource: null,
               frontSource: null, pairing: false, attempts: 0, refused: [], frontWanted: true,
-              acceptUnconfirmed: false };
+              acceptUnconfirmed: false, parts: [], partSources: [] };
 }
 
 async function scan() {
@@ -488,6 +489,31 @@ function photo() {
   const go_ = el("button", { type: "button", class: "btn primary", disabled: !pending.back,
                              onclick: () => sendPhotos() }, "Check this pack");
 
+  // D-119: a long list in up to three photos; the server joins them into one.
+  const parts = el("div", { class: "stack" });
+  const drawParts = () => {
+    parts.replaceChildren();
+    if (!pending.back) return;
+    pending.parts.forEach((_b, i) => parts.append(
+      el("p", { class: "check ok", role: "status" }, el("span", { "aria-hidden": "true" }, "✓ "),
+         `Part ${i + 2} of the list added.`)));
+    if (pending.parts.length >= 2) return;
+    const n = pending.parts.length + 2;
+    const prev = el("div", { class: "thumb" });
+    parts.append(el("div", { class: "card" },
+      el("h2", {}, n === 2 ? "The list continues?" : "Still more of the list?"),
+      el("p", { class: "muted" }, "If the ingredient list doesn't fit one photo, add the next part. " +
+                                  "Start where the last photo ended; a little overlap is fine."),
+      photoPicker("back" + n, `Add part ${n} of the list`, prev, (b, res, source) => {
+        if (!b || (res && !res.ok)) return;
+        pending.parts.push(b);
+        pending.partSources.push(source);
+        drawParts();
+      }, "back"),
+      prev));
+  };
+  drawParts();
+
   return el("section", { class: "stack" },
     el("h1", {}, "Photograph the ingredients"),
     firstTime,
@@ -499,10 +525,14 @@ function photo() {
                   // check couldn't run) is let through, and /scan checks it again anyway.
                   pending.back = res && !res.ok ? null : b;
                   pending.backSource = source;
+                  // A new first photo starts the list again (D-119).
+                  pending.parts = []; pending.partSources = [];
+                  drawParts();
                   go_.disabled = !pending.back;
                   if (res?.barcode && !pending.barcode) { pending.barcode = res.barcode; pending.barcodeSource = "photo"; }
                 }),
     backPreview,
+    parts,
     // D-100: asked for once per pack, not once per scan. A re-check of a pack
     // whose front is already on file doesn't ask again.
     pending.frontWanted && el("div", { class: "card" },
@@ -529,7 +559,7 @@ const TOUCH = window.matchMedia?.("(pointer: coarse)").matches ?? true;
 // gets a green tick or a red cross with the reason. onPick(blob, result):
 // result is {ok, message, barcode}, or null when the check couldn't run.
 // D-106: onPick also gets where the photo came from, "camera" or "upload".
-function photoPicker(role, label, preview, onPick) {
+function photoPicker(role, label, preview, onPick, checkAs = role) {
   const use = async (file, source) => {
     if (!file || !file.type.startsWith("image/")) return;
     preview.replaceChildren(el("p", { class: "muted" }, "Preparing photo…"));
@@ -538,7 +568,7 @@ function photoPicker(role, label, preview, onPick) {
     preview.replaceChildren(img, el("p", { class: "muted", role: "status" }, "Checking the photo…"));
     let res = null;
     try {
-      res = (await checkPhotoRequest(role, blob)).body;
+      res = (await checkPhotoRequest(checkAs, blob)).body;
     } catch (e) {
       const gate = accessProblem(e);
       if (gate) return go(gate);
@@ -685,6 +715,7 @@ function result(id) {
       el("p", { class: "card warn" }, s.retake),
       button("Retake the photo", () => {
         pending.back = null;
+        pending.parts = []; pending.partSources = [];
         pending.acceptUnconfirmed = false;
         // D-108: after "these look like different packs", neither photo can be trusted.
         if (s.headline?.source?.ref === "product_mismatch") { pending.front = null; pending.pairing = false; }

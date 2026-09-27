@@ -1,6 +1,6 @@
 # STATE.md - where InsideLabel is, and how to pick it up
 
-**Last updated:** 2026-09-27 (**https://insidelabel.ai is live**, `main` = `45f9feb`, PR #18; branch `live`: notes from the deploy) · **Owner:** Sushil · **Tests:** 521 passing, 8 skipped, 1 expected failure · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 5.7 s on the live server (2026-09-27), Gemini + Cloud Vision, `verdict`
+**Last updated:** 2026-09-27 (**https://insidelabel.ai is live**, `main` = `45f9feb`, PR #18; branch `live`: notes from the deploy) · **Owner:** Sushil · **Tests:** 529 passing, 8 skipped, 1 expected failure · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 5.7 s on the live server (2026-09-27), Gemini + Cloud Vision, `verdict`
 
 This is the living status document. Read it first in any new session, then
 `DECISIONS.md` for the *why*. Update the "Last updated" line, the numbers and
@@ -754,6 +754,12 @@ from all regions and emails Sushil after 60 s of failure (OPERATIONS.md §5). Fr
       version, only when Cloud Vision read the photo; "Use this one anyway" (`accept_unconfirmed`) is
       recorded on the scan. 5 tests; walked in headless Chromium at phone width (retake screen, both
       buttons, the flag sent on the second request). App `web-17`.
+      **D-119 LOCKED and built** (branch `multi-photo-list`, Sushil in the shop: the Britannia 50-50
+      Cheeze Dipped list doesn't fit one photo): up to three photos of the list, joined on the
+      server into one back photo (`photo_join.py`), so the frozen reading prompt, storage, replay and
+      retention are unchanged; one photo is today's scan byte for byte. 8 tests; walked in headless
+      Chromium ("The list continues?", part 2 sent as `back2`). App `web-18`. **Before relying on it:**
+      the overlap check on 3 gold labels cut in two (about Rs 1.50, paid, Sushil's go-ahead).
 6. Then the DPDP data map, and the other items below (invites only after the privacy page and the
    DPDP review).
 

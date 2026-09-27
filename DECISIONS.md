@@ -1509,10 +1509,11 @@ person scanning is the only one holding the pack, so ask them, then.
 - **Watch it:** how often it fires, and how often people choose "Use this one anyway". If testers
   meet it often, revisit before the beta's W4 measurement (D-055).
 
-### D-119 · A long ingredient list can be photographed in two or three parts, joined on the server `RECOMMENDED` (2026-09-27)
+### D-119 · A long ingredient list can be photographed in two or three parts, joined on the server `LOCKED` (2026-09-27)
 Direction from Sushil in the shop ("BRITANNIA 50 50 Cheeze DIPPED: the ingredients written on the
 packet are lengthier as the packet is bigger; taking everything in a single photo is difficult;
-any other way, like 2 photos for ingredients?"). Design by Claude.
+any other way, like 2 photos for ingredients?"). Design by Claude. **Accepted by Sushil 2026-09-27**
+("will go with A. Join them on the server ... accepted").
 
 **Why.** On a big pack the list either doesn't fit one photo, or fits only from so far away that
 the letters are too small for either reader. Today the app takes exactly one back photo.

@@ -45,6 +45,7 @@ from starlette.concurrency import run_in_threadpool  # noqa: E402
 
 from insidelabel import barcode as barcode_rules  # noqa: E402
 from insidelabel import photo_check  # noqa: E402
+from insidelabel import photo_join  # noqa: E402
 from insidelabel import ratelimit  # noqa: E402
 from insidelabel import trace  # noqa: E402
 from insidelabel.core import engine  # noqa: E402
@@ -936,6 +937,10 @@ MAX_IMAGE_BYTES = 12 * 1024 * 1024
 ALLOWED_MIME = {"image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"}
 
 
+# D-119: how a part of the list is named in a photo-check message.
+_PART_LABEL = {"back2": "back (part 2)", "back3": "back (part 3)"}
+
+
 async def _read_image(upload, role):
     if upload is None:
         return None
@@ -961,6 +966,8 @@ async def scan(
     request: Request,
     back: Optional[UploadFile] = File(None, description="Back of pack - the ingredient list."),
     front: Optional[UploadFile] = File(None, description="Front of pack - marketing claims."),
+    back2: Optional[UploadFile] = File(None, description="D-119: the ingredient list's second part, when it doesn't fit one photo."),
+    back3: Optional[UploadFile] = File(None, description="D-119: the list's third part."),
     pairing_confirmed: bool = Form(False, description="User confirms both images show the same pack."),
     # Every text field carries an empty example: /docs otherwise pre-fills them
     # with the word "string", and avoid=string is refused as an unknown allergen
@@ -976,6 +983,8 @@ async def scan(
     back_source: Optional[str] = Form(None, examples=[""],
                                       description='D-106: "camera" (taken in the app) or "upload" (gallery, computer).'),
     front_source: Optional[str] = Form(None, examples=[""], description='D-106: as back_source.'),
+    back2_source: Optional[str] = Form(None, examples=[""], description='D-106: as back_source, for back2.'),
+    back3_source: Optional[str] = Form(None, examples=[""], description='D-106: as back_source, for back3.'),
     barcode_source: Optional[str] = Form(None, examples=[""],
                                          description='D-104: "camera" (live scanner) or "photo" (read by /check-photo).'),
     device_id: Optional[str] = Form(None, examples=[""], description="Anonymous install id (UUID). No personal data."),
@@ -1021,15 +1030,21 @@ async def scan(
             "error": "bad_barcode_source", "detail": 'barcode_source is "camera" or "photo".'})
 
     images = []
-    for upload, role in ((back, "back"), (front, "front")):
+    for upload, role in ((back, "back"), (back2, "back2"), (back3, "back3"), (front, "front")):
         img = await _read_image(upload, role)
         if img:
             images.append(img)
+    roles = [r for _d, _m, r in images]
+    if ("back2" in roles or "back3" in roles) and ("back" not in roles or ("back3" in roles and "back2" not in roles)):
+        raise HTTPException(status_code=422, detail={
+            "error": "parts_out_of_order",
+            "detail": "Send the ingredient list's parts in order: back, then back2, then back3."})
     # D-106: where each photo came from, as the app says. An AI-made or edited
     # picture can only arrive as an upload, so reviewers see uploads marked.
     # Recorded, not proved: a client could claim "camera".
     photo_sources = {}
-    for role, said in (("back", back_source), ("front", front_source)):
+    for role, said in (("back", back_source), ("back2", back2_source), ("back3", back3_source),
+                       ("front", front_source)):
         said = said.strip() if said and said.strip() else None
         if said is None:
             continue
@@ -1042,11 +1057,21 @@ async def scan(
     # Replayed answers skip it: they were read from photos checked at the time.
     if replay is None:
         for data, mime, role in images:
-            bad = photo_check.check(data, mime, role)
+            bad = photo_check.check(data, mime, _PART_LABEL.get(role, role))
             if bad:
                 log.warning("photo refused: %s %s", role, bad[0])
                 raise HTTPException(status_code=415 if bad[0] == "not_an_image" else 422, detail={
                     "error": bad[0], "role": role, "detail": bad[1]})
+
+    # D-119: a long list in parts becomes one back photo here; from now on
+    # the scan is ordinary (one image for Gemini, Cloud Vision, storage, replay).
+    parts = [(d, m) for d, m, r in images if r in ("back", "back2", "back3")]
+    if len(parts) > 1:
+        try:
+            joined = photo_join.join(parts)
+        except photo_join.JoinError as e:
+            raise HTTPException(status_code=415, detail={"error": "parts_unreadable", "detail": str(e)})
+        images = [(joined[0], joined[1], "back")] + [x for x in images if x[2] == "front"]
 
     # D-092: everything needed to replay this scan, minus the photos (kept by
     # media) and the model's answer (added once we have it). `who` is left out:
@@ -1059,7 +1084,8 @@ async def scan(
                     "avoid": avoid_codes if avoid is not None else None,
                     "profiles": people, "pairing_confirmed": pairing_confirmed,
                     "compare_regulators": compare_regulators,
-                    "images": [r for _d, _m, r in images], "replay": replay is not None,
+                    "images": [r for _d, _m, r in images], "back_parts": max(1, len(parts)),
+                    "replay": replay is not None,
                     "accept_unconfirmed": accept_unconfirmed},
         "timings": {},
     }
