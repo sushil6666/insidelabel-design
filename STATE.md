@@ -576,6 +576,7 @@ setup alarms.
 **NEXT SESSION STARTS HERE (2026-09-27): the site is live; finish its loose ends, then the DPDP data map.**
 
 **Done 2026-09-27: https://insidelabel.ai is live** (D-114, DEPLOY.md steps 1 to 10, with Sushil).
+**For anything on the server or Google Cloud, start with `OPERATIONS.md`** (the day's full log is its §9).
 Project `insidelabel`, VM `insidelabel-1` in
 `asia-south1-a`, `e2-medium`, static IP `8.234.95.74`; SSH with `gcloud compute ssh insidelabel-1`
 from Cloud Shell. Cloudflare DNS for `insidelabel.ai` and `www` (DNS only). Checked from outside:
@@ -610,7 +611,19 @@ one invite (Sushil's own), and **one real scan from the phone**: `verdict`, 5.7 
    and every verdict, is unchanged. 103 new tests (82 fail on the old code); the six gold labels'
    headlines unchanged, their quotes now the pack's words. **Sushil: merge, then
    `sudo /opt/insidelabel/app/deploy/update.sh` on the server.** Before invites.
-3. Then the DPDP data map, and the other items below (invites only after the privacy page and the
+3. **D-116 RECOMMENDED** (branch `ayush-products`): review item 2 on the live server (ORGANIC INDIA
+   Tulsi Mulethi) carries only an Ayurvedic medicine licence, no FSSAI licence. The FSS Act 2006
+   s.3(1)(j) (read from FSSAI's copy) excludes "drugs and medicinal products" from "food", so such
+   packs stay out of the catalogue; the reviewer rejects them with the D-116 reason. Item 2 is
+   **put back in the queue** until Sushil accepts. The user-facing note for such packs is a
+   separate proposal, not built.
+4. **Tokenizer bug found on the same pack (not fixed yet):** `core/tokenize.py` splits at every
+   decimal point, so "Natural Mint Flavour 0.010g" becomes "natural mint flavour 0" and "Wheat flour
+   (Atta) 58.3%" becomes "wheat flour 58" + "atta". Older than today (gold-set verdicts are still
+   right), but since D-115 shows the ingredient as read, a fragment like "natural mint flavour 0"
+   can reach the headline. Fix before invites, with tests and a gold-set re-run (D-099: the one
+   INS parser lives there).
+5. Then the DPDP data map, and the other items below (invites only after the privacy page and the
    DPDP review).
 
 **Earlier list (2026-09-27), still valid:**
@@ -707,6 +720,7 @@ drop PG18 after PG19 GA.
 | `API_README.md` | endpoints, database, reviewer screen, regulator comparison |
 | `RUNBOOK.md` | how to photograph, transcribe and score a gold batch |
 | `CLAUDE.md` | working rules for AI coding sessions |
+| `OPERATIONS.md` | **running the live site**: what exists on Google Cloud and where, GCP words in plain language, everyday commands, what to do when something breaks, money, security rules, the log of 2026-09-27 |
 | `DEPLOY.md`, `deploy/` | the server (D-114): step-by-step setup, Caddy, systemd units, backup/restore/update scripts, settings templates |
 | `src/insidelabel/` | the package (core, extraction, reliability, claims, lenses, db, review, api) + `trace.py` / `repro.py` (D-092); OCR readers in `extraction/providers/` (`cloud_vision.py`, `ocr_check.py`) |
 | `data/` | the knowledge tables - the moat |

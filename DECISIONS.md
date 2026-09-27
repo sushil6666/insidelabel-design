@@ -1368,6 +1368,38 @@ names carry words a pack may not say:
   and the technical line), or changing what the rows match (a separate question: today "stevia",
   "sucralose" and "interesterified vegetable fat" match no marker row).
 
+### D-116 · A pack licensed only as an AYUSH medicine is not food: it stays out of the catalogue `RECOMMENDED` (2026-09-27)
+Found by Sushil and Claude reviewing the first live item (review item 2 on the server,
+ORGANIC INDIA Tulsi Mulethi, barcode 0801541605019, 2026-09-27). Its back prints "Ayurvedic
+Medicine Mfg. Lic. No. A-2755" and "Certified Organic as per NPOP"; Sushil checked the whole
+pack: **no FSSAI logo or licence number anywhere**.
+
+**The law, read from the primary text** (Food Safety and Standards Act 2006, section 3(1)(j),
+FSSAI's own copy, fssai.gov.in/upload/uploadfiles/files/FOOD-ACT.pdf, read 2026-09-27): "food"
+means any substance intended for human consumption ... "but does not include any animal feed,
+live animals ..., plants, prior to harvesting, **drugs and medicinal products**, cosmetics,
+narcotic or psychotropic substances". A product made under an Ayurvedic medicine manufacturing
+licence and carrying no FSSAI licence is sold as a medicinal product. Every InsideLabel
+judgement uses FSSAI rules only (D-086), and those rules don't cover it.
+
+- **The rule:** a pack whose only licence is an **AYUSH drug licence** (an Ayurvedic, Siddha or
+  Unani medicine manufacturing licence) **and no FSSAI licence** doesn't enter the catalogue.
+  The reviewer **rejects** it with the reason "Not food under the FSS Act: AYUSH medicine
+  licence, no FSSAI licence (D-116)", and the licence as printed in the note.
+- **A pack with an FSSAI licence is food**, whatever else it prints (an organic mark, Ayurvedic
+  wording, herbs): it is reviewed and published as usual. When a pack prints both licences, the
+  FSSAI one decides.
+- **The reviewer checks the whole pack** for the FSSAI logo and 14-digit licence number before
+  rejecting, as Sushil did here. The review screen shows only the photos taken; if the licence
+  can't be seen in them, "Put back in the queue" and look at the pack.
+- **Nothing changes for the user yet.** Today a scan of such a pack still gets a result built
+  with food rules. Proposed separately, not part of this decision: the reader notes a drug
+  licence on the back (it already reads `fssai_licence`), and the result then says plainly that
+  the pack is licensed as an Ayurvedic medicine and our checks follow FSSAI food rules, showing
+  the ingredients as read without a food verdict. Needs its own wording check (D-042) and tests.
+- **No judgement of the brand or the product** (D-042): the reason states the licence, as
+  printed, and the Act's definition; nothing about the product's quality.
+
 ---
 
 ## Open and pending
