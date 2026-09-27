@@ -720,8 +720,11 @@ from all regions and emails Sushil after 60 s of failure (OPERATIONS.md §5). Fr
       sub-forms (503(ii), 450(i), 1101(i), 322(i)) that today match only their parent number.
       Each new row needs its Appendix A basis (D-046).
    d. **The result screen** ("not much useful for a user", Sushil): options and mockups to discuss.
-   e. **D-117 assisted review**, to write up: read the pack's declared category, compare Gemini
-      against the stored Cloud Vision text, and a one-click lane when they agree.
+   e. **D-117 RECOMMENDED: review agents** (Sushil: "one agent will draft and another agent will
+      confirm; if any ambiguity then human will review"; drafter Gemini). Gemini drafts every new
+      item; a rules checker confirms against Cloud Vision's text; anything doubtful goes to Sushil
+      with the draft filled in. Shadow first; publishing switches on after 30 of Sushil's reviews
+      agree at 95 %. Remaining queue items (about 38) wait for it. **Needs Sushil's "accepted".**
 6. Then the DPDP data map, and the other items below (invites only after the privacy page and the
    DPDP review).
 

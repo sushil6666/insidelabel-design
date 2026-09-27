@@ -1401,6 +1401,76 @@ judgement uses FSSAI rules only (D-086), and those rules don't cover it.
 - **No judgement of the brand or the product** (D-042): the reason states the licence, as
   printed, and the Act's definition; nothing about the product's quality.
 
+### D-117 · Review agents: Gemini drafts, a checker confirms, a person sees only the doubtful items `RECOMMENDED` (2026-09-27)
+Direction from Sushil, after reviewing the first run by hand ("one agent will draft and another
+agent will confirm; if any ambiguity then human will review"; drafter: Gemini). Details and
+safeguards by Claude.
+
+**Why.** On 2026-09-27 every item of the first supermarket run needed the same mechanical work:
+rejoin compound ingredients the reader split at a bracket, split two ingredients the pack ran
+together, read the category the pack declares, otherwise pick it from the Codex descriptors,
+clear taglines and pack sizes out of the claims, write a note. A person can't keep doing that for
+the 50-SKU seed (D-058) and beyond. What a person must keep doing is catch the doubtful cases:
+the Ayurvedic-medicine pack (D-116), a garbled line that dropped words (Bisk Farm TOP GOLD), a
+"Sugar Free" claim.
+
+**This changes a standing rule.** Until now only a person on `/review` publishes (CLAUDE.md, "the
+catalogue is reviewed data"; D-029: the verified catalogue is the asset). Under D-117 a record can
+also be published when two independent checks agree. The door stays the same:
+`ReviewService.approve()` then `publish_version()`, with every database rule still in force
+(`physical_label` only, D-089; category required). Agent-published versions carry
+`verified_by = 'agent'`, so they are always distinguishable from a person's.
+
+**1. The drafter (Gemini, a new prompt `review_draft`, versioned like the reading prompt).** For
+each new-product or reformulation item it gets the pack photos, the scan's reading, the Cloud
+Vision text already stored on the scan (D-094), the Appendix A category list, the four claim rules
+and the review conventions written down on 2026-09-27. It returns, as JSON: brand, name, variant,
+category code and **where it came from** (`pack_declared` or `descriptor`), ingredient lines,
+allergen line, front claims, a note, whether an AYUSH licence is visible, and a list of its own
+doubts. It reads and drafts; it never decides (D-004).
+
+**2. The checker confirms, and is deliberately not a second call to the same model** (which would
+repeat Gemini's blind spots). It is rules plus the one independent reader we already have,
+Cloud Vision. An item is **confirmed** only if every check passes:
+- every word of the drafted ingredient lines appears in the Cloud Vision text of the back photo,
+  and every line's brackets balance;
+- the category exists; when the pack text declares one ("Proprietary Food - 4.2.2.5"), the draft
+  equals it; otherwise the draft equals the category a fixed word table gives, and the table gives
+  one;
+- barcode valid (D-103), photo checks passed, front and back not flagged as different packs
+  (D-108);
+- the reading passed the 0.95 confidence gate on a complete read (D-060);
+- the allergen line appears in the Cloud Vision text;
+- no AYUSH licence seen (D-116);
+- no front claim matches a claim rule (sugar free, no added sugar, no preservatives, made with
+  real X): claim-bearing packs are the D-051 measurement set and go to a person;
+- the drafter listed no doubts.
+
+**3. Anything else goes to a person**, with the draft already filled in and the failed checks
+listed at the top, so the review is a correction, not a blank form. Reported mistakes, "send it
+to us" and front-photo items stay with people for now.
+
+**4. Shadow first, then publish.** The agents start in **shadow**: they draft and check every new
+item and publish nothing, and `/review` shows the draft beside the item. Publishing switches on
+(`INSIDELABEL_REVIEW_AGENT=publish`) only when, on **at least 30 items Sushil has reviewed**, the
+drafts match his decision on category and ingredient lines for at least 95 % of items, and **no
+item the checker would have confirmed** needed a material correction from him. The items already
+reviewed on 2026-09-27 are the start of that set.
+
+**5. After switching on:** `/review` lists agent-published items; Sushil spot-checks one in ten for
+the first month, and "put back in the queue" undoes an agent publish in one click. Users' "Report
+a mistake" still goes to people. Every draft, check result and Gemini's raw answer is stored with
+the item (D-092).
+
+**6. Cost and running.** One paid Gemini call per new item (about 50 paise, like a scan). A
+systemd timer on the server drafts new items every few minutes, one at a time, outside the web
+process (D-095 stays one web process). No new processor of personal data: label photos already go
+to Google for Gemini and Cloud Vision, as the privacy page says.
+
+**Not proposed:** a second AI as the checker (same blind spots, or a new processor to name in the
+privacy page); letting the agents handle reports or send-to-us; publishing without the shadow
+measurement.
+
 ---
 
 ## Open and pending
