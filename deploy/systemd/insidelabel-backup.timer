@@ -1,0 +1,12 @@
+# /etc/systemd/system/insidelabel-backup.timer (D-114): daily, 02:30 India time,
+# an hour before the disk snapshot (22:00 UTC, 03:30 India time), so the snapshot
+# holds the new dump.
+[Unit]
+Description=Daily InsideLabel database backup
+
+[Timer]
+OnCalendar=*-*-* 02:30:00 Asia/Kolkata
+Persistent=true
+
+[Install]
+WantedBy=timers.target

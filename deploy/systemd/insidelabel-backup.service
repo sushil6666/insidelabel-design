@@ -1,0 +1,18 @@
+# /etc/systemd/system/insidelabel-backup.service (D-114)
+# A pg_dump of the database, kept 14 days on the server. The daily disk snapshot
+# (Compute Engine schedule, DEPLOY.md) is the copy that lives off the machine.
+[Unit]
+Description=InsideLabel database backup
+After=postgresql.service
+
+[Service]
+Type=oneshot
+User=insidelabel
+Group=insidelabel
+Environment=BACKUP_DIR=/var/lib/insidelabel/backups
+ExecStart=/opt/insidelabel/app/deploy/backup.sh
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/var/lib/insidelabel

@@ -1,0 +1,19 @@
+# /etc/systemd/system/insidelabel-retention.service (D-080, D-098)
+# Deletes label photos older than 30 days, except those on hold. Our job, not a
+# storage lifecycle rule, because only the database knows about holds.
+[Unit]
+Description=InsideLabel photo retention (30 days, holds kept)
+After=postgresql.service
+
+[Service]
+Type=oneshot
+User=insidelabel
+Group=insidelabel
+WorkingDirectory=/opt/insidelabel/app
+EnvironmentFile=/etc/insidelabel/settings.env
+ExecStart=/opt/insidelabel/venv/bin/python tools/retention.py --apply
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/var/lib/insidelabel

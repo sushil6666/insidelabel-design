@@ -1,0 +1,26 @@
+#!/bin/bash
+# Run InsideLabel's Python tools on the server as the service user, with the
+# server's settings (settings.env only: no API keys are needed by the tools).
+#
+#   il tools/reviewers.py add sushil
+#   il tools/beta.py invite 5 --label T01
+#   il tools/retention.py            # list what would be deleted
+#   il tools/repro.py show <id>
+#   il migrate                       # apply migrations to the server database
+#
+# Installed as /usr/local/bin/il (DEPLOY.md, step 6).
+set -euo pipefail
+APP=/opt/insidelabel/app
+PY=/opt/insidelabel/venv/bin/python
+
+if [ "$(id -un)" != insidelabel ]; then
+    exec sudo -u insidelabel -- "$0" "$@"
+fi
+set -a
+. /etc/insidelabel/settings.env
+set +a
+cd "$APP"
+if [ "${1:-}" = migrate ]; then
+    exec "$PY" -m insidelabel.db.migrate "$INSIDELABEL_DB"
+fi
+exec "$PY" "$@"

@@ -4,7 +4,7 @@ Architectural and product decisions for InsideLabel, with the reasoning attached
 Append-only. When a decision is reversed, mark it `SUPERSEDED` and add a new entry
 rather than editing the old one - the history is the point.
 
-**Last updated:** 2026-09-27 (D-102 to D-113 locked; D-001's chatbot clause superseded; D-114 hosting recommended)
+**Last updated:** 2026-09-27 (D-102 to D-113 locked; D-001's chatbot clause superseded; D-114 hosting locked)
 
 **Status key:** `LOCKED` decided, don't relitigate · `OPEN` not yet decided ·
 `RECOMMENDED` proposed but not accepted · `SUPERSEDED` replaced
@@ -430,7 +430,7 @@ in `additives.json`: 171 re-based `high` → `moderate` and `fssai_status` `chec
 foreign-ban wording removed from `why`. The kids lens (D-056) still mentions the EU
 warning as labelled context. Accepted by Sushil 2026-09-25.
 
-### D-087 · PostgreSQL 19 `LOCKED` (2026-09-25)
+### D-087 · PostgreSQL 19 `LOCKED` (2026-09-25); the server runs 18 until 19 is released, see D-114 (2026-09-27)
 Target PostgreSQL 19. Installed locally as 19~beta4 from the official PostgreSQL apt
 repository (`tools/install_pg19.sh`), side by side with 16 (which stays on 5432 until
 19 is proven). GA is expected by end of October 2026, before the beta users arrive.
@@ -1248,11 +1248,11 @@ the rest of D-001 stands. Not built yet.
 - **A second DPDP check before launch**: it uses children's data (age band, avoid list) in a new
   way.
 
-### D-114 · Hosting: one Google Cloud server in Mumbai, DNS on Cloudflare `RECOMMENDED` (2026-09-27)
+### D-114 · Hosting: one Google Cloud server in Mumbai, DNS on Cloudflare `LOCKED` (2026-09-27)
 Direction from Sushil ("host the web beta on insidelabel.ai"; asked whether Cloudflare could
 host it; first chose AWS Lightsail, then Google Cloud: "go with google cloud for now, will change
 in future if any issue", 2026-09-27). Details by Claude. Checked on the providers' own pages
-2026-09-27.
+2026-09-27. **Accepted by Sushil 2026-09-27** ("accepted").
 
 **Why not Cloudflare for the app.** Python Workers run pure-Python or Pyodide-built packages
 only; we need `psycopg`, `zxing-cpp`, Pillow and Tesseract. Cloudflare Containers run any image,
@@ -1291,7 +1291,7 @@ for deletion" (30 days' grace), and a suspended billing account stops every link
 - **PostgreSQL 18 on the server** (18.6 in the PGDG apt repository for noble, checked
   2026-09-27), not 19: 19 is still a beta, and D-087 itself keeps the schema portable to 16-18 for
   a host without 19. Move to 19 by dump and restore once it is released (expected end October),
-  in its own step. When accepted, D-087 is marked "server: see D-114"; local work stays on 19.
+  in its own step. D-087's heading now points here; local work stays on 19.
 - **Photos on the server disk** (`INSIDELABEL_MEDIA`) until R2 is built.
 - **Settings in one root-only file** read by systemd, never in the repo: `GEMINI_API_KEY`,
   `GOOGLE_VISION_KEY` (D-093), `INSIDELABEL_DB`, `INSIDELABEL_MEDIA`, `INSIDELABEL_BUILD`,

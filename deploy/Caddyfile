@@ -1,0 +1,28 @@
+# /etc/caddy/Caddyfile on the server (D-114). Caddy gets and renews the HTTPS
+# certificates itself; ports 80 and 443 must reach this machine and the DNS
+# records must point here (Cloudflare proxy off, "DNS only").
+#
+# No access log on purpose: it would keep every visitor's IP address, which the
+# privacy page doesn't list. Caddy's own errors go to the journal.
+
+insidelabel.ai {
+	encode zstd gzip
+
+	# D-095: the app reads the caller from X-Forwarded-For, one hop from the right
+	# (INSIDELABEL_PROXY_HOPS=1). With no trusted_proxies set, Caddy ignores any
+	# X-Forwarded-For sent from the internet and writes the real peer address, so
+	# a client can't pick its own rate-limit key.
+	reverse_proxy 127.0.0.1:8000
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+}
+
+# D-114: insidelabel.ai is the only address; the others redirect permanently.
+www.insidelabel.ai, insidelabel.in, www.insidelabel.in {
+	redir https://insidelabel.ai{uri} permanent
+}
