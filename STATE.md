@@ -604,11 +604,11 @@ one invite (Sushil's own), and **one real scan from the phone**: `verdict`, 5.7 
      acceptable; rotate it if preferred.
    - Walk the rest of the app on the phone (profiles, compare, report a mistake, report a problem):
      the manual gate in §11.
-2. **D-115 RECOMMENDED, built** (branch `nova-label-words`): the first live scan's headline and
+2. **D-115 LOCKED 2026-09-27, built** (branch `nova-label-words`): the first live scan's headline and
    "On the label" quote showed our table's row name ("added flavour (natural/artificial/
    nature-identical)"), not the pack's words. Now both use the words as read; which row matches,
    and every verdict, is unchanged. 103 new tests (82 fail on the old code); the six gold labels'
-   headlines unchanged, their quotes now the pack's words. **Sushil: accept, merge, then
+   headlines unchanged, their quotes now the pack's words. **Sushil: merge, then
    `sudo /opt/insidelabel/app/deploy/update.sh` on the server.** Before invites.
 3. Then the DPDP data map, and the other items below (invites only after the privacy page and the
    DPDP review).
