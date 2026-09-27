@@ -1,6 +1,6 @@
 # STATE.md - where InsideLabel is, and how to pick it up
 
-**Last updated:** 2026-09-27 (**https://insidelabel.ai is live**, `main` = `45f9feb`, PR #18; branch `live`: notes from the deploy) · **Owner:** Sushil · **Tests:** 531 passing, 8 skipped, 1 expected failure · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 5.7 s on the live server (2026-09-27), Gemini + Cloud Vision, `verdict`
+**Last updated:** 2026-09-27 (**https://insidelabel.ai is live**, `main` = `45f9feb`, PR #18; branch `live`: notes from the deploy) · **Owner:** Sushil · **Tests:** 534 passing, 8 skipped, 1 expected failure · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 5.7 s on the live server (2026-09-27), Gemini + Cloud Vision, `verdict`
 
 This is the living status document. Read it first in any new session, then
 `DECISIONS.md` for the *why*. Update the "Last updated" line, the numbers and
@@ -714,9 +714,10 @@ from all regions and emails Sushil after 60 s of failure (OPERATIONS.md §5). Fr
    a. **A missing sugar name changed a verdict**: Lotus Biscoff reads clean, grade A, score 100 with
       36 g added sugars per 100 g, because "candy sugar syrup" is not in `sugar_aliases`. Collect the
       missing names, re-run the gold set, show Sushil what moves, then his decision. **Before invites.**
-      **D-120 RECOMMENDED** (2026-09-27): add "candy sugar syrup" and "sugar syrup" (FSSAI L&D 2020
-      definition of added sugars); not bare "malt". Biscoff's headline becomes "Sugar appears under 2
-      names"; its band stays "No concerns found" (for the result-screen discussion). Waiting on Sushil.
+      **D-120 LOCKED and built** (Sushil, 2026-09-27): "candy sugar syrup" and "sugar syrup" added
+      (FSSAI L&D 2020 definition of added sugars); bare "malt" deliberately not. Biscoff's headline is
+      now "Sugar appears under 2 names"; its band still says "No concerns found" (for the result-screen
+      discussion). Gold set re-scored from stored predictions: per-label results identical. 3 tests.
    b. **Tokenizer: nested square brackets and braces** give fragments like `emulsifier ]` and
       `antioxidant }`, which D-115 can now show to a user. Fix with a gold-set re-run. **Before invites.**
    c. **Additive rows missing**: INS 319 (TBHQ, seen on two packs) and INS 472(e); and a decision on

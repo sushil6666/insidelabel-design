@@ -1545,8 +1545,9 @@ the letters are too small for either reader. Today the app takes exactly one bac
 - **Measured 2026-09-27:** 3 gold labels cut into two overlapping parts and joined: every reading
   identical to the single photo's, no word read twice, verdict-changing rate 0%, INS F1 1.000.
 
-### D-120 · "Candy sugar syrup" and "sugar syrup" count as added sugar; bare "malt" does not `RECOMMENDED` (2026-09-27)
-Found by Sushil in the shop (Lotus Biscoff, 2026-09-27). Recommended by Claude; **not yet accepted.**
+### D-120 · "Candy sugar syrup" and "sugar syrup" count as added sugar; bare "malt" does not `LOCKED` (2026-09-27)
+Found by Sushil in the shop (Lotus Biscoff, 2026-09-27). Recommended by Claude. **Accepted by Sushil
+2026-09-27** ("D-120 accepted").
 
 **The basis (primary source, read 2026-09-27).** FSS (Labelling and Display) Regulations 2020,
 compendium version I (23.09.2021), page 9: "'sugars' means all monosaccharides (glucose, fructose,

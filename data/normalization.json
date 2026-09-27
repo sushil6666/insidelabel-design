@@ -27,14 +27,15 @@
     ]
   },
   "sugar_aliases": {
-    "_note": "All of these are 'added sugar' for the sugar-count heuristic. Marketing hides sugar behind many names; counting them together is a key user-trust feature.",
+    "_note": "All of these are 'added sugar' for the sugar-count heuristic. Marketing hides sugar behind many names; counting them together is a key user-trust feature. D-120: candy sugar syrup and sugar syrup added (FSSAI L&D 2020, added sugars = mono- and disaccharides added); bare malt deliberately not (malted grain).",
     "added_sugar": [
       "sugar", "sucrose", "cane sugar", "brown sugar", "caster sugar", "icing sugar",
       "invert sugar", "invert syrup", "glucose", "glucose syrup", "liquid glucose",
       "dextrose", "fructose", "high fructose corn syrup", "hfcs", "corn syrup",
       "maltose", "maltodextrin", "honey", "molasses", "malt extract", "barley malt",
       "jaggery", "gur", "date syrup", "fruit juice concentrate", "cane juice",
-      "demerara", "treacle", "golden syrup", "rice syrup", "agave syrup", "palm sugar"
+      "demerara", "treacle", "golden syrup", "rice syrup", "agave syrup", "palm sugar",
+      "candy sugar syrup", "sugar syrup"
     ]
   },
   "synonyms": {
