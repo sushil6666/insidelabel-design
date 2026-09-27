@@ -543,8 +543,9 @@ Nothing was blocked; all five items were built. These need you:
 - **D-053** premium pricing - ₹399-499/year recommended.
 - ~~**D-054** the "100% ATTA" ruling~~ ✅ decided 2026-09-25: about the flour, no finding.
 - **D-082** what Premium is for - interviews only.
-- **D-113** (RECOMMENDED 2026-09-27) a Pro chatbot, "ask about this pack", personalised with age band
-  and avoid list; explains, never judges (D-004); after W4 (D-083). Not built until accepted.
+- **D-113** (LOCKED 2026-09-27) a Pro chatbot, "ask about this pack", personalised with age band and
+  avoid list; explains, never judges (D-004). Supersedes D-001's "not a chatbot". Not built. Open:
+  when to build it (D-113 says after W4, per D-083; Sushil wants it to sell subscriptions).
 - Concern levels on the 35 verified rows are judgement calls (e.g. sorbitol `low`) - review before launch.
 - **Gemini billing**: prepaid credit (can run out, as it did today) vs post-paid / auto top-up.
 - **A fallback model** for when `gemini-3.6-flash` is busy - only after `gemini-3.5-flash`
@@ -571,7 +572,7 @@ setup alarms.
   address** ("we are claiming for chatbot and all in future plan"). `insidelabel.in` and `www.` of
   both redirect to it permanently; `INSIDELABEL_PUBLIC_URL=https://insidelabel.ai`; contact such as
   `privacy@insidelabel.ai`. Goes into D-114 with the host. The chatbot plan (Pro) is D-113,
-  RECOMMENDED; it would supersede D-001's "not a chatbot". Auto-renew both domains.
+  LOCKED; it supersedes D-001's "not a chatbot". Auto-renew both domains.
 - **Sushil: pick the host** (suggested: one small Ubuntu VPS in Mumbai, 2 GB). Then Claude
   records **D-114** (hosting; PostgreSQL 18 on the server until 19 is released, which changes
   D-087; photos on the server disk until R2 is built) and writes `deploy/`: Caddy (HTTPS),
