@@ -19,6 +19,12 @@ import pytest
 # refuses it unless this is on; test_replay_gate.py checks the refusal.
 os.environ.setdefault("INSIDELABEL_ALLOW_REPLAY", "on")
 
+# api/main.py stores every scan in INSIDELABEL_DB when it is set, at import. A suite
+# run from a shell that has it (`INSIDELABEL_DB=... release_check.py --with-tests`)
+# wrote 386 scans, 52 users and 5 problem reports into the laptop's real database
+# (2026-09-28). Tests get their databases from fresh_db only.
+os.environ.pop("INSIDELABEL_DB", None)
+
 
 @pytest.fixture(autouse=True)
 def _fresh_rate_limits():

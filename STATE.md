@@ -663,21 +663,39 @@ setup alarms.
 - **Sushil is scanning packs** (aim: 50). For each review screenshot he posts, answer in the fixed
   format (memory: review item format): Category as the exact dropdown line, ingredient fixes, front
   claims, a paste-ready Note, pack checks. Never ask him to hunt for the FSSAI licence.
-- **Tokenizer brackets: BUILT, D-121 RECOMMENDED** (branch `nested-brackets`, 546 tests): splits only
+- **Tokenizer brackets: D-121 LOCKED, merged** (PR #37): splits only
   outside brackets, any depth, `( ) [ ] { }` alike; no more `emulsifier ]`. INS numbers, binary and
   grade identical on 26 local labels; **scores move**: Limca 80 to 76, Ziggy 28 to 4 (class words now
-  reach their NOVA rows). Sushil: accept or not, then merge and `update.sh`.
-- **Additive rows: BUILT, D-122 RECOMMENDED** (branch `additive-rows`, stacked on `nested-brackets`,
-  551 tests): INS 319 TBHQ, 472e DATEM, 296 malic acid from compendium XXVI Appendix A; "472(e)" now
+  reach their NOVA rows). Accepted 2026-09-28; `update.sh` on the server if not yet run.
+- **Additive rows: D-122 LOCKED, merged** (PR #38, 551 tests): INS 319 TBHQ, 472e DATEM, 296 malic acid from compendium XXVI Appendix A; "472(e)" now
   reads as 472e; sub-forms keep the parent row (gap: 331(ii), 170(ii) not in Appendix A, never seen).
-  Sushil: TBHQ concern low (recommended, scores 0) or moderate; merge after `nested-brackets`.
+  TBHQ concern low (accepted, scores 0).
+- **Result screen: options ready for Sushil** (2026-09-28): today's real `/scan` output for Biscoff,
+  Maliban and Limca beside option A (tidy up) and B (three answers: sugar's place in the list, how
+  it's made, additives; recommended) and C (compare with the shelf, later). Page:
+  https://claude.ai/artifact/2Rh7RTBhRz4D5ibsY9hbNF. Waiting: A or B, the "none found" wording, and
+  whether Claude drafts shopper-facing reasons for the 69 additive rows.
+- **Health report page** (2026-09-28, Sushil: "output like the Elementary report"):
+  https://claude.ai/artifact/2uS8hxSpVxkLoBCh8zSoHB (tests, release gates, catalogue, scans; a summary
+  written by Claude and an Ask box). Data from `tools/health_report.py` (counts only, no personal data).
+  Refresh: run it (on the server: `il tools/health_report.py --no-tests --source server --out /tmp/health.json`),
+  paste the JSON, Claude rewrites the summary and republishes `data.json`. The laptop DB is behind on
+  migrations (no `review_drafts`), so the review-agent section is empty there.
+  **Incident, fixed:** a test run with `INSIDELABEL_DB` set wrote 386 scans, 52 users and 5 problem
+  reports into the laptop DB; deleted with Sushil's OK. `conftest.py` now drops `INSIDELABEL_DB`, and
+  both tools strip it before running pytest.
+- **Your scans + alternatives: mockups for Sushil** (2026-09-28): https://claude.ai/artifact/HV9MoviE2ipcVyvGwYjwyd
+  (on-phone scan summary from the PWA's own history; alternatives as a side-by-side table + up to 3
+  named packs, no named "worse" list). Found: `compare.py` ties Lotus Biscoff (1 additive) with Ziggy
+  Donut Cake (21 additives, 8 industrial) because its tie test uses only concern tiers and sugar's
+  place; a tie-break rule is needed before any catalogue recommendation. Waiting: his three calls.
 - **Result screen rebuilt: D-123 RECOMMENDED** (branch `result-answers`, web-19): Sushil's 5 testers were
   unhappy with the output. Three answers under every headline (sugar's place and names, how it's
   made, additives worth knowing), clearer headlines, no "No concerns found" under a finding, a
   compare prompt after each result, "Your scans" on home. Sushil: merge, `update.sh`, try it on the
   phone, then "accepted". Next: plain-language additive reasons (69 rows, Sushil reviews); ask the
   testers what they wanted to know that the screen didn't say.
-- **Next work, in order (before invites):** (1) and (2) done, see above. (3) The result-screen
+- **Next work, in order (before invites):** (1) and (2) done; (3) built as D-123, see above. (3) The result-screen
   discussion Sushil asked for ("not much useful for a user"; Biscoff's band says "No concerns found"
   under a sugar headline): mockups, his decision. (4) Privacy page (contact `connect@insidelabel.ai`),
   DPDP review, DPDP data map. (5) Loose ends below: billing off the free trial, `insidelabel.in`
