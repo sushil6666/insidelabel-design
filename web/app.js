@@ -29,7 +29,7 @@ let pending = { barcode: null, barcodeSource: null, back: null, front: null, bac
 
 // ------------------------------------------------------------------ navigation
 const routes = {
-  "": home, welcome, household, person, scan, photo, front, result, report, compare, problem, send,
+  "": home, welcome, who, household, person, scan, photo, front, result, report, compare, problem, send,
   join, agree, feedback,
 };
 
@@ -62,7 +62,7 @@ function route() {
 }
 
 function routeAfterJoin(name, arg) {
-  if (!store.get("welcomed", false) && !["welcome", "household", "person", "join", "agree"].includes(name)) {
+  if (!store.get("welcomed", false) && !["welcome", "who", "household", "person", "join", "agree"].includes(name)) {
     return show(welcome());
   }
   const seq = ++navSeq;
@@ -248,8 +248,23 @@ function welcome() {
       el("li", {}, "An AI reads the label. Fixed rules, based on FSSAI regulations, make every judgement."),
       el("li", {}, "Nicknames you add stay on this phone. Our server only sees an age band and an avoid list."),
       el("li", {}, "It shows ingredient facts, not medical advice.")),
-    button("Set up your household", () => { store.set("welcomed", true); go("household"); }, "primary"),
-    button("Skip for now", () => { store.set("welcomed", true); go(""); }, "link"));
+    // D-127: ask the question people can answer, not "set up your household".
+    el("div", { class: "card note" },
+      el("h2", {}, "Does anyone you shop for avoid a food, like peanut, milk or gluten?"),
+      el("p", { class: "muted" }, "We check every pack for it first. You can change this any time."),
+      el("div", { class: "row wrap" },
+        button("Yes", () => { store.set("welcomed", true); go("who"); }, "primary"),
+        button("No", () => { store.set("welcomed", true); go(""); }))));
+}
+
+// D-127: who the avoid list is for. Adults other than you aren't profiles (D-074).
+function who() {
+  return el("section", { class: "stack" },
+    el("h1", {}, "Who avoids it?"),
+    button("Me", () => go("person/me"), "primary"),
+    profiles().length < MAX_PROFILES && button("A child I shop for", () => go("person/new")),
+    el("p", { class: "muted" }, "You can add more people afterwards, up to " + MAX_PROFILES + " including you."),
+    button("Done", () => go(""), "link"));
 }
 
 // ------------------------------------------------------------------ home
@@ -371,7 +386,7 @@ async function person(ref) {
   const err = el("p", { class: "error", role: "alert" });
 
   form.append(...[
-    el("h1", {}, isMe ? "Your avoid list" : isNew ? "Add a child" : `Edit ${p.nickname}`),
+    el("h1", {}, isMe ? "What do you avoid?" : isNew ? "Add a child" : `Edit ${p.nickname}`),
     !isMe && el("label", { for: "nick" }, "Nickname (stays on this phone)"),
     nameInput,
     !isMe && el("fieldset", {},
@@ -381,8 +396,10 @@ async function person(ref) {
                       onchange: () => { p.age = a.id; } }),
         ` ${a.label} `, el("span", { class: "muted" }, a.sub)))),
     el("fieldset", {},
-      el("legend", {}, "Avoid list"),
-      el("p", { class: "muted" }, "We put these first on every result."),
+      el("legend", {}, isMe ? "Foods you avoid" : "Foods this child avoids"),
+      el("p", { class: "muted" }, "We check every pack for these first and put the answer at the top of the result. "
+        + "We only report what the label prints, so read the pack too. ",
+        el("a", { href: "/how#avoid", target: "_blank", rel: "noopener" }, "How we check")),
       allergens.map(a => el("label", { class: "choice" },
         el("input", { type: "checkbox", value: a.code, checked: p.avoid.includes(a.code),
                       onchange: e => {
@@ -820,6 +837,7 @@ function result(id) {
       el("div", { class: "a" },
         el("span", { class: `chip tone-${r.tone}` }, r.chip),
         el("p", {}, r.text))))));
+    if (s.glance) put(glanceView(s.glance));
     if (s.band.note) put(el("details", { class: "item" }, el("summary", {}, "What does \"industrial\" mean?"),
       el("p", {}, s.band.note)));
   } else {
@@ -919,6 +937,15 @@ function result(id) {
       }, "primary")));
   }
 
+  // D-127: what the words on this result mean, each linked to "How we check".
+  if (s.glossary?.length) {
+    put(el("details", { class: "item" }, el("summary", {}, "What these words mean"),
+      el("dl", { class: "words" }, s.glossary.map(g => [
+        el("dt", {}, g.term),
+        el("dd", {}, g.text, " ", el("a", { href: g.url, target: "_blank", rel: "noopener" }, "More")),
+      ]).flat())));
+  }
+
   // 7. What this covers - stated, never silent (D-037).
   put(el("details", { class: "item" }, el("summary", {}, "What this check covers"),
     el("ul", { class: "plain small" }, (h.disclosures || []).map(d => el("li", {}, d)))));
@@ -933,6 +960,42 @@ function result(id) {
     button("Scan another", () => { resetPending(); go("scan"); }, "primary")),
     reportLink(h));
   return view;
+}
+
+// D-127: the ring and the strip. Everything drawn comes from the server's `glance`
+// block (types, counts, labels, caption); only the geometry is worked out here.
+const SVG_NS = "http://www.w3.org/2000/svg";
+function svgEl(tag, attrs, ...kids) {
+  const n = document.createElementNS(SVG_NS, tag);
+  for (const [k, v] of Object.entries(attrs || {})) n.setAttribute(k, v);
+  kids.forEach(k => n.append(k));
+  return n;
+}
+function glanceView(g) {
+  const order = ["worth", "sugar", "industrial", "additive", "other"].filter(t => g.counts[t]);
+  const r = 46, c = 2 * Math.PI * r;
+  const ring = svgEl("svg", { viewBox: "0 0 124 124", role: "img",
+    "aria-label": order.map(t => `${g.labels[t]} ${g.counts[t]}`).join(", ") },
+    svgEl("circle", { cx: 62, cy: 62, r, fill: "none", style: "stroke: var(--line)", "stroke-width": 18 }));
+  let off = 0;
+  order.forEach(t => {
+    const len = Math.max(c * g.counts[t] / g.total - (order.length > 1 ? 2 : 0), 1);
+    ring.append(svgEl("circle", { cx: 62, cy: 62, r, fill: "none", style: `stroke: var(--g-${t})`, "stroke-width": 18,
+      "stroke-dasharray": `${len} ${c}`, "stroke-dashoffset": -off, transform: "rotate(-90 62 62)" }));
+    off += c * g.counts[t] / g.total;
+  });
+  ring.append(svgEl("text", { x: 62, y: 64, "text-anchor": "middle", "font-size": 22, "font-weight": 700 }, String(g.total)));
+  const dark = t => t === "worth" || t === "industrial";
+  return el("div", { class: "glance" },
+    el("h2", {}, "At a glance"),
+    el("div", { class: "glance-row" }, ring,
+      el("div", { class: "g-legend" }, order.map(t => el("div", {},
+        el("i", { class: `g-${t}` }, t === "worth" ? "!" : ""), el("span", {}, g.labels[t]), el("b", {}, String(g.counts[t])))))),
+    el("div", {}, el("div", { class: "g-strip", "aria-hidden": "true" }, g.entries.map(e =>
+      el("span", { class: `g-${e.type}${dark(e.type) ? " dark" : ""}`, title: `${e.n}. ${e.text}` },
+        e.type === "worth" ? "!" : String(e.n)))),
+      el("div", { class: "g-ends" }, el("span", {}, "First: most"), el("span", {}, "Last: least"))),
+    el("p", { class: "muted small" }, g.caption));
 }
 
 function personCard(p) {

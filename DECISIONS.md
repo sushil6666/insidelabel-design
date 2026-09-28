@@ -1732,6 +1732,28 @@ what the avoid list was. **Accepted by Sushil 2026-09-28** ("yes").
   it reports what is printed, never "free from" or "safe" (D-042); below 0.95 confidence or on a
   partial read it says we can't confirm.
 
+### D-127 · Ask the allergy question plainly; "At a glance"; what the words mean, linked to "How we check" `RECOMMENDED` (2026-09-28)
+Sushil: "are we asking the right question to user to add the allergic part", and the words
+(Industrial, Additive, Other) should be explained at the end with a link. Recommended by Claude.
+**Waiting for "accepted"** after trying it on the phone. App web-22.
+
+- **Setup asks what people can answer.** Welcome: "Does anyone you shop for avoid a food, like
+  peanut, milk or gluten?" [Yes] [No]. Yes: "Who avoids it?" Me / A child I shop for (D-074 keeps
+  other adults out). The list screen: "What do you avoid?" / "Foods this child avoids", with what we
+  do with it and that we only report what the label prints, linked to "How we check". Before, the
+  question was never asked: "Set up your household" led to "Add a child", and your own list sat
+  behind a row called "Your avoid list".
+- **"At a glance"** (the mockup Sushil approved, D-125): `screen.glance` gives each list entry one
+  type, the most telling first: worth knowing, sugar, industrial, additive, other; a ring of the
+  counts and a strip of the list in printed order. The caption says counts, not weight. Colours
+  from the validated categorical slots and the status red, in both themes.
+- **"What these words mean"** at the end of every result: only the terms that result used, each
+  with a plain definition (`screen.GLOSSARY`, under the wording lint) and a "More" link to its
+  section of the new public page `/how` ("How we check a label", `web/site/how.html`). A test
+  checks every term has its section.
+- "By law, ingredients are listed from most to least" was left out of `/how` until the FSSAI
+  labelling regulation is read first-hand (D-046).
+
 ---
 
 ## Open and pending

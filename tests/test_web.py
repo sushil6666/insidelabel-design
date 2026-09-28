@@ -138,3 +138,11 @@ def test_empty_report_sentence_matches_the_server():
     src = open(os.path.join(WEB_DIR, "app.js"), encoding="utf-8").read()
     assert f'"{EMPTY_REPORT}"' in src
     assert '"empty_report"' in src
+
+
+def test_how_we_check_page_has_a_section_for_every_word():          # D-127
+    from insidelabel.lenses import screen
+    r = c.get("/how")
+    assert r.status_code == 200 and "text/html" in r.headers["content-type"]
+    for key in list(screen.GLOSSARY) + ["avoid", "glance"]:
+        assert f'id="{key}"' in r.text, key

@@ -20,6 +20,8 @@
   --stop: #c92324; --stop-bg: #ffe5e0;                              /* on the avoid list / may contain */
   --unsure: #6c380d; --unsure-bg: #ffefcd; --unsure-line: #f59e3b;  /* couldn't confirm / uncertain */
   --calm: #194860; --calm-bg: #d5f7f4;                              /* not listed / nothing extra */
+  /* D-127 "At a glance": validated categorical slots (dataviz validator, both modes) + status red. */
+  --g-worth: #d03b3b; --g-sugar: #eb6834; --g-industrial: #2a78d6; --g-additive: #1baf7a; --g-other: #d3dde3;
   --radius: 16px;
   --shadow: 0 1px 2px rgba(36, 75, 107, .06), 0 12px 32px -12px rgba(36, 75, 107, .18);
   --hero: radial-gradient(60% 60% at 15% 10%, rgba(196, 246, 212, .7), transparent 70%),
@@ -33,6 +35,7 @@
     --brand: #66c189; --brand-ink: #042234; --accent: #66c189; --ring: #7dccda; --mint: #28523c;
     --stop: #ffbdb5; --stop-bg: #6c3530; --unsure: #ffd791; --unsure-bg: #674420; --unsure-line: #f7ac4d;
     --calm: #d9f0f3; --calm-bg: #265368;
+    --g-worth: #e66767; --g-sugar: #d95926; --g-industrial: #3987e5; --g-additive: #199e70; --g-other: #4a6275;
     --shadow: 0 1px 2px rgba(0, 0, 0, .2), 0 12px 32px -12px rgba(0, 0, 0, .45);
     --hero: radial-gradient(60% 60% at 15% 10%, rgba(40, 82, 60, .8), transparent 70%),
             radial-gradient(50% 50% at 90% 20%, rgba(38, 83, 104, .8), transparent 70%);
@@ -286,3 +289,22 @@ q { quotes: "“" "”"; }
   .look-arrow { transition: transform .2s ease; }
 }
 @keyframes look-nudge { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(5px); } }
+
+/* D-127: "At a glance" ring + list-order strip, and "What these words mean". */
+.glance { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; display: grid; gap: 12px; }
+.glance h2 { font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-family: var(--font); }
+.glance-row { display: grid; grid-template-columns: 124px 1fr; gap: 14px; align-items: center; }
+.glance svg { width: 124px; height: 124px; }
+.glance svg text { fill: var(--ink); font-family: var(--font); }
+.g-legend { display: grid; gap: 4px; font-size: .9rem; }
+.g-legend div { display: grid; grid-template-columns: 12px 1fr auto; gap: 8px; align-items: center; }
+.g-legend i { width: 12px; height: 12px; border-radius: 3px; display: grid; place-items: center; font-style: normal; font-size: 9px; font-weight: 800; color: #fff; }
+.g-legend b { font-variant-numeric: tabular-nums; }
+.g-strip { display: flex; gap: 2px; height: 26px; }
+.g-strip span { flex: 1; border-radius: 4px; display: grid; place-items: center; font-size: .66rem; font-weight: 700; color: var(--ink); min-width: 0; }
+.g-strip span.dark { color: #fff; }
+.g-ends { display: flex; justify-content: space-between; font-size: .75rem; color: var(--muted); }
+.g-worth { background: var(--g-worth); } .g-sugar { background: var(--g-sugar); } .g-industrial { background: var(--g-industrial); }
+.g-additive { background: var(--g-additive); } .g-other { background: var(--g-other); }
+.words dt { font-weight: 700; margin-top: 10px; }
+.words dd { margin: 2px 0 0; color: var(--muted); }

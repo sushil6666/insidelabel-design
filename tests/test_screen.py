@@ -276,3 +276,28 @@ def test_the_all_clear_line_names_each_allergen_checked():         # D-126
     [p] = scan(PLAIN, profiles=fam, allergen_statement=None).json()["screen"]["people"]
     assert p["line"] == ("Fish, sesame: not in the ingredients. We didn't see a \"may contain\" "
                          "line in the photo, so check the pack.")
+
+
+# ------------------------------------------------------------------ D-127 at a glance, words
+
+MALIBAN = ["REFINED WHEAT FLOUR (MAIDA)", "SUGAR", "REFINED PALM OIL", "MILK SOLIDS", "WHEY", "MALTODEXTRIN",
+           "IODIZED SALT", "EMULSIFIER (322 (i))", "RAISING AGENT (500 (ii))", "COLOURS (160 a(ii), 129)",
+           "ACIDITY REGULATOR (270)", "NATURAL & NATURE IDENTICAL FLAVOURING SUBSTANCES"]      # the gold label
+
+
+def test_at_a_glance_gives_each_entry_one_type():
+    g = scan(MALIBAN, profiles=[]).json()["screen"]["glance"]
+    assert g["total"] == 12
+    assert g["counts"] == {"worth": 1, "sugar": 1, "industrial": 3, "additive": 2, "other": 5}
+    assert [e["type"] for e in g["entries"]][:3] == ["other", "sugar", "other"]
+    assert g["entries"][9] == {"n": 10, "text": "COLOURS (160 a(ii), 129)", "type": "worth"}
+    assert "not weight" in g["caption"]
+
+
+def test_the_words_used_are_explained_and_linked():
+    words = scan(MALIBAN, profiles=FAMILY).json()["screen"]["glossary"]
+    assert [w["key"] for w in words] == ["sugar", "industrial", "additive", "worth", "permitted", "other",
+                                          "allergen_line"]
+    assert all(w["url"] == f"/how#{w['key']}" for w in words)
+    plain = scan(PLAIN, profiles=[]).json()["screen"]["glossary"]
+    assert [w["key"] for w in plain] == ["other"]

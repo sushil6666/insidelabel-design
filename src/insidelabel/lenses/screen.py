@@ -439,6 +439,84 @@ with open(os.path.join(engine.DATA_DIR, "additive_research.json"), encoding="utf
     RESEARCH = json.load(_fh)["rows"]
 
 
+# D-127: "At a glance". Each list entry, as printed, gets one type, the most
+# telling first. Counts, not weights: labels rarely print amounts, and the caption
+# says so. The types' plain meanings are GLOSSARY below.
+GLANCE_ORDER = ("worth", "sugar", "industrial", "additive", "other")
+GLANCE_LABEL = {"worth": "Worth knowing", "sugar": "Sugar", "industrial": "Industrial",
+                "additive": "Additive", "other": "Other"}
+GLANCE_CAPTION = ("By number of ingredients, not weight: packs rarely print amounts. The strip is the "
+                  "list in printed order, so what sits on the left there is most of.")
+
+
+def _glance(ingredients, sugar_found):
+    if not ingredients:
+        return None
+    sugar_at = {p for p, _ in sugar_found}
+    entries = []
+    for n, text in enumerate(ingredients, start=1):
+        flags = engine.analyze(text)["flags"]
+        if any(f["type"] == "additive" and f["concern"] in ("moderate", "high") for f in flags):
+            t = "worth"
+        elif n in sugar_at:
+            t = "sugar"
+        elif any(f["type"] == "nova_marker" for f in flags):
+            t = "industrial"
+        elif any(f["type"] == "additive" for f in flags):
+            t = "additive"
+        else:
+            t = "other"
+        entries.append({"n": n, "text": text, "type": t})
+    counts = {t: sum(e["type"] == t for e in entries) for t in GLANCE_ORDER}
+    return {"total": len(entries), "counts": {t: c for t, c in counts.items() if c},
+            "labels": GLANCE_LABEL, "entries": entries, "caption": GLANCE_CAPTION}
+
+
+# D-127: what the words on a result mean, for the ones this result used. Each links
+# to its section of the "How we check" page (web/site/how.html).
+GLOSSARY = {
+    "sugar": ("Sugar", "Every added sugar on the list, under any of its names, such as liquid glucose "
+              "or invert syrup. Ingredients are listed from most to least, so a sugar near the start "
+              "is one of the main ingredients."),
+    "industrial": ("Industrial ingredients", "Ingredients rarely used in home cooking, such as glucose "
+                   "syrup, maltodextrin, emulsifiers or modified starch. Researchers use them to spot "
+                   "\"ultra-processed\" food (NOVA group 4). It describes how a food is made."),
+    "additive": ("Additive", "A substance added for a job, such as a colour, preservative or raising "
+                 "agent, usually with an INS number. We check each one against FSSAI's list of "
+                 "additives permitted in India."),
+    "worth": ("Worth knowing", "An additive with research or a regulator's opinion a shopper may want to "
+              "read. Tap its row to see what was found and where."),
+    "permitted": ("Permitted in India", "FSSAI's additive rules allow it in food, either freely or up to "
+                  "a limit for each kind of food."),
+    "other": ("Other", "Everything else on the list, such as flour, oil, milk, salt or spices."),
+    "allergen_line": ("Allergen line", "The line on the pack that starts with \"Contains\" or \"May "
+                      "contain\". We read it together with the ingredients."),
+}
+HOW_URL = "/how"
+
+
+def _glossary(summary, glance, adds, people):
+    used = set()
+    rows = {r["key"]: r for r in summary}
+    if rows["sugar"]["source"]["ref"]:
+        used.add("sugar")
+    if rows["processing"]["chip"] == "Industrial":
+        used.add("industrial")
+    if adds:
+        used.add("additive")
+    if any((i["badge"] or {}).get("kind") == "worth_knowing" for i in adds):
+        used.add("worth")
+    if any((i["badge"] or {}).get("kind") == "permitted" for i in adds):
+        used.add("permitted")
+    if glance and glance["counts"].get("other"):
+        used.add("other")
+    if any(p["allergens"] for p in people):
+        used.add("allergen_line")
+    order = ("sugar", "industrial", "additive", "worth", "permitted", "other", "allergen_line")
+    return [{"key": k, "term": GLOSSARY[k][0], "text": GLOSSARY[k][1], "url": f"{HOW_URL}#{k}"}
+            for k in order if k in used]
+
+
 def _alerts(adds):
     out = []
     for i in adds:
@@ -590,6 +668,8 @@ def build(*, verdict, display, claim_check, extracted, reliability, profiles,
     out = {**{k: out[k] for k in head}, "summary": summary, **{k: v for k, v in out.items() if k not in head}}
     out["tallies"] = _tallies(summary)
     out["alerts"] = _alerts(adds)
+    out["glance"] = _glance(ingredients, sugar_found)
+    out["glossary"] = _glossary(summary, out["glance"], adds, people)
     alert = next((i for i in adds if (i["badge"] or {}).get("kind") == "not_permitted"), None)
     if alert:
         out["additive_alert"] = {
