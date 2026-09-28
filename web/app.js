@@ -463,6 +463,20 @@ async function scan() {
       record("camera", { started: true });
       stopCamera = stop;
       status.textContent = "Point the camera at the barcode on the pack.";
+      // D-124: a light for dim shelves, and help if nothing reads after a while.
+      if (stop.hasTorch) {
+        let on = false;
+        const t = button("Turn on the light", async () => {
+          if (await stop.torch(!on)) { on = !on; t.textContent = on ? "Turn off the light" : "Turn on the light"; }
+        }, "link");
+        status.after(t);
+      }
+      setTimeout(() => {
+        if (seq === navSeq && stopCamera === stop) {
+          status.textContent = "Hold the phone about a hand's width away, with the barcode flat and in good light. "
+            + "Or take a photo of the barcode below.";
+        }
+      }, 8000);
     }).catch(e => {
       record("camera", { started: false, error: String(e?.name || e) });
       video.parentElement.remove();
@@ -693,16 +707,24 @@ async function sendPhotos() {
 // time passing and what a first read usually takes, not invented steps.
 function working(text, reading) {
   const secs = el("span", {}, "0");
+  const slow = el("p", { class: "muted" });
   const t0 = Date.now();
   const timer = setInterval(() => {
     if (!secs.isConnected) return clearInterval(timer);
-    secs.textContent = String(Math.round((Date.now() - t0) / 1000));
+    const n = Math.round((Date.now() - t0) / 1000);
+    secs.textContent = String(n);
+    // D-124: a slow read should not look like a hang.
+    if (reading && n >= 20 && !slow.textContent) {
+      slow.textContent = "Taking longer than usual: the reader is busy right now. It is still working.";
+    }
   }, 1000);
   return el("section", { class: "stack center", "aria-busy": "true" },
     el("div", { class: "pulse", "aria-hidden": "true" }),
     el("h1", {}, text),
-    reading && el("p", { class: "muted" }, "The first read of a pack takes about 8 to 15 seconds."),
-    el("p", { class: "muted", role: "timer" }, secs, " s"));
+    reading && el("p", { class: "muted" },
+      "The first read of a pack takes about 8 to 15 seconds. Once a pack is in our catalogue, its barcode gives the result at once."),
+    el("p", { class: "muted", role: "timer" }, secs, " s"),
+    slow);
 }
 
 function finish(body) {
