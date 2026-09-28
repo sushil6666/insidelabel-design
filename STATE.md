@@ -648,7 +648,36 @@ to see where each gate stands. §11 has the full list. Done today: D-051/52/55 d
 food categories, PWA built, D-092 reproduction, D-093 Cloud Vision, scan speed,
 setup alarms.
 
-**NEXT SESSION STARTS HERE (2026-09-27): the site is live; finish its loose ends, then the DPDP data map.**
+**NEXT SESSION STARTS HERE (2026-09-28).** Where things stand, newest first:
+
+- **To merge (Sushil), then `sudo /opt/insidelabel/app/deploy/update.sh`:** `checker-fixes` (review
+  checker: category code cut from the drafter's text, code-first declarations, soft candy 5.2.2,
+  the D-035 "same pack" tick settles same_pack; 538 tests) and `contact-email` (this note). After the
+  deploy: `il tools/review_agent.py recheck 22 23 24 25 26 27 28 29 30 31` (free).
+- **Live on the server (main `7990b67`):** D-115, D-116, D-117 phase A (review agents, shadow),
+  D-118 (retake at scan), D-119 (list in up to 3 photos, with the "Is the whole list in this photo?"
+  question; overlap check PASSED), D-120 (candy sugar syrup, sugar syrup). **The review-agent timer
+  is ON** (Sushil, 2026-09-27): drafts 5 new items every 10 minutes, shadow only, about 50 paise each.
+- **D-117 measurement:** 3 of 30 agreements (items 12, 13, 15). Phase B (agents publish) only after
+  30 items at 95%. Items 22 to 31 went to a person; see §8 item 5 notes and the checker-fixes branch.
+- **Sushil is scanning packs** (aim: 50). For each review screenshot he posts, answer in the fixed
+  format (memory: review item format): Category as the exact dropdown line, ingredient fixes, front
+  claims, a paste-ready Note, pack checks. Never ask him to hunt for the FSSAI licence.
+- **Next work, in order (before invites):** (1) tokenizer: nested `[ ]` and `{ }` give fragments like
+  `emulsifier ]` (D-115 shows them to users); gold-set re-run, no paid call. (2) Additive rows INS 319
+  (TBHQ), 472(e), 296, and the sub-form decision (Appendix A basis, D-046). (3) The result-screen
+  discussion Sushil asked for ("not much useful for a user"; Biscoff's band says "No concerns found"
+  under a sugar headline): mockups, his decision. (4) Privacy page (contact `connect@insidelabel.ai`),
+  DPDP review, DPDP data map. (5) Loose ends below: billing off the free trial, `insidelabel.in`
+  client hold, Gemini key restriction and the two older keys, Candzey category check (5.2.1 or 5.2.2).
+- **Working rules this project has learned:** every new decision is RECOMMENDED until Sushil says
+  "accepted"; work on a branch and give the link `https://github.com/sushil6666/InsideLabel/pull/new/<branch>`
+  (`gh` is not installed); ask before any paid Gemini or Cloud Vision call and say the cost; Sushil
+  runs server commands (give them exactly, with `--zone=asia-south1-a` for `gcloud compute ssh`);
+  never touch the uvicorn on port 8000 on the laptop.
+
+The older notes below are kept for their detail.
+
 
 **Done 2026-09-27: https://insidelabel.ai is live** (D-114, DEPLOY.md steps 1 to 10, with Sushil).
 **For anything on the server or Google Cloud, start with `OPERATIONS.md`** (the day's full log is its §9).
