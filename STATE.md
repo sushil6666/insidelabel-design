@@ -671,6 +671,15 @@ setup alarms.
   551 tests): INS 319 TBHQ, 472e DATEM, 296 malic acid from compendium XXVI Appendix A; "472(e)" now
   reads as 472e; sub-forms keep the parent row (gap: 331(ii), 170(ii) not in Appendix A, never seen).
   Sushil: TBHQ concern low (recommended, scores 0) or moderate; merge after `nested-brackets`.
+- **Health report page** (2026-09-28, Sushil: "output like the Elementary report"):
+  https://claude.ai/artifact/2uS8hxSpVxkLoBCh8zSoHB (tests, release gates, catalogue, scans; a summary
+  written by Claude and an Ask box). Data from `tools/health_report.py` (counts only, no personal data).
+  Refresh: run it (on the server: `il tools/health_report.py --no-tests --source server --out /tmp/health.json`),
+  paste the JSON, Claude rewrites the summary and republishes `data.json`. The laptop DB is behind on
+  migrations (no `review_drafts`), so the review-agent section is empty there.
+  **Incident, fixed:** a test run with `INSIDELABEL_DB` set wrote 386 scans, 52 users and 5 problem
+  reports into the laptop DB; deleted with Sushil's OK. `conftest.py` now drops `INSIDELABEL_DB`, and
+  both tools strip it before running pytest.
 - **Next work, in order (before invites):** (1) and (2) done, see above. (3) The result-screen
   discussion Sushil asked for ("not much useful for a user"; Biscoff's band says "No concerns found"
   under a sugar headline): mockups, his decision. (4) Privacy page (contact `connect@insidelabel.ai`),

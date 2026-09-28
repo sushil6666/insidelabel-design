@@ -197,7 +197,10 @@ def main():
     sections.append(("Catalogue", catalogue_gates(uri) if uri else
                      [(TODO, "Catalogue gates", "set INSIDELABEL_DB to check the catalogue")]))
     if args.with_tests:
-        r = subprocess.run([sys.executable, "-m", "pytest", "-q"], cwd=ROOT, capture_output=True, text=True)
+        # Never hand the tests INSIDELABEL_DB: with it, the app under test writes scans, users and
+        # problem reports into that real database (2026-09-28, the laptop's: 386 rows).
+        env = {k: v for k, v in os.environ.items() if k != "INSIDELABEL_DB"}
+        r = subprocess.run([sys.executable, "-m", "pytest", "-q"], cwd=ROOT, capture_output=True, text=True, env=env)
         last = (r.stdout.strip().splitlines() or ["no output"])[-1]
         sections.append(("Tests", [(PASS if r.returncode == 0 else FAIL, "Test suite", last)]))
 
