@@ -36,6 +36,11 @@
       "basis": "Codex 05.2.1 is hard candy. NOT 'sugar boiled confectionery': FSSAI's standard 2.7.1 (Food Products Standards, read 2026-09-27) defines it to cover 'hard boiled sugar confectionery or pan goods confectionery or toffee or milk toffee or modified toffee or lacto-bon-bon', so it doesn't say hard or soft. The first shadow run's butter toffee (item 16) showed the earlier rule was wrong."
     },
     {
+      "code": "5.2.2",
+      "label_any": ["soft candy"],
+      "basis": "Codex 05.2.2 descriptor (CXS 192-1995, read 2026-09-27): 'Soft candy: Products include soft, chewy products such as caramels'. Seen: item 22, which prints 'SUGAR BOILED CONFECTIONERY - SOFT CANDY'; the sugar boiled part says nothing about hard or soft (see 5.2.1)."
+    },
+    {
       "code": "6.4",
       "name_any": ["noodles", "pasta", "vermicelli", "macaroni", "spaghetti"],
       "basis": "Codex 06.4 is pastas and noodles and like products."
