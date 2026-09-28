@@ -667,8 +667,11 @@ setup alarms.
   outside brackets, any depth, `( ) [ ] { }` alike; no more `emulsifier ]`. INS numbers, binary and
   grade identical on 26 local labels; **scores move**: Limca 80 to 76, Ziggy 28 to 4 (class words now
   reach their NOVA rows). Sushil: accept or not, then merge and `update.sh`.
-- **Next work, in order (before invites):** (1) done, see above. (2) Additive rows INS 319
-  (TBHQ), 472(e), 296, and the sub-form decision (Appendix A basis, D-046). (3) The result-screen
+- **Additive rows: BUILT, D-122 RECOMMENDED** (branch `additive-rows`, stacked on `nested-brackets`,
+  551 tests): INS 319 TBHQ, 472e DATEM, 296 malic acid from compendium XXVI Appendix A; "472(e)" now
+  reads as 472e; sub-forms keep the parent row (gap: 331(ii), 170(ii) not in Appendix A, never seen).
+  Sushil: TBHQ concern low (recommended, scores 0) or moderate; merge after `nested-brackets`.
+- **Next work, in order (before invites):** (1) and (2) done, see above. (3) The result-screen
   discussion Sushil asked for ("not much useful for a user"; Biscoff's band says "No concerns found"
   under a sugar headline): mockups, his decision. (4) Privacy page (contact `connect@insidelabel.ai`),
   DPDP review, DPDP data map. (5) Loose ends below: billing off the free trial, `insidelabel.in`

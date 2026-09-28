@@ -42,8 +42,11 @@ _CLASS_RE = re.compile(
 # suffix (150d, 472e). The suffix must not run into more letters, so "250gm"
 # is not "250g". A spaced suffix ("160 a(ii)", as Maliban prints it) is
 # accepted for a-f only, so "503 i" or "322 and" are never read as suffixes.
+# So is a bracketed one, "472(e)" as Bisk Farm and Anmol print it: without it
+# the reading stopped at 472, a number with no row. Roman sub-forms "(i)" are
+# not letters a-f and stay out.
 # Every INS pattern in the codebase is built from this one.
-INS_NUMBER = r"(\d{3,4}(?:[a-z](?![a-z])|\s[a-f](?![a-z]))?)(?![0-9])"
+INS_NUMBER = r"(\d{3,4}(?:[a-z](?![a-z])|\s[a-f](?![a-z])|\s?\([a-f]\))?)(?![0-9])"
 
 # A bare additive number, not already carrying an INS/E prefix.
 _BARE_NUM = re.compile(
@@ -237,7 +240,7 @@ def extract_ins(token):
     m = INS_RE.search(token)
 
     if m:
-        return m.group(1).lower().replace(" ", "")
+        return re.sub(r"[\s()]", "", m.group(1).lower())
 
     m2 = _WHOLE_NUM.fullmatch(token.strip())
 
