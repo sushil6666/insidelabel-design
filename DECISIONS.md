@@ -1573,9 +1573,10 @@ after the beta (D-081). And the band under that headline still says "No concerns
 ingredients", which reads as contradicting it; that wording belongs to the result-screen
 discussion Sushil asked for, not to this entry.
 
-### D-121 · The tokenizer splits only outside brackets, at any depth, all three kinds `RECOMMENDED` (2026-09-28)
+### D-121 · The tokenizer splits only outside brackets, at any depth, all three kinds `LOCKED` (2026-09-28)
 Found on the first supermarket run (Bisk Farm TOP GOLD, Sundrop POPZ, 2026-09-27). Recommended by
-Claude. **Waiting for Sushil.**
+Claude. **Accepted by Sushil 2026-09-28** ("accepted"), with the score moves below (Limca 80 to 76,
+Ziggy 28 to 4). Merged in PR #37.
 
 **The defect.** `core/tokenize.py` split at every comma whatever the bracket depth, then read one
 level of `( )` and `[ ]`; braces not at all. "Spices (Chilli, Turmeric)" gave `spices (chilli` and
@@ -1611,9 +1612,9 @@ not checked (not reachable from the laptop).
 brackets. That keeps the fragments on the result screen, and it keeps two identical ingredients
 scoring differently depending on whether the pack prints their numbers.
 
-### D-122 · Rows for INS 319, 472e and 296; "472(e)" reads as 472e; sub-forms keep their parent's row `RECOMMENDED` (2026-09-28)
-Found on the first supermarket run (2026-09-27). Recommended by Claude. **Waiting for Sushil**,
-in particular on TBHQ's concern level. Built on top of D-121 (branch `additive-rows`).
+### D-122 · Rows for INS 319, 472e and 296; "472(e)" reads as 472e; sub-forms keep their parent's row `LOCKED` (2026-09-28)
+Found on the first supermarket run (2026-09-27). Recommended by Claude. **Accepted by Sushil
+2026-09-28** ("accepted"), as recommended: TBHQ concern **low**. Built on top of D-121; merged in PR #38.
 
 **The basis (primary source, read 2026-09-28).** FSS (Food Products Standards and Food Additives)
 Regulations 2011, compendium Version XXVI (20.12.2022), FSSAI's PDF, 883 pages:
