@@ -12,7 +12,7 @@
 //    beyond the headline the user was shown.
 
 // Bump together with VERSION in sw.js: a report then says which shell was cached.
-export const APP_VERSION = "web-22";
+export const APP_VERSION = "web-23";
 
 // ------------------------------------------------------------------ storage
 // localStorage can throw (private mode, blocked site data); the app must still work.
@@ -27,6 +27,14 @@ export const store = {
   set(key, value) {
     mem[key] = value;
     try { localStorage.setItem("il." + key, JSON.stringify(value)); } catch { /* memory only */ }
+  },
+  // D-129 "Delete my data": everything this app keeps on the phone.
+  clear() {
+    for (const k of Object.keys(mem)) delete mem[k];
+    try {
+      Object.keys(localStorage).filter(k => k.startsWith("il.")).forEach(k => localStorage.removeItem(k));
+      Object.keys(sessionStorage).filter(k => k.startsWith("il.")).forEach(k => sessionStorage.removeItem(k));
+    } catch { /* nothing stored */ }
   },
 };
 
@@ -100,6 +108,7 @@ export function record(type, data = {}) {
   try { sessionStorage.setItem("il.trail", JSON.stringify(trail)); } catch { /* memory only */ }
 }
 
+export function clearTrail() { trail.length = 0; }
 export function trailSnapshot() { return trail.map(e => ({ ...e })); }
 
 // The most recent call that failed, or the most recent scan: what a report is about.
@@ -253,6 +262,11 @@ export const feedbackRequest = ({ comment, rating, screen }) =>
   call("/feedback", { method: "POST", headers: { "Content-Type": "application/json" },
                       body: JSON.stringify({ comment, rating, screen, device_id: deviceId(),
                                              app_version: APP_VERSION }) });
+
+// D-129 "Delete my data": the install id is the only thing that ties data to a person.
+export const forgetRequest = () =>
+  call("/forget", { method: "POST", headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ device_id: deviceId() }) });
 
 export const updatesRequest = () =>
   call("/updates?device_id=" + encodeURIComponent(deviceId()));

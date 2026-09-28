@@ -526,21 +526,25 @@ class Store:
                 (uid, code, rating, comment, screen, app_version)).fetchone()["id"]
 
     def beta_testers(self):
-        """One row per code: installs, scans, days active, last scan, feedback - the W4 view (D-055)."""
+        """One row per code: installs, scans, days active, first and last day, feedback - the W4 view (D-055)."""
         with self._connect() as conn:
             return conn.execute(
                 """SELECT i.code, i.label, i.revoked_at, i.created_at,
                           count(DISTINCT d.user_id) AS devices,
-                          count(DISTINCT s.id) AS scans,
-                          count(DISTINCT s.created_at::date) AS days_active,
-                          min(s.created_at) AS first_scan, max(s.created_at) AS last_scan,
+                          coalesce(sum(s.scans), 0)::int AS scans,
+                          count(DISTINCT s.day) AS days_active,
+                          min(s.day) AS first_scan, max(s.day) AS last_scan,
                           (SELECT count(*) FROM feedback f WHERE f.invite_code = i.code) AS feedback,
                           (SELECT max(a.agreed_at) FROM agreements a
                              JOIN invite_devices d2 ON d2.user_id = a.user_id
                             WHERE d2.code = i.code) AS agreed_at
                      FROM invites i
                      LEFT JOIN invite_devices d ON d.code = i.code
-                     LEFT JOIN scans s ON s.user_id = d.user_id
+                     -- D-128: scans still linked, plus the day counts kept for unlinked ones
+                     LEFT JOIN (SELECT user_id, created_at::date AS day, count(*) AS scans
+                                  FROM scans WHERE user_id IS NOT NULL GROUP BY 1, 2
+                                UNION ALL
+                                SELECT user_id, day, scans FROM device_days) s ON s.user_id = d.user_id
                     GROUP BY i.code ORDER BY i.created_at, i.code""").fetchall()
 
     def feedback_list(self, limit=100):
@@ -598,6 +602,57 @@ class Store:
             # the only copy of the label we have, so they outlive the 30-day rule.
             conn.execute("UPDATE scans SET evidence_hold = true WHERE id = ANY(%s)", (ids,))
             return {"review_id": rid}
+
+    # -- "Delete my data" (D-129) ---------------------------------------------
+
+    def forget(self, device_id):
+        """
+        Erase what this install id points at (DPDP Act s.12(3)): its feedback,
+        problem reports, invite link, agreement and day counts; its scans lose the
+        link and the household profiles, and its "send it to us" requests still
+        open are closed. Returns {"found": False} or {"found": True, counts,
+        "photo_keys": photos the caller should delete}. A photo stays when it is
+        a catalogue version's evidence (the pack's record, not the person's) or
+        another install's scan still holds the same bytes.
+        """
+        from insidelabel import retention
+        try:
+            uid = str(uuid.UUID(str(device_id)))
+        except ValueError:
+            return {"found": False}
+        with self._connect() as conn:
+            if conn.execute("SELECT 1 FROM users WHERE id = %s", (uid,)).fetchone() is None:
+                return {"found": False}
+            keys = [r["key"] for r in conn.execute(
+                """SELECT DISTINCT k.key FROM scans s
+                    CROSS JOIN LATERAL (VALUES (s.back_image_key), (s.front_image_key)) AS k(key)
+                    WHERE s.user_id = %(u)s AND k.key IS NOT NULL AND s.photos_deleted_at IS NULL
+                      AND NOT EXISTS (SELECT 1 FROM product_versions v
+                                       WHERE v.status <> 'rejected'
+                                         AND k.key IN (v.back_image_key, v.front_image_key))
+                      AND NOT EXISTS (SELECT 1 FROM scans o
+                                       WHERE o.user_id IS DISTINCT FROM %(u)s AND o.photos_deleted_at IS NULL
+                                         AND k.key IN (o.back_image_key, o.front_image_key))""",
+                {"u": uid}).fetchall()]
+            out = {"found": True, "photo_keys": keys}
+            out["closed_requests"] = conn.execute(
+                """UPDATE review_queue SET status = 'rejected', resolution = 'rejected', resolved_at = now(),
+                          resolution_note = 'The sender deleted their data (D-129).'
+                    WHERE kind = 'send_to_us' AND notify_user_id = %s AND status IN ('open', 'claimed')""",
+                (uid,)).rowcount
+            out["feedback"] = conn.execute("DELETE FROM feedback WHERE user_id = %s", (uid,)).rowcount
+            out["problem_reports"] = conn.execute(
+                "DELETE FROM problem_reports WHERE user_id = %s", (uid,)).rowcount
+            out["scans"] = conn.execute(
+                "UPDATE scans SET evidence_hold = false WHERE user_id = %s", (uid,)).rowcount
+            retention.forget_users(conn, [uid])
+            return out
+
+    def mark_photo_deleted(self, key):
+        with self._connect() as conn:
+            conn.execute("""UPDATE scans SET photos_deleted_at = now()
+                             WHERE photos_deleted_at IS NULL AND (back_image_key = %s OR front_image_key = %s)""",
+                         (key, key))
 
     # -- problem reports (D-092) --------------------------------------------
 

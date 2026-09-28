@@ -59,6 +59,8 @@ RULES = {
     "check_photo": {"device": [(60, 600)], "ip": [(300, 600)]},
     # "Send it to us" (D-070): each is a reviewer's time.
     "send_to_us": {"device": [(10, 86_400)], "ip": [(50, 86_400)]},
+    # "Delete my data" (D-129): once is enough; a few more for a flaky network.
+    "forget": {"device": [(5, 3_600)], "ip": [(30, 3_600)]},
 }
 
 SCAN_TEXT = ("You've checked a lot of packs in a short time. Please wait about {minutes} "
@@ -67,6 +69,7 @@ PROBLEM_TEXT = "We've had a lot of reports from this phone just now. Please try 
 SEND_TEXT = "You've sent us a lot of packs today. Please try again tomorrow."
 JOIN_TEXT = "Too many codes tried from this phone. Please wait a while and check your invite."
 FEEDBACK_TEXT = "Thank you for all the feedback today. Please send more tomorrow."
+FORGET_TEXT = "That was tried a few times just now. Please try again in an hour."
 
 
 class Limiter:

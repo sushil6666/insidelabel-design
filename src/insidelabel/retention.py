@@ -1,5 +1,6 @@
 """
-retention.py - delete users' scan photos after 30 days (D-080, D-098).
+retention.py - delete users' scan photos after 30 days (D-080, D-098), and unlink
+scans from the install that sent them (D-128).
 
 D-080: "user scan photos: delete full originals at 30 days unless flagged".
 A photo is deleted only when every scan that sent it is older than the limit
@@ -101,3 +102,108 @@ def run(conninfo, media, days=DAYS, apply=False):
     if not apply:
         return {"delete": keys, "deleted": [], "missing": []}
     return delete(conninfo, media, keys, days)
+
+
+# -- D-128: keep what the label said, not who scanned it ----------------------
+#
+# After DAYS a scan loses its install id and the household profiles in its
+# request (a child's age band and avoid list); what was read stays. A held
+# scan (a problem report, "send it to us") keeps its link, so a replay has the
+# profiles it ran with (D-092), until the hold ends and never past KEEP_DAYS.
+# A review needs the photo, which the rules above keep, not the install. Before the link goes, the scan is counted in device_days so the
+# beta can still see which days each install scanned (D-055).
+#
+# KEEP_DAYS is the life of what is about the person: feedback, problem
+# reports, and an install id with its invite link and agreement, counted from
+# the device's last sign of use.
+
+KEEP_DAYS = 365
+
+_UNLINK = """
+WITH due AS (
+  SELECT id, user_id, created_at FROM scans
+   WHERE unlinked_at IS NULL
+     AND (created_at < now() - make_interval(days => %(keep)s)
+          OR (created_at < now() - make_interval(days => %(days)s)
+              AND NOT evidence_hold))
+   FOR UPDATE
+), counted AS (
+  INSERT INTO device_days (user_id, day, scans)
+  SELECT user_id, created_at::date, count(*) FROM due WHERE user_id IS NOT NULL GROUP BY 1, 2
+  ON CONFLICT (user_id, day) DO UPDATE SET scans = device_days.scans + EXCLUDED.scans
+)
+UPDATE scans s SET user_id = NULL, request = s.request - 'profiles' - 'avoid', unlinked_at = now()
+  FROM due WHERE s.id = due.id
+"""
+
+# "Show the result on next open" (D-070) needs the install id only until it was shown.
+_UNLINK_NOTIFY = """
+UPDATE review_queue SET notify_user_id = NULL
+ WHERE notify_user_id IS NOT NULL AND status IN ('done', 'rejected')
+   AND resolved_at < now() - make_interval(days => %(days)s)
+"""
+
+# A hold ends with its reason: no report left that names the scan. An open
+# review still keeps the photo (the rules above), not the hold.
+_RELEASE_HOLDS = """
+UPDATE scans SET evidence_hold = false
+ WHERE evidence_hold AND created_at < now() - make_interval(days => %(keep)s)
+   AND id NOT IN (SELECT scan_id FROM problem_reports WHERE scan_id IS NOT NULL)
+   AND coalesce(request_id, '') NOT IN (
+         SELECT e->>'request_id' FROM problem_reports, jsonb_array_elements(events) e
+          WHERE jsonb_typeof(e) = 'object' AND e->>'request_id' IS NOT NULL)
+"""
+
+_GONE_DEVICES = """
+SELECT u.id FROM users u
+ WHERE greatest(u.created_at,
+                (SELECT max(day)::timestamptz FROM device_days d WHERE d.user_id = u.id),
+                (SELECT max(created_at) FROM scans s WHERE s.user_id = u.id),
+                (SELECT max(created_at) FROM feedback f WHERE f.user_id = u.id),
+                (SELECT max(created_at) FROM problem_reports p WHERE p.user_id = u.id),
+                (SELECT max(agreed_at) FROM agreements a WHERE a.user_id = u.id),
+                (SELECT max(joined_at) FROM invite_devices i WHERE i.user_id = u.id))
+       < now() - make_interval(days => %(keep)s)
+"""
+
+
+def unlink(conninfo, days=DAYS, keep_days=KEEP_DAYS, apply=False):
+    """
+    D-128. {"unlinked_scans", "released_holds", "feedback", "problem_reports",
+    "devices"}: what was (or, as a dry run, would be) unlinked or deleted.
+    """
+    p = {"days": days, "keep": keep_days}
+    out = {}
+    with psycopg.connect(conninfo) as conn:
+        out["problem_reports"] = conn.execute(
+            "DELETE FROM problem_reports WHERE created_at < now() - make_interval(days => %(keep)s)", p).rowcount
+        out["feedback"] = conn.execute(
+            "DELETE FROM feedback WHERE created_at < now() - make_interval(days => %(keep)s)", p).rowcount
+        out["released_holds"] = conn.execute(_RELEASE_HOLDS, p).rowcount
+        out["unlinked_scans"] = conn.execute(_UNLINK, p).rowcount
+        conn.execute(_UNLINK_NOTIFY, p)
+        gone = [r[0] for r in conn.execute(_GONE_DEVICES, p).fetchall()]
+        forget_users(conn, gone)
+        out["devices"] = len(gone)
+        if not apply:
+            conn.rollback()
+    return out
+
+
+def forget_users(conn, ids):
+    """
+    Remove install ids and everything that still points at them, inside the
+    caller's transaction (D-128: 12 months unseen; "Delete my data"). Scans stay,
+    unlinked, with what the label said. Photos are the caller's job.
+    """
+    if not ids:
+        return
+    conn.execute("""UPDATE scans SET user_id = NULL, request = request - 'profiles' - 'avoid',
+                                    unlinked_at = coalesce(unlinked_at, now())
+                     WHERE user_id = ANY(%s)""", (ids,))
+    for table in ("device_days", "agreements", "invite_devices", "user_profiles"):
+        conn.execute(f"DELETE FROM {table} WHERE user_id = ANY(%s)", (ids,))
+    for table, col in (("problem_reports", "user_id"), ("feedback", "user_id"),
+                       ("corrections", "user_id"), ("review_queue", "notify_user_id")):
+        conn.execute(f"UPDATE {table} SET {col} = NULL WHERE {col} = ANY(%s)", (ids,))
+    conn.execute("DELETE FROM users WHERE id = ANY(%s)", (ids,))

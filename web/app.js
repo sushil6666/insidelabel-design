@@ -11,7 +11,7 @@ import {
   deviceId, el, fill, history, historyItem, lastIncident, prepareImage, problemRequest, profileByRef,
   profiles, record, reportRequest, saveProfiles, scanRequest, sendToUsRequest, store, trailSnapshot,
   accessRequest, agreeRequest, checkPhotoRequest, feedbackRequest, joinRequest, termsRequest,
-  updatesRequest,
+  updatesRequest, forgetRequest, clearTrail,
 } from "./lib.js";
 import { barcodeSupported, startScanner } from "./camera.js";
 
@@ -30,7 +30,7 @@ let pending = { barcode: null, barcodeSource: null, back: null, front: null, bac
 // ------------------------------------------------------------------ navigation
 const routes = {
   "": home, welcome, who, household, person, scan, photo, front, result, report, compare, problem, send,
-  join, agree, feedback,
+  join, agree, feedback, data,
 };
 
 // Setting the hash it already has fires no hashchange, so the page wouldn't
@@ -49,7 +49,7 @@ function route() {
   if (name !== "feedback") store.set("lastScreen", name || "home");     // where feedback was sent from
   // D-102: an invite-only server lets a phone in once it has joined with a code.
   // D-105: then "Before you start": the rules are agreed before anything else.
-  if (!["join", "agree", "problem"].includes(name)) {
+  if (!["join", "agree", "problem", "data"].includes(name)) {
     const seq = ++navSeq;
     return checkAccess().then(a => {
       if (seq !== navSeq) return;
@@ -62,7 +62,7 @@ function route() {
 }
 
 function routeAfterJoin(name, arg) {
-  if (!store.get("welcomed", false) && !["welcome", "who", "household", "person", "join", "agree"].includes(name)) {
+  if (!store.get("welcomed", false) && !["welcome", "who", "household", "person", "join", "agree", "data"].includes(name)) {
     return show(welcome());
   }
   const seq = ++navSeq;
@@ -348,6 +348,51 @@ function updateLine(r) {
 }
 
 // ------------------------------------------------------------------ household (D-074)
+// D-129 "Your data": what we keep, this phone's id, and "Delete my data"
+// (DPDP Act s.12(3)). Works before joining: a tester whose code was revoked
+// can still erase.
+function data() {
+  const err = el("p", { class: "error", role: "alert" });
+  const confirmBox = el("div", { class: "stack", hidden: true },
+    el("p", {}, el("strong", {}, "Delete everything we keep about this phone?")),
+    el("p", {}, "We delete your feedback, problem reports, invite link and the photos you took. Your scans " +
+      "lose any link to this phone and to your household. A pack you helped add to our catalogue stays in " +
+      "it, with nothing that points to you."),
+    el("p", {}, "This phone's household and scan history are cleared too. To use InsideLabel again, " +
+      "you'll need your invite link."),
+    err,
+    button("Delete my data", async e => {
+      e.target.disabled = true;
+      err.textContent = "";
+      try {
+        await forgetRequest();
+      } catch (ex) {
+        e.target.disabled = false;
+        err.textContent = apiMessage(ex);
+        return;
+      }
+      store.clear();
+      clearTrail();
+      show(el("section", { class: "stack" }, el("h1", {}, "Deleted"),
+        el("p", {}, "Everything we kept about this phone is deleted, and this phone's InsideLabel data is cleared."),
+        button("Close", () => { location.hash = "#/"; location.reload(); }, "primary")));
+    }, "danger"),
+    button("Cancel", () => { confirmBox.hidden = true; ask.hidden = false; }, "link"));
+  const ask = button("Delete my data", () => { confirmBox.hidden = false; ask.hidden = true; }, "danger");
+  return el("section", { class: "stack" },
+    el("h1", {}, "Your data"),
+    el("p", {}, "On our server, linked to this phone: your pack photos (deleted after 30 days), your scans and " +
+      "the household ages and avoid lists sent with them (unlinked after 30 days), and any feedback or " +
+      "problem reports you sent (deleted after 12 months)."),
+    el("p", {}, "Only on this phone: nicknames, your scan history and your household."),
+    el("p", { class: "muted" }, "This phone's id: ", el("code", {}, deviceId()),
+      ". Quote it if you write to us at ", el("a", { href: "mailto:connect@insidelabel.ai" }, "connect@insidelabel.ai"),
+      "."),
+    el("p", {}, el("a", { href: "/privacy" }, "Privacy")),
+    ask, confirmBox,
+    button("Done", () => go(""), "link"));
+}
+
 function household() {
   const list = profiles();
   return el("section", { class: "stack" },

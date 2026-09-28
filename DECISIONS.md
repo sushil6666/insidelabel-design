@@ -1652,11 +1652,11 @@ been seen on a pack; a sub-form-aware row can wait until one is.
 the packs that carry them, a card appears; no score moves (class-only low and none score 0).
 5 tests.
 
-### D-123 · Three answers on every result; "Your scans"; the next scan is a comparison `RECOMMENDED` (2026-09-28)
+### D-123 · Three answers on every result; "Your scans"; the next scan is a comparison `LOCKED` (2026-09-28)
 Why: Sushil gave the app to 5 testers (T01 to T05) and "none of them seems to be happy with
 output"; he asked for a result that is more useful and makes people want to scan more. Option B of
 the result-screen mockups (https://claude.ai/artifact/2Rh7RTBhRz4D5ibsY9hbNF). Recommended by
-Claude; built on Sushil's "let's build". **Waiting for "accepted".** Result-screen work under
+Claude; built on Sushil's "let's build". **Accepted by Sushil 2026-09-28** ("accepted and merged"). Result-screen work under
 Wave 1 (D-084), before invites, so D-083 (no features during the beta) is not crossed.
 
 - **`screen.summary`**, right under the headline: the same three answers on every pack, in the
@@ -1684,9 +1684,9 @@ Not in this entry: plain-language reasons for the 69 additive rows (Claude draft
 reviews); named catalogue alternatives (mockups at https://claude.ai/artifact/HV9MoviE2ipcVyvGwYjwyd,
 gated by D-058 and the `compare.py` tie-break question).
 
-### D-124 · A more forgiving barcode scanner; a wait screen that never looks hung `RECOMMENDED` (2026-09-28)
+### D-124 · A more forgiving barcode scanner; a wait screen that never looks hung `LOCKED` (2026-09-28)
 Why: testers, and Sushil, found the live barcode scanner slow, and some scans took about 30 s.
-Recommended by Claude. **Waiting for "accepted".** App only (web-20); no server or cost change.
+Recommended by Claude. **Accepted by Sushil 2026-09-28** ("accepted and merged"). App only (web-20); no server or cost change.
 
 - **Scanner (`web/camera.js`):** a code is accepted once it is read twice within 1.5 s, not twice
   in a row (one blurred frame used to start over); frames every 150 ms (was 200); the camera is
@@ -1732,10 +1732,10 @@ what the avoid list was. **Accepted by Sushil 2026-09-28** ("yes").
   it reports what is printed, never "free from" or "safe" (D-042); below 0.95 confidence or on a
   partial read it says we can't confirm.
 
-### D-127 · Ask the allergy question plainly; "At a glance"; what the words mean, linked to "How we check" `RECOMMENDED` (2026-09-28)
+### D-127 · Ask the allergy question plainly; "At a glance"; what the words mean, linked to "How we check" `LOCKED` (2026-09-28)
 Sushil: "are we asking the right question to user to add the allergic part", and the words
 (Industrial, Additive, Other) should be explained at the end with a link. Recommended by Claude.
-**Waiting for "accepted"** after trying it on the phone. App web-22.
+**Accepted by Sushil 2026-09-28** ("accepted and merged"). App web-22.
 
 - **Setup asks what people can answer.** Welcome: "Does anyone you shop for avoid a food, like
   peanut, milk or gluten?" [Yes] [No]. Yes: "Who avoids it?" Me / A child I shop for (D-074 keeps
@@ -1753,6 +1753,53 @@ Sushil: "are we asking the right question to user to add the allergic part", and
   checks every term has its section.
 - "By law, ingredients are listed from most to least" was left out of `/how` until the FSSAI
   labelling regulation is read first-hand (D-046).
+
+### D-128 · Keep what the label said; unlink who scanned it after 30 days `LOCKED` (2026-09-28)
+Sushil: "data is gold we will keep may be in cheaper storage format". Claude recommended keeping
+the label data for good but not the link to the person: the DPDP Act s.8(7) requires erasing
+personal data "as soon as it is reasonable to assume that the specified purpose is no longer being
+served", and applies only to data about an identifiable individual (s.2(t)). **Accepted by Sushil
+2026-09-28** ("agree with you"). Data map: `docs/DPDP_DATA_MAP.md`.
+
+- **Built (migration 016, `retention.unlink`, run daily by `tools/retention.py --apply`):**
+  - After 30 days a scan loses `user_id` and the `profiles` and `avoid` in its request; the
+    reading, barcode, timings and result stay. `unlinked_at` records when.
+  - A held scan (problem report, "send it to us") keeps its link, so a replay has the profiles
+    it ran with (D-092), until no report names it, and never past 12 months. A review item
+    doesn't hold the link: the review needs the photo, which D-098's rules keep.
+  - `device_days` keeps each install's scans per day, so D-055's W4 retention survives
+    (`beta_testers()` reads it).
+  - Feedback and problem reports are deleted after 12 months. An install id, its invite link,
+    agreement and day counts are deleted 12 months after the device was last seen.
+  - Resolved review items drop `notify_user_id` after 30 days.
+  - Invite labels are codes (T01), no names (`tools/beta.py` help changed).
+  - Privacy page "How long we keep it" updated to match.
+- **Not built yet:** keeping scan photos in cheaper archive storage instead of deleting them at
+  30 days. Photos are still deleted at 30 days (D-080, D-098), the promise on the live privacy
+  page, and photos taken under that notice keep it. Before changing it: the DPDP reviewer says
+  whether an unlinked pack photo that shows a hand or a face is still personal data (crop to
+  the label if so); the storage class and its price are read from Google's pricing page; the
+  privacy page changes first. That change will supersede the photo part of D-080 and D-098.
+
+### D-129 · "Delete my data" in the app; Gemini on paid quota `LOCKED` (2026-09-28)
+The DPDP Act gives a right to erasure (s.12(3)) and to a readily available grievance route (s.13);
+the app had no way to do either. Recommended by Claude in the data map (`docs/DPDP_DATA_MAP.md`
+section 4, point 6). **Accepted by Sushil 2026-09-28** ("Delete my data" option in the app. yes).
+Sushil also confirmed the Gemini project is on **paid quota** (under the Gemini terms, Google doesn't
+use paid-tier prompts or responses to improve its products). App web-23.
+
+- **App:** "Your data" in the footer of every screen (`#/data`), open before joining or agreeing
+  so a revoked tester can still erase. It says what the server keeps and for how long, shows the
+  install id to quote in an email to `connect@insidelabel.ai`, and has "Delete my data" behind a
+  confirm step. On success it clears everything the app keeps on the phone (`store.clear()`).
+- **Server:** `POST /forget {device_id}`, rate limited (5 an hour per install). No invite needed.
+  Deletes feedback, problem reports, invite link, agreement, day counts and the install id;
+  unlinks every scan and strips its household profiles; ends holds; closes open "send it to us"
+  requests as rejected; deletes the install's photos except a photo that is a non-rejected
+  catalogue version's evidence or that another install's scan also sent. The database goes
+  first; a photo file that can't be deleted then is picked up by the 30-day job. Logs counts only.
+- **Privacy page:** "Who reads your photos" says paid Gemini and asks for pack-only photos; "Your
+  choices" describes the button, the email address, the 90-day answer and the Data Protection Board.
 
 ---
 

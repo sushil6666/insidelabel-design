@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """
 Delete users' scan photos older than 30 days that nothing still needs (D-080, D-098).
+Unlink scans older than 30 days from their install; delete feedback, problem reports
+and installs after 12 months (D-128).
 
 Held scans (problem reports, "send it to us"), catalogue versions' photos, scans
 under review and photos re-sent recently are kept. Dry run unless --apply.
@@ -32,6 +34,11 @@ def main(argv=None):
         sys.exit(f"--days below {retention.DAYS} would break D-080's promise to reviewers and users")
     if not os.path.isdir(a.media):
         sys.exit(f"no media directory at {a.media}")
+    # D-128 first: it releases holds that have ended, so their photos can go today.
+    u = retention.unlink(a.db, days=a.days, apply=a.apply)
+    print(f"{'would unlink' if not a.apply else 'unlinked'} {u['unlinked_scans']} scan(s) from their install; "
+          f"{u['released_holds']} hold(s) ended; {u['feedback']} feedback, {u['problem_reports']} problem "
+          f"report(s) and {u['devices']} install(s) past {retention.KEEP_DAYS} days")
     out = retention.run(a.db, LocalMedia(a.media), days=a.days, apply=a.apply)
     if not a.apply:
         print(f"dry run: {len(out['delete'])} photo(s) older than {a.days} days would be deleted "

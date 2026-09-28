@@ -66,6 +66,7 @@ from insidelabel.extraction.schemas import (  # noqa: E402
     CompareRequest,
     AgreeRequest,
     FeedbackRequest,
+    ForgetRequest,
     JoinRequest,
     ProblemRequest,
     ReportRequest,
@@ -880,6 +881,34 @@ def feedback(req: FeedbackRequest, request: Request):
     fid = STORE.save_feedback(device_id=req.device_id, comment=comment, rating=req.rating,
                               screen=req.screen, app_version=req.app_version)
     return {"status": "received", "feedback_id": fid}
+
+
+@app.post("/forget")
+def forget(req: ForgetRequest, request: Request):
+    """
+    D-129 "Delete my data" (DPDP Act s.12(3)). No invite or agreement needed: a
+    tester whose code was revoked can still erase. The database goes first; a
+    photo whose file can't be deleted now keeps its unlinked scan row, so the
+    30-day job deletes it later.
+    """
+    _rate_limit(request, "forget", req.device_id, ratelimit.FORGET_TEXT)
+    if STORE is None:
+        raise HTTPException(status_code=503, detail={
+            "error": "storage_unavailable", "detail": "We couldn't reach our records. Try again in a minute."})
+    out = STORE.forget(req.device_id)
+    if not out["found"]:
+        return {"status": "nothing_stored"}
+    photos = 0
+    for key in out.pop("photo_keys"):
+        try:
+            if MEDIA is not None and MEDIA.delete(key):
+                photos += 1
+            STORE.mark_photo_deleted(key)
+        except Exception:                                      # noqa: BLE001 - the retention job retries
+            log.exception("forget: photo delete failed")
+    out = {k: v for k, v in out.items() if k != "found"} | {"photos": photos}
+    log.info("forget: %s", out)                                   # counts only, never the id
+    return {"status": "deleted", "deleted": out}
 
 
 # ---------------------------------------------------------------------------

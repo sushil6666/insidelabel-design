@@ -93,6 +93,12 @@ class AgreeRequest(BaseModel):
     terms_version: str = Field(..., max_length=40)
 
 
+class ForgetRequest(BaseModel):
+    """D-129 "Delete my data": the install id is the only thing that ties data to a person."""
+
+    device_id: str = Field(..., max_length=64)
+
+
 class FeedbackRequest(BaseModel):
     """D-102 "Send feedback": what a tester thinks. Not a mistake (D-076), not a problem (D-092)."""
 
