@@ -61,14 +61,12 @@ Unused: the `user_profiles` table (from the first schema) exists but nothing wri
 These are the places where what the app does today may fall short of the Act, or where a
 choice is needed. Section numbers are from the Act.
 
-1. **Gemini: paid or unpaid quota.** The Gemini terms say that on **unpaid** quota Google uses
-   the content "to provide, improve, and develop Google products and services and machine
-   learning technologies" and "human reviewers may read, annotate, and process your API input
-   and output". On **paid** quota Google "doesn't use your prompts ... or responses to improve
-   our products", processes them under its Data Processing Addendum, and logs them "for a
-   limited period of time, solely for detecting and preventing violations of the Prohibited Use
-   Policy". The project runs on Google Cloud's free trial today. **Sushil to confirm in AI
-   Studio that the project's Gemini tier is paid**; the privacy page should then say so.
+1. **Gemini: paid quota, confirmed by Sushil 2026-09-28 (D-129).** The Gemini terms say that
+   on paid quota Google "doesn't use your prompts ... or responses to improve our products",
+   processes them under its Data Processing Addendum, and logs them "for a limited period of time,
+   solely for detecting and preventing violations of the Prohibited Use Policy" and legal
+   disclosures. (On unpaid quota Google may use them to improve its products and "human
+   reviewers may read" them.) The privacy page says paid.
 2. **Gemini's age clause.** The same terms say the API may not be used in an app "that is
    directed towards or is likely to be accessed by individuals under the age of 18". The privacy
    page says the app is for adults; children appear only as profiles an adult sets up. The reviewer
@@ -90,16 +88,18 @@ choice is needed. Section numbers are from the Act.
    Sushil wants to keep photos in archive storage instead; the question for the reviewer is
    whether an unlinked pack photo that shows a hand or a face is still personal data. s.8(8)
    lets the Rules set the period for "no longer served"; check whether they do for this class.
-6. **Rights: access, correction, erasure (s.11, s.12) and grievances (s.13).** There is no way
-   yet for a user to find or delete their own data: the app doesn't show the install id and
-   there is no delete path. Proposed: a "Your data" item in the app that shows the install id,
-   a "Delete my data" button (erases every row for that install id and its photos, except
-   catalogue photos that reviewers have published), and the contact address for anything
-   else. The PIB summary says requests must be answered within 90 days.
+6. **Rights: access, correction, erasure (s.11, s.12) and grievances (s.13): built as D-129.**
+   "Your data" in the app shows the install id and has "Delete my data" (`POST /forget`), which
+   erases every row for that install id and its photos, except a photo that became a catalogue
+   version's evidence (the pack's record, with no link to the person). Access and correction
+   requests go by email to `connect@insidelabel.ai`, quoting the id; the page promises an answer
+   within 90 days (the PIB summary's limit). Question for the reviewer: is keeping a catalogue
+   photo after an erasure request acceptable, given it is kept for the catalogue, not about the
+   person?
 7. **Contact (s.8(9)) and the notice (s.5).** The notice must name the data and purpose, how to
    use the rights and how to complain to the Data Protection Board, and (s.5(3)) be available
    in English or a language of the Eighth Schedule. Contact: `connect@insidelabel.ai`. The
-   draft page doesn't yet mention the Board or other languages.
+   page now names the Board; it doesn't yet offer other languages.
 8. **Breach notice (s.8(6)).** No written plan yet for telling the Board and affected users.
    With no email or phone numbers kept, users could only be told in the app. The reviewer
    should say what is enough.

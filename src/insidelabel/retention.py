@@ -183,14 +183,27 @@ def unlink(conninfo, days=DAYS, keep_days=KEEP_DAYS, apply=False):
         out["unlinked_scans"] = conn.execute(_UNLINK, p).rowcount
         conn.execute(_UNLINK_NOTIFY, p)
         gone = [r[0] for r in conn.execute(_GONE_DEVICES, p).fetchall()]
-        if gone:
-            for table in ("device_days", "agreements", "invite_devices", "user_profiles"):
-                conn.execute(f"DELETE FROM {table} WHERE user_id = ANY(%s)", (gone,))
-            for table, col in (("scans", "user_id"), ("problem_reports", "user_id"), ("feedback", "user_id"),
-                               ("corrections", "user_id"), ("review_queue", "notify_user_id")):
-                conn.execute(f"UPDATE {table} SET {col} = NULL WHERE {col} = ANY(%s)", (gone,))
-            conn.execute("DELETE FROM users WHERE id = ANY(%s)", (gone,))
+        forget_users(conn, gone)
         out["devices"] = len(gone)
         if not apply:
             conn.rollback()
     return out
+
+
+def forget_users(conn, ids):
+    """
+    Remove install ids and everything that still points at them, inside the
+    caller's transaction (D-128: 12 months unseen; "Delete my data"). Scans stay,
+    unlinked, with what the label said. Photos are the caller's job.
+    """
+    if not ids:
+        return
+    conn.execute("""UPDATE scans SET user_id = NULL, request = request - 'profiles' - 'avoid',
+                                    unlinked_at = coalesce(unlinked_at, now())
+                     WHERE user_id = ANY(%s)""", (ids,))
+    for table in ("device_days", "agreements", "invite_devices", "user_profiles"):
+        conn.execute(f"DELETE FROM {table} WHERE user_id = ANY(%s)", (ids,))
+    for table, col in (("problem_reports", "user_id"), ("feedback", "user_id"),
+                       ("corrections", "user_id"), ("review_queue", "notify_user_id")):
+        conn.execute(f"UPDATE {table} SET {col} = NULL WHERE {col} = ANY(%s)", (ids,))
+    conn.execute("DELETE FROM users WHERE id = ANY(%s)", (ids,))

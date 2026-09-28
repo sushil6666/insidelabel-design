@@ -715,7 +715,10 @@ setup alarms.
   installs 12 months after last seen. Runs inside the daily retention job. Privacy page "How long we keep it"
   filled. Not built: photos to archive storage (needs the reviewer's answer on photos showing a hand or face,
   and a price read from Google). Waiting on Sushil: is Gemini on paid quota; check the server's invite labels
-  for names; "Your data" / "Delete my data" in the app; a DPDP reviewer.
+  for names; a DPDP reviewer.
+- **D-129 LOCKED and built (580 tests, web-23):** Gemini confirmed on paid quota; "Your data" in the app footer
+  with "Delete my data" (`POST /forget`); privacy page "Your choices" filled. The privacy page has no
+  `[To complete]` left; its DRAFT banner stays until the DPDP review.
 - **Next work, in order (before invites):** (1) and (2) done; (3) built as D-123, see above. (3) The result-screen
   discussion Sushil asked for ("not much useful for a user"; Biscoff's band says "No concerns found"
   under a sugar headline): mockups, his decision. (4) Privacy page (contact `connect@insidelabel.ai`),

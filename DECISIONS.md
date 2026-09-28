@@ -1781,6 +1781,26 @@ served", and applies only to data about an identifiable individual (s.2(t)). **A
   the label if so); the storage class and its price are read from Google's pricing page; the
   privacy page changes first. That change will supersede the photo part of D-080 and D-098.
 
+### D-129 · "Delete my data" in the app; Gemini on paid quota `LOCKED` (2026-09-28)
+The DPDP Act gives a right to erasure (s.12(3)) and to a readily available grievance route (s.13);
+the app had no way to do either. Recommended by Claude in the data map (`docs/DPDP_DATA_MAP.md`
+section 4, point 6). **Accepted by Sushil 2026-09-28** ("Delete my data" option in the app. yes).
+Sushil also confirmed the Gemini project is on **paid quota** (under the Gemini terms, Google doesn't
+use paid-tier prompts or responses to improve its products). App web-23.
+
+- **App:** "Your data" in the footer of every screen (`#/data`), open before joining or agreeing
+  so a revoked tester can still erase. It says what the server keeps and for how long, shows the
+  install id to quote in an email to `connect@insidelabel.ai`, and has "Delete my data" behind a
+  confirm step. On success it clears everything the app keeps on the phone (`store.clear()`).
+- **Server:** `POST /forget {device_id}`, rate limited (5 an hour per install). No invite needed.
+  Deletes feedback, problem reports, invite link, agreement, day counts and the install id;
+  unlinks every scan and strips its household profiles; ends holds; closes open "send it to us"
+  requests as rejected; deletes the install's photos except a photo that is a non-rejected
+  catalogue version's evidence or that another install's scan also sent. The database goes
+  first; a photo file that can't be deleted then is picked up by the 30-day job. Logs counts only.
+- **Privacy page:** "Who reads your photos" says paid Gemini and asks for pack-only photos; "Your
+  choices" describes the button, the email address, the 90-day answer and the Data Protection Board.
+
 ---
 
 ## Open and pending

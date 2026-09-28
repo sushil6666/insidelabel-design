@@ -603,6 +603,57 @@ class Store:
             conn.execute("UPDATE scans SET evidence_hold = true WHERE id = ANY(%s)", (ids,))
             return {"review_id": rid}
 
+    # -- "Delete my data" (D-129) ---------------------------------------------
+
+    def forget(self, device_id):
+        """
+        Erase what this install id points at (DPDP Act s.12(3)): its feedback,
+        problem reports, invite link, agreement and day counts; its scans lose the
+        link and the household profiles, and its "send it to us" requests still
+        open are closed. Returns {"found": False} or {"found": True, counts,
+        "photo_keys": photos the caller should delete}. A photo stays when it is
+        a catalogue version's evidence (the pack's record, not the person's) or
+        another install's scan still holds the same bytes.
+        """
+        from insidelabel import retention
+        try:
+            uid = str(uuid.UUID(str(device_id)))
+        except ValueError:
+            return {"found": False}
+        with self._connect() as conn:
+            if conn.execute("SELECT 1 FROM users WHERE id = %s", (uid,)).fetchone() is None:
+                return {"found": False}
+            keys = [r["key"] for r in conn.execute(
+                """SELECT DISTINCT k.key FROM scans s
+                    CROSS JOIN LATERAL (VALUES (s.back_image_key), (s.front_image_key)) AS k(key)
+                    WHERE s.user_id = %(u)s AND k.key IS NOT NULL AND s.photos_deleted_at IS NULL
+                      AND NOT EXISTS (SELECT 1 FROM product_versions v
+                                       WHERE v.status <> 'rejected'
+                                         AND k.key IN (v.back_image_key, v.front_image_key))
+                      AND NOT EXISTS (SELECT 1 FROM scans o
+                                       WHERE o.user_id IS DISTINCT FROM %(u)s AND o.photos_deleted_at IS NULL
+                                         AND k.key IN (o.back_image_key, o.front_image_key))""",
+                {"u": uid}).fetchall()]
+            out = {"found": True, "photo_keys": keys}
+            out["closed_requests"] = conn.execute(
+                """UPDATE review_queue SET status = 'rejected', resolution = 'rejected', resolved_at = now(),
+                          resolution_note = 'The sender deleted their data (D-129).'
+                    WHERE kind = 'send_to_us' AND notify_user_id = %s AND status IN ('open', 'claimed')""",
+                (uid,)).rowcount
+            out["feedback"] = conn.execute("DELETE FROM feedback WHERE user_id = %s", (uid,)).rowcount
+            out["problem_reports"] = conn.execute(
+                "DELETE FROM problem_reports WHERE user_id = %s", (uid,)).rowcount
+            out["scans"] = conn.execute(
+                "UPDATE scans SET evidence_hold = false WHERE user_id = %s", (uid,)).rowcount
+            retention.forget_users(conn, [uid])
+            return out
+
+    def mark_photo_deleted(self, key):
+        with self._connect() as conn:
+            conn.execute("""UPDATE scans SET photos_deleted_at = now()
+                             WHERE photos_deleted_at IS NULL AND (back_image_key = %s OR front_image_key = %s)""",
+                         (key, key))
+
     # -- problem reports (D-092) --------------------------------------------
 
     def save_problem(self, *, kind, device_id=None, scan_id=None, request_id=None, comment=None,
