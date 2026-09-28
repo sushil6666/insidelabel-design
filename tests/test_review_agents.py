@@ -422,3 +422,39 @@ def test_recheck_replays_the_stored_answer_for_free(env, capsys):
         mp.undo()
     assert f"item {item}: confirmed -> confirmed" in capsys.readouterr().out
     assert len(q(env, "SELECT id FROM review_drafts WHERE review_item_id = %s", item)) == 2
+
+
+# ---------------------------------------------------------------- 2026-09-27, items 22 to 31
+
+def test_a_code_with_its_name_is_read_as_the_code():
+    # Item 24: the drafter returned the dropdown's whole line, so the category box stayed empty.
+    long = "14.1.5 Coffee, coffee substitutes, tea, herbal infusions, and other hot cereal and grain beverages"
+    assert checker.category_code(long) == "14.1.5"
+    assert checker.category_code("7.2.1") == "7.2.1" and checker.category_code(None) == ""
+    detail = next(c["detail"] for c in checker.check(with_(category=long), ctx(categories=CATS | {"14.1.5"}))
+                  if c["check"] == "category")
+    assert "not an FSSAI category code" not in detail
+
+
+def test_the_code_first_declaration_of_a_beverage_mix():
+    # Items 27 and 28: "DAIRY BASED BEVERAGE MIX (1.1.2) PROPRIETARY FOOD".
+    assert checker.declared_category("DAIRY BASED BEVERAGE MIX (1.1.2) PROPRIETARY FOOD") == "1.1.2"
+    assert checker.declared_category("PROPRIETARY FOOD (CROISSANT, CATEGORY - 7.2.2)") is None   # a name between
+    assert checker.declared_category("PROPRIETARY FOOD - 7.2.2") == "7.2.2"
+
+
+def test_soft_candy_is_5_2_2():
+    # Item 22: "SUGAR BOILED CONFECTIONERY - SOFT CANDY"; Codex 05.2.2 is soft candy.
+    ocr = "SUGAR BOILED CONFECTIONERY - SOFT CANDY. INGREDIENTS: SUGAR, LIQUID GLUCOSE, MILK SOLIDS."
+    assert checker.rule_category("Mango Candy", "", ["SUGAR", "LIQUID GLUCOSE", "MILK SOLIDS"], ocr) == "5.2.2"
+
+
+def test_the_users_same_pack_tick_settles_an_indeterminate_match():
+    # D-035: attestation is the pairing mechanism; it never overrides a mismatch.
+    raw = {**READ, "product_match": {"status": "indeterminate"}}
+    ticked = {"photo_sources": {"back": "camera"}, "pairing_confirmed": True}
+    claims = with_(front_claims=["No Maida"])
+    assert "same_pack" not in failed(claims, ctx(raw=raw, has_front=True, request=ticked))
+    assert "same_pack" in failed(claims, ctx(raw=raw, has_front=True))
+    mismatch = {**READ, "product_match": {"status": "mismatch"}}
+    assert "same_pack" in failed(claims, ctx(raw=mismatch, has_front=True, request=ticked))

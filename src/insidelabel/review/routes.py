@@ -26,7 +26,7 @@ from fastapi.templating import Jinja2Templates
 from insidelabel import ratelimit
 from insidelabel.core import engine
 from insidelabel.db.categories import COMMON
-from insidelabel.review import accounts
+from insidelabel.review import accounts, checker
 from insidelabel.review.service import ReviewError, ReviewService
 
 router = APIRouter(prefix="/review", include_in_schema=False)
@@ -149,7 +149,7 @@ def item(request: Request, item_id: int, name: str = Depends(reviewer), error: s
         form.update({
             "name": dd.get("name") or form["name"], "brand": dd.get("brand") or form["brand"],
             "variant": dd.get("variant") or "", "barcode": dd.get("barcode") or form["barcode"],
-            "category": dd.get("category") or form["category"],
+            "category": checker.category_code(dd.get("category")) or form["category"],
             "ingredients": "\n".join(dd.get("ingredients") or []) or form["ingredients"],
             "allergen_statement": dd.get("allergen_statement") or "",
             "front_claims": "\n".join(dd.get("front_claims") or []),

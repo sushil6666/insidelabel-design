@@ -1,6 +1,6 @@
 # STATE.md - where InsideLabel is, and how to pick it up
 
-**Last updated:** 2026-09-27 (**https://insidelabel.ai is live**, `main` = `45f9feb`, PR #18; branch `live`: notes from the deploy) · **Owner:** Sushil · **Tests:** 534 passing, 8 skipped, 1 expected failure · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 5.7 s on the live server (2026-09-27), Gemini + Cloud Vision, `verdict`
+**Last updated:** 2026-09-27 (**https://insidelabel.ai is live**, `main` = `45f9feb`, PR #18; branch `live`: notes from the deploy) · **Owner:** Sushil · **Tests:** 538 passing, 8 skipped, 1 expected failure · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 5.7 s on the live server (2026-09-27), Gemini + Cloud Vision, `verdict`
 
 This is the living status document. Read it first in any new session, then
 `DECISIONS.md` for the *why*. Update the "Last updated" line, the numbers and
@@ -740,6 +740,12 @@ from all regions and emails Sushil after 60 s of failure (OPERATIONS.md §5). Fr
       5 new items every 10 minutes, about 50 paise each, shadow only. Each item is drafted once per
       prompt version (a failed draft is stored as `error`, never retried). Item 13 confirmed after the
       panel-word fix (PR #31); 12, 13 and 15 are the first agreements toward the 30-item gate.
+      **First timer runs (items 22 to 31):** all 10 went to a person. Fixed from `show` output: the
+      drafter's category "14.1.5 Coffee, ..." is cut to its code (item 24's empty category box);
+      a code-first declaration "(1.1.2) PROPRIETARY FOOD" is read (items 27, 28, where it was on the
+      front: still a person until front text is read); "soft candy" gives 5.2.2 (Codex 05.2.2, item
+      22); the user's "same pack" tick settles an indeterminate front/back match (D-035; 7 of 10).
+      Categories with no printed code or word rule (13.5 supplements, drinks) stay with a person.
       **Phase B, before publishing:** the agent publishing through `approve()`, one-click undo, the
       agent-published list for spot checks.
       **First shadow run, 2026-09-27 16:57 (paid, 5 items, 12 to 16): all five "needs a person".**

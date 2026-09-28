@@ -30,7 +30,11 @@ _SUGARS = sorted({s.lower() for s in _NORM["sugar_aliases"]["added_sugar"]} | {"
 _CLAIM_RULES = json.load(open(os.path.join(DATA_DIR, "claim_rules.json"), encoding="utf-8"))["rules"]
 
 # "PEANUT BASED SPREAD (Proprietary Food - 4.2.2.5 Spread)": the pack's own category.
-_DECLARED = re.compile(r"proprietary\s+food\s*[-:(\u2013]?\s*(\d{1,2}(?:\.\d{1,2}){1,4})", re.I)
+# The pack's own category: "PROPRIETARY FOOD (CATEGORY 7.2.2)", or the code first, as on
+# beverage mixes: "DAIRY BASED BEVERAGE MIX (1.1.2) PROPRIETARY FOOD" (items 27 and 28).
+_DECLARED = re.compile(r"proprietary\s+food\s*[-:(\u2013]?\s*(\d{1,2}(?:\.\d{1,2}){1,4})"
+                       r"|\((\d{1,2}(?:\.\d{1,2}){1,4})\)\s*proprietary\s+food", re.I)
+_CODE = re.compile(r"^\s*(\d{1,2}(?:\.\d{1,2}){0,4})\b")
 # D-116: an AYUSH drug licence. Its *absence* of an FSSAI number is never used.
 _AYUSH = re.compile(r"\b(ayurvedic|siddha|unani)\s+(proprietary\s+)?medicine", re.I)
 _WORD = re.compile(r"[a-z]{3,}")
@@ -96,7 +100,13 @@ def _is_sugar(line):
 
 def declared_category(ocr_text):
     m = _DECLARED.search(ocr_text or "")
-    return m.group(1) if m else None
+    return (m.group(1) or m.group(2)) if m else None
+
+
+def category_code(text):
+    """The code alone: the drafter sometimes returns "14.1.5 Coffee, coffee substitutes, ..." (item 24)."""
+    m = _CODE.match(text or "")
+    return m.group(1) if m else (text or "").strip()
 
 
 def rule_category(name, variant, ingredients, ocr_text):
@@ -202,7 +212,7 @@ def check(draft, ctx):
     claims = [x.strip() for x in draft.get("front_claims") or [] if x and x.strip()]
     ocr = ctx.get("ocr_text") or ""
     raw = ctx.get("raw") or {}
-    code = (draft.get("category") or "").strip()
+    code = category_code(draft.get("category"))
 
     add("in_scope", ctx.get("kind") in IN_SCOPE_KINDS,
         f"{ctx.get('kind')} items stay with people for now" if ctx.get("kind") not in IN_SCOPE_KINDS else "")
@@ -249,7 +259,10 @@ def check(draft, ctx):
     add("reading_gate", conf >= 0.95 and complete,
         "" if conf >= 0.95 and complete else f"reading confidence {conf}, ingredients {raw.get('ingredients_status')}")
     match = (raw.get("product_match") or {}).get("status")
-    same = match != "mismatch" and not (ctx.get("has_front") and claims and match != "match")
+    # D-035: two photos can't prove one pack; the user's "Both photos are of the same pack"
+    # is the mechanism, so it settles an indeterminate match (never a mismatch).
+    attested = bool((ctx.get("request") or {}).get("pairing_confirmed"))
+    same = match != "mismatch" and not (ctx.get("has_front") and claims and match != "match" and not attested)
     add("same_pack", same, "" if same else f"front and back not confirmed as one pack ({match})")
     sources = (ctx.get("request") or {}).get("photo_sources") or {}
     uploaded = [k for k, v in sources.items() if v == "upload"]

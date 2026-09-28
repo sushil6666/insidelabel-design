@@ -81,6 +81,7 @@ def parse(text):
     for k in ("ingredients", "front_claims", "changes", "doubts"):
         if not isinstance(d[k], list) or not all(isinstance(x, str) for x in d[k]):
             raise DraftError(f"{k} is not a list of strings")
+    d["category"] = checker.category_code(d.get("category"))
     return d
 
 
@@ -129,7 +130,7 @@ def compare(row):
         return {"id": row["id"], "decision": "rejected", "agrees": row["outcome"] != "confirmed",
                 "category": None, "ingredients": None, "claims": None,
                 "confirmed_but_corrected": row["outcome"] == "confirmed", "by": row["drafted_by"]}
-    cat = (d.get("category") or "") == (row["category"] or "")
+    cat = checker.category_code(d.get("category")) == (row["category"] or "")
     ing = [_norm_line(x) for x in d.get("ingredients") or []] == [_norm_line(x) for x in row["ingredients"] or []]
     clm = sorted(_norm_line(x) for x in d.get("front_claims") or []) == \
         sorted(_norm_line(x) for x in row["front_claims"] or [])
