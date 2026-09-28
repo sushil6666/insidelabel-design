@@ -4,7 +4,7 @@ The invite-only web beta (D-102): codes for testers, who came back, what they sa
 
     export INSIDELABEL_DB="postgresql:///insidelabel?host=/var/run/postgresql"
 
-    python tools/beta.py invite 1 --label "T01 Priya" --base https://yourdomain.in
+    python tools/beta.py invite 1 --label T01 --base https://yourdomain.in
         # prints a join link per code: send one link to one person
     python tools/beta.py list                 # each code: devices, scans, days active, last scan
     python tools/beta.py feedback             # newest feedback first
@@ -12,8 +12,9 @@ The invite-only web beta (D-102): codes for testers, who came back, what they sa
     python tools/beta.py revoke CODE          # lock a code out
 
 One code per person, not per household: the W4 retention number (D-055) is
-counted per code. A label is for you only; the app never shows it. A first
-name or "T07" is enough - no phone numbers or emails here.
+counted per code. A label is for you only; the app never shows it. Use a code
+like "T07" and keep who it is in your own notes: no names, phone numbers or
+emails here (D-128).
 """
 import argparse
 import os
@@ -35,7 +36,7 @@ def main(argv=None):
     sub = ap.add_subparsers(dest="cmd", required=True)
     inv = sub.add_parser("invite", help="make N codes")
     inv.add_argument("n", type=int)
-    inv.add_argument("--label", help="who they are for (you only)")
+    inv.add_argument("--label", help="a code for who it is for, like T01; no names (D-128)")
     inv.add_argument("--base", default=os.environ.get("INSIDELABEL_PUBLIC_URL", "http://127.0.0.1:8000"),
                      help="the site's address, for the join links")
     inv.add_argument("--devices", type=int, default=3, help="devices per code")

@@ -526,21 +526,25 @@ class Store:
                 (uid, code, rating, comment, screen, app_version)).fetchone()["id"]
 
     def beta_testers(self):
-        """One row per code: installs, scans, days active, last scan, feedback - the W4 view (D-055)."""
+        """One row per code: installs, scans, days active, first and last day, feedback - the W4 view (D-055)."""
         with self._connect() as conn:
             return conn.execute(
                 """SELECT i.code, i.label, i.revoked_at, i.created_at,
                           count(DISTINCT d.user_id) AS devices,
-                          count(DISTINCT s.id) AS scans,
-                          count(DISTINCT s.created_at::date) AS days_active,
-                          min(s.created_at) AS first_scan, max(s.created_at) AS last_scan,
+                          coalesce(sum(s.scans), 0)::int AS scans,
+                          count(DISTINCT s.day) AS days_active,
+                          min(s.day) AS first_scan, max(s.day) AS last_scan,
                           (SELECT count(*) FROM feedback f WHERE f.invite_code = i.code) AS feedback,
                           (SELECT max(a.agreed_at) FROM agreements a
                              JOIN invite_devices d2 ON d2.user_id = a.user_id
                             WHERE d2.code = i.code) AS agreed_at
                      FROM invites i
                      LEFT JOIN invite_devices d ON d.code = i.code
-                     LEFT JOIN scans s ON s.user_id = d.user_id
+                     -- D-128: scans still linked, plus the day counts kept for unlinked ones
+                     LEFT JOIN (SELECT user_id, created_at::date AS day, count(*) AS scans
+                                  FROM scans WHERE user_id IS NOT NULL GROUP BY 1, 2
+                                UNION ALL
+                                SELECT user_id, day, scans FROM device_days) s ON s.user_id = d.user_id
                     GROUP BY i.code ORDER BY i.created_at, i.code""").fetchall()
 
     def feedback_list(self, limit=100):

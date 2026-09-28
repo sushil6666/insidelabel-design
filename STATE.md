@@ -709,9 +709,13 @@ setup alarms.
   strip; "What these words mean" with links to the new `/how` page.
 - **D-123, D-124, D-127 accepted and merged (2026-09-28).** Deploy: `sudo /opt/insidelabel/app/deploy/update.sh`.
 - **DPDP data map written: `docs/DPDP_DATA_MAP.md`** (branch `privacy-dpdp`), from the code and the Act and the
-  Gemini terms read first-hand; the DPDP Rules 2025 only via the PIB summary. Waiting on Sushil: is the Gemini
-  project on paid quota; code-only invite labels; the retention proposals (section 4 point 5); a "Your data" /
-  "Delete my data" item in the app. Then Claude fills the privacy page `[To complete]` parts.
+  Gemini terms read first-hand; the DPDP Rules 2025 only via the PIB summary.
+- **D-128 LOCKED and built (575 tests, migration 016):** keep what the label said, unlink who scanned it after
+  30 days (install id and household profiles), `device_days` keeps the W4 count; feedback and reports 12 months;
+  installs 12 months after last seen. Runs inside the daily retention job. Privacy page "How long we keep it"
+  filled. Not built: photos to archive storage (needs the reviewer's answer on photos showing a hand or face,
+  and a price read from Google). Waiting on Sushil: is Gemini on paid quota; check the server's invite labels
+  for names; "Your data" / "Delete my data" in the app; a DPDP reviewer.
 - **Next work, in order (before invites):** (1) and (2) done; (3) built as D-123, see above. (3) The result-screen
   discussion Sushil asked for ("not much useful for a user"; Biscoff's band says "No concerns found"
   under a sugar headline): mockups, his decision. (4) Privacy page (contact `connect@insidelabel.ai`),

@@ -1754,6 +1754,33 @@ Sushil: "are we asking the right question to user to add the allergic part", and
 - "By law, ingredients are listed from most to least" was left out of `/how` until the FSSAI
   labelling regulation is read first-hand (D-046).
 
+### D-128 · Keep what the label said; unlink who scanned it after 30 days `LOCKED` (2026-09-28)
+Sushil: "data is gold we will keep may be in cheaper storage format". Claude recommended keeping
+the label data for good but not the link to the person: the DPDP Act s.8(7) requires erasing
+personal data "as soon as it is reasonable to assume that the specified purpose is no longer being
+served", and applies only to data about an identifiable individual (s.2(t)). **Accepted by Sushil
+2026-09-28** ("agree with you"). Data map: `docs/DPDP_DATA_MAP.md`.
+
+- **Built (migration 016, `retention.unlink`, run daily by `tools/retention.py --apply`):**
+  - After 30 days a scan loses `user_id` and the `profiles` and `avoid` in its request; the
+    reading, barcode, timings and result stay. `unlinked_at` records when.
+  - A held scan (problem report, "send it to us") keeps its link, so a replay has the profiles
+    it ran with (D-092), until no report names it, and never past 12 months. A review item
+    doesn't hold the link: the review needs the photo, which D-098's rules keep.
+  - `device_days` keeps each install's scans per day, so D-055's W4 retention survives
+    (`beta_testers()` reads it).
+  - Feedback and problem reports are deleted after 12 months. An install id, its invite link,
+    agreement and day counts are deleted 12 months after the device was last seen.
+  - Resolved review items drop `notify_user_id` after 30 days.
+  - Invite labels are codes (T01), no names (`tools/beta.py` help changed).
+  - Privacy page "How long we keep it" updated to match.
+- **Not built yet:** keeping scan photos in cheaper archive storage instead of deleting them at
+  30 days. Photos are still deleted at 30 days (D-080, D-098), the promise on the live privacy
+  page, and photos taken under that notice keep it. Before changing it: the DPDP reviewer says
+  whether an unlinked pack photo that shows a hand or a face is still personal data (crop to
+  the label if so); the storage class and its price are read from Google's pricing page; the
+  privacy page changes first. That change will supersede the photo part of D-080 and D-098.
+
 ---
 
 ## Open and pending

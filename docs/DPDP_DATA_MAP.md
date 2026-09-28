@@ -24,17 +24,18 @@ Hosting: one Google Cloud virtual machine in Mumbai (asia-south1).
 
 | # | Data | Why | Where kept | Who can see it | When deleted today |
 |---|---|---|---|---|---|
-| 1 | **Install id**: a random id the browser makes on first use (`users.id`) | Ties a device's scans, reports and feedback together; rate limits | Server database; the phone (`localStorage`) | Operator | Never (no rule yet) |
-| 2 | **Invite code and its label**: the code a tester joined with (`invite_devices`); the operator's own label for the code (`invites.label`) | Invite-only beta; knowing which tester sent what | Server database | Operator only; the app never shows the label | Never (no rule yet) |
-| 3 | **Terms agreement**: install id, terms version, time (`agreements`) | Record that the user agreed | Server database | Operator | Never (no rule yet) |
+| 1 | **Install id**: a random id the browser makes on first use (`users.id`) | Ties a device's scans, reports and feedback together; rate limits | Server database; the phone (`localStorage`) | Operator | 12 months after the device was last seen (D-128) |
+| 2 | **Invite code and its label**: the code a tester joined with (`invite_devices`); the operator's own label for the code (`invites.label`) | Invite-only beta; knowing which tester sent what | Server database | Operator only; the app never shows the label | With the install id (D-128). Labels are codes (T01), no names |
+| 3 | **Terms agreement**: install id, terms version, time (`agreements`) | Record that the user agreed | Server database | Operator | With the install id (D-128) |
 | 4 | **Pack photos** (front and back of a food pack) and the barcode | Reading the label | Server disk (`/var/lib/insidelabel/media`); sent to Google (row 10) | Operator; reviewers of the catalogue; Google as processor | **30 days** after the scan, by a daily job (`retention.py`, D-080, D-098), unless: the user reported a problem with that scan, sent the pack to us, a review of it is open, or the photo became the reviewed catalogue record of that pack |
-| 5 | **Scan record**: time, result, the model's reading of the label, timings, and the request (`scans`) | Showing the result; replaying a scan to fix a bug (D-092) | Server database | Operator | Never (the row stays after its photos go) |
-| 6 | **Household profiles sent with each scan**: for each person, an age band (toddler, kid, young, adult, older) and the foods they avoid (for example milk). Stored inside the scan record's request (`scans.request`) | Checking the pack for those foods; the children's view | The phone keeps the full profile; the server keeps the age band and avoid list per scan | Operator | Never (stored with the scan record) |
+| 5 | **Scan record**: time, result, the model's reading of the label, timings, and the request (`scans`) | Showing the result; replaying a scan to fix a bug (D-092) | Server database | Operator | The link to the install id is removed after 30 days (D-128); what the label said is kept |
+| 6 | **Household profiles sent with each scan**: for each person, an age band (toddler, kid, young, adult, older) and the foods they avoid (for example milk). Stored inside the scan record's request (`scans.request`) | Checking the pack for those foods; the children's view | The phone keeps the full profile; the server keeps the age band and avoid list per scan | Operator | Removed from the scan after 30 days (D-128), unless the scan is held for a report, and never kept past 12 months |
 | 7 | **Nicknames and the parental consent tick** | Showing "Aarav" instead of "your child" | **Phone only.** Never sent (`profilesForServer()` sends ref, age and avoid list only, D-074) | Nobody but the phone's user | When the user clears the app's site data |
-| 8 | **Feedback**: rating and free text (`feedback`) | Beta feedback | Server database | Operator | Never (no rule yet) |
-| 9 | **Problem reports**: the user's comment, the app's recent trail (screens, API calls, errors; no names, no query strings, no label text), the browser's user agent, language, screen size and network type (`problem_reports`) | Fixing bugs; the user sees exactly what is sent before sending | Server database | Operator | Never (no rule yet) |
+| 8 | **Feedback**: rating and free text (`feedback`) | Beta feedback | Server database | Operator | 12 months (D-128) |
+| 9 | **Problem reports**: the user's comment, the app's recent trail (screens, API calls, errors; no names, no query strings, no label text), the browser's user agent, language, screen size and network type (`problem_reports`) | Fixing bugs; the user sees exactly what is sent before sending | Server database | Operator | 12 months (D-128) |
 | 10 | **Photos sent to Google** for reading: Gemini API (reads the ingredient list) and Cloud Vision API (reads the text again as a check). The review agents send catalogue photos to Gemini again to draft a review | Reading the label (AI reads, rules judge, D-004) | Google | Google as processor | Per Google's terms (section 4, point 1) |
 | 11 | **IP address** | Rate limiting | **Memory only**, for the rate-limit windows (at most one day). No access log in Caddy or uvicorn, on purpose | Nobody | On restart, or when the window passes |
+| 11a | **Days an install scanned**: install id, date, number of scans (`device_days`) | The beta's week-4 retention measure (D-055) after scans are unlinked | Server database | Operator | With the install id (D-128) |
 | 12 | **Backups** of the database | Recovery | Server disk, daily dump kept 14 days (`backup.sh`); disk snapshot daily, kept 7 days, stored in Mumbai (DEPLOY.md) | Operator | 14 days (dumps); 7 days (snapshots, which also hold the photos) |
 | 13 | **Email** to `connect@insidelabel.ai` | Questions and requests | Zoho Mail | Operator | No rule yet |
 
@@ -80,18 +81,15 @@ choice is needed. Section numbers are from the Act.
    Questions: is a tick enough under the Rules; must the server keep the record; would
    storing less (see 5) change the answer. s.9(3), no tracking or behavioural monitoring of
    children: the app builds no profile of a child over time; each scan is checked on its own.
-4. **Invite labels can hold a tester's real name.** `tools/beta.py` suggests labels like
-   "T01 Priya". That links a real name to an install id and every scan from it. Recommended:
-   code-only labels (T01), with any name kept off the server.
-5. **No deletion rule for most rows** (s.8(7): erase once the purpose is no longer served).
-   Proposed, for Sushil to decide:
-   - Household profiles in scan records (row 6): removed at 30 days with the photos, unless the
-     scan is held for a report.
-   - Feedback and problem reports (rows 8, 9): 12 months.
-   - Install ids, invite links, agreements and scan records (rows 1, 2, 3, 5): deleted 12 months
-     after the device's last scan. s.8(8) lets the Rules set this period; the reviewer should
-     check whether they do for this class.
-   - The privacy page should add that backups keep deleted data for up to 14 more days.
+4. **Invite labels:** now codes only (T01); the tool no longer suggests names (D-128). Labels
+   already made should be checked for names.
+5. **Deletion rules (s.8(7)), decided by Sushil as D-128 and built:** scans are unlinked
+   from the install id, and the household profiles removed, after 30 days; what the label said
+   is kept for good. Feedback and problem reports: 12 months. Install ids, invite links,
+   agreements and day counts: 12 months after the device was last seen. Photos: still 30 days.
+   Sushil wants to keep photos in archive storage instead; the question for the reviewer is
+   whether an unlinked pack photo that shows a hand or a face is still personal data. s.8(8)
+   lets the Rules set the period for "no longer served"; check whether they do for this class.
 6. **Rights: access, correction, erasure (s.11, s.12) and grievances (s.13).** There is no way
    yet for a user to find or delete their own data: the app doesn't show the install id and
    there is no delete path. Proposed: a "Your data" item in the app that shows the install id,
