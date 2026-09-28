@@ -1,0 +1,122 @@
+{
+  "_meta": {
+    "status": "DRAFTS, not approved. Not read by the app. When Sushil says 'approved', move each row to data/additive_research.json with reviewed_by 'sushil' (D-125).",
+    "drafted_on": "2026-09-28"
+  },
+  "rows": {
+    "102": {
+      "summary": [
+        "A UK study of 297 children aged 3 and 8 to 9 (The Lancet, 2007) gave them drinks with mixes of artificial colours and the preservative sodium benzoate. The UK Food Standards Agency, which funded it, says these colours could cause increased hyperactivity in some children.",
+        "Tartrazine is one of the six colours it names. In the UK, food with any of them must carry the line ‘May have an adverse effect on activity and attention in children’.",
+        "The study tested mixes of colours with the preservative, not each colour on its own."
+      ],
+      "sources": [
+        {
+          "title": "McCann et al., Food additives and hyperactive behaviour in 3-year-old and 8/9-year-old children in the community, The Lancet, 2007",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/17825405/",
+          "read_on": "2026-09-28"
+        },
+        {
+          "title": "Food Standards Agency, Food additives (GOV.UK, 2018)",
+          "url": "https://www.gov.uk/government/publications/food-additives/food-additives",
+          "read_on": "2026-09-28"
+        }
+      ],
+      "reviewed_by": ""
+    },
+    "110": {
+      "summary": [
+        "A UK study of 297 children aged 3 and 8 to 9 (The Lancet, 2007) gave them drinks with mixes of artificial colours and the preservative sodium benzoate. The UK Food Standards Agency, which funded it, says these colours could cause increased hyperactivity in some children.",
+        "Sunset Yellow FCF is one of the six colours it names. In the UK, food with any of them must carry the line ‘May have an adverse effect on activity and attention in children’.",
+        "The study tested mixes of colours with the preservative, not each colour on its own."
+      ],
+      "sources": [
+        {
+          "title": "McCann et al., Food additives and hyperactive behaviour in 3-year-old and 8/9-year-old children in the community, The Lancet, 2007",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/17825405/",
+          "read_on": "2026-09-28"
+        },
+        {
+          "title": "Food Standards Agency, Food additives (GOV.UK, 2018)",
+          "url": "https://www.gov.uk/government/publications/food-additives/food-additives",
+          "read_on": "2026-09-28"
+        }
+      ],
+      "reviewed_by": ""
+    },
+    "122": {
+      "summary": [
+        "A UK study of 297 children aged 3 and 8 to 9 (The Lancet, 2007) gave them drinks with mixes of artificial colours and the preservative sodium benzoate. The UK Food Standards Agency, which funded it, says these colours could cause increased hyperactivity in some children.",
+        "Carmoisine is one of the six colours it names. In the UK, food with any of them must carry the line ‘May have an adverse effect on activity and attention in children’.",
+        "The study tested mixes of colours with the preservative, not each colour on its own."
+      ],
+      "sources": [
+        {
+          "title": "McCann et al., Food additives and hyperactive behaviour in 3-year-old and 8/9-year-old children in the community, The Lancet, 2007",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/17825405/",
+          "read_on": "2026-09-28"
+        },
+        {
+          "title": "Food Standards Agency, Food additives (GOV.UK, 2018)",
+          "url": "https://www.gov.uk/government/publications/food-additives/food-additives",
+          "read_on": "2026-09-28"
+        }
+      ],
+      "reviewed_by": ""
+    },
+    "124": {
+      "summary": [
+        "A UK study of 297 children aged 3 and 8 to 9 (The Lancet, 2007) gave them drinks with mixes of artificial colours and the preservative sodium benzoate. The UK Food Standards Agency, which funded it, says these colours could cause increased hyperactivity in some children.",
+        "Ponceau 4R is one of the six colours it names. In the UK, food with any of them must carry the line ‘May have an adverse effect on activity and attention in children’.",
+        "The study tested mixes of colours with the preservative, not each colour on its own."
+      ],
+      "sources": [
+        {
+          "title": "McCann et al., Food additives and hyperactive behaviour in 3-year-old and 8/9-year-old children in the community, The Lancet, 2007",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/17825405/",
+          "read_on": "2026-09-28"
+        },
+        {
+          "title": "Food Standards Agency, Food additives (GOV.UK, 2018)",
+          "url": "https://www.gov.uk/government/publications/food-additives/food-additives",
+          "read_on": "2026-09-28"
+        }
+      ],
+      "reviewed_by": ""
+    },
+    "129": {
+      "summary": [
+        "A UK study of 297 children aged 3 and 8 to 9 (The Lancet, 2007) gave them drinks with mixes of artificial colours and the preservative sodium benzoate. The UK Food Standards Agency, which funded it, says these colours could cause increased hyperactivity in some children.",
+        "Allura Red AC is one of the six colours it names. In the UK, food with any of them must carry the line ‘May have an adverse effect on activity and attention in children’.",
+        "The study tested mixes of colours with the preservative, not each colour on its own."
+      ],
+      "sources": [
+        {
+          "title": "McCann et al., Food additives and hyperactive behaviour in 3-year-old and 8/9-year-old children in the community, The Lancet, 2007",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/17825405/",
+          "read_on": "2026-09-28"
+        },
+        {
+          "title": "Food Standards Agency, Food additives (GOV.UK, 2018)",
+          "url": "https://www.gov.uk/government/publications/food-additives/food-additives",
+          "read_on": "2026-09-28"
+        }
+      ],
+      "reviewed_by": ""
+    },
+    "211": {
+      "summary": [
+        "A UK study of 297 children aged 3 and 8 to 9 (The Lancet, 2007) gave them drinks with this preservative and a mix of artificial colours. It found more hyperactive behaviour after the mixes than after a dummy drink.",
+        "The authors concluded that the colours, the preservative, or both, increase hyperactivity in children; the study did not test the preservative on its own."
+      ],
+      "sources": [
+        {
+          "title": "McCann et al., Food additives and hyperactive behaviour in 3-year-old and 8/9-year-old children in the community, The Lancet, 2007",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/17825405/",
+          "read_on": "2026-09-28"
+        }
+      ],
+      "reviewed_by": ""
+    }
+  }
+}
