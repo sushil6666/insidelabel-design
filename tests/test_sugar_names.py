@@ -43,4 +43,6 @@ def test_biscoff_headline_names_both_sugars():
         r = TestClient(main.app).post("/scan", files={"back": ("b.jpg", photo, "image/jpeg")},
                                       data={"replay": json.dumps(vision)})
     assert r.status_code == 200, r.text
-    assert r.json()["screen"]["headline"]["text"] == "Sugar appears under 2 names: candy sugar syrup, sugar."
+    # D-123: where sugar sits, then its other name.
+    assert r.json()["screen"]["headline"]["text"] == \
+        "Sugar is the 2nd ingredient, and appears again as candy sugar syrup."

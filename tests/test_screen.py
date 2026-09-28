@@ -85,7 +85,8 @@ def test_no_score_in_the_screen():                                  # D-064
 
 def test_headline_is_a_finding_with_its_source():                   # D-061
     s = scan(BISCUIT).json()["screen"]
-    assert s["headline"]["text"] == "Sugar appears under 2 names: liquid glucose, sugar."
+    # D-123: where sugar sits, then its other name (was "Sugar appears under 2 names: ...").
+    assert s["headline"]["text"] == "Sugar is the 2nd ingredient, and appears again as liquid glucose."
     assert s["headline"]["source"]["kind"] == "hidden_sugar"
     # Maltodextrin is added_sugar_adjacent, not a sugar name.
     assert "maltodextrin" not in s["headline"]["text"]
@@ -219,3 +220,49 @@ def test_permitted_cards_fold_and_cards_quote_the_label_line():
     assert _adds(j)["503"]["label_line"] == "Raising agent (INS 503(ii))"
     only = scan(["Wheat flour", "Acidity regulator (INS 330)"], profiles=None).json()["screen"]["additives"]
     assert only["open"] == 0 and only["folded_text"] == "1 additive, permitted in India"
+
+
+# ------------------------------------------------------------------ D-123 three answers
+
+def test_three_answers_right_under_the_headline():
+    s = scan(BISCUIT).json()["screen"]
+    assert list(s)[:4] == ["state", "people", "headline", "summary"]
+    rows = {r["key"]: r for r in s["summary"]}
+    assert [r["key"] for r in s["summary"]] == ["sugar", "processing", "additives"]
+    assert rows["sugar"]["chip"] == "2nd of 7" and rows["sugar"]["tone"] == "worth"
+    assert rows["sugar"]["text"] == "Also listed as liquid glucose (3rd). All are added sugar."
+    assert rows["processing"]["chip"] == "Industrial"
+    assert rows["additives"]["chip"] == "2 \u00b7 1 to know"
+    assert rows["additives"]["text"] == ("Sodium benzoate (preservative 211) is worth knowing. "
+                                         "The other one is permitted in India.")
+
+
+def test_a_plain_list_says_none_found_for_all_three():
+    rows = {r["key"]: r for r in scan(PLAIN, profiles=[]).json()["screen"]["summary"]}
+    assert {r["chip"] for r in rows.values()} == {"None found"}
+    assert all(r["tone"] == "calm" for r in rows.values())
+
+
+def test_a_partial_read_never_says_none_found():                    # D-062
+    rows = scan(PLAIN, ingredients_status="partial").json()["screen"]["summary"]
+    assert not any(r["chip"] == "None found" for r in rows)
+    assert all(r["chip"] == "Not sure" for r in rows)
+
+
+def test_no_concerns_found_never_sits_under_a_finding():
+    """Lotus Biscoff (2026-09-27): a sugar headline above "No concerns found"."""
+    s = scan(["Wheat flour", "Sugar", "Palm oil", "Candy sugar syrup", "Salt"], profiles=[]).json()["screen"]
+    assert s["headline"]["text"] == "Sugar is the 2nd ingredient, and appears again as candy sugar syrup."
+    assert s["band"]["label"] == "A few things worth knowing" and s["band"]["code"] == "mixed"
+
+
+def test_a_named_additive_headline_says_what_it_is():
+    s = scan(["Carbonated water", "Sugar", "Preservative (INS 211)"], profiles=[]).json()["screen"]
+    assert s["headline"]["text"] == "Has Sodium benzoate, a preservative."
+
+
+def test_tallies_for_your_scans_are_worded_here():                 # D-123, D-091
+    s = scan(BISCUIT).json()["screen"]
+    assert s["tallies"] == [screen.TALLY["sugar_early"], screen.TALLY["sugar_names"],
+                            screen.TALLY["industrial"], screen.TALLY["additive"]]
+    assert scan(PLAIN, profiles=[]).json()["screen"]["tallies"] == []

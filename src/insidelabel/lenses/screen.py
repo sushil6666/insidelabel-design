@@ -282,7 +282,31 @@ def _claim_rows(claim_check):
     return rows
 
 
-def _headline(band, worth, claims, reliability):
+def _ordinal(n):
+    return kids.ORDINAL.get(n, f"{n}th")
+
+
+def _class_words(ins):
+    """'a preservative', 'an acidity regulator': the row's class in plain words."""
+    a = engine._ADDITIVE_BY_INS.get(ins) or {}
+    words = (a.get("class") or "additive").replace("_", " ")
+    return ("an " if words[0] in "aeiou" else "a ") + words
+
+
+def _sugar_sentence(found):
+    """D-123: where sugar sits, then its other names. `found` from kids.sugar_positions()."""
+    first_pos, first = found[0]
+    lead = (f"Sugar is the {_ordinal(first_pos)} ingredient" if first == "sugar"
+            else f"Added sugar comes {_ordinal(first_pos)} in the list, as {first}")
+    others = list(dict.fromkeys(n for _, n in found if n != first))
+    if not others:
+        return lead + "."
+    if len(others) == 1:
+        return f"{lead}, and appears again as {others[0]}."
+    return f"{lead}, and appears again under {len(others)} other names."
+
+
+def _headline(band, worth, claims, reliability, sugar_found=()):
     """D-061: one finding, strongest first, with the row it came from."""
     hit = next((c for c in claims if c["contradicted"]), None)
     if hit:
@@ -292,11 +316,13 @@ def _headline(band, worth, claims, reliability):
         return {"text": f"Has {high['name']}, an additive with higher concern.", "source": high["source"]}
     sugar = next((w for w in worth if w["source"]["kind"] == "hidden_sugar"), None)
     if sugar:
-        return {"text": f"Sugar appears under {len(sugar['source']['ref'])} names: {sugar['label_text']}.",
-                "source": sugar["source"]}
+        # D-123: where sugar sits says more than a count of its names (Sushil's testers).
+        text = (_sugar_sentence(sugar_found) if sugar_found else
+                f"Sugar appears under {len(sugar['source']['ref'])} names: {sugar['label_text']}.")
+        return {"text": text, "source": sugar["source"]}
     named = next((w for w in worth if w["source"]["kind"] == "additive"), None)
     if named:
-        return {"text": f"Has {named['name']}.", "source": named["source"]}
+        return {"text": f"Has {named['name']}, {_class_words(named['ins'])}.", "source": named["source"]}
     nova = next((w for w in worth if w["source"]["kind"] == "nova"), None)
     if nova:
         names = nova["label_text"].split(", ")
@@ -309,6 +335,119 @@ def _headline(band, worth, claims, reliability):
     if band == "clean":
         return {"text": BAND_LABEL["clean"] + ".", "source": {"kind": "none", "ref": None}}
     return {"text": BAND_LABEL.get(band, BAND_LABEL["mixed"]) + ".", "source": {"kind": "band", "ref": band}}
+
+
+def _join(names):
+    names = list(names)
+    return names[0] if len(names) == 1 else ", ".join(names[:-1]) + " and " + names[-1]
+
+
+def _summary(ingredients, sugar_found, worth, adds, complete):
+    """
+    D-123: the same three answers on every result, in the same order, so two packs
+    can be compared at a glance: where sugar sits, how the food is made, and which
+    additives are worth knowing. Every answer is a rule's output (D-004), quoted in
+    the pack's words where it names ingredients (D-115). `tone` is "worth" or "calm";
+    no score (D-064). A partial read never says "none found" (D-062).
+    """
+    unsure = "Part of the list couldn't be read, so this may be incomplete."
+    rows = []
+
+    # Sugar: kids.sugar_positions(), the one place that finds it.
+    if sugar_found:
+        pos, first = sugar_found[0]
+        names = list(dict.fromkeys(n for _, n in sugar_found))
+        chip = f"{_ordinal(pos)} of {len(ingredients)}" if complete else _ordinal(pos)
+        if len(names) == 1:
+            text = f"{first[0].upper() + first[1:]} is listed {_ordinal(pos)}. Ingredients are listed from most to least."
+        else:
+            later = [f"{n} ({_ordinal(p)})" for n in names[1:]
+                     for p in [next(q for q, m in sugar_found if m == n)]]
+            text = f"Also listed as {_join(later)}. All are added sugar."
+        rows.append({"key": "sugar", "label": "Sugar", "chip": chip,
+                     "tone": "worth" if pos <= 3 or len(names) > 1 else "calm", "text": text,
+                     "names": len(names), "source": {"kind": "sugar_position", "ref": [p for p, _ in sugar_found]}})
+    else:
+        rows.append({"key": "sugar", "label": "Sugar", "chip": "None found" if complete else "Not sure",
+                     "tone": "calm", "text": ("We found no added sugar names in the ingredient list."
+                                              if complete else unsure),
+                     "names": 0, "source": {"kind": "sugar_position", "ref": []}})
+
+    # How it's made: the NOVA markers, in the label's words (D-115).
+    nova = next((w for w in worth if w["source"]["kind"] == "nova"), None)
+    if nova:
+        # Sugar syrups are markers too, but the sugar row already names them: lead with the rest.
+        sugars = set(kids.SUGARS)
+        names = sorted(nova["label_text"].split(", "), key=lambda n: n.lower() in sugars)
+        shown = names[:3] + ([f"{len(names) - 3} more"] if len(names) > 3 else [])
+        text = _join(shown)
+        rows.append({"key": "processing", "label": "How it's made", "chip": "Industrial", "tone": "worth",
+                     "text": text[0].upper() + text[1:] + ".", "source": nova["source"]})
+    else:
+        rows.append({"key": "processing", "label": "How it's made",
+                     "chip": "None found" if complete else "Not sure", "tone": "calm",
+                     "text": (f"None of the {len(engine.NOVA['markers'])} industrial ingredients we look for, "
+                              "such as glucose syrup or emulsifiers." if complete else unsure),
+                     "source": {"kind": "nova", "ref": []}})
+
+    # Additives: the D-111 cards, counted; the ones worth knowing named.
+    flagged = [i for i in adds if (i["badge"] or {}).get("kind") in ("worth_knowing", "not_permitted")]
+    rest = [i for i in adds if i not in flagged]
+    def named(i):
+        return f"{i['name']} ({(engine._ADDITIVE_BY_INS.get(i['ins']) or {}).get('class', 'additive').replace('_', ' ')} {i['ins']})"
+    if not adds:
+        rows.append({"key": "additives", "label": "Additives", "chip": "None found" if complete else "Not sure",
+                     "tone": "calm", "text": (f"None of the {len(engine._ADDITIVE_BY_INS)} additives in our "
+                                              "tables is in the list." if complete else unsure),
+                     "source": {"kind": "additives", "ref": []}})
+    else:
+        parts = []
+        if flagged:
+            blocked = [i for i in flagged if i["badge"]["kind"] == "not_permitted"]
+            if blocked:
+                parts.append(f"{_join(named(i) for i in blocked)} isn't in FSSAI's permitted list.")
+            others = [i for i in flagged if i not in blocked]
+            if others:
+                parts.append(f"{_join(named(i) for i in others)} {'is' if len(others) == 1 else 'are'} worth knowing.")
+        each = rest and all((i["badge"] or {}).get("kind") == "permitted" for i in rest)
+        if rest and flagged:
+            parts.append(("The other one is permitted in India." if len(rest) == 1 else
+                          f"The other {len(rest)} are permitted in India.") if each
+                         else f"{len(rest)} more, with nothing flagged.")
+        elif rest:
+            parts.append((f"{_join(named(i) for i in rest)}. " if len(rest) <= 2 else "")
+                         + ("Permitted in India." if len(rest) == 1 and each else
+                            f"All {len(rest)} are permitted in India." if each else "Nothing flagged."))
+        chip = f"{len(adds)} · {len(flagged)} to know" if flagged else str(len(adds))
+        rows.append({"key": "additives", "label": "Additives", "chip": chip,
+                     "tone": "worth" if flagged else "calm", "text": " ".join(parts),
+                     "source": {"kind": "additives", "ref": [i["ins"] for i in adds]}})
+    return rows
+
+
+# D-123: what a result counts toward on "Your scans". The phone tallies these
+# strings across its own history; the wording stays here, under the lint (D-091).
+TALLY = {
+    "sugar_early": "Sugar in the first 3 ingredients",
+    "sugar_names": "Sugar under 2 or more names",
+    "industrial": "Industrial ingredients",
+    "additive": "An additive worth knowing",
+}
+
+
+def _tallies(summary):
+    rows = {r["key"]: r for r in summary}
+    out = []
+    ref = rows["sugar"]["source"]["ref"]
+    if ref and ref[0] <= 3:
+        out.append(TALLY["sugar_early"])
+    if rows["sugar"]["names"] > 1:
+        out.append(TALLY["sugar_names"])
+    if rows["processing"]["chip"] == "Industrial":
+        out.append(TALLY["industrial"])
+    if rows["additives"]["tone"] == "worth":
+        out.append(TALLY["additive"])
+    return out
 
 
 # D-108: shown when a front photo was sent but couldn't be confirmed as this pack.
@@ -350,6 +489,8 @@ def build(*, verdict, display, claim_check, extracted, reliability, profiles,
             and (allergen_confidence or 0) >= allergen_checker.ALLERGEN_MIN_CONFIDENCE)
     worth, ordinary = _findings(verdict, sure)
     claims = _claim_rows(claim_check)
+    complete = reliability.get("ingredients_complete", True)
+    sugar_found = kids.sugar_positions(ingredients)
     # Same unit as `scope` (parsed items, sub-ingredients included): everything
     # not already named under worth knowing, counting each item once.
     named = {f["ingredient"].lower() for f in verdict["flags"]
@@ -366,8 +507,11 @@ def build(*, verdict, display, claim_check, extracted, reliability, profiles,
     out = {
         "state": "result",
         "people": people,                                     # D-060: first
-        "headline": _headline(band, worth, claims, reliability),
-        "band": {"code": band, "label": BAND_LABEL.get(band, band),
+        "headline": _headline(band, worth, claims, reliability, sugar_found),
+        # D-123: "No concerns found" never sits under a finding (Biscoff, 2026-09-27):
+        # a clean band with anything worth knowing is shown as "a few things".
+        "band": {"code": "mixed" if band == "clean" and worth else band,
+                 "label": BAND_LABEL["mixed"] if band == "clean" and worth else BAND_LABEL.get(band, band),
                  "note": NOVA_NOTE if band == "ultra-processed" else None},
         "checked": checked,
         "scope": (f"{verdict.get('ingredient_count_parsed', 0)} ingredients checked against "
@@ -405,6 +549,11 @@ def build(*, verdict, display, claim_check, extracted, reliability, profiles,
                             f"{n} {'more ' if n < len(adds) else ''}additive{'s' if n != 1 else ''}"
                             f"{', each permitted in India' if each and n > 1 else ', permitted in India' if each else ''}"),
         }
+    # D-123: the three answers, right under the headline.
+    summary = _summary(ingredients, sugar_found, worth, adds, complete)
+    head = ("state", "people", "headline")
+    out = {**{k: out[k] for k in head}, "summary": summary, **{k: v for k, v in out.items() if k not in head}}
+    out["tallies"] = _tallies(summary)
     alert = next((i for i in adds if (i["badge"] or {}).get("kind") == "not_permitted"), None)
     if alert:
         out["additive_alert"] = {

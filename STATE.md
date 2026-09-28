@@ -671,6 +671,12 @@ setup alarms.
   551 tests): INS 319 TBHQ, 472e DATEM, 296 malic acid from compendium XXVI Appendix A; "472(e)" now
   reads as 472e; sub-forms keep the parent row (gap: 331(ii), 170(ii) not in Appendix A, never seen).
   Sushil: TBHQ concern low (recommended, scores 0) or moderate; merge after `nested-brackets`.
+- **Result screen rebuilt: D-123 RECOMMENDED** (branch `result-answers`, web-19): Sushil's 5 testers were
+  unhappy with the output. Three answers under every headline (sugar's place and names, how it's
+  made, additives worth knowing), clearer headlines, no "No concerns found" under a finding, a
+  compare prompt after each result, "Your scans" on home. Sushil: merge, `update.sh`, try it on the
+  phone, then "accepted". Next: plain-language additive reasons (69 rows, Sushil reviews); ask the
+  testers what they wanted to know that the screen didn't say.
 - **Next work, in order (before invites):** (1) and (2) done, see above. (3) The result-screen
   discussion Sushil asked for ("not much useful for a user"; Biscoff's band says "No concerns found"
   under a sugar headline): mockups, his decision. (4) Privacy page (contact `connect@insidelabel.ai`),

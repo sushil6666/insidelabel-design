@@ -254,3 +254,16 @@ q { quotes: "“" "”"; }
 @media (max-width: 400px) { .add-top { flex-wrap: wrap; } }
 .fold[open] > .items { padding-bottom: 4px; }
 .fold .add { box-shadow: none; }
+
+/* D-123: the three answers under the headline, and "Your scans" on home. */
+.answers { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+.answer { display: grid; grid-template-columns: 6.5rem 1fr; gap: 10px; padding: 12px 14px; border-top: 1px solid var(--line); }
+.answer:first-child { border-top: 0; }
+.answer .q { font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); padding-top: 3px; }
+.answer .a { display: grid; gap: 4px; justify-items: start; }
+.chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px; }
+.chip { display: inline-block; font-size: .78rem; font-weight: 700; border-radius: 999px; padding: 1px 9px; white-space: nowrap; }
+.tone-calm { background: var(--calm-bg); color: var(--calm); }
+.tone-worth { background: var(--unsure-bg); color: var(--unsure); }
+.tallies { display: grid; gap: 10px; }
+.tally { display: grid; gap: 4px; }
