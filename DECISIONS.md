@@ -1700,6 +1700,60 @@ Recommended by Claude. **Waiting for "accepted".** App only (web-20); no server 
   the 30 s seen on the laptop was the Tesseract fallback, which runs only without Cloud Vision.
   The server's own timings decide the next step (OPERATIONS.md query in STATE.md).
 
+### D-125 · "Worth a look" rows for additives worth knowing; research lines only from sources read first-hand `LOCKED` (2026-09-28)
+Why: testers said the result didn't show what to look at first, and asked for "this is here and a
+study says ... here is the research paper". Mockup: https://claude.ai/artifact/K7R9s8EFw35MZCA8vfpiEg.
+**Accepted by Sushil 2026-09-28** ("yes, pls proceed. looks good"), including the tapped-open row
+with an arrow that keeps nudging until tapped.
+
+- **`screen.alerts`:** one row per additive whose badge is "Worth knowing" (moderate or high concern
+  and permitted; "Not permitted" keeps its own alert, D-111). Title "Worth a look: Allura Red AC
+  (colour 129)". Closed until tapped; the arrow nudges; phones set to reduce motion get a still
+  arrow. Opened: what research found, the pack's line as printed, the sources as links.
+- **Research lines** live in `data/additive_research.json`, keyed by INS: one to three plain
+  sentences, each source with title, link and the date it was read, and who reviewed it.
+  `tests/test_additive_research.py` refuses a row without them, and the wording lint runs on
+  every sentence. Until a row is researched and reviewed, the body is the row's own reason and the
+  prompt says "Tap to see why", never "research".
+- **What research lines may say:** what the source found, in its own terms, with its limits when it
+  states them. Never "wrong", "harmful", "dangerous" (D-042, D-071). EU and US rules are information
+  only (D-086). Sources: the study, or the regulator's own opinion (EFSA, JECFA, IARC, FSSAI).
+- **App (web-21):** the rows sit right under the headline, before the three answers (D-123), so
+  the household's allergen line stays first (D-060).
+
+### D-126 · The all-clear allergen line names what was checked `LOCKED` (2026-09-28)
+Sushil asked why "Nothing on your avoid list is listed in the ingredients" was shown: it didn't say
+what the avoid list was. **Accepted by Sushil 2026-09-28** ("yes").
+
+- Now: "Peanut, sesame: not listed in the ingredients or the allergen line." When the photo showed
+  no allergen line: "Peanut, sesame: not in the ingredients. We didn't see a "may contain" line in
+  the photo, so check the pack." Names are allergens.json `short`, in the profile's order.
+- Unchanged: the line appears only for a profile with an avoid list, first on the screen (D-060);
+  it reports what is printed, never "free from" or "safe" (D-042); below 0.95 confidence or on a
+  partial read it says we can't confirm.
+
+### D-127 · Ask the allergy question plainly; "At a glance"; what the words mean, linked to "How we check" `RECOMMENDED` (2026-09-28)
+Sushil: "are we asking the right question to user to add the allergic part", and the words
+(Industrial, Additive, Other) should be explained at the end with a link. Recommended by Claude.
+**Waiting for "accepted"** after trying it on the phone. App web-22.
+
+- **Setup asks what people can answer.** Welcome: "Does anyone you shop for avoid a food, like
+  peanut, milk or gluten?" [Yes] [No]. Yes: "Who avoids it?" Me / A child I shop for (D-074 keeps
+  other adults out). The list screen: "What do you avoid?" / "Foods this child avoids", with what we
+  do with it and that we only report what the label prints, linked to "How we check". Before, the
+  question was never asked: "Set up your household" led to "Add a child", and your own list sat
+  behind a row called "Your avoid list".
+- **"At a glance"** (the mockup Sushil approved, D-125): `screen.glance` gives each list entry one
+  type, the most telling first: worth knowing, sugar, industrial, additive, other; a ring of the
+  counts and a strip of the list in printed order. The caption says counts, not weight. Colours
+  from the validated categorical slots and the status red, in both themes.
+- **"What these words mean"** at the end of every result: only the terms that result used, each
+  with a plain definition (`screen.GLOSSARY`, under the wording lint) and a "More" link to its
+  section of the new public page `/how` ("How we check a label", `web/site/how.html`). A test
+  checks every term has its section.
+- "By law, ingredients are listed from most to least" was left out of `/how` until the FSSAI
+  labelling regulation is read first-hand (D-046).
+
 ---
 
 ## Open and pending

@@ -701,6 +701,12 @@ setup alarms.
   counts donut + list-order strip: https://claude.ai/artifact/K7R9s8EFw35MZCA8vfpiEg (research lines
   are drafts until read first-hand, D-046). Waiting: the server's scan timings and the testers' own
   words (`il tools/beta.py feedback`); Sushil's call on the layout and the 19-row research table.
+- **"Worth a look" rows: D-125 LOCKED, built** (branch `scanner-speed`, web-21, 563 tests). Research
+  table `data/additive_research.json` is empty: 19 worth-knowing rows to research from primary
+  sources, each reviewed by Sushil before it is added.
+- **D-126 LOCKED, D-127 RECOMMENDED** (branch `scanner-speed`, web-22, 567 tests): the all-clear line
+  names the allergens; setup asks "Does anyone you shop for avoid a food...?"; "At a glance" ring and
+  strip; "What these words mean" with links to the new `/how` page.
 - **Next work, in order (before invites):** (1) and (2) done; (3) built as D-123, see above. (3) The result-screen
   discussion Sushil asked for ("not much useful for a user"; Biscoff's band says "No concerns found"
   under a sugar headline): mockups, his decision. (4) Privacy page (contact `connect@insidelabel.ai`),

@@ -281,7 +281,7 @@ if os.path.isdir(WEB_DIR):
     # HTML in web/site/, linted with the app's wording rules (tests/test_web.py).
     SITE_DIR = os.path.join(WEB_DIR, "site")
     _SITE_PAGES = {"/": "index.html", "/privacy": "privacy.html", "/about": "about.html",
-                   "/site.css": "site.css"}
+                   "/how": "how.html", "/site.css": "site.css"}      # D-127: what result words mean
 
     def _site_page(path):
         name = _SITE_PAGES[path]

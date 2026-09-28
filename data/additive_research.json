@@ -1,0 +1,16 @@
+{
+  "_meta": {
+    "table": "additive_research",
+    "version": "0.1",
+    "purpose": "What research found, in plain words, for additives marked worth knowing: the body of the 'Worth a look' row on the result screen (D-125). Keyed by INS number.",
+    "rules": [
+      "Every sentence comes from a source read first-hand: the study itself, or the regulator's own opinion (EFSA, JECFA, IARC, FSSAI). Never from memory or a summary (D-046).",
+      "Report what the source found; never say wrong, harmful, dangerous, toxic or safe (D-042, D-071). Name the study's limits when it states them.",
+      "EU and US rules are information only; they never change concern or a verdict (D-086).",
+      "Each entry records its sources (title, url) and read_on; an entry without them is refused by tests/test_additive_research.py.",
+      "Sushil reviews each entry before it is added (reviewed_by)."
+    ],
+    "row_shape": {"summary": ["one to three plain sentences"], "sources": [{"title": "", "url": "", "read_on": "YYYY-MM-DD"}], "reviewed_by": ""}
+  },
+  "rows": {}
+}
