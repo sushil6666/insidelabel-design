@@ -1721,6 +1721,17 @@ with an arrow that keeps nudging until tapped.
 - **App (web-21):** the rows sit right under the headline, before the three answers (D-123), so
   the household's allergen line stays first (D-060).
 
+### D-126 · The all-clear allergen line names what was checked `LOCKED` (2026-09-28)
+Sushil asked why "Nothing on your avoid list is listed in the ingredients" was shown: it didn't say
+what the avoid list was. **Accepted by Sushil 2026-09-28** ("yes").
+
+- Now: "Peanut, sesame: not listed in the ingredients or the allergen line." When the photo showed
+  no allergen line: "Peanut, sesame: not in the ingredients. We didn't see a "may contain" line in
+  the photo, so check the pack." Names are allergens.json `short`, in the profile's order.
+- Unchanged: the line appears only for a profile with an avoid list, first on the screen (D-060);
+  it reports what is printed, never "free from" or "safe" (D-042); below 0.95 confidence or on a
+  partial read it says we can't confirm.
+
 ---
 
 ## Open and pending

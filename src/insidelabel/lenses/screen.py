@@ -175,10 +175,14 @@ def _person(profile, ingredients, statement, confidence, reliable):
         status, line = rows[0].state, rows[0].parent_text(who)
     elif rows:
         status = "not_listed"
+        # D-126: name what was checked ("Peanut, milk: ..."); "nothing on your avoid
+        # list" didn't say what that was. Still only what is printed: never "free from".
+        names = [allergen_checker.ALLERGENS[p]["short"] for p in profile["avoid"]]
+        names = (names[0][0].upper() + names[0][1:] + "".join(", " + n for n in names[1:]))
         if all(r.statement_seen for r in rows):
-            line = f"Nothing on {whose} avoid list is listed in the ingredients or the allergen line."
+            line = f"{names}: not listed in the ingredients or the allergen line."
         else:
-            line = (f"Nothing on {whose} avoid list is in the ingredients. We didn't see a "
+            line = (f"{names}: not in the ingredients. We didn't see a "
                     f"\"may contain\" line in the photo, so check the pack.")
     elif child_facts:
         status = "worth_knowing"

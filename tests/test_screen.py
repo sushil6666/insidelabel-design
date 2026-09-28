@@ -66,7 +66,8 @@ def test_people_first_and_allergens_still_first_key():
     people = {p["ref"]: p for p in j["screen"]["people"]}
     assert people["p1"]["status"] == "contains"
     assert people["p1"]["line"] == "Contains milk. It's on {name}'s avoid list."
-    assert people["me"]["line"].startswith("Nothing on your avoid list")
+    # D-126: the line names what was checked.
+    assert people["me"]["line"] == "Peanut: not listed in the ingredients or the allergen line."
 
 
 def test_names_never_reach_the_server():                            # D-074
@@ -266,3 +267,12 @@ def test_tallies_for_your_scans_are_worded_here():                 # D-123, D-09
     assert s["tallies"] == [screen.TALLY["sugar_early"], screen.TALLY["sugar_names"],
                             screen.TALLY["industrial"], screen.TALLY["additive"]]
     assert scan(PLAIN, profiles=[]).json()["screen"]["tallies"] == []
+
+
+def test_the_all_clear_line_names_each_allergen_checked():         # D-126
+    fam = [{"ref": "me", "age": "adult", "avoid": ["fish", "sesame"]}]      # PLAIN has groundnut oil
+    [p] = scan(PLAIN, profiles=fam).json()["screen"]["people"]
+    assert p["line"] == "Fish, sesame: not listed in the ingredients or the allergen line."
+    [p] = scan(PLAIN, profiles=fam, allergen_statement=None).json()["screen"]["people"]
+    assert p["line"] == ("Fish, sesame: not in the ingredients. We didn't see a \"may contain\" "
+                         "line in the photo, so check the pack.")
