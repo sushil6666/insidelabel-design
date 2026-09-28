@@ -663,14 +663,13 @@ setup alarms.
 - **Sushil is scanning packs** (aim: 50). For each review screenshot he posts, answer in the fixed
   format (memory: review item format): Category as the exact dropdown line, ingredient fixes, front
   claims, a paste-ready Note, pack checks. Never ask him to hunt for the FSSAI licence.
-- **Tokenizer brackets: BUILT, D-121 RECOMMENDED** (branch `nested-brackets`, 546 tests): splits only
+- **Tokenizer brackets: D-121 LOCKED, merged** (PR #37): splits only
   outside brackets, any depth, `( ) [ ] { }` alike; no more `emulsifier ]`. INS numbers, binary and
   grade identical on 26 local labels; **scores move**: Limca 80 to 76, Ziggy 28 to 4 (class words now
-  reach their NOVA rows). Sushil: accept or not, then merge and `update.sh`.
-- **Additive rows: BUILT, D-122 RECOMMENDED** (branch `additive-rows`, stacked on `nested-brackets`,
-  551 tests): INS 319 TBHQ, 472e DATEM, 296 malic acid from compendium XXVI Appendix A; "472(e)" now
+  reach their NOVA rows). Accepted 2026-09-28; `update.sh` on the server if not yet run.
+- **Additive rows: D-122 LOCKED, merged** (PR #38, 551 tests): INS 319 TBHQ, 472e DATEM, 296 malic acid from compendium XXVI Appendix A; "472(e)" now
   reads as 472e; sub-forms keep the parent row (gap: 331(ii), 170(ii) not in Appendix A, never seen).
-  Sushil: TBHQ concern low (recommended, scores 0) or moderate; merge after `nested-brackets`.
+  TBHQ concern low (accepted, scores 0).
 - **Result screen: options ready for Sushil** (2026-09-28): today's real `/scan` output for Biscoff,
   Maliban and Limca beside option A (tidy up) and B (three answers: sugar's place in the list, how
   it's made, additives; recommended) and C (compare with the shelf, later). Page:
