@@ -680,6 +680,11 @@ setup alarms.
   **Incident, fixed:** a test run with `INSIDELABEL_DB` set wrote 386 scans, 52 users and 5 problem
   reports into the laptop DB; deleted with Sushil's OK. `conftest.py` now drops `INSIDELABEL_DB`, and
   both tools strip it before running pytest.
+- **Your scans + alternatives: mockups for Sushil** (2026-09-28): https://claude.ai/artifact/HV9MoviE2ipcVyvGwYjwyd
+  (on-phone scan summary from the PWA's own history; alternatives as a side-by-side table + up to 3
+  named packs, no named "worse" list). Found: `compare.py` ties Lotus Biscoff (1 additive) with Ziggy
+  Donut Cake (21 additives, 8 industrial) because its tie test uses only concern tiers and sugar's
+  place; a tie-break rule is needed before any catalogue recommendation. Waiting: his three calls.
 - **Next work, in order (before invites):** (1) and (2) done, see above. (3) The result-screen
   discussion Sushil asked for ("not much useful for a user"; Biscoff's band says "No concerns found"
   under a sugar headline): mockups, his decision. (4) Privacy page (contact `connect@insidelabel.ai`),
