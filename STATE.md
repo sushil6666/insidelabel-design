@@ -660,7 +660,7 @@ setup alarms.
   DPDP review; Gemini confirmed on paid quota (D-129). **The review-agent timer is ON** (shadow only).
 - **Waiting on Sushil:** check the server's invite labels for real names (`il tools/beta.py stats`);
   a DPDP reviewer (send the data map and https://insidelabel.ai/privacy); "approved" or edits for the
-  6 research drafts (scratch `research/drafts.json`, not in the repo: redo from primary sources if lost);
+  6 research drafts (`docs/research_drafts.json`, not read by the app);
   the server's scan timings query and `il tools/beta.py feedback`; which loose end next (billing,
   `insidelabel.in` client hold, Gemini key restriction and the two older keys, Candzey category).
 - **Not built, decided direction:** scan photos to archive storage instead of deleting at 30 days
