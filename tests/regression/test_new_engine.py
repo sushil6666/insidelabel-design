@@ -17,8 +17,9 @@ result = engine.analyze(LIMCA)
 assert result["binary"] == "ultra-processed"
 assert result["grade"] == "B"
 # 80 since 2026-09-25: INS 414 (gum arabic) is low with no concern flag, so
-# it scores 0 (additives.json _meta.scoring). Was 76.
-assert result["score"] == 80
+# it scores 0 (additives.json _meta.scoring). 76 since D-121: "STABILIZERS"
+# is now its own token, so the NOVA stabiliser marker (low, 4) is found.
+assert result["score"] == 76
 
 print("NEW PACKAGE ENGINE: PASS")
 print("binary:", result["binary"])

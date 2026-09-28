@@ -69,16 +69,15 @@ def _balanced_span(text, open_idx):
     """Return the index just past the bracket group opening at open_idx.
 
     Handles (), [] and {}: real labels print "HUMECTANT [420(ii)]" and
-    "MIX {EMULSIFIERS [481(i) & 471]}" as often as round brackets.
+    "MIX {EMULSIFIERS [481(i) & 471]}" as often as round brackets. All three
+    count alike, as in _split_top(), so an OCR "(322]" still closes.
     """
-    opener = text[open_idx]
-    closer = _CLOSE[opener]
     depth = 0
 
     for i in range(open_idx, len(text)):
-        if text[i] == opener:
+        if text[i] in _OPEN:
             depth += 1
-        elif text[i] == closer:
+        elif text[i] in _CLOSE.values():
             depth -= 1
             if depth == 0:
                 return i + 1
@@ -124,32 +123,111 @@ def prefix_bare_ins(raw):
     return "".join(out)
 
 
+# A spaced "&" separates entries: "PRESERVATIVES (282 & 202)". An unspaced
+# one is part of a name ("fd&c yellow 5") and is left alone. A full stop ends
+# an entry, but not a decimal point between two digits: "58.3%" and "0.504g"
+# are amounts, and splitting them left fragments such as "wheat flour 58"
+# that D-115 would show as the label's words.
+_SEP = re.compile(r"[,;\n]|(?<!\d)\.|\.(?!\d)|\s+&\s+")
+
+_OPENERS = set("([{")
+_CLOSERS = set(")]}")
+
+# A sub-form in brackets right after an INS number, "322(i)", "450 (iii)",
+# "160 a(ii)": part of the number, not a group of ingredients.
+_SUBFORM_BEFORE = re.compile(r"\d{3,4}\s?[a-f]?\s*$", re.IGNORECASE)
+_SUBFORM = re.compile(r"\s*(?:[ivx]+|[a-f])\s*", re.IGNORECASE)
+
+
+def _split_top(text):
+    """Split at separators outside every bracket.
+
+    Splitting at every comma cut "Spices (Chilli, Turmeric)" into
+    "spices (chilli" and "turmeric)", and nested groups such as
+    "EMULSIFIERS [450(i), 472(e)]" into "emulsifiers [ins 450(i" and
+    "ins 472(e)]": fragments D-115 can show a user. All three bracket kinds
+    count alike, so an OCR mismatch like "(322]" still closes.
+    """
+    parts, depth, start, i = [], 0, 0, 0
+
+    while i < len(text):
+        c = text[i]
+        if c in _OPENERS:
+            depth += 1
+        elif c in _CLOSERS:
+            depth = max(0, depth - 1)
+        elif depth == 0:
+            m = _SEP.match(text, i)
+            if m and m.end() > i:
+                parts.append(text[start:i])
+                start = i = m.end()
+                continue
+        i += 1
+
+    parts.append(text[start:])
+    return parts
+
+
+def _peel(part):
+    """Return (base, groups): the entry's own words, and its bracket contents.
+
+    A group left open runs to the end of the entry, and a stray closer is
+    dropped: the reader sometimes splits a compound at its bracket
+    ("multigrain flour mix {rice meal" / "oat meal }").
+    """
+    base, groups = [], []
+    depth, gstart = 0, 0
+
+    for i, c in enumerate(part):
+        if c in _OPENERS:
+            if depth == 0:
+                gstart = i
+            depth += 1
+        elif c in _CLOSERS:
+            if depth == 0:
+                continue
+            depth -= 1
+            if depth == 0:
+                inner = part[gstart + 1:i]
+                if _SUBFORM.fullmatch(inner) and _SUBFORM_BEFORE.search("".join(base)):
+                    base.append(part[gstart:i + 1])
+                else:
+                    base.append(" ")
+                    groups.append(inner)
+        elif depth == 0:
+            base.append(c)
+
+    if depth > 0:
+        groups.append(part[gstart + 1:])
+
+    return "".join(base), groups
+
+
+def _collect(text, tokens):
+    for part in _split_top(text):
+        base, groups = _peel(part)
+
+        t = re.sub(r"\s+", " ", base.strip().lower())
+        if t and not re.fullmatch(r"[\d\s%.]+", t):
+            tokens.append(t)
+
+        for g in groups:
+            _collect(g, tokens)
+
+
 def tokenize(raw):
-    """Split a raw ingredient string into candidate ingredient tokens."""
+    """Split a raw ingredient string into candidate ingredient tokens.
+
+    Each entry gives its own words first, then the entries inside its
+    brackets, at any depth: "Mix {Emulsifiers [471, 481(i)]}" gives "mix",
+    "emulsifiers", "ins 471", "ins 481(i)".
+    """
 
     raw = re.sub(r"(?i)\ballergen[s]?\b.*$", "", raw)
     raw = prefix_bare_ins(raw)
 
-    # A spaced "&" separates entries: "PRESERVATIVES (282 & 202)". An
-    # unspaced one is part of a name ("fd&c yellow 5") and is left alone.
-    # A full stop ends an entry, but not a decimal point between two digits:
-    # "58.3%" and "0.504g" are amounts, and splitting them left fragments such
-    # as "wheat flour 58" that D-115 would show as the label's words.
-    parts = re.split(r"[,;\n]|(?<!\d)\.|\.(?!\d)|\s+&\s+", raw)
     tokens = []
-
-    for p in parts:
-        inner = re.findall(r"[\(\[]([^\)\]]*)[\)\]]", p)
-        base = re.sub(r"[\(\[][^\)\]]*[\)\]]", "", p)
-
-        for chunk in [base] + inner:
-            for sub in re.split(r"[,;]|\s+&\s+", chunk):
-                t = sub.strip().lower()
-                t = re.sub(r"\s+", " ", t)
-
-                if t and not re.fullmatch(r"[\d\s%.]+", t):
-                    tokens.append(t)
-
+    _collect(raw, tokens)
     return tokens
 
 

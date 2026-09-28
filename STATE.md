@@ -663,8 +663,11 @@ setup alarms.
 - **Sushil is scanning packs** (aim: 50). For each review screenshot he posts, answer in the fixed
   format (memory: review item format): Category as the exact dropdown line, ingredient fixes, front
   claims, a paste-ready Note, pack checks. Never ask him to hunt for the FSSAI licence.
-- **Next work, in order (before invites):** (1) tokenizer: nested `[ ]` and `{ }` give fragments like
-  `emulsifier ]` (D-115 shows them to users); gold-set re-run, no paid call. (2) Additive rows INS 319
+- **Tokenizer brackets: BUILT, D-121 RECOMMENDED** (branch `nested-brackets`, 546 tests): splits only
+  outside brackets, any depth, `( ) [ ] { }` alike; no more `emulsifier ]`. INS numbers, binary and
+  grade identical on 26 local labels; **scores move**: Limca 80 to 76, Ziggy 28 to 4 (class words now
+  reach their NOVA rows). Sushil: accept or not, then merge and `update.sh`.
+- **Next work, in order (before invites):** (1) done, see above. (2) Additive rows INS 319
   (TBHQ), 472(e), 296, and the sub-form decision (Appendix A basis, D-046). (3) The result-screen
   discussion Sushil asked for ("not much useful for a user"; Biscoff's band says "No concerns found"
   under a sugar headline): mockups, his decision. (4) Privacy page (contact `connect@insidelabel.ai`),

@@ -47,7 +47,9 @@ def test_bare_numbers_in_class_brackets_are_read():
 
 def test_limca_grades_b_not_a():
     result = engine.analyze(LIMCA)
-    assert result["score"] == 80, result["score"]  # 76 before class-only lows scored 0 (2026-09-25)
+    # 76 before class-only lows scored 0 (2026-09-25); 80 until D-121 let the
+    # tokenizer find "stabilizers" (NOVA marker, low) outside its brackets.
+    assert result["score"] == 76, result["score"]
     assert result["grade"] == "B", result["grade"]
 
 
@@ -90,7 +92,7 @@ def test_existing_labels_unchanged():
         ("Refined wheat flour (maida), Sugar, Edible vegetable oil (palm), "
          "Invert syrup, Milk solids, Cocoa solids, Emulsifiers (INS 322, INS 471), "
          "Raising agents (INS 500(ii), INS 503(ii)), Salt, "
-         "Added flavours (natural and artificial), INS 621", 60),  # 56 before INS 322 (class-only low) scored 0
+         "Added flavours (natural and artificial), INS 621", 56),  # 60 until D-121: "emulsifiers" now found (NOVA, low)
     ]:
         assert engine.analyze(text)["score"] == score
 
