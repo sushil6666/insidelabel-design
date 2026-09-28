@@ -48,6 +48,8 @@
     "potassium sorbate": ["potassium sorbate", "preservative 202"],
     "aspartame": ["aspartame", "sweetener 951"],
     "sucralose": ["sucralose", "sweetener 955"],
+    "tertiary butylhydroquinone (tbhq)": ["tbhq", "tertiary butylhydroquinone", "tertiary butyl hydroquinone", "tert-butylhydroquinone", "antioxidant 319"],
+    "diacetyltartaric and fatty acid esters of glycerol (datem)": ["datem", "diacetyltartaric and fatty acid esters of glycerol", "diacetyl tartaric acid esters of mono and diglycerides", "diacetyltartaric acid esters of mono- and diglycerides"],
     "acesulfame potassium": ["acesulfame potassium", "acesulfame k", "ace-k", "acesulfame-k", "sweetener 950"],
     "palm oil": ["palm oil", "palmolein", "palm olein", "rbd palmolein", "vegetable oil (palm)"],
     "iodised salt": ["iodised salt", "iodized salt", "salt", "common salt", "edible salt"]

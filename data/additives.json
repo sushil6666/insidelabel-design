@@ -122,6 +122,18 @@
       "fssai_basis": "GMP, all food categories (Appendix A GMP table)", "verified_on": "2026-09-26"
     },
     {
+      "ins": "296", "name": "Malic acid", "class": "acidity_regulator", "concern": "none",
+      "why": "The acid in apples; used as an acidity regulator and for a sour taste. No concern.",
+      "sources": ["CODEX", "FSSAI"], "fssai_status": "permitted", "flags": [], "confidence": "high", "verify": false,
+      "fssai_basis": "GMP, all food categories (Appendix A GMP table, as Malic acid, DL-)", "verified_on": "2026-09-28"
+    },
+    {
+      "ins": "319", "name": "Tertiary butylhydroquinone (TBHQ)", "class": "antioxidant", "concern": "low",
+      "why": "Synthetic antioxidant that slows oils going rancid, common in fried snacks and biscuits. Appendix A sets a maximum per food category (200 mg/kg in fats and oils).",
+      "sources": ["CODEX", "FSSAI"], "fssai_status": "permitted_with_limits", "flags": ["antioxidant"], "confidence": "high", "verify": false,
+      "fssai_basis": "numeric limits per food category (Appendix A); in some categories singly or in combination with BHA and BHT (note 195)", "verified_on": "2026-09-28"
+    },
+    {
       "ins": "322", "name": "Lecithin", "class": "emulsifier", "concern": "low",
       "why": "Common emulsifier (often soy). NOVA cosmetic-additive marker but low safety concern.",
       "sources": ["FSSAI"], "fssai_status": "permitted", "flags": ["emulsifier"], "confidence": "high", "verify": false,
@@ -193,6 +205,12 @@
       "why": "Very common emulsifier. NOVA cosmetic marker. May contain trans fats depending on source.",
       "sources": ["FSSAI"], "fssai_status": "permitted", "flags": ["emulsifier", "possible_transfat_source"], "confidence": "high", "verify": false,
       "fssai_basis": "GMP, all food categories (Appendix A GMP table)", "verified_on": "2026-09-26"
+    },
+    {
+      "ins": "472e", "name": "Diacetyltartaric and fatty acid esters of glycerol (DATEM)", "class": "emulsifier", "concern": "low",
+      "why": "Emulsifier and dough strengthener in bread and biscuits. NOVA cosmetic marker.",
+      "sources": ["CODEX", "FSSAI"], "fssai_status": "permitted_with_limits", "flags": ["emulsifier"], "confidence": "high", "verify": false,
+      "fssai_basis": "numeric limits per food category (Appendix A)", "verified_on": "2026-09-28"
     },
     {
       "ins": "476", "name": "Polyglycerol polyricinoleate (PGPR)", "class": "emulsifier", "concern": "low",

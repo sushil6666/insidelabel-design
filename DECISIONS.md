@@ -1611,6 +1611,46 @@ not checked (not reachable from the laptop).
 brackets. That keeps the fragments on the result screen, and it keeps two identical ingredients
 scoring differently depending on whether the pack prints their numbers.
 
+### D-122 · Rows for INS 319, 472e and 296; "472(e)" reads as 472e; sub-forms keep their parent's row `RECOMMENDED` (2026-09-28)
+Found on the first supermarket run (2026-09-27). Recommended by Claude. **Waiting for Sushil**,
+in particular on TBHQ's concern level. Built on top of D-121 (branch `additive-rows`).
+
+**The basis (primary source, read 2026-09-28).** FSS (Food Products Standards and Food Additives)
+Regulations 2011, compendium Version XXVI (20.12.2022), FSSAI's PDF, 883 pages:
+
+| INS | Name and class (compendium INS list) | Appendix A | Row |
+|---|---|---|---|
+| 296 | Malic acid (DL-): acidity regulator, flavouring agent (p. 828) | **GMP table** (p. 739, "Malic acid, DL-") | `permitted`, concern none |
+| 319 | Tertiary butylhydroquinone: antioxidant (p. 829) | **numeric limits only**: e.g. 200 mg/kg fats and oils (p. 568), 100 mg/kg category 1.3 (p. 549); note 195, singly or with BHA and BHT (p. 731). Not in the GMP table | `permitted_with_limits`, concern **low** |
+| 472e | Diacetyltartaric and fatty acid esters of glycerol: emulsifier, stabilizer, sequestrant (p. 859) | **numeric limits only**: 49 category-table pages, e.g. 5,000 mg/kg (p. 540), 20,000 mg/kg (p. 642). Not in the GMP table (472a, b, c are) | `permitted_with_limits`, concern low |
+
+Codex CAC/GL 36 itself could not be fetched (FAO's site answers scripts with a Cloudflare
+challenge); names match the compendium's INS list, as in D-111. **Sushil: download CXG 36 in a
+browser if the Codex text should be read first-hand.**
+
+**TBHQ's concern level is a values choice, not a legal fact.** Recommended: **low**, flag
+`antioxidant` only, so it scores 0 like other class-only lows (2026-09-25 rule) and shows its
+card, "Permitted with limits". The alternative is **moderate** (12 points), which the concern
+scale reserves for evidence such as an ADI or a regulator's published safety opinion; that would
+need the opinion read first-hand (D-046) before the row changes.
+
+**Parsing.** `INS_NUMBER` accepts a single letter a to f in brackets as the suffix: "472(e)" and
+"472 (e)" read as 472e (Bisk Farm, Anmol). Before, the reading stopped at 472, a number with no
+row. Roman sub-forms "(i)", "(ii)" are not letters a to f and are unaffected. Name synonyms in
+`normalization.json`: "tbhq", "tertiary butylhydroquinone", "datem" and variants.
+
+**Sub-forms: keep matching the parent row.** Every sub-form seen on a pack so far has the same
+Appendix A basis as its parent: 500(i)(ii)(iii), 503(i)(ii), 1101(i)(ii)(iii), 322(i)(ii),
+331(i)(iii), 170(i), 1100(i) to (vi), 420(i)(ii) in the GMP table like their parents; 450(i),
+341(i), 160a(ii), 481(i) with numeric limits like theirs. **Known gap, not built:** 331(ii) and
+170(ii) appear only in the INS reference lists (pp. 826 to 879), never in Appendix A, so under
+D-046 they are not permitted, yet they would match their parent's "Permitted" row. Neither has
+been seen on a pack; a sub-form-aware row can wait until one is.
+
+**What it changes, measured.** On the 26 local labels: nothing (none contains these three). On
+the packs that carry them, a card appears; no score moves (class-only low and none score 0).
+5 tests.
+
 ---
 
 ## Open and pending
