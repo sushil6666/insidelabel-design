@@ -707,6 +707,11 @@ setup alarms.
 - **D-126 LOCKED, D-127 RECOMMENDED** (branch `scanner-speed`, web-22, 567 tests): the all-clear line
   names the allergens; setup asks "Does anyone you shop for avoid a food...?"; "At a glance" ring and
   strip; "What these words mean" with links to the new `/how` page.
+- **D-123, D-124, D-127 accepted and merged (2026-09-28).** Deploy: `sudo /opt/insidelabel/app/deploy/update.sh`.
+- **DPDP data map written: `docs/DPDP_DATA_MAP.md`** (branch `privacy-dpdp`), from the code and the Act and the
+  Gemini terms read first-hand; the DPDP Rules 2025 only via the PIB summary. Waiting on Sushil: is the Gemini
+  project on paid quota; code-only invite labels; the retention proposals (section 4 point 5); a "Your data" /
+  "Delete my data" item in the app. Then Claude fills the privacy page `[To complete]` parts.
 - **Next work, in order (before invites):** (1) and (2) done; (3) built as D-123, see above. (3) The result-screen
   discussion Sushil asked for ("not much useful for a user"; Biscoff's band says "No concerns found"
   under a sugar headline): mockups, his decision. (4) Privacy page (contact `connect@insidelabel.ai`),

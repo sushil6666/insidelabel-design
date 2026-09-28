@@ -1652,11 +1652,11 @@ been seen on a pack; a sub-form-aware row can wait until one is.
 the packs that carry them, a card appears; no score moves (class-only low and none score 0).
 5 tests.
 
-### D-123 · Three answers on every result; "Your scans"; the next scan is a comparison `RECOMMENDED` (2026-09-28)
+### D-123 · Three answers on every result; "Your scans"; the next scan is a comparison `LOCKED` (2026-09-28)
 Why: Sushil gave the app to 5 testers (T01 to T05) and "none of them seems to be happy with
 output"; he asked for a result that is more useful and makes people want to scan more. Option B of
 the result-screen mockups (https://claude.ai/artifact/2Rh7RTBhRz4D5ibsY9hbNF). Recommended by
-Claude; built on Sushil's "let's build". **Waiting for "accepted".** Result-screen work under
+Claude; built on Sushil's "let's build". **Accepted by Sushil 2026-09-28** ("accepted and merged"). Result-screen work under
 Wave 1 (D-084), before invites, so D-083 (no features during the beta) is not crossed.
 
 - **`screen.summary`**, right under the headline: the same three answers on every pack, in the
@@ -1684,9 +1684,9 @@ Not in this entry: plain-language reasons for the 69 additive rows (Claude draft
 reviews); named catalogue alternatives (mockups at https://claude.ai/artifact/HV9MoviE2ipcVyvGwYjwyd,
 gated by D-058 and the `compare.py` tie-break question).
 
-### D-124 · A more forgiving barcode scanner; a wait screen that never looks hung `RECOMMENDED` (2026-09-28)
+### D-124 · A more forgiving barcode scanner; a wait screen that never looks hung `LOCKED` (2026-09-28)
 Why: testers, and Sushil, found the live barcode scanner slow, and some scans took about 30 s.
-Recommended by Claude. **Waiting for "accepted".** App only (web-20); no server or cost change.
+Recommended by Claude. **Accepted by Sushil 2026-09-28** ("accepted and merged"). App only (web-20); no server or cost change.
 
 - **Scanner (`web/camera.js`):** a code is accepted once it is read twice within 1.5 s, not twice
   in a row (one blurred frame used to start over); frames every 150 ms (was 200); the camera is
@@ -1732,10 +1732,10 @@ what the avoid list was. **Accepted by Sushil 2026-09-28** ("yes").
   it reports what is printed, never "free from" or "safe" (D-042); below 0.95 confidence or on a
   partial read it says we can't confirm.
 
-### D-127 · Ask the allergy question plainly; "At a glance"; what the words mean, linked to "How we check" `RECOMMENDED` (2026-09-28)
+### D-127 · Ask the allergy question plainly; "At a glance"; what the words mean, linked to "How we check" `LOCKED` (2026-09-28)
 Sushil: "are we asking the right question to user to add the allergic part", and the words
 (Industrial, Additive, Other) should be explained at the end with a link. Recommended by Claude.
-**Waiting for "accepted"** after trying it on the phone. App web-22.
+**Accepted by Sushil 2026-09-28** ("accepted and merged"). App web-22.
 
 - **Setup asks what people can answer.** Welcome: "Does anyone you shop for avoid a food, like
   peanut, milk or gluten?" [Yes] [No]. Yes: "Who avoids it?" Me / A child I shop for (D-074 keeps
