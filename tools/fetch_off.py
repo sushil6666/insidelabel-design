@@ -28,7 +28,7 @@ import urllib.request
 
 # OFF asks every client to identify itself so they can get in touch if a
 # script misbehaves. Put a real contact address here before running.
-USER_AGENT = "InsideLabel/0.1 (validation harness) - contact: you@analyticswithsushil.com"
+USER_AGENT = "InsideLabel/0.1 (validation harness) - contact: connect@insidelabel.ai"
 
 BASE = "https://in.openfoodfacts.org/api/v2/search"
 

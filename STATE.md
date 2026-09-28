@@ -788,8 +788,10 @@ from all regions and emails Sushil after 60 s of failure (OPERATIONS.md §5). Fr
   hands it to the DPDP reviewer with `web/site/privacy.html`. About 30 minutes.
 - **Domains bought (2026-09-26): `insidelabel.ai` and `insidelabel.in`. Sushil: `.ai` is the main
   address** ("we are claiming for chatbot and all in future plan"). `insidelabel.in` and `www.` of
-  both redirect to it permanently; `INSIDELABEL_PUBLIC_URL=https://insidelabel.ai`; contact such as
-  `privacy@insidelabel.ai`. Goes into D-114 with the host. The chatbot plan (Pro) is D-113,
+  both redirect to it permanently; `INSIDELABEL_PUBLIC_URL=https://insidelabel.ai`. **Contact address
+  (Sushil, 2026-09-28): `connect@insidelabel.ai`**, on Zoho Mail (MX `mx.zoho.in`, SPF `include:zoho.in`,
+  DMARC `p=none` reporting to the same address; checked by DNS lookup 2026-09-28). The privacy
+  page's "who to write to" line waits for the privacy page and DPDP review. Goes into D-114 with the host. The chatbot plan (Pro) is D-113,
   LOCKED; it supersedes D-001's "not a chatbot". Auto-renew both domains.
 - **Sushil: pick the host** (suggested: one small Ubuntu VPS in Mumbai, 2 GB). Then Claude
   records **D-114** (hosting; PostgreSQL 18 on the server until 19 is released, which changes
