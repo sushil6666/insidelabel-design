@@ -1573,6 +1573,44 @@ after the beta (D-081). And the band under that headline still says "No concerns
 ingredients", which reads as contradicting it; that wording belongs to the result-screen
 discussion Sushil asked for, not to this entry.
 
+### D-121 · The tokenizer splits only outside brackets, at any depth, all three kinds `RECOMMENDED` (2026-09-28)
+Found on the first supermarket run (Bisk Farm TOP GOLD, Sundrop POPZ, 2026-09-27). Recommended by
+Claude. **Waiting for Sushil.**
+
+**The defect.** `core/tokenize.py` split at every comma whatever the bracket depth, then read one
+level of `( )` and `[ ]`; braces not at all. "Spices (Chilli, Turmeric)" gave `spices (chilli` and
+`turmeric)`; real packs gave `emulsifier ]`, `antioxidant }`, `ins 472(e`. Since D-115 the result
+screen quotes these tokens, so a user could read "such as emulsifier ]".
+
+**The fix.** Separators (comma, semicolon, new line, full stop, spaced "&") split only outside
+brackets. Each entry gives its own words, then each bracket group is tokenized the same way, at
+any depth. `( )`, `[ ]` and `{ }` count alike, so an OCR "(322]" still closes (`prefix_bare_ins`
+follows the same rule). A group left open runs to the end of the entry and a stray closer is
+dropped, so a compound the reader split at its bracket still reads cleanly. A sub-form right
+after an INS number, "(ii)", stays on it: `ins 500(ii)`, not `ins 500` plus a token `ii`.
+
+**What it changes, measured (engine only, no paid call; 26 labels: gold, predictions, the
+laptop's recorded scans and catalogue versions).** INS numbers read: identical on all 26.
+`eval_vision.py`: verdict-changing error rate and every F1 identical. Binary and grade: identical
+on all 26. **Scores move on two products**, because a class word with brackets after it was glued
+to them ("stabilizers (ins 414") and never matched its NOVA row. Now it does, under the scoring
+already in force (cosmetic-additive marker = low = 4):
+
+| Label | Score | Grade | Marker(s) now found |
+|---|---|---|---|
+| Limca (both sizes) | 80 to 76 | B, unchanged | Stabiliser / thickener / humectant |
+| Ziggy donut cake | 28 to 4 | E, unchanged | Added colour, Emulsifier, Modified starch, Stabiliser |
+| Britannia Treat, Maliban, Patanjali | unchanged | unchanged | none |
+
+Three pinned test scores move with it (Limca 80 to 76 twice; the engine's demo cream biscuit 60
+to 56, grade C unchanged). **A pack scoring just above 70 or 50 could cross a grade line**, since
+the markers were hidden only when a class word had brackets after it; the server's catalogue was
+not checked (not reachable from the laptop).
+
+**The alternative, not recommended:** keep the old scores by leaving class words glued to their
+brackets. That keeps the fragments on the result screen, and it keeps two identical ingredients
+scoring differently depending on whether the pack prints their numbers.
+
 ---
 
 ## Open and pending
