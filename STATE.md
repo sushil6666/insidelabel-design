@@ -671,7 +671,12 @@ setup alarms.
   551 tests): INS 319 TBHQ, 472e DATEM, 296 malic acid from compendium XXVI Appendix A; "472(e)" now
   reads as 472e; sub-forms keep the parent row (gap: 331(ii), 170(ii) not in Appendix A, never seen).
   Sushil: TBHQ concern low (recommended, scores 0) or moderate; merge after `nested-brackets`.
-- **Next work, in order (before invites):** (1) and (2) done, see above. (3) The result-screen
+- **Result screen: options ready for Sushil** (2026-09-28): today's real `/scan` output for Biscoff,
+  Maliban and Limca beside option A (tidy up) and B (three answers: sugar's place in the list, how
+  it's made, additives; recommended) and C (compare with the shelf, later). Page:
+  https://claude.ai/artifact/2Rh7RTBhRz4D5ibsY9hbNF. Waiting: A or B, the "none found" wording, and
+  whether Claude drafts shopper-facing reasons for the 69 additive rows.
+- **Next work, in order (before invites):** (1) and (2) done, (3) waiting for Sushil, see above. (3) The result-screen
   discussion Sushil asked for ("not much useful for a user"; Biscoff's band says "No concerns found"
   under a sugar headline): mockups, his decision. (4) Privacy page (contact `connect@insidelabel.ai`),
   DPDP review, DPDP data map. (5) Loose ends below: billing off the free trial, `insidelabel.in`
