@@ -1573,9 +1573,10 @@ after the beta (D-081). And the band under that headline still says "No concerns
 ingredients", which reads as contradicting it; that wording belongs to the result-screen
 discussion Sushil asked for, not to this entry.
 
-### D-121 · The tokenizer splits only outside brackets, at any depth, all three kinds `RECOMMENDED` (2026-09-28)
+### D-121 · The tokenizer splits only outside brackets, at any depth, all three kinds `LOCKED` (2026-09-28)
 Found on the first supermarket run (Bisk Farm TOP GOLD, Sundrop POPZ, 2026-09-27). Recommended by
-Claude. **Waiting for Sushil.**
+Claude. **Accepted by Sushil 2026-09-28** ("accepted"), with the score moves below (Limca 80 to 76,
+Ziggy 28 to 4). Merged in PR #37.
 
 **The defect.** `core/tokenize.py` split at every comma whatever the bracket depth, then read one
 level of `( )` and `[ ]`; braces not at all. "Spices (Chilli, Turmeric)" gave `spices (chilli` and
@@ -1611,9 +1612,9 @@ not checked (not reachable from the laptop).
 brackets. That keeps the fragments on the result screen, and it keeps two identical ingredients
 scoring differently depending on whether the pack prints their numbers.
 
-### D-122 · Rows for INS 319, 472e and 296; "472(e)" reads as 472e; sub-forms keep their parent's row `RECOMMENDED` (2026-09-28)
-Found on the first supermarket run (2026-09-27). Recommended by Claude. **Waiting for Sushil**,
-in particular on TBHQ's concern level. Built on top of D-121 (branch `additive-rows`).
+### D-122 · Rows for INS 319, 472e and 296; "472(e)" reads as 472e; sub-forms keep their parent's row `LOCKED` (2026-09-28)
+Found on the first supermarket run (2026-09-27). Recommended by Claude. **Accepted by Sushil
+2026-09-28** ("accepted"), as recommended: TBHQ concern **low**. Built on top of D-121; merged in PR #38.
 
 **The basis (primary source, read 2026-09-28).** FSS (Food Products Standards and Food Additives)
 Regulations 2011, compendium Version XXVI (20.12.2022), FSSAI's PDF, 883 pages:
@@ -1650,6 +1651,38 @@ been seen on a pack; a sub-form-aware row can wait until one is.
 **What it changes, measured.** On the 26 local labels: nothing (none contains these three). On
 the packs that carry them, a card appears; no score moves (class-only low and none score 0).
 5 tests.
+
+### D-123 · Three answers on every result; "Your scans"; the next scan is a comparison `RECOMMENDED` (2026-09-28)
+Why: Sushil gave the app to 5 testers (T01 to T05) and "none of them seems to be happy with
+output"; he asked for a result that is more useful and makes people want to scan more. Option B of
+the result-screen mockups (https://claude.ai/artifact/2Rh7RTBhRz4D5ibsY9hbNF). Recommended by
+Claude; built on Sushil's "let's build". **Waiting for "accepted".** Result-screen work under
+Wave 1 (D-084), before invites, so D-083 (no features during the beta) is not crossed.
+
+- **`screen.summary`**, right under the headline: the same three answers on every pack, in the
+  same order. *Sugar*: its place in the list ("2nd of 8") and every other name with its place
+  (`compare.sugar_positions()`, now the one place that finds it). *How it's made*: the NOVA
+  markers in the pack's words (D-115), sugar syrups listed last since the sugar row names them.
+  *Additives*: how many, which are worth knowing ("Allura Red AC (colour 129)"), the rest
+  "permitted in India". Each row has a chip and a tone (`worth` or `calm`); no score (D-064). A
+  partial read says "Not sure", never "None found" (D-062). Wording when nothing matches: "None of
+  the 17 industrial ingredients we look for", the accurate form.
+- **Headlines say what they mean.** Sugar: "Sugar is the 2nd ingredient, and appears again as
+  candy sugar syrup." (was "Sugar appears under 2 names: ..."). A named additive: "Has Sodium
+  benzoate, a preservative." The order of findings is unchanged (D-061).
+- **"No concerns found" never sits under a finding.** A clean band with anything worth knowing is
+  shown as "A few things worth knowing" (Biscoff). The engine's band is unchanged.
+- **PWA (web-19):** the answers replace the band box (its "what does industrial mean" note moves
+  under them); "N other ingredients look ordinary" and "checked against 69 additives" move to the
+  bottom. After a result: "Holding another pack? Scan the one next to it" (D-057 compare), or
+  "Compare them" once packs are waiting. Home: **"Your scans"**, the count of this phone's results
+  per finding ("Sugar in the first 3 ingredients: 6 of 6" on the six gold packs), worded on the server (`screen.tallies`,
+  D-091), counted on the phone, sent nowhere (D-074). No streaks or points (not building).
+- Older results kept on phones have no summary and render as before.
+
+Not in this entry: plain-language reasons for the 69 additive rows (Claude drafts, Sushil
+reviews); named catalogue alternatives (mockups at https://claude.ai/artifact/HV9MoviE2ipcVyvGwYjwyd,
+gated by D-058 and the `compare.py` tie-break question).
 
 ---
 

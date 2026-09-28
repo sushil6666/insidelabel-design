@@ -271,11 +271,32 @@ async function home() {
                   "aria-valuenow": String(done) },
         el("span", { style: `width:${(done / 3) * 100}%` })),
       el("p", { class: "muted" }, `${done} of 3 done`)),
+    yourScans(),
     recent.length > 0 && el("h2", {}, "Recent scans"),
     recent.length > 0 && el("ul", { class: "list" }, recent.map(h =>
       el("li", {}, el("a", { href: `#/result/${encodeURIComponent(h.id)}` },
         el("strong", {}, productName(h.product)),
-        el("span", { class: "muted" }, peopleSummary(h.screen) || h.screen?.headline?.text || ""))))));
+        h.screen?.summary?.length
+          ? el("span", { class: "chips" }, h.screen.summary.map(r => el("span", { class: `chip tone-${r.tone}` }, r.chip)))
+          : el("span", { class: "muted" }, peopleSummary(h.screen) || h.screen?.headline?.text || ""))))));
+}
+
+// D-123: what came up across this phone's own results. Counted here, worded on
+// the server (screen.tallies, D-091); nothing is sent anywhere (D-074).
+function yourScans() {
+  const done = history().filter(h => h.screen?.state === "result" && Array.isArray(h.screen.tallies));
+  if (done.length < 2) return null;
+  const counts = new Map();
+  done.forEach(h => h.screen.tallies.forEach(t => counts.set(t, (counts.get(t) || 0) + 1)));
+  const rows = [...counts].sort((a, b) => b[1] - a[1]);
+  return el("div", { class: "card" },
+    el("h2", {}, "Your scans"),
+    el("p", { class: "muted" }, `${done.length} packs checked, kept on this phone.`),
+    rows.length
+      ? el("div", { class: "tallies" }, rows.map(([label, n]) => el("div", { class: "tally" },
+          el("div", { class: "row between" }, el("span", {}, label), el("span", { class: "muted" }, `${n} of ${done.length}`)),
+          el("div", { class: "progress" }, el("span", { style: `width:${(n / done.length) * 100}%` })))))
+      : el("p", {}, "Nothing came up often enough to list yet."));
 }
 
 function peopleSummary(screen) {
@@ -757,11 +778,22 @@ function result(id) {
     el("span", { class: "add-icon", "aria-hidden": "true" }, "!"),
     el("div", {}, el("strong", {}, s.additive_alert.text), el("p", {}, s.additive_alert.detail))));
 
-  // 3. Band (D-063), then what was checked (D-062).
-  put(el("div", { class: `band band-${s.band.code}` },
-    el("strong", {}, s.band.label),
-    s.band.note && el("details", {}, el("summary", {}, "What does this mean?"), el("p", {}, s.band.note))));
-  put(el("p", { class: "muted" }, s.checked, " ", s.scope));
+  // 3. D-123: the same three answers on every pack. Older results kept on the
+  // phone have no summary; they keep the band (D-063) as before.
+  if (s.summary?.length) {
+    put(el("div", { class: "answers" }, s.summary.map(r => el("div", { class: "answer" },
+      el("span", { class: "q" }, r.label),
+      el("div", { class: "a" },
+        el("span", { class: `chip tone-${r.tone}` }, r.chip),
+        el("p", {}, r.text))))));
+    if (s.band.note) put(el("details", { class: "item" }, el("summary", {}, "What does \"industrial\" mean?"),
+      el("p", {}, s.band.note)));
+  } else {
+    put(el("div", { class: `band band-${s.band.code}` },
+      el("strong", {}, s.band.label),
+      s.band.note && el("details", {}, el("summary", {}, "What does this mean?"), el("p", {}, s.band.note))));
+    put(el("p", { class: "muted" }, s.checked, " ", s.scope));
+  }
   if (s.catalogue_note) put(el("p", { class: "card note" }, s.catalogue_note));      // D-107
   if (s.front_note) put(el("p", { class: "card note" }, s.front_note));              // D-108
 
@@ -808,7 +840,7 @@ function result(id) {
   }
 
   // 6. Ordinary ingredients, grouped (D-065), then the full list as read.
-  if (s.ordinary?.text) {
+  if (s.ordinary?.text && !s.summary?.length) {
     const plain = s.ordinary.additives.filter(notCard);
     put(el("details", { class: "item" },
       el("summary", {}, s.ordinary.text),
@@ -834,6 +866,23 @@ function result(id) {
       el("p", {}, "We have this pack's ingredients but not its front. One photo lets our team record " +
                   "its name and what it promises, for everyone who scans it."),
       button("Photograph the front", () => go("front/" + encodeURIComponent(h.id)))));
+  }
+
+  if (s.summary?.length) put(el("p", { class: "muted small" }, s.checked, " ", s.scope));
+
+  // D-123: the next useful scan is the pack beside this one on the shelf (D-057).
+  if (h.pack) {
+    const waiting = store.get("compare", []).filter(x => x !== h.id && historyItem(x));
+    put(el("div", { class: "card note" },
+      el("h2", {}, waiting.length ? "Compare with the packs you added" : "Holding another pack?"),
+      el("p", {}, waiting.length
+        ? `See this one next to the ${waiting.length === 1 ? "other pack" : `other ${waiting.length} packs`} you added.`
+        : "Scan the one next to it on the shelf and see them side by side."),
+      button(waiting.length ? "Compare them" : "Scan another to compare", () => {
+        if (!store.get("compare", []).includes(h.id)) toggleCompare(h.id);
+        updateNav();
+        if (waiting.length) go("compare"); else { resetPending(); go("scan"); }
+      }, "primary")));
   }
 
   // 7. What this covers - stated, never silent (D-037).

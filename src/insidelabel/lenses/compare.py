@@ -131,6 +131,23 @@ def _find_additives(ingredients):
     return found, sorted(set(unknown))
 
 
+def sugar_positions(ingredients):
+    """[(position, sugar name)] for each list entry that names an added sugar, 1-based.
+
+    The one place that answers "where is sugar in this list": the kids lens and
+    the result screen's sugar answer (lenses/screen.py) both read it. Entries
+    are the list as read, so a sugar inside a compound counts at the compound's
+    place. Maltodextrin is not a sugar here (claim_rules.json).
+    """
+    out = []
+    for i, tok in enumerate(ingredients or [], start=1):
+        b = _base(tok)
+        hit = next((s for s in sorted(SUGARS, key=len, reverse=True) if _word_in(s, b)), None)
+        if hit:
+            out.append((i, hit))
+    return out
+
+
 def extract_facts(p: Product, age: str):
     """Ingredient facts relevant to a child, with tiers set by the age lens."""
     facts = []
@@ -164,13 +181,8 @@ def extract_facts(p: Product, age: str):
             facts.append(Fact(f"info:{ins}", "info", f"Sweetened with {name}.", tech))
 
     # Sugar: position in the list + how many names it hides behind.
-    positions, names = [], []
-    for i, tok in enumerate(p.ingredients, start=1):
-        b = _base(tok)
-        hit = next((s for s in sorted(SUGARS, key=len, reverse=True) if _word_in(s, b)), None)
-        if hit:
-            positions.append(i)
-            names.append(hit)
+    found = sugar_positions(p.ingredients)
+    positions, names = [i for i, _ in found], [n for _, n in found]
     if positions:
         first = positions[0]
         tier = "strong" if (first <= 2 or (age == "toddler" and first <= 3)) else "moderate"
