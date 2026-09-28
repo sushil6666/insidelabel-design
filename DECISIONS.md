@@ -1700,6 +1700,27 @@ Recommended by Claude. **Waiting for "accepted".** App only (web-20); no server 
   the 30 s seen on the laptop was the Tesseract fallback, which runs only without Cloud Vision.
   The server's own timings decide the next step (OPERATIONS.md query in STATE.md).
 
+### D-125 · "Worth a look" rows for additives worth knowing; research lines only from sources read first-hand `LOCKED` (2026-09-28)
+Why: testers said the result didn't show what to look at first, and asked for "this is here and a
+study says ... here is the research paper". Mockup: https://claude.ai/artifact/K7R9s8EFw35MZCA8vfpiEg.
+**Accepted by Sushil 2026-09-28** ("yes, pls proceed. looks good"), including the tapped-open row
+with an arrow that keeps nudging until tapped.
+
+- **`screen.alerts`:** one row per additive whose badge is "Worth knowing" (moderate or high concern
+  and permitted; "Not permitted" keeps its own alert, D-111). Title "Worth a look: Allura Red AC
+  (colour 129)". Closed until tapped; the arrow nudges; phones set to reduce motion get a still
+  arrow. Opened: what research found, the pack's line as printed, the sources as links.
+- **Research lines** live in `data/additive_research.json`, keyed by INS: one to three plain
+  sentences, each source with title, link and the date it was read, and who reviewed it.
+  `tests/test_additive_research.py` refuses a row without them, and the wording lint runs on
+  every sentence. Until a row is researched and reviewed, the body is the row's own reason and the
+  prompt says "Tap to see why", never "research".
+- **What research lines may say:** what the source found, in its own terms, with its limits when it
+  states them. Never "wrong", "harmful", "dangerous" (D-042, D-071). EU and US rules are information
+  only (D-086). Sources: the study, or the regulator's own opinion (EFSA, JECFA, IARC, FSSAI).
+- **App (web-21):** the rows sit right under the headline, before the three answers (D-123), so
+  the household's allergen line stays first (D-060).
+
 ---
 
 ## Open and pending

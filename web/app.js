@@ -800,6 +800,18 @@ function result(id) {
     el("span", { class: "add-icon", "aria-hidden": "true" }, "!"),
     el("div", {}, el("strong", {}, s.additive_alert.text), el("p", {}, s.additive_alert.detail))));
 
+  // D-125: "Worth a look" rows, closed until tapped; the arrow nudges until then.
+  (s.alerts || []).forEach(a => put(el("details", { class: "look" },
+    el("summary", {},
+      el("span", { class: "add-icon look-icon", "aria-hidden": "true" }, "!"),
+      el("span", {}, el("strong", {}, a.title), el("span", { class: "look-more" }, a.more)),
+      el("span", { class: "look-arrow", "aria-hidden": "true" }, el("span", {}, "\u203a"))),
+    el("div", { class: "look-body" },
+      a.body.map(t => el("p", {}, t)),
+      el("p", { class: "muted small" }, "On the label: ", el("q", {}, a.label_line)),
+      a.sources.length > 0 && el("ul", { class: "plain small" }, a.sources.map(x =>
+        el("li", {}, el("a", { href: x.url, target: "_blank", rel: "noopener" }, x.title))))))));
+
   // 3. D-123: the same three answers on every pack. Older results kept on the
   // phone have no summary; they keep the band (D-063) as before.
   if (s.summary?.length) {

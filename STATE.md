@@ -701,6 +701,9 @@ setup alarms.
   counts donut + list-order strip: https://claude.ai/artifact/K7R9s8EFw35MZCA8vfpiEg (research lines
   are drafts until read first-hand, D-046). Waiting: the server's scan timings and the testers' own
   words (`il tools/beta.py feedback`); Sushil's call on the layout and the 19-row research table.
+- **"Worth a look" rows: D-125 LOCKED, built** (branch `scanner-speed`, web-21, 563 tests). Research
+  table `data/additive_research.json` is empty: 19 worth-knowing rows to research from primary
+  sources, each reviewed by Sushil before it is added.
 - **Next work, in order (before invites):** (1) and (2) done; (3) built as D-123, see above. (3) The result-screen
   discussion Sushil asked for ("not much useful for a user"; Biscoff's band says "No concerns found"
   under a sugar headline): mockups, his decision. (4) Privacy page (contact `connect@insidelabel.ai`),

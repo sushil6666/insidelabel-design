@@ -26,6 +26,9 @@ Rules this module keeps:
   user's own profile ("me") is written as "you"/"your".
 """
 
+import json
+import os
+
 from insidelabel.core import engine
 from insidelabel.core.tokenize import extract_ins, ins_numbers
 from insidelabel.lenses import allergens as allergen_checker
@@ -425,6 +428,34 @@ def _summary(ingredients, sugar_found, worth, adds, complete):
     return rows
 
 
+# D-125: "Worth a look" rows, one per additive marked worth knowing. The body is
+# data/additive_research.json when a person has read the sources and reviewed it;
+# until then, the row's own reason from additives.json.
+with open(os.path.join(engine.DATA_DIR, "additive_research.json"), encoding="utf-8") as _fh:
+    RESEARCH = json.load(_fh)["rows"]
+
+
+def _alerts(adds):
+    out = []
+    for i in adds:
+        if (i["badge"] or {}).get("kind") != "worth_knowing" or (i["badge"] or {}).get("note"):
+            continue                         # not_permitted has its own alert; an unsure read, its note
+        row = engine._ADDITIVE_BY_INS.get(i["ins"]) or {}
+        klass = (row.get("class") or "additive").replace("_", " ")
+        res = RESEARCH.get(i["ins"])
+        out.append({
+            "ins": i["ins"],
+            "title": f"Worth a look: {i['name']} ({klass} {i['ins']})",
+            "more": "Tap to see what research found" if res else "Tap to see why",
+            "body": list(res["summary"]) if res else [i["why"]],
+            "sources": [{"title": x["title"], "url": x["url"]} for x in res["sources"]] if res else [],
+            "label_line": i.get("label_line") or i["label_text"],
+            "checked": bool(res),
+            "source": i["source"],
+        })
+    return out
+
+
 # D-123: what a result counts toward on "Your scans". The phone tallies these
 # strings across its own history; the wording stays here, under the lint (D-091).
 TALLY = {
@@ -554,6 +585,7 @@ def build(*, verdict, display, claim_check, extracted, reliability, profiles,
     head = ("state", "people", "headline")
     out = {**{k: out[k] for k in head}, "summary": summary, **{k: v for k, v in out.items() if k not in head}}
     out["tallies"] = _tallies(summary)
+    out["alerts"] = _alerts(adds)
     alert = next((i for i in adds if (i["badge"] or {}).get("kind") == "not_permitted"), None)
     if alert:
         out["additive_alert"] = {

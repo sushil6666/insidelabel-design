@@ -267,3 +267,22 @@ q { quotes: "“" "”"; }
 .tone-worth { background: var(--unsure-bg); color: var(--unsure); }
 .tallies { display: grid; gap: 10px; }
 .tally { display: grid; gap: 4px; }
+
+/* D-125: "Worth a look": a red row, closed until tapped; the arrow nudges until opened. */
+.look { background: var(--stop-bg); color: var(--stop); border-radius: var(--radius); border: 1px solid var(--stop); }
+.look > summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; padding: 12px 14px; }
+.look > summary::-webkit-details-marker { display: none; }
+.look strong { display: block; }
+.look-icon { background: var(--stop); color: var(--surface); width: 26px; height: 26px; }
+.look-more { display: block; font-size: .85rem; opacity: .9; }
+.look[open] .look-more { display: none; }
+.look-arrow { font-size: 1.5rem; font-weight: 800; line-height: 1; }
+.look[open] .look-arrow { transform: rotate(90deg); }
+.look-body { padding: 0 14px 14px 52px; color: var(--ink); }
+.look-body > * + * { margin-top: 6px; }
+.look-body a { color: var(--stop); }
+@media (prefers-reduced-motion: no-preference) {
+  .look:not([open]) .look-arrow span { display: inline-block; animation: look-nudge 1.1s ease-in-out infinite; }
+  .look-arrow { transition: transform .2s ease; }
+}
+@keyframes look-nudge { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(5px); } }
