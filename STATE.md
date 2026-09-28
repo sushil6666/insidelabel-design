@@ -695,6 +695,12 @@ setup alarms.
   compare prompt after each result, "Your scans" on home. Sushil: merge, `update.sh`, try it on the
   phone, then "accepted". Next: plain-language additive reasons (69 rows, Sushil reviews); ask the
   testers what they wanted to know that the screen didn't say.
+- **Tester feedback round 2 (2026-09-28):** scanner slow, scans up to 30 s, warnings don't stand out,
+  "study says" wanted, a report-style chart over animation. Built: D-124 (branch `scanner-speed`, on
+  top of `result-answers`, web-20). Mockup of the warning-first result with research lines and a
+  counts donut + list-order strip: https://claude.ai/artifact/K7R9s8EFw35MZCA8vfpiEg (research lines
+  are drafts until read first-hand, D-046). Waiting: the server's scan timings and the testers' own
+  words (`il tools/beta.py feedback`); Sushil's call on the layout and the 19-row research table.
 - **Next work, in order (before invites):** (1) and (2) done; (3) built as D-123, see above. (3) The result-screen
   discussion Sushil asked for ("not much useful for a user"; Biscoff's band says "No concerns found"
   under a sugar headline): mockups, his decision. (4) Privacy page (contact `connect@insidelabel.ai`),

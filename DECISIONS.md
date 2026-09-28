@@ -1684,6 +1684,22 @@ Not in this entry: plain-language reasons for the 69 additive rows (Claude draft
 reviews); named catalogue alternatives (mockups at https://claude.ai/artifact/HV9MoviE2ipcVyvGwYjwyd,
 gated by D-058 and the `compare.py` tie-break question).
 
+### D-124 · A more forgiving barcode scanner; a wait screen that never looks hung `RECOMMENDED` (2026-09-28)
+Why: testers, and Sushil, found the live barcode scanner slow, and some scans took about 30 s.
+Recommended by Claude. **Waiting for "accepted".** App only (web-20); no server or cost change.
+
+- **Scanner (`web/camera.js`):** a code is accepted once it is read twice within 1.5 s, not twice
+  in a row (one blurred frame used to start over); frames every 150 ms (was 200); the camera is
+  asked for continuous focus and up to 2x zoom where it offers them, so the phone can sit a hand's
+  width back, where it focuses; a light button where the phone has a torch; a short vibration on
+  a read. After 8 s with no read, a hint on distance and light, pointing at the barcode photo.
+  Still no third-party scanner; the server still checks every code (D-103, D-104).
+- **Wait screen:** after 20 s, "Taking longer than usual: the reader is busy right now. It is
+  still working." It also says a catalogued pack's barcode gives the result at once.
+- **Where the time goes, known so far:** Gemini takes 5 to 18 s for a new pack (laptop records);
+  the 30 s seen on the laptop was the Tesseract fallback, which runs only without Cloud Vision.
+  The server's own timings decide the next step (OPERATIONS.md query in STATE.md).
+
 ---
 
 ## Open and pending
