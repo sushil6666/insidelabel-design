@@ -191,20 +191,6 @@
       ],
       "reviewed_by": "sushil"
     },
-    "407": {
-      "summary": [
-        "The European Food Safety Authority (EFSA, 2018) found no concern about cancer or DNA damage from carrageenan, and no adverse effects in long-term rat studies up to the highest dose tested.",
-        "It named uncertainties about the chemistry, the intake estimate and the biological data, so it called its daily limit of 75 mg per kg of body weight temporary until better data came in."
-      ],
-      "sources": [
-        {
-          "title": "EFSA, Re-evaluation of carrageenan (E 407) and processed Eucheuma seaweed (E 407a) as food additives, EFSA Journal, 2018 (abstract read via Europe PMC)",
-          "url": "https://efsa.onlinelibrary.wiley.com/doi/10.2903/j.efsa.2018.5238",
-          "read_on": "2026-09-29"
-        }
-      ],
-      "reviewed_by": "sushil"
-    },
     "621": {
       "summary": [
         "In 2017 the European Food Safety Authority (EFSA) set a daily limit for added glutamates of 30 mg per kg of body weight, from the highest dose with no adverse effect in animal studies.",

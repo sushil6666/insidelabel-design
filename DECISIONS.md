@@ -1843,7 +1843,7 @@ person back to the pack.
 - **Later:** matching a screen to the catalogue by brand and name when no barcode is shown (risk of
   the wrong variant); to be proposed separately.
 
-### D-131 · Concern levels for three sweeteners and carrageenan after reading the sources `RECOMMENDED` (2026-09-29)
+### D-131 · Concern levels for three sweeteners and carrageenan after reading the sources `LOCKED` (2026-09-29)
 Sushil approved the 15 research rows (2026-09-29, "approved"; now in `data/additive_research.json`)
 and asked for a call on whether saccharin (954), acesulfame K (950), sucralose (955) and carrageenan
 (407) stay `moderate`. EFSA's latest opinions on all four found no concern at current intakes
@@ -1870,6 +1870,16 @@ concern on cancer or DNA, no adverse effects in long-term rat studies). Recommen
 - **Open, not proposed:** stevia (960) is `low` though the WHO guideline names it too. Consistency
   with the reason above would make it `moderate`; that moves scores on stevia packs and is Sushil's
   call.
+- **Accepted by Sushil 2026-09-29** ("accepted, Stevia go with WHO"). Applied:
+  - 407 carrageenan `low`, "why" as proposed, flag `efsa_temporary_adi` (was
+    `gut_inflammation_contested`), sources EFSA. Its research row moved back to
+    `docs/research_drafts.json`, kept in case it returns to `moderate`.
+  - 960 stevia `moderate`: "Plant-derived sweetener. WHO 2023 advises against non-sugar sweeteners,
+    stevia among them, for weight control. NOVA cosmetic marker." Flags `sweetener_natural`,
+    `who_nss_advisory`. A research row (the WHO sentence) waits in the drafts for "approved"; until
+    then its "Worth a look" row shows the "why".
+  - Scores: the 6 gold labels are unchanged (none has 407 or 960). Invented examples: a cocoa drink
+    with carrageenan 84 to 96; a drink sweetened with stevia 88 to 80; both together 76 to 80.
 
 ---
 
