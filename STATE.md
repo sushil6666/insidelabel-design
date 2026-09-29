@@ -650,6 +650,12 @@ setup alarms.
 
 **NEXT SESSION STARTS HERE (2026-09-28).** Where things stand, newest first:
 
+- **Problem report #1 (server, 2026-09-28 20:08, "Why photo not allowed?"):** both of the tester's
+  scans were refused `back_is_a_screen` (D-103): Gemini said the back photo was a screen, though both
+  came from the camera and passed `/check-photo`. Real false alarm or a photographed display: only the
+  photo shows (`/var/lib/insidelabel/media`, held). `repro.py show` crashed on the server: replay met the
+  invite gate with no store (503 `storage_unavailable`); fixed on branch `repro-invite-replay` (581 tests).
+
 - **Live on the server (main `48172ca`, web-23, 580 tests), deployed and checked 2026-09-28:**
   D-121 to D-129 on top of D-115 to D-120. Result screen: three answers, "Worth a look" rows, the
   all-clear line names the allergens, "At a glance" ring and strip, "What these words mean" with `/how`
