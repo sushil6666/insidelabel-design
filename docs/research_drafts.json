@@ -1,71 +1,10 @@
 {
   "_meta": {
-    "status": "Approved by Sushil 2026-09-29 ('approved'): the 15 rows are in data/additive_research.json. Rows here are DRAFTS waiting for 'approved': 950, 954, 955 add the WHO 2023 sweetener guideline sentence (D-131).",
+    "status": "Approved by Sushil 2026-09-29 ('approved'): the 15 rows, then the WHO 2023 sentence for 950, 954, 955 (D-131), are in data/additive_research.json. New drafts go here until approved.",
     "drafted_on": "2026-09-28 (102, 110, 122, 124, 129, 211); 2026-09-29 (171, 223, 250, 407, 621, 950, 951, 954, 955)",
     "not_drafted": {
       "127": "EFSA 2011 opinion (EFSA Journal 9(1):1854) is only on Wiley, which refuses scripted downloads; needs a manual download (D-046)."
     }
   },
-  "rows": {
-    "950": {
-      "summary": [
-        "In 2025 the European Food Safety Authority (EFSA) raised its daily limit for acesulfame K from 9 to 15 mg per kg of body weight, based on the highest dose tested in rats, at which no adverse effect was seen.",
-        "Its highest intake estimates were generally below this limit in every age group.",
-        "In 2023 the WHO advised against using non-sugar sweeteners, acesulfame K among them, to control weight, citing no long-term benefit for body fat and possible links in adults to type 2 diabetes, cardiovascular disease and death; it called the advice conditional because those studies may be confounded."
-      ],
-      "sources": [
-        {
-          "title": "EFSA, Re-evaluation of acesulfame K (E 950) as food additive, plain language summary, 30 April 2025",
-          "url": "https://www.efsa.europa.eu/en/plain-language-summary/re-evaluation-acesulfame-k-e-950-food-additive",
-          "read_on": "2026-09-29"
-        },
-        {
-          "title": "WHO, WHO advises not to use non-sugar sweeteners for weight control in newly released guideline, 15 May 2023",
-          "url": "https://www.who.int/news/item/15-05-2023-who-advises-not-to-use-non-sugar-sweeteners-for-weight-control-in-newly-released-guideline",
-          "read_on": "2026-09-29"
-        }
-      ],
-      "reviewed_by": ""
-    },
-    "954": {
-      "summary": [
-        "In 2024 the European Food Safety Authority (EFSA) raised its daily limit for saccharin from 5 to 9 mg per kg of body weight. The old limit rested on bladder tumours in rats, which EFSA now considers specific to male rats and not relevant to humans.",
-        "Its highest intake estimates were below the new limit in every age group.",
-        "In 2023 the WHO advised against using non-sugar sweeteners, saccharin among them, to control weight, citing no long-term benefit for body fat and possible links in adults to type 2 diabetes, cardiovascular disease and death; it called the advice conditional because those studies may be confounded."
-      ],
-      "sources": [
-        {
-          "title": "EFSA, Re-evaluation of saccharin and its sodium, potassium and calcium salts (E 954) as food additives, plain language summary, 15 November 2024",
-          "url": "https://www.efsa.europa.eu/en/plain-language-summary/re-evaluation-saccharin-and-its-sodium-potassium-and-calcium-salts-e-954",
-          "read_on": "2026-09-29"
-        },
-        {
-          "title": "WHO, WHO advises not to use non-sugar sweeteners for weight control in newly released guideline, 15 May 2023",
-          "url": "https://www.who.int/news/item/15-05-2023-who-advises-not-to-use-non-sugar-sweeteners-for-weight-control-in-newly-released-guideline",
-          "read_on": "2026-09-29"
-        }
-      ],
-      "reviewed_by": ""
-    },
-    "955": {
-      "summary": [
-        "In 2026 the European Food Safety Authority (EFSA) kept its daily limit for sucralose at 15 mg per kg of body weight; its highest intake estimates were below this in every age group.",
-        "It could not rule out that chlorine from sucralose passes to other molecules when it is heated for a long time at high temperature, as in baking or frying.",
-        "In 2023 the WHO advised against using non-sugar sweeteners, sucralose among them, to control weight, citing no long-term benefit for body fat and possible links in adults to type 2 diabetes, cardiovascular disease and death; it called the advice conditional because those studies may be confounded."
-      ],
-      "sources": [
-        {
-          "title": "EFSA, Re-evaluation of sucralose (E 955) as a food additive, plain language summary, 16 February 2026",
-          "url": "https://www.efsa.europa.eu/en/plain-language-summary/re-evaluation-sucralose-e-955-food-additive",
-          "read_on": "2026-09-29"
-        },
-        {
-          "title": "WHO, WHO advises not to use non-sugar sweeteners for weight control in newly released guideline, 15 May 2023",
-          "url": "https://www.who.int/news/item/15-05-2023-who-advises-not-to-use-non-sugar-sweeteners-for-weight-control-in-newly-released-guideline",
-          "read_on": "2026-09-29"
-        }
-      ],
-      "reviewed_by": ""
-    }
-  }
+  "rows": {}
 }
