@@ -1857,7 +1857,8 @@ concern on cancer or DNA, no adverse effects in long-term rat studies). Recommen
   rated conditional because the studies may be confounded. That is a published opinion of a health
   body, the `moderate` definition in `additives.json`. Sucralose also has EFSA's 2026 uncertainty on
   heating. Drafts in `docs/research_drafts.json` add the WHO sentence to each row, for Sushil's
-  "approved".
+  "approved". **Approved by Sushil 2026-09-29** ("approved"): the three rows stay `moderate` and
+  their research rows carry the WHO sentence and source. The rest of D-131 (407, stevia) still waits.
 - **407 carrageenan to `low`, its "why" rewritten.** EFSA's temporary limit is about gaps in the data,
   not an effect it found; the row's "why" ("Some studies suggest gut inflammation (contested)") has no
   source read first-hand (D-046). Proposed "why": "Seaweed thickener. EFSA (2018) found no adverse
