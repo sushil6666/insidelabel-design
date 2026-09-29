@@ -97,7 +97,9 @@ def show(store, media, pid, save=None):
         if out["status"] is None:
             continue
         now = repro.summary(out["screen"])
-        print(f"    replay → HTTP {out['status']}: {json.dumps(now, ensure_ascii=False)}")
+        # An error without a screen (a 503, say): print the server's own error instead.
+        err = None if now else (out.get("body") or {}).get("detail", out.get("body"))
+        print(f"    replay → HTTP {out['status']}: {json.dumps(now or err, ensure_ascii=False)}")
         diff = repro.compare(shown_by_rid.get(s["request_id"]), now)
         print("    same as what the user saw" if not diff else "    DIFFERS from what the user saw:")
         for d in diff:
