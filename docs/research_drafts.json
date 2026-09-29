@@ -1,7 +1,10 @@
 {
   "_meta": {
     "status": "DRAFTS, not approved. Not read by the app. When Sushil says 'approved', move each row to data/additive_research.json with reviewed_by 'sushil' (D-125).",
-    "drafted_on": "2026-09-28"
+    "drafted_on": "2026-09-28 (102, 110, 122, 124, 129, 211); 2026-09-29 (171, 223, 250, 407, 621, 950, 951, 954, 955)",
+    "not_drafted": {
+      "127": "EFSA 2011 opinion (EFSA Journal 9(1):1854) is only on Wiley, which refuses scripted downloads; needs a manual download (D-046)."
+    }
   },
   "rows": {
     "102": {
@@ -114,6 +117,143 @@
           "title": "McCann et al., Food additives and hyperactive behaviour in 3-year-old and 8/9-year-old children in the community, The Lancet, 2007",
           "url": "https://pubmed.ncbi.nlm.nih.gov/17825405/",
           "read_on": "2026-09-28"
+        }
+      ],
+      "reviewed_by": ""
+    },
+    "171": {
+      "summary": [
+        "In 2021 the European Food Safety Authority (EFSA) said it could not rule out a concern that titanium dioxide particles damage DNA, so it could not set a daily intake level for it.",
+        "In 2023 the FAO/WHO expert committee on food additives (JECFA) said the studies did not give convincing evidence of this. It also said the evidence is limited, mostly because test methods for very small particles are lacking, and asked for more research."
+      ],
+      "sources": [
+        {
+          "title": "EFSA news release on titanium dioxide (E171), 6 May 2021",
+          "url": "https://www.efsa.europa.eu/en/news/titanium-dioxide-e171-no-longer-considered-safe-when-used-food-additive",
+          "read_on": "2026-09-29"
+        },
+        {
+          "title": "WHO, JECFA risk assessment of titanium dioxide released: background information, 24 November 2023",
+          "url": "https://www.who.int/publications/m/item/jecfa-risk-assessment-of-titanium-dioxide-risk-released-background-information",
+          "read_on": "2026-09-29"
+        }
+      ],
+      "reviewed_by": ""
+    },
+    "223": {
+      "summary": [
+        "Sulphites in food may trigger intolerance reactions, and some people are sensitive to them, says the European Food Safety Authority (EFSA, 2016).",
+        "In 2022 EFSA withdrew its daily intake limit for sulphites because the studies it needed were not available, and said current use may be of concern for people who eat a lot of foods containing them."
+      ],
+      "sources": [
+        {
+          "title": "EFSA, More data on sulfites needed to fully confirm safety, 14 April 2016",
+          "url": "https://www.efsa.europa.eu/en/press/news/160414a",
+          "read_on": "2026-09-29"
+        },
+        {
+          "title": "EFSA, Follow-up of the re-evaluation of sulfur dioxide and sulfites (E 220 to 228), plain language summary, 24 November 2022",
+          "url": "https://www.efsa.europa.eu/en/plain-language-summary/follow-re-evaluation-sulfur-dioxide-e-220-sodium-sulfite-e-221-sodium",
+          "read_on": "2026-09-29"
+        }
+      ],
+      "reviewed_by": ""
+    },
+    "250": {
+      "summary": [
+        "The European Food Safety Authority (EFSA, 2017) found intake of added nitrites within its daily limit for all age groups, except children who eat a lot of foods containing them, who might go slightly over.",
+        "Nitrite is linked to the formation of nitrosamines, some of which cause cancer. At permitted levels, EFSA judged added nitrite's share of nitrosamine intake to be of low concern, and asked for more research."
+      ],
+      "sources": [
+        {
+          "title": "EFSA news release on nitrites and nitrates added to food, 15 June 2017",
+          "url": "https://www.efsa.europa.eu/en/press/news/170615",
+          "read_on": "2026-09-29"
+        }
+      ],
+      "reviewed_by": ""
+    },
+    "407": {
+      "summary": [
+        "The European Food Safety Authority (EFSA, 2018) found no concern about cancer or DNA damage from carrageenan, and no adverse effects in long-term rat studies up to the highest dose tested.",
+        "It named uncertainties about the chemistry, the intake estimate and the biological data, so it called its daily limit of 75 mg per kg of body weight temporary until better data came in."
+      ],
+      "sources": [
+        {
+          "title": "EFSA, Re-evaluation of carrageenan (E 407) and processed Eucheuma seaweed (E 407a) as food additives, EFSA Journal, 2018 (abstract read via Europe PMC)",
+          "url": "https://efsa.onlinelibrary.wiley.com/doi/10.2903/j.efsa.2018.5238",
+          "read_on": "2026-09-29"
+        }
+      ],
+      "reviewed_by": ""
+    },
+    "621": {
+      "summary": [
+        "In 2017 the European Food Safety Authority (EFSA) set a daily limit for added glutamates of 30 mg per kg of body weight, from the highest dose with no adverse effect in animal studies.",
+        "It found that people whose diet is high in foods with added glutamates, and toddlers and children with medium intake, may go over this limit. Highly exposed infants, children and teenagers may reach doses linked in people to effects such as headache."
+      ],
+      "sources": [
+        {
+          "title": "EFSA, EFSA reviews safety of glutamates added to food, 12 July 2017",
+          "url": "https://www.efsa.europa.eu/en/press/news/170712",
+          "read_on": "2026-09-29"
+        }
+      ],
+      "reviewed_by": ""
+    },
+    "950": {
+      "summary": [
+        "In 2025 the European Food Safety Authority (EFSA) raised its daily limit for acesulfame K from 9 to 15 mg per kg of body weight, based on the highest dose tested in rats, at which no adverse effect was seen.",
+        "Its highest intake estimates were generally below this limit in every age group."
+      ],
+      "sources": [
+        {
+          "title": "EFSA, Re-evaluation of acesulfame K (E 950) as food additive, plain language summary, 30 April 2025",
+          "url": "https://www.efsa.europa.eu/en/plain-language-summary/re-evaluation-acesulfame-k-e-950-food-additive",
+          "read_on": "2026-09-29"
+        }
+      ],
+      "reviewed_by": ""
+    },
+    "951": {
+      "summary": [
+        "In 2023 the WHO's cancer agency (IARC) classed aspartame as possibly carcinogenic to humans (Group 2B), based on limited evidence for liver cancer in people and limited evidence in animals.",
+        "At the same time the FAO/WHO expert committee (JECFA) kept its daily limit of 40 mg per kg of body weight: a 70 kg adult would need more than 9 to 14 cans of diet soft drink a day to pass it, with no other source.",
+        "Both said the evidence has limits and called for more and better studies."
+      ],
+      "sources": [
+        {
+          "title": "WHO, Aspartame hazard and risk assessment results released, 14 July 2023",
+          "url": "https://www.who.int/news/item/14-07-2023-aspartame-hazard-and-risk-assessment-results-released",
+          "read_on": "2026-09-29"
+        }
+      ],
+      "reviewed_by": ""
+    },
+    "954": {
+      "summary": [
+        "In 2024 the European Food Safety Authority (EFSA) raised its daily limit for saccharin from 5 to 9 mg per kg of body weight. The old limit rested on bladder tumours in rats, which EFSA now considers specific to male rats and not relevant to humans.",
+        "Its highest intake estimates were below the new limit in every age group."
+      ],
+      "sources": [
+        {
+          "title": "EFSA, Re-evaluation of saccharin and its sodium, potassium and calcium salts (E 954) as food additives, plain language summary, 15 November 2024",
+          "url": "https://www.efsa.europa.eu/en/plain-language-summary/re-evaluation-saccharin-and-its-sodium-potassium-and-calcium-salts-e-954",
+          "read_on": "2026-09-29"
+        }
+      ],
+      "reviewed_by": ""
+    },
+    "955": {
+      "summary": [
+        "In 2026 the European Food Safety Authority (EFSA) kept its daily limit for sucralose at 15 mg per kg of body weight; its highest intake estimates were below this in every age group.",
+        "It could not rule out that chlorine from sucralose passes to other molecules when it is heated for a long time at high temperature, as in baking or frying."
+      ],
+      "sources": [
+        {
+          "title": "EFSA, Re-evaluation of sucralose (E 955) as a food additive, plain language summary, 16 February 2026",
+          "url": "https://www.efsa.europa.eu/en/plain-language-summary/re-evaluation-sucralose-e-955-food-additive",
+          "read_on": "2026-09-29"
         }
       ],
       "reviewed_by": ""

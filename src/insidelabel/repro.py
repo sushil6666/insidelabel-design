@@ -67,6 +67,8 @@ def form_for(request, model_raw):
         data["avoid"] = ",".join(request["avoid"])
     if request.get("barcode"):
         data["barcode"] = request["barcode"]
+    if request.get("screen_pack"):
+        data["screen_pack"] = json.dumps(request["screen_pack"])          # D-130
     return data
 
 

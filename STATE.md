@@ -655,6 +655,30 @@ setup alarms.
   came from the camera and passed `/check-photo`. Real false alarm or a photographed display: only the
   photo shows (`/var/lib/insidelabel/media`, held). `repro.py show` crashed on the server: replay met the
   invite gate with no store (503 `storage_unavailable`); fixed on branch `repro-invite-replay` (581 tests).
+- **D-130 LOCKED and built, 2026-09-29** (branch `screen-read`, web-24, migration 017, 602 tests):
+  from problem report #1 (a tester's screen photo refused twice). A photo of a screen is read and
+  marked "Read from a screen, not the pack"; allergen lines say "on this screen" with the caution in
+  the line; our catalogue's pack is set beside the screen (case A: the pack lists milk, the screen
+  doesn't; B: they agree; C: no pack); never catalogued (outcome `screen_read`); shop list on the
+  phone with "Scan it now", and the pack's result says what differs from the screenshot. Walked in
+  headless Chromium, light and dark, against answers from the real server code. DPDP data map row 7a
+  and reviewer point 11 (screenshots of listings may show account details). **Sushil: merge,
+  `update.sh` (runs migration 017), try a screenshot on the phone.** Branches `research-drafts-2`
+  and `repro-invite-replay` also add a line at the top of this list: keep all three when merging.
+  Seen in the walk, not changed: empty space under "Remove" on the shop-list card.
+
+- **Research drafts, 2026-09-29** (branch `research-drafts-2`): 9 more "Worth a look" rows drafted in
+  `docs/research_drafts.json` from EFSA, WHO/IARC and JECFA pages read that day (171, 223, 250, 407, 621,
+  950, 951, 954, 955); 15 of 16 drafted, all waiting on Sushil's "approved". **127 erythrosine not
+  drafted:** EFSA's 2011 opinion (EFSA Journal 9(1):1854) is only on Wiley, which refuses scripted
+  downloads; Sushil to download the PDF by hand. **For Sushil's call:** EFSA's latest opinions on
+  saccharin (2024), acesulfame K (2025) and sucralose (2026) found intakes below the limit in every age
+  group, and carrageenan (2018) found no concern on cancer or DNA; these rows are `moderate`. Whether that
+  stays is a concern-level decision, not changed here. Source titles containing "safe" are given as a
+  description ("EFSA news release on ...") so no source line on the screen says it.
+- **Loose ends, 2026-09-29:** billing, the `insidelabel.in` client hold and the API keys all need
+  Sushil's consoles (§8 item 1). Candzey (review item 11, on the server): hard or chewy decides 5.2.1 or 5.2.2;
+  the pack text is on the server, not the laptop.
 
 - **Live on the server (main `48172ca`, web-23, 580 tests), deployed and checked 2026-09-28:**
   D-121 to D-129 on top of D-115 to D-120. Result screen: three answers, "Worth a look" rows, the
