@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "status": "Rows here are DRAFTS, not read by the app. 960: waits for Sushil's 'approved'. 407: approved once, set aside by D-131 (now low).",
+    "status": "Rows here are DRAFTS, not read by the app. 407: approved once, set aside by D-131 (now low). 960 approved by Sushil 2026-09-29 and moved to data/additive_research.json.",
     "drafted_on": "2026-09-28 (102, 110, 122, 124, 129, 211); 2026-09-29 (171, 223, 250, 407, 621, 950, 951, 954, 955)",
     "not_drafted": {
       "127": "EFSA 2011 opinion (EFSA Journal 9(1):1854) is only on Wiley, which refuses scripted downloads; needs a manual download (D-046)."
@@ -21,19 +21,6 @@
       ],
       "reviewed_by": "",
       "_note": "Approved 2026-09-29, then set aside: D-131 made 407 low, so it has no 'Worth a look' row. Kept in case it goes back to moderate."
-    },
-    "960": {
-      "summary": [
-        "In 2023 the WHO advised against using non-sugar sweeteners, stevia among them, to control weight, citing no long-term benefit for body fat and possible links in adults to type 2 diabetes, cardiovascular disease and death; it called the advice conditional because those studies may be confounded."
-      ],
-      "sources": [
-        {
-          "title": "WHO, WHO advises not to use non-sugar sweeteners for weight control in newly released guideline, 15 May 2023",
-          "url": "https://www.who.int/news/item/15-05-2023-who-advises-not-to-use-non-sugar-sweeteners-for-weight-control-in-newly-released-guideline",
-          "read_on": "2026-09-29"
-        }
-      ],
-      "reviewed_by": ""
     }
   }
 }

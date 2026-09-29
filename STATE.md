@@ -672,8 +672,8 @@ setup alarms.
   sweetener guideline, and their research rows carry its sentence (approved by Sushil 2026-09-29,
   branch `sweeteners-who`). **D-131 LOCKED** (Sushil: "accepted, Stevia go with WHO"; branch
   `concern-407-960`): 407 carrageenan `low` with a sourced "why"; 960 stevia `moderate` on the WHO
-  guideline. Gold labels unchanged. Stevia's research row (the WHO sentence) waits in
-  `docs/research_drafts.json` for "approved".
+  guideline. Gold labels unchanged. Stevia's research row (the WHO sentence) approved by
+  Sushil 2026-09-29 and live in `data/additive_research.json` (branch `stevia-research`).
 - **Parked by Sushil (2026-09-29, "will check later"):** billing, `insidelabel.in` client hold, the
   API keys, Candzey hard or chewy (review item 11 on the server; 5.2.1 hard, 5.2.2 chewy) (§8 item 1).
 

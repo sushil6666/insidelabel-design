@@ -1877,7 +1877,7 @@ concern on cancer or DNA, no adverse effects in long-term rat studies). Recommen
   - 960 stevia `moderate`: "Plant-derived sweetener. WHO 2023 advises against non-sugar sweeteners,
     stevia among them, for weight control. NOVA cosmetic marker." Flags `sweetener_natural`,
     `who_nss_advisory`. A research row (the WHO sentence) waits in the drafts for "approved"; until
-    then its "Worth a look" row shows the "why".
+    then its "Worth a look" row shows the "why". Approved by Sushil 2026-09-29 ("approved").
   - Scores: the 6 gold labels are unchanged (none has 407 or 960). Invented examples: a cocoa drink
     with carrageenan 84 to 96; a drink sweetened with stevia 88 to 80; both together 76 to 80.
 
