@@ -18,6 +18,10 @@ if [ "$(id -un)" != insidelabel ]; then
 fi
 set -a
 . /etc/insidelabel/settings.env
+# The commit update.sh deployed, as the service sees it. Without it a tool asks
+# git, which refuses a repository owned by another user, and scan notes said
+# "now unknown" (repro.py show, 2026-09-29).
+[ -r /etc/insidelabel/build.env ] && . /etc/insidelabel/build.env
 set +a
 cd "$APP"
 if [ "${1:-}" = migrate ]; then

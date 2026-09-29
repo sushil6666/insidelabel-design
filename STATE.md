@@ -656,7 +656,12 @@ setup alarms.
   D-130 (screen photos), the research rows and D-131. **Sushil next:** try a screenshot and "Scan it
   now" on the phone; `il tools/repro.py show 1`, then `il tools/repro.py close 1 fixed --note "D-130:
   screens are read"` (report #1's old `back_is_a_screen` scans now replay as screen reads and show
-  "DIFFERS": expected). Not deployed yet: stevia's research row (branch `stevia-research`).
+  "DIFFERS": expected). Not deployed yet: stevia's research row (merged, #51).
+  **Checked on the server 2026-09-29:** `repro.py show 1` runs to the end; both scans now replay as
+  results with `p1:contains` (the child's allergen found on the screen). Its note said "now unknown"
+  for the build: `il` read only `settings.env`, not the `build.env` that `update.sh` writes, and git
+  refuses the app folder to the `insidelabel` user. Fixed on branch `il-build-id` (`deploy/il` reads
+  `build.env`; `il` is a symlink, so the next `update.sh` brings it).
 - **D-130 LOCKED:** a photo of a screen is read and marked "Read from a screen, not the pack"; allergen
   lines say "on this screen" with the caution in the line; our catalogue's pack beside it (case A: the
   pack lists milk, the screen doesn't; B: they agree; C: no pack); never catalogued (outcome
