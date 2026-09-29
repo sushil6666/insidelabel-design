@@ -650,16 +650,13 @@ setup alarms.
 
 **NEXT SESSION STARTS HERE (2026-09-28).** Where things stand, newest first:
 
-- **Merged to main, 2026-09-29 (`9712cdb` + test fix, 603 tests), not yet deployed:** PRs #44 to #47:
-  research drafts, the repro fix, D-130 (screen photos) and the 15 approved research rows. Checked after
-  the merges: no conflict markers, every STATE entry kept, migration 017, web-24 (`lib.js` and `sw.js`).
-  One test from #46 used a screen photo as its example refusal, which D-130 (#45) now reads; each
-  branch passed alone, the combination failed; fixed on branch `fix-replay-test` (the test still fails
-  on the old replay code). **Sushil: merge `fix-replay-test`, then `sudo /opt/insidelabel/app/deploy/update.sh`
-  (runs migration 017), try a screenshot and "Scan it now" on the phone, `il tools/repro.py show 1`,
-  then close report #1** (`il tools/repro.py close 1 fixed --note "D-130: screens are read"`; the tester did photograph a
-  screen). After deploy, report #1's old `back_is_a_screen` scans replay as screen reads and show
-  "DIFFERS": expected.
+- **Deployed 2026-09-29: main `7d0c1b6` (PRs #44 to #50, 603 tests) on the server** (Sushil ran
+  `update.sh`: migration 017 applied, health OK, data `f4ba132bf687`). Checked from outside: `/health`
+  build `7d0c1b6d2d54`, app web-24, shell `il-shell-24`, shop list in `app.js`. Includes the repro fix,
+  D-130 (screen photos), the research rows and D-131. **Sushil next:** try a screenshot and "Scan it
+  now" on the phone; `il tools/repro.py show 1`, then `il tools/repro.py close 1 fixed --note "D-130:
+  screens are read"` (report #1's old `back_is_a_screen` scans now replay as screen reads and show
+  "DIFFERS": expected). Not deployed yet: stevia's research row (branch `stevia-research`).
 - **D-130 LOCKED:** a photo of a screen is read and marked "Read from a screen, not the pack"; allergen
   lines say "on this screen" with the caution in the line; our catalogue's pack beside it (case A: the
   pack lists milk, the screen doesn't; B: they agree; C: no pack); never catalogued (outcome
