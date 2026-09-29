@@ -234,6 +234,14 @@ def tokenize(raw):
     return tokens
 
 
+def split_entries(raw):
+    """The top-level entries of a raw list, as printed (brackets kept): the
+    split tokenize() makes before it looks inside brackets. For callers that
+    need an entry's place in the list, such as the D-132 ingredient notes."""
+    raw = re.sub(r"(?i)\ballergen[s]?\b.*$", "", raw or "")
+    return [p.strip() for p in _split_top(raw) if p.strip()]
+
+
 def extract_ins(token):
     """If token contains an INS/E number, return the bare number string."""
 

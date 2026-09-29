@@ -34,6 +34,17 @@ def _fresh_rate_limits():
     yield
 
 
+@pytest.fixture(autouse=True)
+def _fresh_vision_cache():
+    """Cloud Vision keeps the text it read per photo hash, and every test sends the
+    same 1x1 PNG, so one test's text leaked into the next: an unlisted scan's replay
+    in test_no_barcode.py read as cross-checked or not depending on which test ran
+    before it (found 2026-09-29, when a new test file changed the order)."""
+    from insidelabel.extraction.providers import cloud_vision
+    cloud_vision._CACHE.clear()
+    yield
+
+
 @pytest.fixture(scope="session")
 def pg_admin():
     """(admin_uri, base_name, skip_unavailable) for the server tests run on."""

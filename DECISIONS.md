@@ -1881,6 +1881,52 @@ concern on cancer or DNA, no adverse effects in long-term rat studies). Recommen
   - Scores: the 6 gold labels are unchanged (none has 407 or 960). Invented examples: a cocoa drink
     with carrageenan 84 to 96; a drink sweetened with stevia 88 to 80; both together 76 to 80.
 
+### D-132 · "Ingredients worth knowing": notes on maida, fats, oils, salt, caffeine, from sources read first-hand `LOCKED` (2026-09-29)
+The ingredient-notes review in chat (15 rows, from ICMR-NIN 2024 and WHO). **Accepted by Sushil
+2026-09-29** ("keep all 15 rows now ... implement all"). Built in phase 1 (branch `ingredient-notes`).
+
+- **`data/ingredient_notes.json`**, one row per group: names (whole words in a list entry), a
+  1 to 3 sentence summary, sources with title, url, page and `read_on`, a position rule, and
+  `reviewed_by`. **A row shows only once Sushil has reviewed it** (as D-125's research rows); every
+  row ships `reviewed_by: null`. Matching is `engine.ingredient_notes()` on the list as printed,
+  INS numbers by `tokenize.ins_numbers` (D-099). `tests/test_ingredient_notes.py`.
+- **Tiles** ("Worth a look", closed): hydrogenated fat, vanaspati, shortening (first: the strongest);
+  palm oil and palmolein; coconut oil; maida and other refined flours or starch **when in the first 3**.
+  **Lines** under one closed "More about the ingredients": the same flours further down, sooji,
+  ghee or butter, margarine, an oil or a fat whose type the pack doesn't name, salt, caffeine, and
+  for a phone with a child's profile only, sweeteners (sugar alcohols only when printed as a
+  sweetener, so "Humectant (420)" doesn't count). The sugar answer gets ICMR-NIN's and WHO's lines
+  one tap away; no new flag.
+- **Information only.** Score, grade, band, NOVA and allergen lines are unchanged; the one wording
+  change: a pack that reads clean but has a tile says "A few things worth knowing." instead of
+  "No concerns found" (D-123's rule). Tested before and after on the 6 gold labels.
+- **Sugar names (row 11):** khandsari, bura and misri added to `sugar_aliases`: FSSAI FPS&FA 2011
+  2.8.1(3), 2.8.1(4), 2.8.2 define them as sugar of at least 93%, 90% and 98% sucrose, so added
+  sugar under L&D 2020 5(3)(a)(ii). Gold set unchanged; an invented "Bura sugar, Misri" pack goes
+  100 to 92 (two names, as D-120). **Coconut sugar not added:** no FSSAI standard defines it.
+- **Sources read first-hand 2026-09-29:** ICMR-NIN Dietary Guidelines for Indians 2024 pp. 17 to 18,
+  51 to 56, 66, 91, 93 to 98, 107 to 109; WHO fats and carbohydrates (2023), sugars (2015), salt
+  fact sheet; FSS (Labelling and Display) Regulations 2020, compendium I, pp. 5 to 13; FSS (Food
+  Products Standards and Food Additives) Regulations 2011, compendium XXVI, pp. 104, 119 to 124,
+  204 to 206, 226, 341 to 342, 439, 625.
+- **What no source said, so the app doesn't:** no source calls sooji refined (it gets FSSAI's
+  definition only, no tile); no children's caffeine figure (ICMR-NIN speaks only of pregnancy);
+  "bakery fat" has no FSSAI definition (it is treated as a fat whose type isn't named).
+
+### D-133 · Read the nutrition table and judge it against ICMR-NIN's own thresholds `LOCKED` (2026-09-29)
+**Accepted by Sushil 2026-09-29** ("keep all 15 rows now ... implement all", row 15 of the review).
+Gemini transcribes the table; rules in Python check it (numbers must appear in Cloud Vision's text,
+per serving x servings, sugars within carbohydrates, saturated within total fat, salt = sodium x 2.5)
+and compare it with ICMR-NIN Table 15.1 (p. 96: per 100 g 250 kcal, 625 mg salt, 3 g added sugar;
+per 100 ml 70 kcal, 175 mg, 2.0 g) and the daily 25 g sugar and 5 g salt. Information only. To be
+built in phase 2 (branch `nutrition-panel`).
+
+### D-134 · One-screen result: warning tiles, each opening its own page `LOCKED` (2026-09-29)
+**Accepted by Sushil 2026-09-29** ("keep all 15 rows now ... implement all"). Compact tiles under the
+allergen line and headline, each opening a detail page; nothing else open by default; the first
+screen fits a 390 x 844 phone for a pack with 2 warnings. To be built in phase 3 (branch
+`result-tiles`).
+
 ---
 
 ## Open and pending

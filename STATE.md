@@ -650,6 +650,19 @@ setup alarms.
 
 **NEXT SESSION STARTS HERE (2026-09-28).** Where things stand, newest first:
 
+- **D-132 built, phase 1 of `docs/BUILD_PROMPT_D132-D134.md`** (branch `ingredient-notes`, web-25,
+  639 tests). `data/ingredient_notes.json` (14 rows: the review's 1 to 14, with "vegetable fat, type
+  not named" split from row 9), `engine.ingredient_notes()`, `screen.ingredient_notes` (tiles +
+  lines), sugar answer's `more`. **Every row ships `reviewed_by: null`, so nothing shows until
+  Sushil says "approved"** (then set `reviewed_by: "sushil"` on each row). Walked in headless
+  Chromium, light and dark, with the rows marked reviewed: no errors. Khandsari, bura, misri in
+  `sugar_aliases` (live on merge; gold set unchanged). **Waiting on Sushil:** "approved" for the
+  rows, merge, phone check. **Proposals, not built:** "hydrogenated vegetable fat" and "shortening"
+  are not NOVA aliases (a rusk with it scores 100, clean): adding them moves scores, so it needs its
+  own decision. **Then phase 2** (D-133, branch `nutrition-panel`); FSSAI L&D 2020 is already read
+  (nutrition fields pp. 9 to 13). Test isolation fixed on the way: `conftest.py` clears Cloud
+  Vision's per-photo text cache before each test (it made `test_no_barcode` depend on test order).
+
 - **Next build, ready to paste: `docs/BUILD_PROMPT_D132-D134.md`** (2026-09-29). Sushil: "keep all 15
   rows now ... implement all". D-132 ingredient notes (maida, palm oil, hydrogenated fat, all 15 rows
   from ICMR-NIN 2024 and WHO, read first-hand), D-133 the nutrition table against ICMR-NIN Table 15.1
