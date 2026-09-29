@@ -156,3 +156,15 @@ def test_compare_render():
             assert_clean(text.splitlines(), f"compare render age={age} avoid={avoid}")
             for p in packs:
                 assert_clean([f.parent_text for f in p.facts], f"compare facts {p.name}")
+
+
+def test_ingredient_notes_table_and_their_screen_words():
+    # D-132: every sentence of data/ingredient_notes.json and the words the screen
+    # puts around them. The screen output itself is linted in test_ingredient_notes.py
+    # (rows show only once reviewed, so a plain /scan here may not include them).
+    from insidelabel.lenses import screen
+    with open(os.path.join(ROOT, "data", "ingredient_notes.json"), encoding="utf-8") as f:
+        rows = json.load(f)["rows"]
+    texts = [t for r in rows for t in [r["title"], *r["summary"]]]
+    texts += [screen.NOTES_TITLE, screen.NOTE_MORE, screen.SUGAR_MORE_TITLE]
+    assert_clean(texts, "ingredient_notes.json")

@@ -914,6 +914,21 @@ function result(id) {
       a.sources.length > 0 && el("ul", { class: "plain small" }, a.sources.map(x =>
         el("li", {}, el("a", { href: x.url, target: "_blank", rel: "noopener" }, x.title))))))));
 
+  // D-132: ingredients worth a look (palm oil, hydrogenated fat, maida near the
+  // start), the same closed rows as above. Server text only.
+  const notes = s.ingredient_notes;
+  const noteBody = n => [
+    n.body.map(t => el("p", {}, t)),
+    el("p", { class: "muted small" }, "On the label: ", el("q", {}, n.label_line)),
+    el("ul", { class: "plain small" }, n.sources.map(x =>
+      el("li", {}, el("a", { href: x.url, target: "_blank", rel: "noopener" }, x.cite))))];
+  (notes?.tiles || []).forEach(n => put(el("details", { class: "look" },
+    el("summary", {},
+      el("span", { class: "add-icon look-icon", "aria-hidden": "true" }, "!"),
+      el("span", {}, el("strong", {}, n.heading), el("span", { class: "look-more" }, n.more)),
+      el("span", { class: "look-arrow", "aria-hidden": "true" }, el("span", {}, "›"))),
+    el("div", { class: "look-body" }, noteBody(n)))));
+
   // 3. D-123: the same three answers on every pack. Older results kept on the
   // phone have no summary; they keep the band (D-063) as before.
   if (s.summary?.length) {
@@ -921,7 +936,15 @@ function result(id) {
       el("span", { class: "q" }, r.label),
       el("div", { class: "a" },
         el("span", { class: `chip tone-${r.tone}` }, r.chip),
-        el("p", {}, r.text))))));
+        el("p", {}, r.text),
+        // D-132: what ICMR-NIN and WHO say, one tap away under the sugar answer.
+        r.more && el("details", { class: "more" }, el("summary", {}, r.more.title),
+          r.more.body.map(t => el("p", {}, t)),
+          el("ul", { class: "plain small" }, r.more.sources.map(x =>
+            el("li", {}, el("a", { href: x.url, target: "_blank", rel: "noopener" }, x.cite))))))))));
+    if (notes?.lines?.length) put(el("details", { class: "item" }, el("summary", {}, notes.title),
+      el("div", { class: "items" }, notes.lines.map(n => el("div", { class: "note-line" },
+        el("strong", {}, n.title), " ", el("span", { class: "muted small" }, n.where), noteBody(n))))));
     if (s.glance) put(glanceView(s.glance));
     if (s.band.note) put(el("details", { class: "item" }, el("summary", {}, "What does \"industrial\" mean?"),
       el("p", {}, s.band.note)));

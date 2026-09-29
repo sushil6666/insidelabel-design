@@ -1,5 +1,16 @@
 """Ingredient classification and NOVA marker detection."""
 
+import re
+
+
+def _inside(alias, token):
+    """
+    The alias inside a longer entry ("vegetable shortening" has "shortening"),
+    but not negated: "non-hydrogenated fat" is not hydrogenated fat (D-135). An
+    alias that itself starts with "non-" ("non-nutritive sweetener") still matches.
+    """
+    return re.search(r"(?<!non-)(?<!non )" + re.escape(alias), token) is not None
+
 
 def _nova_marker(token, canonical, nova_lookup):
     for key in (token, canonical):
@@ -7,7 +18,7 @@ def _nova_marker(token, canonical, nova_lookup):
             return nova_lookup[key]
 
     for al, marker in nova_lookup.items():
-        if al in token:
+        if _inside(al, token):
             return marker
 
     return None

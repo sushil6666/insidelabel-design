@@ -1,0 +1,597 @@
+{
+  "_meta": {
+    "table": "ingredient_notes",
+    "version": "0.1",
+    "purpose": "Ingredients worth knowing (D-132): what a primary source says about an ingredient that is not an additive, such as maida, palm oil or hydrogenated fat. Information only: nothing here changes a score, a band or a headline (D-004).",
+    "rules": [
+      "Every sentence comes from a primary source read first-hand, with title, url, page and read_on (D-046). If no source says it, the row doesn't say it.",
+      "Say what the ingredient is, where it sits in the list and what the source says. Never unhealthy, healthy, safe, harmful, toxic, dangerous or free from; never about the brand (D-042, D-071). tests/test_ingredient_notes.py runs the wording lint on every sentence.",
+      "FSSAI decides what is permitted; ICMR-NIN and WHO are guidance and are quoted as guidance (D-086 keeps EU and US out entirely).",
+      "A row is shown only once Sushil has reviewed it (reviewed_by), as with data/additive_research.json (D-125).",
+      "Printed page = PDF page minus 17 for the ICMR-NIN guidelines; FSSAI compendium pages are PDF pages."
+    ],
+    "row_shape": {
+      "id": "stable key",
+      "title": "the ingredient in plain words",
+      "names": [
+        "whole words matched in an ingredient entry, lower case"
+      ],
+      "ins": [
+        "INS numbers that count as this ingredient (read by core/tokenize.py)"
+      ],
+      "exclude": [
+        "an entry containing one of these words is not this ingredient"
+      ],
+      "conditional": [
+        {
+          "when_entry_has": [
+            "words"
+          ],
+          "names": [],
+          "ins": []
+        }
+      ],
+      "kind": "refined_flour | milled_wheat | fat | oil_unnamed | fat_unnamed | sugar | sweetener | salt | caffeine",
+      "summary": [
+        "one to three plain sentences"
+      ],
+      "sources": [
+        {
+          "title": "",
+          "url": "",
+          "page": "",
+          "read_on": "YYYY-MM-DD"
+        }
+      ],
+      "position_rule": "tile_if_top3 | tile | details | unnamed (the entry is only this name) | sugar_details (added to the sugar answer)",
+      "children_only": "true: shown only when a child's profile is on the phone",
+      "reviewed_by": "who reviewed it; null until then, and the row is not shown"
+    },
+    "not_rows": {
+      "khandsari_bura_misri": "Row 11 of the review is a change to normalization.json sugar_aliases, not a row here (FSSAI FPS&FA 2011 2.8.1 and 2.8.2, compendium XXVI PDF pp. 341 to 342).",
+      "coconut_sugar": "No FSSAI standard defines coconut sugar (searched compendium XXVI, 2026-09-29), so it is not added to sugar_aliases.",
+      "nutrition_table": "Row 15 of the review is phase 2 (D-133)."
+    },
+    "reviewed": "All rows approved by Sushil 2026-09-29 (\"approved, keep the oil line\")."
+  },
+  "rows": [
+    {
+      "id": "maida",
+      "title": "Maida (refined wheat flour)",
+      "names": [
+        "maida",
+        "refined wheat flour",
+        "wheat flour (refined)",
+        "refined wheat flour maida"
+      ],
+      "kind": "refined_flour",
+      "summary": [
+        "Maida is refined wheat flour: wheat milled with the bran and germ essentially removed, as FSSAI's standard defines it.",
+        "ICMR-NIN says foods with sugar or refined carbohydrates have a high glycaemic index, so their glucose is absorbed quickly, and its guide to labels asks you to choose foods low in refined carbohydrates.",
+        "It groups maida with polished rice and polished millets (its Group B foods)."
+      ],
+      "sources": [
+        {
+          "title": "FSS (Food Products Standards and Food Additives) Regulations 2011, 2.4.2 Maida, compendium version XXVI (20.12.2022)",
+          "url": "https://www.fssai.gov.in/upload/uploadfiles/files/Compendium_Food_Additives_Regulations_20_12_2022.pdf",
+          "page": "PDF p. 204",
+          "read_on": "2026-09-29"
+        },
+        {
+          "title": "ICMR-NIN, Dietary Guidelines for Indians, 2024",
+          "url": "https://nin.res.in/dietaryguidelines/pdfjs/locale/DGI_2024.pdf",
+          "page": "pp. 66, 98, 108 (PDF pp. 83, 115, 125)",
+          "read_on": "2026-09-29"
+        }
+      ],
+      "position_rule": "tile_if_top3",
+      "children_only": false,
+      "reviewed_by": "sushil"
+    },
+    {
+      "id": "refined_flour_starch",
+      "title": "Refined flour or starch",
+      "names": [
+        "refined flour",
+        "refined rice flour",
+        "refined corn flour",
+        "refined maize flour",
+        "corn flour",
+        "cornflour",
+        "corn starch",
+        "cornstarch",
+        "maize starch",
+        "starch",
+        "edible starch",
+        "tapioca starch",
+        "potato starch",
+        "wheat starch",
+        "rice starch"
+      ],
+      "exclude": [
+        "modified",
+        "maida",
+        "refined wheat flour"
+      ],
+      "kind": "refined_flour",
+      "summary": [
+        "ICMR-NIN counts refined flours of cereals, millets and legumes among its most processed foods (Group C), made by extensive processing of grains.",
+        "Its guide to labels names white flour and starch as refined cereals, and it says foods with refined carbohydrates have a high glycaemic index, so their glucose is absorbed quickly.",
+        "FSSAI's additive rules write corn flour as maize starch."
+      ],
+      "sources": [
+        {
+          "title": "ICMR-NIN, Dietary Guidelines for Indians, 2024",
+          "url": "https://nin.res.in/dietaryguidelines/pdfjs/locale/DGI_2024.pdf",
+          "page": "pp. 66, 97 to 98, 109 (PDF pp. 83, 114 to 115, 126)",
+          "read_on": "2026-09-29"
+        },
+        {
+          "title": "FSS (Food Products Standards and Food Additives) Regulations 2011, Appendix A, 6.2.1 Corn flour (Maize starch), compendium version XXVI (20.12.2022)",
+          "url": "https://www.fssai.gov.in/upload/uploadfiles/files/Compendium_Food_Additives_Regulations_20_12_2022.pdf",
+          "page": "PDF p. 625",
+          "read_on": "2026-09-29"
+        }
+      ],
+      "position_rule": "tile_if_top3",
+      "children_only": false,
+      "reviewed_by": "sushil"
+    },
+    {
+      "id": "sooji",
+      "title": "Sooji (semolina, rava)",
+      "names": [
+        "sooji",
+        "suji",
+        "rava",
+        "rawa",
+        "semolina"
+      ],
+      "kind": "milled_wheat",
+      "summary": [
+        "Sooji (semolina, rava) is wheat ground or milled with the bran and germ wholly or partly removed, as FSSAI's standard defines it."
+      ],
+      "sources": [
+        {
+          "title": "FSS (Food Products Standards and Food Additives) Regulations 2011, 2.4.3 Semolina (Suji or Rawa), compendium version XXVI (20.12.2022)",
+          "url": "https://www.fssai.gov.in/upload/uploadfiles/files/Compendium_Food_Additives_Regulations_20_12_2022.pdf",
+          "page": "PDF p. 206",
+          "read_on": "2026-09-29"
+        }
+      ],
+      "position_rule": "details",
+      "children_only": false,
+      "reviewed_by": "sushil"
+    },
+    {
+      "id": "palm_oil",
+      "title": "Palm oil",
+      "names": [
+        "palm oil",
+        "palmolein",
+        "palm olein",
+        "rbd palmolein",
+        "refined palm oil",
+        "palm fat"
+      ],
+      "exclude": [
+        "kernel"
+      ],
+      "kind": "fat",
+      "summary": [
+        "ICMR-NIN names palm oil, with ghee, butter, coconut oil and vanaspati, as a source of saturated fat. It says saturated fat raises total and LDL cholesterol and the risk of heart attack and stroke.",
+        "WHO advises that no more than 10% of daily energy come from saturated fat, for everyone aged 2 and over, and lists palm oil among its sources.",
+        "Palmolein is the liquid fraction of palm oil, as FSSAI's standard defines it."
+      ],
+      "sources": [
+        {
+          "title": "ICMR-NIN, Dietary Guidelines for Indians, 2024",
+          "url": "https://nin.res.in/dietaryguidelines/pdfjs/locale/DGI_2024.pdf",
+          "page": "pp. 52, 93 (PDF pp. 69, 110)",
+          "read_on": "2026-09-29"
+        },
+        {
+          "title": "WHO, WHO updates guidelines on fats and carbohydrates (17 July 2023)",
+          "url": "https://www.who.int/news/item/17-07-2023-who-updates-guidelines-on-fats-and-carbohydrates",
+          "page": "",
+          "read_on": "2026-09-29"
+        },
+        {
+          "title": "FSS (Food Products Standards and Food Additives) Regulations 2011, 2.2.1 (20) Palmolein, compendium version XXVI (20.12.2022)",
+          "url": "https://www.fssai.gov.in/upload/uploadfiles/files/Compendium_Food_Additives_Regulations_20_12_2022.pdf",
+          "page": "PDF p. 104",
+          "read_on": "2026-09-29"
+        }
+      ],
+      "position_rule": "tile",
+      "children_only": false,
+      "reviewed_by": "sushil"
+    },
+    {
+      "id": "hydrogenated_fat",
+      "title": "Hydrogenated fat",
+      "names": [
+        "hydrogenated fat",
+        "hydrogenated vegetable fat",
+        "hydrogenated oil",
+        "hydrogenated vegetable oil",
+        "hydrogenated vegetable oils",
+        "partially hydrogenated oil",
+        "partially hydrogenated oils",
+        "partially hydrogenated vegetable oil",
+        "partially hydrogenated fat",
+        "vanaspati",
+        "vegetable shortening",
+        "bakery shortening",
+        "shortening"
+      ],
+      "exclude": [
+        "non-hydrogenated",
+        "non hydrogenated"
+      ],
+      "kind": "fat",
+      "summary": [
+        "ICMR-NIN says trans fats should be avoided. It describes hydrogenated fat, often called vegetable shortening, as vegetable oil partly hydrogenated so that some of its fat turns into saturated fat and trans fatty acids, which it says can increase the risk of heart disease and stroke.",
+        "Its guide to labels says foods that list partially hydrogenated oils \"should not be acceptable\". WHO advises that no more than 1% of daily energy come from trans fat.",
+        "FSSAI allows up to 2% trans fat by weight in vanaspati and bakery shortening."
+      ],
+      "sources": [
+        {
+          "title": "ICMR-NIN, Dietary Guidelines for Indians, 2024",
+          "url": "https://nin.res.in/dietaryguidelines/pdfjs/locale/DGI_2024.pdf",
+          "page": "pp. 51, 55, 109 (PDF pp. 68, 72, 126)",
+          "read_on": "2026-09-29"
+        },
+        {
+          "title": "WHO, WHO updates guidelines on fats and carbohydrates (17 July 2023)",
+          "url": "https://www.who.int/news/item/17-07-2023-who-updates-guidelines-on-fats-and-carbohydrates",
+          "page": "",
+          "read_on": "2026-09-29"
+        },
+        {
+          "title": "FSS (Food Products Standards and Food Additives) Regulations 2011, 2.2.6 Hydrogenated vegetable oils, compendium version XXVI (20.12.2022)",
+          "url": "https://www.fssai.gov.in/upload/uploadfiles/files/Compendium_Food_Additives_Regulations_20_12_2022.pdf",
+          "page": "PDF pp. 122 to 124",
+          "read_on": "2026-09-29"
+        }
+      ],
+      "position_rule": "tile",
+      "children_only": false,
+      "reviewed_by": "sushil"
+    },
+    {
+      "id": "coconut_oil",
+      "title": "Coconut oil",
+      "names": [
+        "coconut oil",
+        "copra oil",
+        "coconut fat"
+      ],
+      "kind": "fat",
+      "summary": [
+        "ICMR-NIN names coconut oil, with ghee, butter, palm oil and vanaspati, as a source of saturated fat. It says saturated fat raises total and LDL cholesterol and the risk of heart attack and stroke.",
+        "WHO advises that no more than 10% of daily energy come from saturated fat, for everyone aged 2 and over, and lists coconut oil among its sources."
+      ],
+      "sources": [
+        {
+          "title": "ICMR-NIN, Dietary Guidelines for Indians, 2024",
+          "url": "https://nin.res.in/dietaryguidelines/pdfjs/locale/DGI_2024.pdf",
+          "page": "pp. 52, 93 (PDF pp. 69, 110)",
+          "read_on": "2026-09-29"
+        },
+        {
+          "title": "WHO, WHO updates guidelines on fats and carbohydrates (17 July 2023)",
+          "url": "https://www.who.int/news/item/17-07-2023-who-updates-guidelines-on-fats-and-carbohydrates",
+          "page": "",
+          "read_on": "2026-09-29"
+        }
+      ],
+      "position_rule": "tile",
+      "children_only": false,
+      "reviewed_by": "sushil"
+    },
+    {
+      "id": "ghee_butter",
+      "title": "Ghee or butter",
+      "names": [
+        "ghee",
+        "butter",
+        "butter oil",
+        "desi ghee",
+        "cow ghee",
+        "milk fat",
+        "anhydrous milk fat"
+      ],
+      "exclude": [
+        "cocoa butter",
+        "peanut butter",
+        "nut butter",
+        "shea butter",
+        "kokum butter",
+        "mango butter",
+        "butter milk",
+        "buttermilk",
+        "butter flavour",
+        "butter flavor",
+        "butterscotch"
+      ],
+      "kind": "fat",
+      "summary": [
+        "ICMR-NIN lists ghee and butter as fats high in saturated fat and advises limiting them: 1 to 2 teaspoons a day, or none if possible."
+      ],
+      "sources": [
+        {
+          "title": "ICMR-NIN, Dietary Guidelines for Indians, 2024",
+          "url": "https://nin.res.in/dietaryguidelines/pdfjs/locale/DGI_2024.pdf",
+          "page": "pp. 54, 56 (PDF pp. 71, 73)",
+          "read_on": "2026-09-29"
+        }
+      ],
+      "position_rule": "details",
+      "children_only": false,
+      "reviewed_by": "sushil"
+    },
+    {
+      "id": "margarine",
+      "title": "Margarine or fat spread",
+      "names": [
+        "margarine",
+        "table margarine",
+        "bakery margarine",
+        "industrial margarine",
+        "fat spread",
+        "vegetable fat spread",
+        "mixed fat spread"
+      ],
+      "kind": "fat",
+      "summary": [
+        "Margarine is an emulsion of oils and fats with water, as FSSAI's standards define it. FSSAI allows up to 2% trans fat by weight in table margarine and in vegetable and mixed fat spreads.",
+        "FSSAI asks packs of food made with fats or oils to show the trans fat and saturated fat on the label."
+      ],
+      "sources": [
+        {
+          "title": "FSS (Food Products Standards and Food Additives) Regulations 2011, 2.2.5 Margarine and fat spreads, compendium version XXVI (20.12.2022)",
+          "url": "https://www.fssai.gov.in/upload/uploadfiles/files/Compendium_Food_Additives_Regulations_20_12_2022.pdf",
+          "page": "PDF pp. 119 to 122",
+          "read_on": "2026-09-29"
+        },
+        {
+          "title": "FSS (Labelling and Display) Regulations 2020, 5(3)(c), compendium version I (23.09.2021)",
+          "url": "https://www.fssai.gov.in/upload/uploadfiles/files/Compendium_Labelling_Display_23_09_2021.pdf",
+          "page": "PDF pp. 12 to 13",
+          "read_on": "2026-09-29"
+        }
+      ],
+      "position_rule": "details",
+      "children_only": false,
+      "reviewed_by": "sushil"
+    },
+    {
+      "id": "oil_unnamed",
+      "title": "Vegetable oil, not named",
+      "names": [
+        "edible vegetable oil",
+        "vegetable oil",
+        "refined vegetable oil",
+        "refined edible vegetable oil",
+        "edible oil",
+        "refined edible oil",
+        "edible vegetable oils",
+        "vegetable oils"
+      ],
+      "kind": "oil_unnamed",
+      "summary": [
+        "The oil isn't named on the pack.",
+        "FSSAI's labelling rules ask for the name of the specific edible oil in the ingredient list, such as mustard oil or groundnut oil."
+      ],
+      "sources": [
+        {
+          "title": "FSS (Labelling and Display) Regulations 2020, 5(2)(d), compendium version I (23.09.2021)",
+          "url": "https://www.fssai.gov.in/upload/uploadfiles/files/Compendium_Labelling_Display_23_09_2021.pdf",
+          "page": "PDF p. 6",
+          "read_on": "2026-09-29"
+        }
+      ],
+      "position_rule": "unnamed",
+      "children_only": false,
+      "reviewed_by": "sushil"
+    },
+    {
+      "id": "fat_unnamed",
+      "title": "Vegetable fat, type not named",
+      "names": [
+        "edible vegetable fat",
+        "vegetable fat",
+        "refined vegetable fat",
+        "bakery fat",
+        "edible fat",
+        "edible vegetable fats",
+        "vegetable fats"
+      ],
+      "kind": "fat_unnamed",
+      "summary": [
+        "The type of fat isn't named on the pack.",
+        "FSSAI's labelling rules ask for the type of vegetable fat in the ingredient list, such as interesterified, fractionated or hydrogenated fat, or margarine."
+      ],
+      "sources": [
+        {
+          "title": "FSS (Labelling and Display) Regulations 2020, 5(2)(d), compendium version I (23.09.2021)",
+          "url": "https://www.fssai.gov.in/upload/uploadfiles/files/Compendium_Labelling_Display_23_09_2021.pdf",
+          "page": "PDF p. 6",
+          "read_on": "2026-09-29"
+        }
+      ],
+      "position_rule": "unnamed",
+      "children_only": false,
+      "reviewed_by": "sushil"
+    },
+    {
+      "id": "sugar",
+      "title": "Added sugar",
+      "names": [],
+      "kind": "sugar",
+      "summary": [
+        "ICMR-NIN counts more than 25 g of sugar a day as high, and lists sucrose (table sugar), jaggery, honey, glucose, fructose and dextrose as added sugars.",
+        "WHO recommends that adults and children keep free sugars below 10% of daily energy, and says below 5%, about 25 g a day, would bring further benefits."
+      ],
+      "sources": [
+        {
+          "title": "ICMR-NIN, Dietary Guidelines for Indians, 2024",
+          "url": "https://nin.res.in/dietaryguidelines/pdfjs/locale/DGI_2024.pdf",
+          "page": "p. 94 (PDF p. 111)",
+          "read_on": "2026-09-29"
+        },
+        {
+          "title": "WHO, WHO calls on countries to reduce sugars intake among adults and children (4 March 2015)",
+          "url": "https://www.who.int/news/item/04-03-2015-who-calls-on-countries-to-reduce-sugars-intake-among-adults-and-children",
+          "page": "",
+          "read_on": "2026-09-29"
+        }
+      ],
+      "position_rule": "sugar_details",
+      "children_only": false,
+      "reviewed_by": "sushil"
+    },
+    {
+      "id": "sweetener_children",
+      "title": "Sweeteners and children",
+      "names": [
+        "artificial sweetener",
+        "non-nutritive sweetener",
+        "sucralose",
+        "aspartame",
+        "acesulfame",
+        "acesulfame k",
+        "acesulfame potassium",
+        "saccharin",
+        "neotame",
+        "stevia",
+        "steviol glycosides",
+        "erythritol"
+      ],
+      "ins": [
+        "950",
+        "951",
+        "954",
+        "955",
+        "960"
+      ],
+      "conditional": [
+        {
+          "when_entry_has": [
+            "sweetener",
+            "sweeteners"
+          ],
+          "names": [
+            "sweetener",
+            "sweeteners",
+            "sorbitol",
+            "maltitol",
+            "xylitol",
+            "isomalt",
+            "mannitol",
+            "lactitol",
+            "polyglycitol"
+          ],
+          "ins": [
+            "420"
+          ]
+        }
+      ],
+      "kind": "sweetener",
+      "summary": [
+        "ICMR-NIN says children should avoid sugar substitutes, which it describes as sweetening agents such as aspartame, saccharin and sugar alcohols.",
+        "FSSAI counts sugar alcohols such as sorbitol, maltitol and xylitol as sweeteners."
+      ],
+      "sources": [
+        {
+          "title": "ICMR-NIN, Dietary Guidelines for Indians, 2024",
+          "url": "https://nin.res.in/dietaryguidelines/pdfjs/locale/DGI_2024.pdf",
+          "page": "p. 94 (PDF p. 111)",
+          "read_on": "2026-09-29"
+        },
+        {
+          "title": "FSS (Food Products Standards and Food Additives) Regulations 2011, 3.2.2 Sweetener, compendium version XXVI (20.12.2022)",
+          "url": "https://www.fssai.gov.in/upload/uploadfiles/files/Compendium_Food_Additives_Regulations_20_12_2022.pdf",
+          "page": "PDF p. 439",
+          "read_on": "2026-09-29"
+        }
+      ],
+      "position_rule": "details",
+      "children_only": true,
+      "reviewed_by": "sushil"
+    },
+    {
+      "id": "salt",
+      "title": "Salt",
+      "names": [
+        "salt",
+        "iodised salt",
+        "iodized salt",
+        "edible salt",
+        "common salt",
+        "rock salt",
+        "black salt",
+        "sea salt"
+      ],
+      "exclude": [
+        "salt substitute"
+      ],
+      "kind": "salt",
+      "summary": [
+        "ICMR-NIN counts more than 5 g of salt a day (over 2 g of sodium) as high, and names chips, sauces, biscuits and bakery products among foods high in salt.",
+        "WHO recommends that adults have less than 5 g of salt a day, under 2000 mg of sodium."
+      ],
+      "sources": [
+        {
+          "title": "ICMR-NIN, Dietary Guidelines for Indians, 2024",
+          "url": "https://nin.res.in/dietaryguidelines/pdfjs/locale/DGI_2024.pdf",
+          "page": "pp. 93 to 94 (PDF pp. 110 to 111)",
+          "read_on": "2026-09-29"
+        },
+        {
+          "title": "WHO, Salt reduction (fact sheet)",
+          "url": "https://www.who.int/news-room/fact-sheets/detail/salt-reduction",
+          "page": "",
+          "read_on": "2026-09-29"
+        }
+      ],
+      "position_rule": "details",
+      "children_only": false,
+      "reviewed_by": "sushil"
+    },
+    {
+      "id": "caffeine",
+      "title": "Caffeine",
+      "names": [
+        "caffeine",
+        "coffee",
+        "instant coffee",
+        "coffee extract",
+        "coffee powder",
+        "tea extract",
+        "tea"
+      ],
+      "exclude": [
+        "decaffeinated",
+        "decaf",
+        "herbal tea"
+      ],
+      "kind": "caffeine",
+      "summary": [
+        "ICMR-NIN says tea and coffee contain caffeine, which stimulates the central nervous system, and advises moderation so that caffeine stays within 300 mg a day."
+      ],
+      "sources": [
+        {
+          "title": "ICMR-NIN, Dietary Guidelines for Indians, 2024",
+          "url": "https://nin.res.in/dietaryguidelines/pdfjs/locale/DGI_2024.pdf",
+          "page": "p. 91 (PDF p. 108)",
+          "read_on": "2026-09-29"
+        }
+      ],
+      "position_rule": "details",
+      "children_only": false,
+      "reviewed_by": "sushil"
+    }
+  ]
+}

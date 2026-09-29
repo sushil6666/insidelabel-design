@@ -518,6 +518,68 @@ with open(os.path.join(engine.DATA_DIR, "additive_research.json"), encoding="utf
     RESEARCH = json.load(_fh)["rows"]
 
 
+# D-132: "Ingredients worth knowing", from data/ingredient_notes.json and matched
+# by engine.ingredient_notes() on the list as printed. Information only: no score,
+# band or headline changes. A row is shown only once a person reviewed it
+# (reviewed_by), the D-125 discipline. Tiles are the rows the review marked as
+# worth a look (palm oil, hydrogenated fat, maida in the first 3...); the rest are
+# plain lines under one closed heading.
+NOTES = {r["id"]: r for r in engine.NOTES}
+NOTES_TITLE = "More about the ingredients"
+NOTE_MORE = "Tap to see what the sources say"
+SUGAR_MORE_TITLE = "What the sources say about added sugar"
+# The review called hydrogenated fat the strongest of the list, so it leads.
+_NOTE_FIRST = ("hydrogenated_fat",)
+
+
+def _note_shown(row):
+    return bool(row and row.get("reviewed_by"))
+
+
+def _note_sources(row):
+    # "cite" is the link text: the document and the page, so the app composes nothing.
+    return [{"title": s["title"], "url": s["url"], "page": s.get("page") or None,
+             "cite": s["title"] + (f", {s['page']}" if s.get("page") else "")} for s in row["sources"]]
+
+
+def _notes(ingredients, profiles, complete):
+    child = any(p["age"] in kids.AGE_BANDS for p in profiles)
+    tiles, lines = [], []
+    for hit in engine.ingredient_notes(ingredients):
+        row = NOTES[hit["id"]]
+        if not _note_shown(row) or (row.get("children_only") and not child):
+            continue
+        pos = hit["positions"][0]
+        rule = row["position_rule"]
+        tile = rule == "tile" or (rule == "tile_if_top3" and pos <= 3)
+        where = f"Listed {_ordinal(pos)}" + (f" of {len(ingredients)}" if complete else "")
+        item = {"id": row["id"], "title": row["title"], "tile": tile, "tone": "worth" if tile else "calm",
+                "position": pos, "where": where + ".", "label_line": hit["entries"][0],
+                "body": list(row["summary"]), "sources": _note_sources(row),
+                "children_only": bool(row.get("children_only")),
+                "source": {"kind": "ingredient_note", "ref": row["id"]}}
+        if tile:
+            item["heading"] = f"Worth a look: {row['title']}"
+            item["more"] = f"{where}. {NOTE_MORE}"
+            tiles.append(item)
+        else:
+            lines.append(item)
+    if not (tiles or lines):
+        return None
+    tiles.sort(key=lambda i: (i["id"] not in _NOTE_FIRST, i["position"]))
+    lines.sort(key=lambda i: i["position"])
+    return {"title": NOTES_TITLE, "tiles": tiles, "lines": lines}
+
+
+def _sugar_more(summary):
+    """D-132 row 10: what ICMR-NIN and WHO say, added to the sugar answer. No new flag."""
+    row = NOTES.get("sugar")
+    sugar = next((r for r in summary if r["key"] == "sugar"), None)
+    if sugar and sugar["source"]["ref"] and _note_shown(row):
+        sugar["more"] = {"title": SUGAR_MORE_TITLE, "body": list(row["summary"]),
+                         "sources": _note_sources(row)}
+
+
 # D-127: "At a glance". Each list entry, as printed, gets one type, the most
 # telling first. Counts, not weights: labels rarely print amounts, and the caption
 # says so. The types' plain meanings are GLOSSARY below.
@@ -807,6 +869,16 @@ def build(*, verdict, display, claim_check, extracted, reliability, profiles,
     out = {**{k: out[k] for k in head}, "summary": summary, **{k: v for k, v in out.items() if k not in head}}
     out["tallies"] = _tallies(summary)
     out["alerts"] = _alerts(adds)
+    _sugar_more(summary)
+    notes = _notes(ingredients, profiles, complete)
+    if notes:
+        out["ingredient_notes"] = notes
+        # D-123 again: "No concerns found" never sits over a "Worth a look" row.
+        # The words change; the engine's band and score don't (D-132 is information only).
+        if notes["tiles"] and out["headline"]["source"]["kind"] == "none":
+            out["headline"] = {"text": BAND_LABEL["mixed"] + ".",
+                               "source": {"kind": "ingredient_note", "ref": notes["tiles"][0]["id"]}}
+            out["band"] = {**out["band"], "code": "mixed", "label": BAND_LABEL["mixed"]}
     out["glance"] = _glance(ingredients, sugar_found)
     out["glossary"] = _glossary(summary, out["glance"], adds, people)
     alert = next((i for i in adds if (i["badge"] or {}).get("kind") == "not_permitted"), None)

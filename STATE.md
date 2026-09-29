@@ -650,6 +650,24 @@ setup alarms.
 
 **NEXT SESSION STARTS HERE (2026-09-28).** Where things stand, newest first:
 
+- **D-132 built, phase 1 of `docs/BUILD_PROMPT_D132-D134.md`** (branch `ingredient-notes`, web-25,
+  639 tests). `data/ingredient_notes.json` (14 rows: the review's 1 to 14, with "vegetable fat, type
+  not named" split from row 9), `engine.ingredient_notes()`, `screen.ingredient_notes` (tiles +
+  lines), sugar answer's `more`. **Every row ships `reviewed_by: null`, so nothing shows until
+  Sushil says "approved"** (then set `reviewed_by: "sushil"` on each row). Walked in headless
+  Chromium, light and dark, with the rows marked reviewed: no errors. Khandsari, bura, misri in
+  `sugar_aliases` (live on merge; gold set unchanged). **Rows approved by Sushil 2026-09-29**
+  ("approved, keep the oil line"): all 14 carry `reviewed_by: "sushil"` and show on merge.
+  **Waiting on Sushil:** merge, `update.sh`, phone check. **D-135 LOCKED and built** (same branch,
+  Sushil "D-135 accepted"): "hydrogenated vegetable fat", "partially hydrogenated fat",
+  "interesterified vegetable fat/oil", "shortening" are NOVA aliases (Monteiro 2019 read first-hand);
+  **scores move on merge:** Britannia 48 to 36 (still D), other gold labels unchanged, a pack whose
+  only industrial ingredient is one of these goes 100 A clean to 88 A ultra-processed. A marker
+  right after "non-" no longer counts ("non-hydrogenated fat" was already matching "hydrogenated
+  fat"). Server count query in the D-135 entry. **Then phase 2** (D-133, branch `nutrition-panel`); FSSAI L&D 2020 is already read
+  (nutrition fields pp. 9 to 13). Test isolation fixed on the way: `conftest.py` clears Cloud
+  Vision's per-photo text cache before each test (it made `test_no_barcode` depend on test order).
+
 - **Next build, ready to paste: `docs/BUILD_PROMPT_D132-D134.md`** (2026-09-29). Sushil: "keep all 15
   rows now ... implement all". D-132 ingredient notes (maida, palm oil, hydrogenated fat, all 15 rows
   from ICMR-NIN 2024 and WHO, read first-hand), D-133 the nutrition table against ICMR-NIN Table 15.1

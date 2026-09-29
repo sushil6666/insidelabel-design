@@ -1881,6 +1881,113 @@ concern on cancer or DNA, no adverse effects in long-term rat studies). Recommen
   - Scores: the 6 gold labels are unchanged (none has 407 or 960). Invented examples: a cocoa drink
     with carrageenan 84 to 96; a drink sweetened with stevia 88 to 80; both together 76 to 80.
 
+### D-132 · "Ingredients worth knowing": notes on maida, fats, oils, salt, caffeine, from sources read first-hand `LOCKED` (2026-09-29)
+The ingredient-notes review in chat (15 rows, from ICMR-NIN 2024 and WHO). **Accepted by Sushil
+2026-09-29** ("keep all 15 rows now ... implement all"). Built in phase 1 (branch `ingredient-notes`).
+
+- **`data/ingredient_notes.json`**, one row per group: names (whole words in a list entry), a
+  1 to 3 sentence summary, sources with title, url, page and `read_on`, a position rule, and
+  `reviewed_by`. **A row shows only once Sushil has reviewed it** (as D-125's research rows); every
+  row ships `reviewed_by: null`. Matching is `engine.ingredient_notes()` on the list as printed,
+  INS numbers by `tokenize.ins_numbers` (D-099). `tests/test_ingredient_notes.py`.
+- **Tiles** ("Worth a look", closed): hydrogenated fat, vanaspati, shortening (first: the strongest);
+  palm oil and palmolein; coconut oil; maida and other refined flours or starch **when in the first 3**.
+  **Lines** under one closed "More about the ingredients": the same flours further down, sooji,
+  ghee or butter, margarine, an oil or a fat whose type the pack doesn't name, salt, caffeine, and
+  for a phone with a child's profile only, sweeteners (sugar alcohols only when printed as a
+  sweetener, so "Humectant (420)" doesn't count). The sugar answer gets ICMR-NIN's and WHO's lines
+  one tap away; no new flag.
+- **Information only.** Score, grade, band, NOVA and allergen lines are unchanged; the one wording
+  change: a pack that reads clean but has a tile says "A few things worth knowing." instead of
+  "No concerns found" (D-123's rule). Tested before and after on the 6 gold labels.
+- **Sugar names (row 11):** khandsari, bura and misri added to `sugar_aliases`: FSSAI FPS&FA 2011
+  2.8.1(3), 2.8.1(4), 2.8.2 define them as sugar of at least 93%, 90% and 98% sucrose, so added
+  sugar under L&D 2020 5(3)(a)(ii). Gold set unchanged; an invented "Bura sugar, Misri" pack goes
+  100 to 92 (two names, as D-120). **Coconut sugar not added:** no FSSAI standard defines it.
+- **Sources read first-hand 2026-09-29:** ICMR-NIN Dietary Guidelines for Indians 2024 pp. 17 to 18,
+  51 to 56, 66, 91, 93 to 98, 107 to 109; WHO fats and carbohydrates (2023), sugars (2015), salt
+  fact sheet; FSS (Labelling and Display) Regulations 2020, compendium I, pp. 5 to 13; FSS (Food
+  Products Standards and Food Additives) Regulations 2011, compendium XXVI, pp. 104, 119 to 124,
+  204 to 206, 226, 341 to 342, 439, 625.
+- **What no source said, so the app doesn't:** no source calls sooji refined (it gets FSSAI's
+  definition only, no tile); no children's caffeine figure (ICMR-NIN speaks only of pregnancy);
+  "bakery fat" has no FSSAI definition (it is treated as a fat whose type isn't named).
+- **Rows approved by Sushil 2026-09-29** ("approved, keep the oil line"): all 14 rows now carry
+  `reviewed_by: "sushil"` and show. The unnamed-oil row keeps its second sentence ("FSSAI's
+  labelling rules ask for the name of the specific edible oil...").
+
+### D-133 · Read the nutrition table and judge it against ICMR-NIN's own thresholds `LOCKED` (2026-09-29)
+**Accepted by Sushil 2026-09-29** ("keep all 15 rows now ... implement all", row 15 of the review).
+Gemini transcribes the table; rules in Python check it (numbers must appear in Cloud Vision's text,
+per serving x servings, sugars within carbohydrates, saturated within total fat, salt = sodium x 2.5)
+and compare it with ICMR-NIN Table 15.1 (p. 96: per 100 g 250 kcal, 625 mg salt, 3 g added sugar;
+per 100 ml 70 kcal, 175 mg, 2.0 g) and the daily 25 g sugar and 5 g salt. Information only. To be
+built in phase 2 (branch `nutrition-panel`).
+
+### D-134 · One-screen result: warning tiles, each opening its own page `LOCKED` (2026-09-29)
+**Accepted by Sushil 2026-09-29** ("keep all 15 rows now ... implement all"). Compact tiles under the
+allergen line and headline, each opening a detail page; nothing else open by default; the first
+screen fits a 390 x 844 phone for a pack with 2 warnings. To be built in phase 3 (branch
+`result-tiles`).
+
+### D-135 · Hydrogenated and interesterified fats under the names Indian packs print them count as NOVA markers `LOCKED` (2026-09-29)
+Found while building D-132: the NOVA row "Hydrogenated / interesterified oil" misses the words Indian
+packs use. A rusk listing "Hydrogenated vegetable fat" scores 100, grade A, clean; Britannia's gold
+label lists "INTERESTERIFIED VEGETABLE FAT" and the marker doesn't see it. Sushil asked for the
+write-up ("write up the NOVA proposal", 2026-09-29). Recommended by Claude. **Accepted by Sushil
+2026-09-29** ("D-135 accepted"); built on branch `ingredient-notes` (see "Built" below).
+
+**The basis (primary sources, read 2026-09-29).**
+- Monteiro et al., "Ultra-processed foods: what they are and how to identify them", Public Health
+  Nutrition 22(5), 2019, pp. 937 to 938 (https://doi.org/10.1017/S1368980018003762, the paper
+  `nova_markers.json` cites): food substances used only in ultra-processed foods include "modified
+  oils (hydrogenated or interesterified oils)", and "The presence in the list of ingredients of one
+  or more of these food substances identifies a product as ultra-processed."
+- ICMR-NIN Dietary Guidelines for Indians 2024, p. 55: hydrogenated fat is "often referred to as
+  'vegetable shortening'".
+- FSS (FPS&FA) Regulations 2011, 2.2.6 (compendium XXVI, PDF pp. 122 to 123): vanaspati is refined
+  vegetable oil "subjected to a process of hydrogenation in any form or chemical or enzymatic
+  interesterification"; "Bakery shortening means vanaspati meant for use as a shortening".
+- FSS (Labelling and Display) Regulations 2020, 5(2)(d) (compendium I, PDF p. 6): the class title
+  for edible vegetable fat names "interesterified vegetable fat" and "hydrogenated oils", so these
+  are the words a pack is told to print.
+
+**The change (data only).** Add to `nova_markers.json` `nova_hydrogenated_oil` aliases:
+"hydrogenated vegetable fat", "partially hydrogenated fat", "interesterified vegetable fat",
+"interesterified vegetable oil", "shortening". Aliases match inside a longer entry, so "vegetable
+shortening" and "bakery shortening" are covered by "shortening". Not bare "hydrogenated": it would
+also match "non-hydrogenated". Not margarine: the paper lists margarines among ultra-processed
+*products*, not among the marker substances.
+
+**What it changes, measured** (engine and `/scan` with replay, no paid call; the NOVA marker costs
+12 points, the `moderate` penalty):
+
+| Label | Now | With D-135 |
+|---|---|---|
+| Britannia Treat Croissant (gold) | 48 D, ultra-processed | 36 D, ultra-processed; "How it's made" leads with "Interesterified vegetable fat"; headline unchanged (sugar) |
+| Limca x2, Maliban, Patanjali, Ziggy (gold) | unchanged | unchanged |
+| Invented: maida, sugar, hydrogenated vegetable fat, salt, yeast | 100 A, clean, "A few things worth knowing." | 88 A, ultra-processed, "Made with industrial ingredients, such as hydrogenated vegetable fat." |
+| Invented: with "Bakery shortening" / "Vegetable shortening" | 100 A, clean | 88 A, ultra-processed |
+| Invented: with "Interesterified vegetable fat" | 100 A, clean | 88 A, ultra-processed |
+
+The laptop database (18 scans) has only the Britannia wording. The server has more; Sushil can count
+them read-only: `sudo -u insidelabel psql -d insidelabel -c "SELECT count(*) FROM scans WHERE
+model_raw::text ~* 'hydrogenated vegetable fat|partially hydrogenated fat|interesterified vegetable|shortening'"`.
+
+**If accepted:** the five aliases, a test per wording (and one that "non-hydrogenated" stays out),
+and the gold label's expected score updated. `compare.py`'s NOVA count reads the same file, so it
+follows without a code change.
+
+**Built (2026-09-29).** The five aliases in `nova_markers.json`; `tests/test_nova_label_terms.py`
+checks each printed form (7 wordings), that "Non-hydrogenated vegetable fat/oil" and "Non
+hydrogenated fat" are not the marker, and pins the six gold scores (Britannia 36 D, the rest as
+before). **Found while building, fixed with it:** aliases match inside a longer entry, so the
+existing "hydrogenated fat" already matched "non-hydrogenated fat", and so would the new names. A
+match directly after "non-" or "non " no longer counts (`classify._inside`; the kids lens's NOVA
+count, `compare._marker_in`, the same), and D-132's hydrogenated-fat tile excludes
+"non-hydrogenated" (its approved wording is unchanged). An alias that itself starts with "non-"
+("non-nutritive sweetener") still matches. No gold label contains "non-".
+
 ---
 
 ## Open and pending

@@ -23,8 +23,9 @@ whether the verdicts hold up before investing in the full engine or any app.
 
 import json
 import os
+import re
 
-from .tokenize import prefix_bare_ins, tokenize, extract_ins  # noqa: F401  (re-exported)
+from .tokenize import prefix_bare_ins, tokenize, extract_ins, ins_numbers, split_entries  # noqa: F401  (re-exported)
 from .normalize import normalize
 from .classify import classify_token, make_nova_helpers
 from .scoring import grade_for, CONCERN_PENALTY, GRADE_BANDS
@@ -43,6 +44,7 @@ def _load(name):
 NOVA = _load("nova_markers.json")
 ADDITIVES = _load("additives.json")
 NORM = _load("normalization.json")
+NOTES = _load("ingredient_notes.json")["rows"]
 
 # Build fast lookups
 _ADDITIVE_BY_INS = {a["ins"]: a for a in ADDITIVES["additives"] if a.get("class") != "note"}
@@ -144,6 +146,68 @@ def analyze(raw_ingredients):
         "ingredient_count_parsed": len(tokens),
         "needs_verification": [f["matched_as"] for f in flags if f.get("verify")],
     }
+
+
+# ----------------------------------------------------------------------------
+# D-132: ingredients worth knowing (data/ingredient_notes.json)
+# ----------------------------------------------------------------------------
+# Information only: nothing here feeds the score, the band or the headline.
+# Matching is by whole words in each entry of the list as printed, so a note
+# can say where the ingredient sits ("listed 1st"); INS numbers are read by the
+# one parser (tokenize.ins_numbers, D-099).
+
+def _plain(text):
+    """Lower case, brackets and punctuation as spaces: 'Wheat flour (refined)' -> 'wheat flour refined'."""
+    return re.sub(r"\s+", " ", re.sub(r"[()\[\]{}.,;:*]", " ", (text or "").lower())).strip()
+
+
+def _has_word(name, text):
+    return re.search(r"(?<![a-z])" + re.escape(_plain(name)) + r"(?![a-z])", text) is not None
+
+
+def _is_only(names, entry):
+    """'unnamed': the entry is just this name, with nothing in brackets to name it."""
+    if any(c in entry for c in "([{"):
+        return False
+    bare = re.sub(r"[\d.%]+", " ", _plain(entry))
+    bare = re.sub(r"\s+", " ", bare).strip()
+    return bare in {_plain(n) for n in names}
+
+
+def _note_matches(row, entry):
+    text = _plain(entry)
+    if any(_has_word(x, text) for x in row.get("exclude", [])):
+        return False
+    if row.get("position_rule") == "unnamed":
+        return _is_only(row["names"], entry)
+    if any(_has_word(n, text) for n in row.get("names", [])):
+        return True
+    nums = ins_numbers(entry) if (row.get("ins") or row.get("conditional")) else set()
+    if nums & set(row.get("ins", [])):
+        return True
+    for c in row.get("conditional", []):
+        if any(_has_word(w, text) for w in c["when_entry_has"]):
+            if any(_has_word(n, text) for n in c.get("names", [])) or nums & set(c.get("ins", [])):
+                return True
+    return False
+
+
+def ingredient_notes(entries):
+    """
+    D-132: which ingredient_notes.json rows this list has, and where.
+    entries: the ingredient list as printed (a list of entries), or a raw string,
+    split the way the tokenizer splits it. Returns one hit per row, in the
+    table's order: {"id", "positions" (1-based), "entries" (as printed)}.
+    Rows with no names (the sugar row, which adds to the sugar answer) never match.
+    """
+    if isinstance(entries, str):
+        entries = split_entries(entries)
+    hits = []
+    for row in NOTES:
+        found = [(i, e) for i, e in enumerate(entries or [], start=1) if _note_matches(row, e)]
+        if found:
+            hits.append({"id": row["id"], "positions": [i for i, _ in found], "entries": [e for _, e in found]})
+    return hits
 
 
 # ----------------------------------------------------------------------------
