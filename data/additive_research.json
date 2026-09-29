@@ -10,7 +10,271 @@
       "Each entry records its sources (title, url) and read_on; an entry without them is refused by tests/test_additive_research.py.",
       "Sushil reviews each entry before it is added (reviewed_by)."
     ],
-    "row_shape": {"summary": ["one to three plain sentences"], "sources": [{"title": "", "url": "", "read_on": "YYYY-MM-DD"}], "reviewed_by": ""}
+    "row_shape": {
+      "summary": [
+        "one to three plain sentences"
+      ],
+      "sources": [
+        {
+          "title": "",
+          "url": "",
+          "read_on": "YYYY-MM-DD"
+        }
+      ],
+      "reviewed_by": ""
+    }
   },
-  "rows": {}
+  "rows": {
+    "102": {
+      "summary": [
+        "A UK study of 297 children aged 3 and 8 to 9 (The Lancet, 2007) gave them drinks with mixes of artificial colours and the preservative sodium benzoate. The UK Food Standards Agency, which funded it, says these colours could cause increased hyperactivity in some children.",
+        "Tartrazine is one of the six colours it names. In the UK, food with any of them must carry the line ‘May have an adverse effect on activity and attention in children’.",
+        "The study tested mixes of colours with the preservative, not each colour on its own."
+      ],
+      "sources": [
+        {
+          "title": "McCann et al., Food additives and hyperactive behaviour in 3-year-old and 8/9-year-old children in the community, The Lancet, 2007",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/17825405/",
+          "read_on": "2026-09-28"
+        },
+        {
+          "title": "Food Standards Agency, Food additives (GOV.UK, 2018)",
+          "url": "https://www.gov.uk/government/publications/food-additives/food-additives",
+          "read_on": "2026-09-28"
+        }
+      ],
+      "reviewed_by": "sushil"
+    },
+    "110": {
+      "summary": [
+        "A UK study of 297 children aged 3 and 8 to 9 (The Lancet, 2007) gave them drinks with mixes of artificial colours and the preservative sodium benzoate. The UK Food Standards Agency, which funded it, says these colours could cause increased hyperactivity in some children.",
+        "Sunset Yellow FCF is one of the six colours it names. In the UK, food with any of them must carry the line ‘May have an adverse effect on activity and attention in children’.",
+        "The study tested mixes of colours with the preservative, not each colour on its own."
+      ],
+      "sources": [
+        {
+          "title": "McCann et al., Food additives and hyperactive behaviour in 3-year-old and 8/9-year-old children in the community, The Lancet, 2007",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/17825405/",
+          "read_on": "2026-09-28"
+        },
+        {
+          "title": "Food Standards Agency, Food additives (GOV.UK, 2018)",
+          "url": "https://www.gov.uk/government/publications/food-additives/food-additives",
+          "read_on": "2026-09-28"
+        }
+      ],
+      "reviewed_by": "sushil"
+    },
+    "122": {
+      "summary": [
+        "A UK study of 297 children aged 3 and 8 to 9 (The Lancet, 2007) gave them drinks with mixes of artificial colours and the preservative sodium benzoate. The UK Food Standards Agency, which funded it, says these colours could cause increased hyperactivity in some children.",
+        "Carmoisine is one of the six colours it names. In the UK, food with any of them must carry the line ‘May have an adverse effect on activity and attention in children’.",
+        "The study tested mixes of colours with the preservative, not each colour on its own."
+      ],
+      "sources": [
+        {
+          "title": "McCann et al., Food additives and hyperactive behaviour in 3-year-old and 8/9-year-old children in the community, The Lancet, 2007",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/17825405/",
+          "read_on": "2026-09-28"
+        },
+        {
+          "title": "Food Standards Agency, Food additives (GOV.UK, 2018)",
+          "url": "https://www.gov.uk/government/publications/food-additives/food-additives",
+          "read_on": "2026-09-28"
+        }
+      ],
+      "reviewed_by": "sushil"
+    },
+    "124": {
+      "summary": [
+        "A UK study of 297 children aged 3 and 8 to 9 (The Lancet, 2007) gave them drinks with mixes of artificial colours and the preservative sodium benzoate. The UK Food Standards Agency, which funded it, says these colours could cause increased hyperactivity in some children.",
+        "Ponceau 4R is one of the six colours it names. In the UK, food with any of them must carry the line ‘May have an adverse effect on activity and attention in children’.",
+        "The study tested mixes of colours with the preservative, not each colour on its own."
+      ],
+      "sources": [
+        {
+          "title": "McCann et al., Food additives and hyperactive behaviour in 3-year-old and 8/9-year-old children in the community, The Lancet, 2007",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/17825405/",
+          "read_on": "2026-09-28"
+        },
+        {
+          "title": "Food Standards Agency, Food additives (GOV.UK, 2018)",
+          "url": "https://www.gov.uk/government/publications/food-additives/food-additives",
+          "read_on": "2026-09-28"
+        }
+      ],
+      "reviewed_by": "sushil"
+    },
+    "129": {
+      "summary": [
+        "A UK study of 297 children aged 3 and 8 to 9 (The Lancet, 2007) gave them drinks with mixes of artificial colours and the preservative sodium benzoate. The UK Food Standards Agency, which funded it, says these colours could cause increased hyperactivity in some children.",
+        "Allura Red AC is one of the six colours it names. In the UK, food with any of them must carry the line ‘May have an adverse effect on activity and attention in children’.",
+        "The study tested mixes of colours with the preservative, not each colour on its own."
+      ],
+      "sources": [
+        {
+          "title": "McCann et al., Food additives and hyperactive behaviour in 3-year-old and 8/9-year-old children in the community, The Lancet, 2007",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/17825405/",
+          "read_on": "2026-09-28"
+        },
+        {
+          "title": "Food Standards Agency, Food additives (GOV.UK, 2018)",
+          "url": "https://www.gov.uk/government/publications/food-additives/food-additives",
+          "read_on": "2026-09-28"
+        }
+      ],
+      "reviewed_by": "sushil"
+    },
+    "171": {
+      "summary": [
+        "In 2021 the European Food Safety Authority (EFSA) said it could not rule out a concern that titanium dioxide particles damage DNA, so it could not set a daily intake level for it.",
+        "In 2023 the FAO/WHO expert committee on food additives (JECFA) said the studies did not give convincing evidence of this. It also said the evidence is limited, mostly because test methods for very small particles are lacking, and asked for more research."
+      ],
+      "sources": [
+        {
+          "title": "EFSA news release on titanium dioxide (E171), 6 May 2021",
+          "url": "https://www.efsa.europa.eu/en/news/titanium-dioxide-e171-no-longer-considered-safe-when-used-food-additive",
+          "read_on": "2026-09-29"
+        },
+        {
+          "title": "WHO, JECFA risk assessment of titanium dioxide released: background information, 24 November 2023",
+          "url": "https://www.who.int/publications/m/item/jecfa-risk-assessment-of-titanium-dioxide-risk-released-background-information",
+          "read_on": "2026-09-29"
+        }
+      ],
+      "reviewed_by": "sushil"
+    },
+    "211": {
+      "summary": [
+        "A UK study of 297 children aged 3 and 8 to 9 (The Lancet, 2007) gave them drinks with this preservative and a mix of artificial colours. It found more hyperactive behaviour after the mixes than after a dummy drink.",
+        "The authors concluded that the colours, the preservative, or both, increase hyperactivity in children; the study did not test the preservative on its own."
+      ],
+      "sources": [
+        {
+          "title": "McCann et al., Food additives and hyperactive behaviour in 3-year-old and 8/9-year-old children in the community, The Lancet, 2007",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/17825405/",
+          "read_on": "2026-09-28"
+        }
+      ],
+      "reviewed_by": "sushil"
+    },
+    "223": {
+      "summary": [
+        "Sulphites in food may trigger intolerance reactions, and some people are sensitive to them, says the European Food Safety Authority (EFSA, 2016).",
+        "In 2022 EFSA withdrew its daily intake limit for sulphites because the studies it needed were not available, and said current use may be of concern for people who eat a lot of foods containing them."
+      ],
+      "sources": [
+        {
+          "title": "EFSA, More data on sulfites needed to fully confirm safety, 14 April 2016",
+          "url": "https://www.efsa.europa.eu/en/press/news/160414a",
+          "read_on": "2026-09-29"
+        },
+        {
+          "title": "EFSA, Follow-up of the re-evaluation of sulfur dioxide and sulfites (E 220 to 228), plain language summary, 24 November 2022",
+          "url": "https://www.efsa.europa.eu/en/plain-language-summary/follow-re-evaluation-sulfur-dioxide-e-220-sodium-sulfite-e-221-sodium",
+          "read_on": "2026-09-29"
+        }
+      ],
+      "reviewed_by": "sushil"
+    },
+    "250": {
+      "summary": [
+        "The European Food Safety Authority (EFSA, 2017) found intake of added nitrites within its daily limit for all age groups, except children who eat a lot of foods containing them, who might go slightly over.",
+        "Nitrite is linked to the formation of nitrosamines, some of which cause cancer. At permitted levels, EFSA judged added nitrite's share of nitrosamine intake to be of low concern, and asked for more research."
+      ],
+      "sources": [
+        {
+          "title": "EFSA news release on nitrites and nitrates added to food, 15 June 2017",
+          "url": "https://www.efsa.europa.eu/en/press/news/170615",
+          "read_on": "2026-09-29"
+        }
+      ],
+      "reviewed_by": "sushil"
+    },
+    "407": {
+      "summary": [
+        "The European Food Safety Authority (EFSA, 2018) found no concern about cancer or DNA damage from carrageenan, and no adverse effects in long-term rat studies up to the highest dose tested.",
+        "It named uncertainties about the chemistry, the intake estimate and the biological data, so it called its daily limit of 75 mg per kg of body weight temporary until better data came in."
+      ],
+      "sources": [
+        {
+          "title": "EFSA, Re-evaluation of carrageenan (E 407) and processed Eucheuma seaweed (E 407a) as food additives, EFSA Journal, 2018 (abstract read via Europe PMC)",
+          "url": "https://efsa.onlinelibrary.wiley.com/doi/10.2903/j.efsa.2018.5238",
+          "read_on": "2026-09-29"
+        }
+      ],
+      "reviewed_by": "sushil"
+    },
+    "621": {
+      "summary": [
+        "In 2017 the European Food Safety Authority (EFSA) set a daily limit for added glutamates of 30 mg per kg of body weight, from the highest dose with no adverse effect in animal studies.",
+        "It found that people whose diet is high in foods with added glutamates, and toddlers and children with medium intake, may go over this limit. Highly exposed infants, children and teenagers may reach doses linked in people to effects such as headache."
+      ],
+      "sources": [
+        {
+          "title": "EFSA, EFSA reviews safety of glutamates added to food, 12 July 2017",
+          "url": "https://www.efsa.europa.eu/en/press/news/170712",
+          "read_on": "2026-09-29"
+        }
+      ],
+      "reviewed_by": "sushil"
+    },
+    "950": {
+      "summary": [
+        "In 2025 the European Food Safety Authority (EFSA) raised its daily limit for acesulfame K from 9 to 15 mg per kg of body weight, based on the highest dose tested in rats, at which no adverse effect was seen.",
+        "Its highest intake estimates were generally below this limit in every age group."
+      ],
+      "sources": [
+        {
+          "title": "EFSA, Re-evaluation of acesulfame K (E 950) as food additive, plain language summary, 30 April 2025",
+          "url": "https://www.efsa.europa.eu/en/plain-language-summary/re-evaluation-acesulfame-k-e-950-food-additive",
+          "read_on": "2026-09-29"
+        }
+      ],
+      "reviewed_by": "sushil"
+    },
+    "951": {
+      "summary": [
+        "In 2023 the WHO's cancer agency (IARC) classed aspartame as possibly carcinogenic to humans (Group 2B), based on limited evidence for liver cancer in people and limited evidence in animals.",
+        "At the same time the FAO/WHO expert committee (JECFA) kept its daily limit of 40 mg per kg of body weight: a 70 kg adult would need more than 9 to 14 cans of diet soft drink a day to pass it, with no other source.",
+        "Both said the evidence has limits and called for more and better studies."
+      ],
+      "sources": [
+        {
+          "title": "WHO, Aspartame hazard and risk assessment results released, 14 July 2023",
+          "url": "https://www.who.int/news/item/14-07-2023-aspartame-hazard-and-risk-assessment-results-released",
+          "read_on": "2026-09-29"
+        }
+      ],
+      "reviewed_by": "sushil"
+    },
+    "954": {
+      "summary": [
+        "In 2024 the European Food Safety Authority (EFSA) raised its daily limit for saccharin from 5 to 9 mg per kg of body weight. The old limit rested on bladder tumours in rats, which EFSA now considers specific to male rats and not relevant to humans.",
+        "Its highest intake estimates were below the new limit in every age group."
+      ],
+      "sources": [
+        {
+          "title": "EFSA, Re-evaluation of saccharin and its sodium, potassium and calcium salts (E 954) as food additives, plain language summary, 15 November 2024",
+          "url": "https://www.efsa.europa.eu/en/plain-language-summary/re-evaluation-saccharin-and-its-sodium-potassium-and-calcium-salts-e-954",
+          "read_on": "2026-09-29"
+        }
+      ],
+      "reviewed_by": "sushil"
+    },
+    "955": {
+      "summary": [
+        "In 2026 the European Food Safety Authority (EFSA) kept its daily limit for sucralose at 15 mg per kg of body weight; its highest intake estimates were below this in every age group.",
+        "It could not rule out that chlorine from sucralose passes to other molecules when it is heated for a long time at high temperature, as in baking or frying."
+      ],
+      "sources": [
+        {
+          "title": "EFSA, Re-evaluation of sucralose (E 955) as a food additive, plain language summary, 16 February 2026",
+          "url": "https://www.efsa.europa.eu/en/plain-language-summary/re-evaluation-sucralose-e-955-food-additive",
+          "read_on": "2026-09-29"
+        }
+      ],
+      "reviewed_by": "sushil"
+    }
+  }
 }
