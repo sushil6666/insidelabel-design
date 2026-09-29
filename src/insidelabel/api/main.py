@@ -589,7 +589,29 @@ def _str(v):
     return str(v) if v is not None else None
 
 
-def _catalogue_result(hit, avoid_codes, who, compare_regulators, profiles=()):
+def _parse_screen_pack(raw):
+    """
+    D-130: the list from an earlier screen read, sent back by the phone's shop
+    list so this pack's answer can say what differs. Only words: no names (D-074).
+    """
+    if not raw or not raw.strip():
+        return None
+    try:
+        v = json.loads(raw)
+        ings, stmt = v["ingredients"], v.get("allergen_statement")
+        ok = (isinstance(ings, list) and 0 < len(ings) <= 200
+              and all(isinstance(i, str) and len(i) <= 300 for i in ings)
+              and (stmt is None or (isinstance(stmt, str) and len(stmt) <= 1000)))
+    except (ValueError, TypeError, KeyError):
+        ok = False
+    if not ok:
+        raise HTTPException(status_code=422, detail={
+            "error": "bad_screen_pack",
+            "detail": 'screen_pack is JSON {"ingredients": [text, ...], "allergen_statement": text or null}.'})
+    return {"ingredients": ings, "allergen_statement": stmt}
+
+
+def _catalogue_result(hit, avoid_codes, who, compare_regulators, profiles=(), screen_pack=None):
     """
     A result built from a reviewed catalogue version. The engine re-runs on the
     stored ingredient list, so the verdict always reflects the current rules and
@@ -629,7 +651,7 @@ def _catalogue_result(hit, avoid_codes, who, compare_regulators, profiles=()):
         "screen": result_screen.build(
             verdict=verdict, display=display, claim_check=claim_check, extracted=extracted,
             reliability=reliability, profiles=profiles, allergen_confidence=1.0,
-            allergen_reliable=True, catalogue=catalogue),
+            allergen_reliable=True, catalogue=catalogue, screen_pack=screen_pack),
         "catalogue": catalogue,
         "product": {"brand": hit["brand"], "name": hit["name"], "variant": hit["variant"]},
         "verdict": verdict,
@@ -1020,6 +1042,9 @@ async def scan(
     profiles: Optional[str] = Form(None, examples=[""],
                                    description='JSON [{"ref","age","avoid"}], up to 3. No names (D-074).'),
     accept_unconfirmed: bool = Form(False, description="D-118: 'use this one anyway' after a clearer-photo request."),
+    screen_pack: Optional[str] = Form(None, examples=[""],
+                                      description='D-130: JSON {"ingredients", "allergen_statement"} from an earlier '
+                                                  'result read from a screen; the answer says what differs on this pack.'),
 ):
     """
     barcode -> reviewed catalogue entry, else images -> Gemini -> engine -> claim check.
@@ -1051,6 +1076,7 @@ async def scan(
         # D-060: the top-level allergen block covers every profile's avoid list.
         avoid_codes = list(dict.fromkeys(c for p in people for c in p["avoid"]))
     barcode = _clean_barcode(barcode)
+    screen_pack = _parse_screen_pack(screen_pack)
     # D-104: where the barcode came from. The app offers only the live scanner
     # and a photo read by /check-photo; typed numbers aren't accepted from it.
     barcode_source = barcode_source if barcode_source and barcode_source.strip() else None
@@ -1115,7 +1141,7 @@ async def scan(
                     "compare_regulators": compare_regulators,
                     "images": [r for _d, _m, r in images], "back_parts": max(1, len(parts)),
                     "replay": replay is not None,
-                    "accept_unconfirmed": accept_unconfirmed},
+                    "accept_unconfirmed": accept_unconfirmed, "screen_pack": screen_pack},
         "timings": {},
     }
 
@@ -1130,7 +1156,7 @@ async def scan(
                 "detail": "We haven't checked this pack yet.",
                 "hint": "Photograph the back of the pack (the ingredient list).",
             })
-        result = _catalogue_result(hit, avoid_codes, who, compare_regulators, people)
+        result = _catalogue_result(hit, avoid_codes, who, compare_regulators, people, screen_pack)
         result["scan_id"] = _str(_persist(STORE.record_cache_hit, hit, device_id=device_id,
                                           latency_ms=_ms(t0), trace=tr))
         return result
@@ -1354,7 +1380,9 @@ async def scan(
     # the result, while it is still in hand. "Use this one anyway" goes on.
     # Only when Cloud Vision read the photo: no independent read, nothing to fail.
     ocr_text = ((tr.get("ocr") or {}).get("back") or {})
-    if (barcode and STORE and not accept_unconfirmed and ocr_text.get("reader") == "cloud_vision"
+    from_screen = bool(reliability.get("from_screen"))
+    if (barcode and STORE and not accept_unconfirmed and not from_screen
+            and ocr_text.get("reader") == "cloud_vision"
             and (ocr_text.get("text") or "").strip()
             and not review_checker.independent_read_confirmed(
                 vision["ingredients"], ocr_text["text"], vision.get("allergen_statement"))
@@ -1391,6 +1419,8 @@ async def scan(
         who=who,
     )
 
+    if from_screen and allergens:
+        allergens["source"] = "screen"   # D-130: the app's lines say so; this is for API readers
     claims_trusted = reliability.get("claims_permitted", True) and vision["front_status"] == "read"
     claim_check = claim_checker.check_claims(
         vision.get("front_claims", []), raw, verdict,
@@ -1401,7 +1431,20 @@ async def scan(
         else "pairing_unverified",
     )
 
-    if barcode is None:
+    pack = None
+    if from_screen:
+        # D-130: a screen is a lead, never the record (D-089): only the scan row,
+        # whatever barcode came with it. When our catalogue has the pack (read
+        # from a real one), its allergens are set beside the screen's.
+        unlisted_id = _persist(STORE and STORE.record_screen_scan, device_id=device_id,
+                               latency_ms=_ms(t0), front_key=keys.get("front"),
+                               back_key=keys.get("back"), trace=tr)
+        saved = None
+        hit = _persist(STORE.find_current, barcode) if (STORE and barcode) else None
+        if hit:
+            pack = {"ingredients": hit["ingredients"], "allergen_statement": hit["allergen_statement"],
+                    "verified_on": hit["verified_at"].date().isoformat()}
+    elif barcode is None:
         # D-107: no barcode, no catalogue entry. The user gets the result; only
         # the scan row is kept, so it can be replayed (D-092).
         unlisted_id = _persist(STORE and STORE.record_unlisted_scan, device_id=device_id,
@@ -1433,12 +1476,15 @@ async def scan(
         "screen": result_screen.build(
             verdict=verdict, display=display, claim_check=user_claims, extracted=extracted,
             reliability=reliability, profiles=people, allergen_confidence=allergen_confidence,
-            allergen_reliable=allergen_reliable, has_barcode=barcode is not None),
+            allergen_reliable=allergen_reliable, has_barcode=barcode is not None, pack=pack,
+            screen_pack=None if from_screen else screen_pack),
         "scan_id": saved["scan_id"] if saved else _str(unlisted_id),
         "catalogue": ({"source": "scan", "product_version_id": saved["product_version_id"],
                        "status": saved["version_status"], "queued_for_review": saved["queued"]}
                       if saved else
-                      {"source": "scan", "status": "not_saved", "reason": "no_barcode"} if barcode is None
+                      {"source": "screen", "status": "not_saved", "reason": "from_screen",
+                       "pack_verified_on": pack and pack["verified_on"]} if from_screen
+                      else {"source": "scan", "status": "not_saved", "reason": "no_barcode"} if barcode is None
                       else None),
         "product": vision.get("product"),
         "verdict": verdict,

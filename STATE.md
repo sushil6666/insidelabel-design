@@ -650,6 +650,18 @@ setup alarms.
 
 **NEXT SESSION STARTS HERE (2026-09-28).** Where things stand, newest first:
 
+- **D-130 LOCKED and built, 2026-09-29** (branch `screen-read`, web-24, migration 017, 602 tests):
+  from problem report #1 (a tester's screen photo refused twice). A photo of a screen is read and
+  marked "Read from a screen, not the pack"; allergen lines say "on this screen" with the caution in
+  the line; our catalogue's pack is set beside the screen (case A: the pack lists milk, the screen
+  doesn't; B: they agree; C: no pack); never catalogued (outcome `screen_read`); shop list on the
+  phone with "Scan it now", and the pack's result says what differs from the screenshot. Walked in
+  headless Chromium, light and dark, against answers from the real server code. DPDP data map row 7a
+  and reviewer point 11 (screenshots of listings may show account details). **Sushil: merge,
+  `update.sh` (runs migration 017), try a screenshot on the phone.** Branches `research-drafts-2`
+  and `repro-invite-replay` also add a line at the top of this list: keep all three when merging.
+  Seen in the walk, not changed: empty space under "Remove" on the shop-list card.
+
 - **Research drafts, 2026-09-29** (branch `research-drafts-2`): 9 more "Worth a look" rows drafted in
   `docs/research_drafts.json` from EFSA, WHO/IARC and JECFA pages read that day (171, 223, 250, 407, 621,
   950, 951, 954, 955); 15 of 16 drafted, all waiting on Sushil's "approved". **127 erythrosine not

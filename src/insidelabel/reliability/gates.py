@@ -25,10 +25,17 @@ _REFUSE = {
 
 
 # D-103: what the model says each photo shows. The model reads; these rules
-# decide. A photo of a screen is refused even when an ingredient list is
-# legible on it: a listing or a picture on a display is a lead, never the
-# record (D-089). Refusals for these codes can't go to "Send it to us".
+# decide. Refusals for these codes can't go to "Send it to us".
+# D-130 (amends D-103): a photo of a screen is no longer refused. It is read
+# like a pack and marked `from_screen`, so the result says where it came from
+# and the scan never reaches the catalogue: a listing is a lead, never the
+# record (D-089). "back_is_a_screen" stays for scans stored before D-130.
 NOT_A_PACK = ("back_is_a_screen", "not_a_food_pack")
+
+SCREEN_CAVEAT = {
+    "code": "read_from_screen",
+    "detail": "The ingredient list was read from a photo of a screen, not from the pack.",
+}
 
 
 def drop_unusable_front(vision):
@@ -53,19 +60,25 @@ def assess(vision):
     """
     Returns (proceed: bool, reliability: dict).
     When proceed is False, reliability["error"] carries a machine-readable code.
+    A back photo of a screen (D-130) goes through the same checks and comes
+    back with reliability["from_screen"] = True and a caveat saying so.
     """
+    proceed, reliability = _assess(vision)
+    if (vision.get("image_content") or {}).get("back") == "screen":
+        reliability["from_screen"] = True
+        if proceed:
+            reliability.setdefault("caveats", []).append(dict(SCREEN_CAVEAT))
+    return proceed, reliability
+
+
+def _assess(vision):
     back = vision["back_status"]
     ing = vision["ingredients_status"]
     front = vision["front_status"]
 
     # 0. Not a pack at all (D-103): say so, instead of "retake the photo".
+    # A screen is read (D-130); assess() marks it.
     seen = (vision.get("image_content") or {}).get("back")
-    if seen == "screen":
-        return False, {
-            "error": "back_is_a_screen",
-            "detail": "The back photo shows a screen, not the pack itself.",
-            "hint": "Photograph the physical pack; a listing or a picture on a screen isn't used.",
-        }
     if seen == "not_food":
         return False, {
             "error": "not_a_food_pack",

@@ -284,6 +284,23 @@ class Store:
             self._set_trace(conn, sid, trace)
             return sid
 
+    def record_screen_scan(self, *, device_id=None, latency_ms=None, front_key=None, back_key=None,
+                           trace=None):
+        """
+        D-130: a result read from a photo of a screen. A listing is a lead, never
+        the record (D-089): only the scan row, for replay (D-092); no product,
+        version or review item, whatever barcode came with it.
+        """
+        with self._connect() as conn:
+            uid = self._user(conn, device_id)
+            sid = conn.execute(
+                """INSERT INTO scans (user_id, resolved_via, cache_hit, outcome, latency_ms,
+                                      front_image_key, back_image_key)
+                   VALUES (%s, 'screen', false, 'screen_read', %s, %s, %s) RETURNING id""",
+                (uid, latency_ms, front_key, back_key)).fetchone()["id"]
+            self._set_trace(conn, sid, trace)
+            return sid
+
     def save_scan(self, *, vision, verdict, claim_check, claims_trusted, reliability,
                   barcode=None, device_id=None, latency_ms=None,
                   model_name=None, prompt_version=None, engine_version=None,
