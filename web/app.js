@@ -25,7 +25,8 @@ let navSeq = 0;               // async views check this so a late result can't r
 // parts: the ingredient list's 2nd and 3rd photos, when it doesn't fit one (D-119).
 let pending = { barcode: null, barcodeSource: null, back: null, front: null, backSource: null,
                 frontSource: null, pairing: false, attempts: 0, refused: [], frontWanted: true,
-                acceptUnconfirmed: false, parts: [], partSources: [] };
+                acceptUnconfirmed: false, parts: [], partSources: [],
+                screenPack: null, shopItem: null };
 
 // ------------------------------------------------------------------ navigation
 const routes = {
@@ -279,6 +280,7 @@ async function home() {
     el("button", { type: "button", class: "scan-cta", onclick: () => { resetPending(); go("scan"); } },
       el("span", { class: "scan-cta-icon", "aria-hidden": "true" }, barcodeIcon()),
       el("span", {}, "Scan a pack")),
+    shopListCard(),
     done < 3 && el("div", { class: "card note" },
       el("h2", {}, "Start at home"),
       el("p", {}, "Scan 3 packs from your kitchen. You'll see how it works without a trip to the shop."),
@@ -294,6 +296,29 @@ async function home() {
         h.screen?.summary?.length
           ? el("span", { class: "chips" }, h.screen.summary.map(r => el("span", { class: `chip tone-${r.tone}` }, r.chip)))
           : el("span", { class: "muted" }, peopleSummary(h.screen) || h.screen?.headline?.text || ""))))));
+}
+
+// D-130: packs planned from a screen, to scan from the pack in the shop. Kept
+// on this phone only, like history (D-074); the server sees one list at a time,
+// when "Scan it now" sends it with the pack.
+function shopList() { return store.get("shoplist", []); }
+
+function shopListCard() {
+  const items = shopList();
+  if (!items.length) return null;
+  return el("div", { class: "card" },
+    el("h2", {}, "Your shop list"),
+    el("p", { class: "muted" }, "Checked from a screen. Scan each pack in the shop to confirm."),
+    el("ul", { class: "list" }, items.map(x => el("li", {},
+      el("a", { href: `#/result/${encodeURIComponent(x.id)}` }, el("strong", {}, productName(x.product))),
+      el("div", { class: "row wrap" },
+        button("Scan it now", () => {
+          resetPending();
+          pending.screenPack = x.pack;
+          pending.shopItem = x.id;
+          go("scan");
+        }, "primary"),
+        button("Remove", () => { store.set("shoplist", shopList().filter(y => y.id !== x.id)); route(); }, "link"))))));
 }
 
 // D-123: what came up across this phone's own results. Counted here, worded on
@@ -490,7 +515,8 @@ function nextRef(list) {
 function resetPending() {
   pending = { barcode: null, barcodeSource: null, back: null, front: null, backSource: null,
               frontSource: null, pairing: false, attempts: 0, refused: [], frontWanted: true,
-              acceptUnconfirmed: false, parts: [], partSources: [] };
+              acceptUnconfirmed: false, parts: [], partSources: [],
+              screenPack: null, shopItem: null };
 }
 
 async function scan() {
@@ -559,7 +585,7 @@ async function lookUp(code, how) {
   pending.barcodeSource = how;
   show(working("Looking up this pack…", false));
   try {
-    const { body } = await scanRequest({ barcode: code, barcodeSource: how });
+    const { body } = await scanRequest({ barcode: code, barcodeSource: how, screenPack: pending.screenPack });
     finish(body);
   } catch (e) {
     // 404 not_in_catalogue: the normal first-time path, not an error (D-068).
@@ -807,6 +833,11 @@ function finish(body) {
       reliable: rel.source === "catalogue" || (!!rel.verdict_safe_to_display && !!rel.ingredients_complete),
     } : null,
   });
+  // D-130: the pack from the shop list has been scanned in the shop; it's done.
+  if (pending.shopItem && body.screen?.state === "result") {
+    store.set("shoplist", shopList().filter(x => x.id !== pending.shopItem));
+    pending.shopItem = null;
+  }
   if (body.screen?.state === "retake") {
     pending.attempts += 1;
     // D-103: a photo that isn't a pack (a screen, anything else) can't be sent to a reviewer.
@@ -829,8 +860,17 @@ function result(id) {
   // 1. People first (D-060, D-064).
   if (s.people?.length) put(el("div", { class: "people" }, s.people.map(personCard)));
 
+  // D-130: read from a screen. Said before anything about the product.
+  if (s.from_screen) put(el("div", { class: "card warn", role: "note" },
+    el("strong", {}, s.from_screen.title), el("p", {}, s.from_screen.text),
+    s.from_screen.pack && el("p", {}, s.from_screen.pack)));
+
   // 2. The headline finding (D-061).
   put(el("h1", { class: "headline" }, s.headline.text));
+
+  // D-130: this pack, scanned from the shop list, against the screenshot.
+  if (s.since_screen) put(el("div", { class: `card ${s.since_screen.differs ? "warn" : "note"}`, role: "note" },
+    el("h2", {}, s.since_screen.title), s.since_screen.lines.map(t => el("p", {}, t))));
 
   if (s.state === "retake") {
     put(
@@ -997,6 +1037,16 @@ function result(id) {
 
   // 8. Actions: compare (D-057), report (D-076, on every result).
   const inCompare = store.get("compare", []).includes(h.id);
+  // D-130: a screen result goes on the shop list, to be scanned from the pack in the shop.
+  const onList = () => shopList().some(x => x.id === h.id);
+  if (s.shop_list && h.pack) put(button(onList() ? "On your shop list ✓" : "Add to my shop list", e => {
+    if (!onList()) {
+      store.set("shoplist", [{ id: h.id, product: h.product, barcode: h.barcode, at: h.at, pack: {
+        ingredients: h.pack.ingredients, allergen_statement: h.pack.allergen_statement } },
+        ...shopList()].slice(0, 30));
+    }
+    e.target.textContent = "On your shop list ✓";
+  }, "primary"));
   put(el("div", { class: "row wrap" },
     h.pack && button(inCompare ? "In compare ✓" : "Add to compare", e => {
       toggleCompare(h.id); e.target.textContent = store.get("compare", []).includes(h.id)

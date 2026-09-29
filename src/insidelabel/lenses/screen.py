@@ -155,7 +155,80 @@ def _whose(profile):
 
 # ------------------------------------------------------------------ people
 
-def _person(profile, ingredients, statement, confidence, reliable):
+def _names(codes):
+    names = [allergen_checker.ALLERGENS[c]["short"] for c in codes]
+    return names[0][0].upper() + names[0][1:] + "".join(", " + n for n in names[1:])
+
+
+def _day(iso):
+    y, m, d = iso.split("-")
+    return f"{int(d)} {('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec')[int(m) - 1]} {y}"
+
+
+def _screen_text(r, who):
+    """D-130: an allergen row read from a screen says so."""
+    a = allergen_checker.ALLERGENS[r.code]
+    whose = "your" if who == "you" else f"{who}'s"
+    if r.state == "contains":
+        return f"Contains {a['short']}, as listed on this screen. It's on {whose} avoid list."
+    if r.state == "may_contain":
+        return f"The listing on this screen says it may contain {a['short']}."
+    if r.state == "cannot_confirm":
+        return (f"We couldn't read the list on this screen clearly enough to check for {a['short']}. "
+                f"Check the pack in the shop.")
+    return r.parent_text(who)
+
+
+def _pack_text(state, code, day):
+    """D-130 case A: our catalogue's pack lists what the screen doesn't."""
+    short = allergen_checker.ALLERGENS[code]["short"]
+    said = (f"{short[0].upper() + short[1:]}: listed on the pack we checked on {day}." if state == "contains"
+            else f"The pack we checked on {day} says it may contain {short}.")
+    return said + " This screen doesn't show it, so the listing may be old."
+
+
+def _screen_rows(profile, rows, pack):
+    """
+    D-130: each allergen as [code, state, evidence, text]. The screen's own read,
+    except where our catalogue's pack (read from a real one) lists what the
+    screen doesn't: a listing can be older than the pack in the shop.
+    """
+    who = _who(profile)
+    packed = {}
+    if pack:
+        packed = allergen_checker.check(pack["ingredients"] or [], pack["allergen_statement"],
+                                        profile["avoid"])
+    out = []
+    for r in rows:
+        p = packed.get(r.code)
+        if r.state not in ("contains", "may_contain") and p and p.state in ("contains", "may_contain"):
+            out.append((r.code, p.state, p.evidence or None, _pack_text(p.state, r.code, _day(pack["verified_on"]))))
+        else:
+            out.append((r.code, r.state, r.evidence or None, _screen_text(r, who)))
+    return sorted(out, key=lambda x: _STRONGEST[x[1]]), packed
+
+
+def _screen_person(profile, rows, pack):
+    """D-130: one person's allergen line for a result read from a screen."""
+    merged, packed = _screen_rows(profile, rows, pack)
+    top = merged[0]
+    if top[1] != "not_listed":
+        status, line = top[1], top[3]
+    elif packed and all(p.state == "not_listed" for p in packed.values()):
+        # Case B: the screen and our pack agree.
+        status = "not_listed"
+        line = (f"{_names(profile['avoid'])}: not listed, on this screen and on the pack we checked on "
+                f"{_day(pack['verified_on'])}. Check the pack when you buy.")
+    else:
+        # Case C: the screen only. The caution is part of the line, never a separate note.
+        status = "not_listed"
+        buying = "you buy" if profile["ref"] == "me" else f"buying for {NAME}"
+        line = (f"{_names(profile['avoid'])}: not listed in the ingredients on this screen. Listings can "
+                f"differ from the pack in the shop. Check the pack before {buying}.")
+    return status, line, [{"code": c, "state": st, "evidence": ev, "text": t} for c, st, ev, t in merged]
+
+
+def _person(profile, ingredients, statement, confidence, reliable, screen=False, pack=None):
     """D-064: the glanceable signal for one person, allergens first."""
     who, whose = _who(profile), _whose(profile)
     rows = []
@@ -163,13 +236,12 @@ def _person(profile, ingredients, statement, confidence, reliable):
         res = allergen_checker.check(ingredients or [], statement, profile["avoid"],
                                      confidence=confidence, reliable=reliable)
         rows = sorted(res.values(), key=lambda r: _STRONGEST[r.state])
+    if screen and rows:
+        status, line, allergens = _screen_person(profile, rows, pack)
+        return {"ref": profile["ref"], "status": status, "line": line, "allergens": allergens,
+                "child_facts": [f for f in _child_facts(profile, ingredients, reliable)]}
 
-    child_facts = []
-    if profile["age"] in kids.AGE_BANDS and reliable and ingredients:
-        p = kids.extract_facts(kids.Product("x", "x", ingredients), profile["age"])
-        child_facts = [{"tier": f.tier, "text": f.parent_text,
-                        "technical": f.technical}
-                       for f in p.facts if f.tier == "strong"]
+    child_facts = _child_facts(profile, ingredients, reliable)
 
     if rows and rows[0].state != "not_listed":
         status, line = rows[0].state, rows[0].parent_text(who)
@@ -177,8 +249,7 @@ def _person(profile, ingredients, statement, confidence, reliable):
         status = "not_listed"
         # D-126: name what was checked ("Peanut, milk: ..."); "nothing on your avoid
         # list" didn't say what that was. Still only what is printed: never "free from".
-        names = [allergen_checker.ALLERGENS[p]["short"] for p in profile["avoid"]]
-        names = (names[0][0].upper() + names[0][1:] + "".join(", " + n for n in names[1:]))
+        names = _names(profile["avoid"])
         if all(r.statement_seen for r in rows):
             line = f"{names}: not listed in the ingredients or the allergen line."
         else:
@@ -200,6 +271,14 @@ def _person(profile, ingredients, statement, confidence, reliable):
                        "text": r.parent_text(who)} for r in rows],
         "child_facts": child_facts,
     }
+
+
+def _child_facts(profile, ingredients, reliable):
+    if not (profile["age"] in kids.AGE_BANDS and reliable and ingredients):
+        return []
+    p = kids.extract_facts(kids.Product("x", "x", ingredients), profile["age"])
+    return [{"tier": f.tier, "text": f.parent_text, "technical": f.technical}
+            for f in p.facts if f.tier == "strong"]
 
 
 # ------------------------------------------------------------------ product
@@ -573,14 +652,74 @@ UNLISTED_NOTE = ("This pack has no barcode, so it isn't added to our catalogue. 
                  "is from your photo, just for you.")
 
 
+# D-130: a result read from a photo of a screen (a shop listing, a laptop).
+SCREEN_TITLE = "Read from a screen, not the pack."
+SCREEN_TEXT = ("Listings can be out of date or show another size or flavour. "
+               "Check the pack in the shop before you buy.")
+SCREEN_PACK = "We also checked this pack in a shop on {day}; the allergen lines above include it."
+SCREEN_NOTE = ("A screen isn't added to our catalogue: we only add packs read from the pack itself. "
+               "Add it to your shop list and scan the pack when you're there.")
+SCREEN_HEADLINE_UNREAD = "We couldn't read an ingredient list on this screen."
+SCREEN_RETAKE = ("Take a screenshot that shows the whole ingredient list, zoomed in, "
+                 "or photograph the pack in the shop.")
+
+
+def _since_screen(profiles, screen_pack, ingredients, statement, confidence, reliable):
+    """
+    D-130: the pack in hand, scanned from the shop list, against the screenshot it
+    was planned from. Allergens only, and only for avoid lists on this phone.
+    """
+    codes = list(dict.fromkeys(c for p in profiles for c in p["avoid"]))
+    if not codes:
+        return None
+    then = allergen_checker.check(screen_pack["ingredients"], screen_pack["allergen_statement"], codes)
+    now = allergen_checker.check(ingredients or [], statement, codes, confidence=confidence, reliable=reliable)
+    if any(r.state == "cannot_confirm" for r in now.values()):
+        return {"title": SINCE_TITLE, "lines": [SINCE_UNREAD], "differs": None}
+    listed = ("contains", "may_contain")
+    lines = []
+    for c in codes:
+        short = allergen_checker.ALLERGENS[c]["short"]
+        a, b = then[c].state, now[c].state
+        if b in listed and a not in listed:
+            lines.append(f"{short[0].upper() + short[1:]} is listed on this pack. The screenshot didn't list it."
+                         if b == "contains" else
+                         f"This pack says it may contain {short}. The screenshot didn't.")
+        elif a in listed and b not in listed:
+            lines.append(f"{short[0].upper() + short[1:]} was on the screenshot. This pack doesn't list it.")
+    return {"title": SINCE_TITLE, "lines": lines or [SINCE_SAME], "differs": bool(lines)}
+
+
+SINCE_TITLE = "Compared with your screenshot"
+SINCE_SAME = "The allergens on your avoid lists read the same on this pack as on the screenshot."
+SINCE_UNREAD = "We couldn't read this pack clearly enough to compare it with the screenshot."
+
+
 def build(*, verdict, display, claim_check, extracted, reliability, profiles,
           allergen_confidence, allergen_reliable, catalogue=None, has_barcode=True,
-          photos_sent=("back",)):
-    """The `screen` block of a /scan response. verdict=None means the scan was refused."""
+          photos_sent=("back",), pack=None, screen_pack=None):
+    """
+    The `screen` block of a /scan response. verdict=None means the scan was refused.
+    pack: for a result read from a screen (D-130), our catalogue's version of the
+    same barcode ({ingredients, allergen_statement, verified_on}), or None.
+    """
     ingredients = (extracted or {}).get("ingredients") or []
     statement = (extracted or {}).get("allergen_statement")
-    people = [p for p in (_person(pr, ingredients, statement, allergen_confidence, allergen_reliable)
+    from_screen = bool(reliability.get("from_screen"))
+    people = [p for p in (_person(pr, ingredients, statement, allergen_confidence, allergen_reliable,
+                                  screen=from_screen and verdict is not None, pack=pack)
                           for pr in profiles) if p]
+
+    if verdict is None and from_screen and reliability.get("error") not in ("product_mismatch", "not_a_food_pack"):
+        # D-130: a screen we couldn't read. Nothing for a reviewer: there is no pack in it.
+        return {
+            "state": "retake",
+            "people": people,
+            "headline": {"text": SCREEN_HEADLINE_UNREAD,
+                         "source": {"kind": "reliability", "ref": reliability.get("error")}},
+            "retake": SCREEN_RETAKE,
+            "can_send": False,
+        }
 
     if verdict is None:
         error = reliability.get("error")
@@ -683,7 +822,18 @@ def build(*, verdict, display, claim_check, extracted, reliability, profiles,
         # D-073: a barcode can outlive a recipe. Ask anyone with an avoid list for one back photo.
         if any(p["avoid"] for p in profiles):
             out["recheck"] = "Packs change. Photograph the back of your pack to re-check the avoid list."
-    if not has_barcode:
+    if screen_pack:
+        since = _since_screen(profiles, screen_pack, ingredients, statement, allergen_confidence,
+                              allergen_reliable)
+        if since:
+            out["since_screen"] = since
+    if from_screen:
+        # D-130: say where the result came from, first thing under the people lines.
+        out["from_screen"] = {"title": SCREEN_TITLE, "text": SCREEN_TEXT,
+                              "pack": (SCREEN_PACK.format(day=_day(pack["verified_on"])) if pack else None)}
+        out["catalogue_note"] = SCREEN_NOTE
+        out["shop_list"] = True               # the app offers "Add to my shop list"
+    elif not has_barcode:
         out["catalogue_note"] = UNLISTED_NOTE
     # D-108: a front that couldn't be tied to this back is not used; say so.
     if any(c.get("code") == "product_pairing_unverified" for c in reliability.get("caveats", [])):

@@ -871,6 +871,8 @@ The tester label in `tools/beta.py` is for Sushil only (a first name or "T07"); 
 phone numbers or emails are stored.
 
 ### D-103 · Only real packs get in: barcode, photo file and photo content are checked `LOCKED` (2026-09-26)
+**Amended by D-130 (2026-09-29):** a photo of a screen is now read and marked "from a screen", not
+refused; it still never reaches the catalogue. Everything else here stands.
 Direction from Sushil ("barcode, back and front photo should be valid, not any random
 pic"), after a test scan on 2026-09-26: barcode `12222333333333` + two screenshots of
 database software cost a Gemini read, came back as a generic "retake", counted
@@ -1800,6 +1802,46 @@ use paid-tier prompts or responses to improve its products). App web-23.
   first; a photo file that can't be deleted then is picked up by the 30-day job. Logs counts only.
 - **Privacy page:** "Who reads your photos" says paid Gemini and asks for pack-only photos; "Your
   choices" describes the button, the email address, the 90-day answer and the Data Protection Board.
+
+### D-130 · A photo of a screen is read, marked "from a screen"; a shop list closes the gap in the shop `LOCKED` (2026-09-29)
+Amends D-103 (only its refusal of a screen; "not a food pack" is still refused). Problem report #1
+on the live server ("Why photo not allowed?"): a tester photographed a listing on a screen and was
+refused twice. Sushil: "if a user want to compare on his laptop or with other screen, which product
+will good before going next time to any supermarket, we should allow to check with upload option,
+don't stop user". On the allergen line Sushil asked to give the result as read, with the caution in
+it, rather than always "can't confirm". **Accepted by Sushil 2026-09-29** ("understood and accepted,
+please proceed"), after the three cases below were set out.
+
+The risk, on record: a listing can be older than the pack in the shop. If a recipe adds milk and the
+listing photo isn't updated, a correct read of the screen says "not listed", and a parent could buy a
+pack their child reacts to. Nothing in the photo shows its age, so the design answers it three ways:
+the caution is inside the allergen line, our own catalogue is checked, and the shop list sends the
+person back to the pack.
+
+- **Read, marked.** `image_content.back == "screen"` no longer refuses (`gates.assess` marks
+  `from_screen` and adds the `read_from_screen` caveat; every other check still runs). The result
+  opens with "Read from a screen, not the pack." and "Listings can be out of date or show another
+  size or flavour. Check the pack in the shop before you buy." An unreadable screen gets its own
+  retake text and can't go to "Send it to us".
+- **Allergen lines say "on this screen" (D-060, D-071).** Found: "Contains milk, as listed on this
+  screen." Not found: "Milk, soy: not listed in the ingredients on this screen. Listings can differ
+  from the pack in the shop. Check the pack before buying for {name}." (your own list: "before you
+  buy"). Below 0.95 confidence or on a partial read: can't confirm, as for any scan.
+- **Our catalogue beside the screen.** When the barcode has a published version (read from a real
+  pack, D-089): case A, the pack lists what the screen doesn't: "Milk: listed on the pack we checked
+  on 12 Aug 2026. This screen doesn't show it, so the listing may be old." (the pack's state wins);
+  case B, both not listed: "...not listed, on this screen and on the pack we checked on ... Check the
+  pack when you buy."; case C, no pack: the screen line above.
+- **Never the record (D-088, D-089).** A screen scan creates no product, version or review item,
+  whatever barcode came with it: only a scan row, outcome `screen_read` (migration 017), kept for
+  replay (D-092); its photos go at 30 days (D-098). No D-118 clearer-photo request.
+- **Shop list (app, web-24).** "Add to my shop list" under a screen result; the list is kept on the
+  phone only (cleared by "Delete my data"). "Scan it now" sends the screenshot's ingredient list and
+  allergen line (`screen_pack`, no names, D-074) with the pack's scan or barcode lookup; the server
+  words what differs ("Milk is listed on this pack. The screenshot didn't list it.", D-091), and the
+  item leaves the list.
+- **Later:** matching a screen to the catalogue by brand and name when no barcode is shown (risk of
+  the wrong variant); to be proposed separately.
 
 ---
 

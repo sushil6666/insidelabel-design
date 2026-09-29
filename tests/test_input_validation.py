@@ -167,7 +167,6 @@ def test_the_model_is_asked_what_each_photo_shows():
 
 
 @pytest.mark.parametrize("seen, error, words", [
-    ("screen", "back_is_a_screen", "screen"),
     ("not_food", "not_a_food_pack", "food"),
 ])
 def test_a_back_photo_that_is_not_a_pack_is_refused_plainly(seen, error, words):
@@ -181,11 +180,12 @@ def test_a_back_photo_that_is_not_a_pack_is_refused_plainly(seen, error, words):
     assert body["screen"]["can_send"] is False                  # not "Send it to us" material
 
 
-def test_even_a_readable_list_on_a_screen_is_refused():
-    # D-089: a listing or a photo on a screen is a lead, never the record.
+def test_a_readable_list_on_a_screen_is_read_and_marked():
+    # D-130 (amends D-103): read, marked "from a screen"; never catalogued (tests/test_screen_read.py).
     r = c.post("/scan", files={"back": ("b.png", photo(fmt="PNG"), "image/png")},
                data={"replay": vision(image_content={"back": "screen", "front": "not_provided"})})
-    assert r.status_code == 422 and r.json()["reliability"]["error"] == "back_is_a_screen"
+    assert r.status_code == 200 and r.json()["reliability"]["from_screen"] is True
+    assert r.json()["screen"]["from_screen"]["title"] == "Read from a screen, not the pack."
 
 
 def test_an_ordinary_refusal_can_still_be_sent_to_us():
