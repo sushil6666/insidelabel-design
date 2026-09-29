@@ -1,0 +1,39 @@
+{
+  "_meta": {
+    "table": "nutrition_panel",
+    "version": "0.1",
+    "purpose": "How lenses/nutrition.py reads a nutrition table the vision model transcribed (D-133): which printed row is which nutrient, its unit, and FSSAI's own figures for checking the table's arithmetic. The model copies the table; these rules interpret it (D-004).",
+    "source": {"title": "FSS (Labelling and Display) Regulations 2020, 5(3), compendium version I (23.09.2021)", "url": "https://www.fssai.gov.in/upload/uploadfiles/files/Compendium_Labelling_Display_23_09_2021.pdf", "page": "PDF pp. 9 to 13", "read_on": "2026-09-29"},
+    "how_to_use": "A printed row label is lower-cased, its leading '-' and 'of which' dropped, and matched against 'names' in the order below, whole words: the first row that matches wins, so the more specific names come first (added sugars before sugars, saturated fat before fat). 'ignore' rows are read and set aside."
+  },
+  "nutrients": [
+    {"key": "ignore", "names": ["energy from fat", "calories from fat", "monounsaturated", "polyunsaturated", "mufa", "pufa", "omega", "vitamin", "calcium", "iron", "potassium", "zinc", "iodine", "magnesium", "phosphorus", "folic", "polyols", "polyol", "sugar alcohols", "lactose", "caffeine"]},
+    {"key": "added_sugars", "label": "Added sugar", "unit": "g", "names": ["added sugars", "added sugar"]},
+    {"key": "total_sugars", "label": "Total sugars", "unit": "g", "names": ["total sugars", "total sugar", "sugars", "sugar"]},
+    {"key": "saturated_fat", "label": "Saturated fat", "unit": "g", "names": ["saturated fatty acids", "saturated fat", "saturated fats", "saturates", "saturated", "sfa"]},
+    {"key": "trans_fat", "label": "Trans fat", "unit": "g", "names": ["trans fatty acids", "trans fat", "trans fats", "trans", "tfa"]},
+    {"key": "total_fat", "label": "Total fat", "unit": "g", "names": ["total fat", "total fats", "fat", "fats", "total lipids"]},
+    {"key": "dietary_fibre", "label": "Dietary fibre", "unit": "g", "names": ["dietary fibre", "dietary fiber", "fibre", "fiber"]},
+    {"key": "carbohydrate", "label": "Carbohydrate", "unit": "g", "names": ["total carbohydrates", "total carbohydrate", "carbohydrates", "carbohydrate", "carbs"]},
+    {"key": "protein", "label": "Protein", "unit": "g", "names": ["proteins", "protein"]},
+    {"key": "energy", "label": "Energy", "unit": "kcal", "names": ["energy value", "energy", "calories", "calorie"]},
+    {"key": "cholesterol", "label": "Cholesterol", "unit": "mg", "names": ["cholesterol"]},
+    {"key": "sodium", "label": "Sodium", "unit": "mg", "names": ["sodium"]},
+    {"key": "salt", "label": "Salt", "unit": "g", "names": ["salt"]}
+  ],
+  "rda_basis": {
+    "_note": "5(3)(b): per serve % contribution to RDA is calculated on 2000 kcal energy, 67 g total fat, 22 g saturated fat, 2 g trans fat, 50 g added sugar and 2000 mg sodium (5 g salt) for an average adult per day. A printed % RDA that doesn't fit the per 100 figure and the serving size means a number was read into the wrong row, or the serving size was misread.",
+    "energy": 2000,
+    "total_fat": 67,
+    "saturated_fat": 22,
+    "trans_fat": 2,
+    "added_sugars": 50,
+    "sodium": 2000
+  },
+  "energy_factors": {
+    "_note": "5(3)(e)(i): kcal per gram, for working out what share of a food's energy comes from its fat.",
+    "carbohydrate": 4,
+    "protein": 4,
+    "fat": 9
+  }
+}

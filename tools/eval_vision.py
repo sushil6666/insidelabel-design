@@ -41,6 +41,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "src"))
 from insidelabel.core import engine  # noqa: E402
 from insidelabel.core.tokenize import ins_numbers  # noqa: E402  (the one INS parser, D-099)
+from insidelabel.lenses import nutrition  # noqa: E402  (D-133: nutrition table accuracy)
 
 # Extract INS numbers using the ENGINE's own parsing, not a parallel regex.
 # The first version of this file used a prefix-only pattern, which found zero
@@ -122,6 +123,7 @@ def main():
 
     agg = collections.Counter()
     f_ing = f_ins = f_claim = 0.0
+    nut_right = nut_total = nut_labels = 0
 
     for i in ids:
         g, p = gold[i], pred[i]
@@ -180,6 +182,10 @@ def main():
         f_ing += fi
         f_ins += fn_
         f_claim += fc
+        # D-133: the nutrition table, number by number (None: a reading from before it).
+        nut = nutrition.accuracy(g.get("nutrition"), p.get("nutrition"))
+        if nut:
+            nut_right, nut_total, nut_labels = nut_right + nut[0], nut_total + nut[1], nut_labels + 1
 
         rows.append({
             "id": i,
@@ -192,6 +198,8 @@ def main():
             "claim_f1": round(fc, 3),
             "ins_missed": "|".join(sorted(g_ins - p_ins)),
             "ins_hallucinated": "|".join(sorted(p_ins - g_ins)),
+            "nutrition_right": nut[0] if nut else "",
+            "nutrition_total": nut[1] if nut else "",
         })
 
     n = len(ids)
@@ -214,6 +222,11 @@ def main():
     p_(f"\nINS NUMBER F1                    {f_ins / n:.3f}")
     p_(f"INGREDIENT SET F1                {f_ing / n:.3f}")
     p_(f"FRONT CLAIM F1                   {f_claim / n:.3f}")
+    if nut_total:
+        p_(f"NUTRITION NUMBERS READ RIGHT     {nut_right}/{nut_total}  ({nut_right / nut_total:.1%}) "
+           f"on {nut_labels} labels")
+    else:
+        p_("NUTRITION NUMBERS READ RIGHT     unmeasured: the predictions predate the nutrition table (D-133)")
 
     p_(f"\nVERDICT FLIPS  ({len(flips)})")
     if not flips:

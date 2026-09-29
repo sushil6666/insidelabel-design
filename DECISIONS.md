@@ -1924,6 +1924,59 @@ and compare it with ICMR-NIN Table 15.1 (p. 96: per 100 g 250 kcal, 625 mg salt,
 per 100 ml 70 kcal, 175 mg, 2.0 g) and the daily 25 g sugar and 5 g salt. Information only. To be
 built in phase 2 (branch `nutrition-panel`).
 
+**Built (2026-09-29, branch `nutrition-panel`, web-26).** Full account: `docs/NUTRITION_PANEL.md`.
+- **Sources read first-hand:** FSS (Labelling and Display) Regulations 2020, 5(3) and 8(1)
+  (mandatory values, exemptions, % RDA bases, energy factors); ICMR-NIN 2024 pp. 93, 94, 96, 108;
+  WHO fats (2023) and salt fact sheet.
+- **Reading:** prompt rule 10 and a `nutrition` object: the model copies status, headings, serving
+  size, servings and each row's cells as printed (paragraph tables too). New PROMPT_VERSION (a hash of
+  the prompt). Answers from before D-133 have no table, parse and replay unchanged.
+- **Judging (`lenses/nutrition.py`, `data/nutrition_panel.json`):** every number must be in the second
+  reading of the same photo; then the table's own arithmetic. **Added beyond the build prompt:** the
+  printed % RDA per serve is checked against FSSAI's bases (2000 kcal, 67 g fat, 22 g saturated, 2 g
+  trans, 50 g added sugar, 2000 mg sodium, 5(3)(b)): it catches a number read into the wrong row,
+  which "is it in the text" can't. When most rows disagree the serving size is dropped instead. The
+  build prompt's "per serving x servings ~ per 100" is done as: a printed per serving amount fits
+  per 100 x serving size, and servings x serving size fits the net quantity. All four readable gold
+  tables pass every check with nothing dropped.
+- **Screen (`data/nutrition_thresholds.json`, `screen.nutrition`):** energy, added sugar (total sugars
+  when added isn't printed alone), salt from sodium x 2.5, saturated fat with its share of the food's
+  energy against WHO's 10%, trans fat against WHO's 1%; per serving, added sugar and salt against the
+  25 g and 5 g a day, "for adults"; the rest in one line. Added fat not applied (packs print total
+  fat). Trans fat above zero (including "not more than 0.09 g") is a "Worth a look" tile; with it,
+  "No concerns found" becomes "A few things worth knowing." (D-123's rule). No score change.
+- **No table in the photo:** "If the pack has one, add a photo of it": the photo joins the back photos
+  as the next D-119 part and the pack is read again, **one more paid read (about 50 paise, plus a
+  Cloud Vision read)**. Not offered after three parts or for a catalogue pack. FSSAI exempts many
+  packs (single ingredient, spices, tea, water, packs up to 100 cm2), so it is an offer, never a refusal.
+- **Catalogue (migration 018):** `product_versions.nutrition`; `/review` shows the rows beside the
+  photo with "Every number shown to users matches the photo"; unticked, published without the table;
+  publishing records `confirmed_by`. A pack published before D-133 gets its table through a new
+  version queued as kind `nutrition` (can't be published unticked). Review checker: `nutrition_in_ocr`.
+- **Measuring:** gold tables added (transcribed by Claude from Sushil's photos: Maliban, Patanjali,
+  Ziggy, Limca 2.25 L read; Britannia cut off, "unreadable"; Limca 1 L a render, "not_found").
+  `eval_vision.py` reports numbers read right; `release_check.py` gate "Nutrition numbers read
+  correctly >= 98%", TODO until the gold set is read with the new prompt (6 paid reads, about Rs 3).
+- **Not done:** a published table that changes while the ingredients don't isn't noticed; tables not
+  per 100 g or 100 ml aren't used.
+
+### D-136 · Should the nutrition table change the score? `RECOMMENDED` (2026-09-29)
+The D-133 build prompt: "Information only; propose any score rule separately as RECOMMENDED." The
+score today counts ingredients, not amounts (D-120 said so plainly). Measured on the gold set, with
+one penalty per ICMR-NIN per 100 threshold exceeded (added sugar, energy, salt; Table 15.1):
+
+| Label | Over | Now | -4 each | -12 each |
+|---|---|---|---|---|
+| Limca 2.25 L | added sugar | 76 B | 72 B | 64 C |
+| Maliban wafer | added sugar, energy, salt | 56 C | 44 D | 20 E |
+| Patanjali Doodh | added sugar, energy, salt | 48 D | 36 D | 12 E |
+| Ziggy donut cake | added sugar, energy, salt | 4 E | 0 E | 0 E |
+
+**Recommended by Claude: no score rule yet.** A misread number would then move a grade, and the
+reader's accuracy on tables is unmeasured (the D-133 gate is TODO). Revisit when that gate passes on
+at least 20 gold tables; the -4 column (the `low` weight) is the gentler starting point. Not applied
+until Sushil decides.
+
 ### D-134 · One-screen result: warning tiles, each opening its own page `LOCKED` (2026-09-29)
 **Accepted by Sushil 2026-09-29** ("keep all 15 rows now ... implement all"). Compact tiles under the
 allergen line and headline, each opening a detail page; nothing else open by default; the first

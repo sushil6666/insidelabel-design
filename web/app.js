@@ -31,7 +31,7 @@ let pending = { barcode: null, barcodeSource: null, back: null, front: null, bac
 // ------------------------------------------------------------------ navigation
 const routes = {
   "": home, welcome, who, household, person, scan, photo, front, result, report, compare, problem, send,
-  join, agree, feedback, data,
+  join, agree, feedback, data, table,
 };
 
 // Setting the hash it already has fires no hashchange, so the page wouldn't
@@ -843,7 +843,46 @@ function finish(body) {
     // D-103: a photo that isn't a pack (a screen, anything else) can't be sent to a reviewer.
     if (body.scan_id && body.screen.can_send !== false) pending.refused.push(body.scan_id);
   }
+  pending.resultId = id;           // D-133: the photos in hand belong to this result
   go("result/" + encodeURIComponent(id));
+}
+
+// D-133: no nutrition table in the photos. One more photo, of the table, joins the
+// back photos as the next part (the D-119 parts flow), and the pack is read again.
+function table() {
+  if (!pending.back || pending.parts.length >= 2) return errorView("Scan the pack again to add its nutrition table.");
+  const preview = el("div", { class: "thumb" });
+  const go_ = el("button", { type: "button", class: "btn primary", disabled: true, onclick: () => sendPhotos() },
+                 "Read the pack again");
+  const n = pending.parts.length + 2;
+  return el("section", { class: "stack" },
+    el("h1", {}, "Photograph the nutrition table"),
+    el("p", { class: "lead" }, "Fill the frame with the table. We'll read it together with your ingredient photo."),
+    photoPicker("back" + n, "Take the table photo", preview, (b, res, source) => {
+      if (!b || (res && !res.ok)) return;
+      pending.parts = [...pending.parts.slice(0, n - 2), b];
+      pending.partSources = [...pending.partSources.slice(0, n - 2), source];
+      go_.disabled = false;
+    }, "back"),
+    preview, go_);
+}
+
+// D-133: the nutrition table beside ICMR-NIN's thresholds. Every sentence is the server's.
+function nutritionView(n, h) {
+  const canAsk = n.ask_photo && pending.resultId === h.id && pending.back && pending.parts.length < 2;
+  return el("div", { class: "card nutrition" },
+    el("h2", {}, n.title),
+    n.basis && el("p", { class: "muted small" }, n.basis),
+    n.rows.map(r => el("div", { class: `nut-row tone-${r.tone}` }, el("p", {}, r.text))),
+    n.servings.map(x => el("p", { class: "nut-serving" }, x.text)),
+    n.adults && el("p", { class: "muted small" }, n.adults),
+    n.also && el("p", { class: "muted small" }, n.also),
+    n.text && el("p", {}, n.text),
+    canAsk && button(n.ask, () => go("table")),
+    n.checked && el("p", { class: "muted small" }, n.checked),
+    n.sources?.length > 0 && el("details", { class: "more" }, el("summary", {}, "Sources"),
+      el("ul", { class: "plain small" }, n.sources.map(x =>
+        el("li", {}, el("a", { href: x.url, target: "_blank", rel: "noopener" }, x.cite))))));
 }
 
 // ------------------------------------------------------------------ result (D-060 to D-066)
@@ -928,6 +967,13 @@ function result(id) {
       el("span", {}, el("strong", {}, n.heading), el("span", { class: "look-more" }, n.more)),
       el("span", { class: "look-arrow", "aria-hidden": "true" }, el("span", {}, "›"))),
     el("div", { class: "look-body" }, noteBody(n)))));
+  // D-133: trans fat on the nutrition table, the same closed row.
+  (s.nutrition?.tiles || []).forEach(n => put(el("details", { class: "look" },
+    el("summary", {},
+      el("span", { class: "add-icon look-icon", "aria-hidden": "true" }, "!"),
+      el("span", {}, el("strong", {}, n.heading), el("span", { class: "look-more" }, n.more)),
+      el("span", { class: "look-arrow", "aria-hidden": "true" }, el("span", {}, "\u203a"))),
+    el("div", { class: "look-body" }, noteBody(n)))));
 
   // 3. D-123: the same three answers on every pack. Older results kept on the
   // phone have no summary; they keep the band (D-063) as before.
@@ -942,6 +988,7 @@ function result(id) {
           r.more.body.map(t => el("p", {}, t)),
           el("ul", { class: "plain small" }, r.more.sources.map(x =>
             el("li", {}, el("a", { href: x.url, target: "_blank", rel: "noopener" }, x.cite))))))))));
+    if (s.nutrition) put(nutritionView(s.nutrition, h));
     if (notes?.lines?.length) put(el("details", { class: "item" }, el("summary", {}, notes.title),
       el("div", { class: "items" }, notes.lines.map(n => el("div", { class: "note-line" },
         el("strong", {}, n.title), " ", el("span", { class: "muted small" }, n.where), noteBody(n))))));

@@ -59,5 +59,63 @@
     "ingredients": 1.0,
     "front_claims": 1.0,
     "product_identity": 1.0
+  },
+  "nutrition": {
+    "status": "read",
+    "per_100_basis": "PER 100ml",
+    "rda_column": "%RDA* PER SERVE",
+    "serving_size": "200 ml",
+    "servings_per_pack": "11.3",
+    "rows": [
+      {
+        "nutrient": "ENERGY",
+        "unit": null,
+        "per_100": "44 kcal",
+        "per_serving": null,
+        "rda_percent": "4.4%"
+      },
+      {
+        "nutrient": "CARBOHYDRATE",
+        "unit": null,
+        "per_100": "11.1 g",
+        "per_serving": null,
+        "rda_percent": "-"
+      },
+      {
+        "nutrient": "-TOTAL SUGARS",
+        "unit": null,
+        "per_100": "10.7 g",
+        "per_serving": null,
+        "rda_percent": "-"
+      },
+      {
+        "nutrient": "-ADDED SUGARS",
+        "unit": null,
+        "per_100": "10.7 g",
+        "per_serving": null,
+        "rda_percent": "42.8%"
+      },
+      {
+        "nutrient": "TOTAL FAT",
+        "unit": null,
+        "per_100": "0 g",
+        "per_serving": null,
+        "rda_percent": "0%"
+      },
+      {
+        "nutrient": "PROTEIN",
+        "unit": null,
+        "per_100": "0 g",
+        "per_serving": null,
+        "rda_percent": "-"
+      },
+      {
+        "nutrient": "SODIUM",
+        "unit": null,
+        "per_100": "5.6 mg",
+        "per_serving": null,
+        "rda_percent": "0.6%"
+      }
+    ]
   }
 }

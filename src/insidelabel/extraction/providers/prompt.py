@@ -219,6 +219,35 @@ RULES
      how certain you are that the characters you returned are the characters
      printed. Low confidence is useful information; inflated confidence is not.
 
+10. THE NUTRITION TABLE (nutrition). COPY IT; NEVER CALCULATE.
+   - The table headed "Nutrition Information", "Nutritional Facts" or similar,
+     on any supplied image, including a separate part below the ingredient
+     list. Some packs print it as a paragraph ("ENERGY 473.8 kcal (2.8%),
+     PROTEIN 6.5g (-), ..."): each nutrient is still one row.
+   - status: "read" = the whole table copied; "partial" = found, but some rows
+     or cells can't be read; "not_found" = no nutrition table in the images;
+     "unreadable" = a table is there but its numbers can't be read (cut off,
+     blurred, glare).
+   - per_100_basis: the heading of the per 100 column as printed ("Per 100 g",
+     "PER 100ml", "APPROX. VALUES PER 100g"). rda_column: the heading of the
+     % RDA column as printed, or null. serving_size and servings_per_pack as
+     printed ("12g", "200 ml", "1 croissant (45 g)"; "5.6", "80"), or null.
+   - rows: one entry per printed nutrient, in printed order:
+       nutrient     the row's label exactly as printed, with any "-", "of
+                    which" and words in brackets ("-Saturated fat (not more than)")
+       unit         a unit printed in a column of its own, else null
+       per_100      the per 100 g or 100 ml cell exactly as printed
+                    ("22.24g", "473.8 kcal", "0g", "<0.1")
+       per_serving  an amount per serving, only when the pack prints one (not
+                    a percentage), else null
+       rda_percent  the % RDA cell exactly as printed ("4.45", "(7.2%)", "-"),
+                    else null
+   - Copy numbers digit for digit, with the decimal point where it is printed.
+     Never compute, round, convert (kJ to kcal, sodium to salt) or fill in a
+     blank cell. A cell you can't read is null, and say so in extraction_notes.
+   - Never add a nutrient that isn't printed. Never use a typical value for
+     this kind of food.
+
 EXAMPLE (fragment, to show entry splitting only)
 
 Printed on back:
@@ -387,6 +416,34 @@ VISION_RESPONSE_SCHEMA = {
             "items": {"type": "string"},
             "description": "Legible asterisk footnote text, as printed.",
         },
+        "nutrition": {
+            "type": "object",
+            "description": "The nutrition table copied as printed (rule 10). Never computed or converted.",
+            "properties": {
+                "status": {"type": "string", "enum": ["read", "partial", "not_found", "unreadable"]},
+                "per_100_basis": {"type": "string", "nullable": True},
+                "rda_column": {"type": "string", "nullable": True},
+                "serving_size": {"type": "string", "nullable": True},
+                "servings_per_pack": {"type": "string", "nullable": True},
+                "rows": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "nutrient": {"type": "string"},
+                            "unit": {"type": "string", "nullable": True},
+                            "per_100": {"type": "string", "nullable": True},
+                            "per_serving": {"type": "string", "nullable": True},
+                            "rda_percent": {"type": "string", "nullable": True},
+                        },
+                        "required": ["nutrient", "unit", "per_100", "per_serving", "rda_percent"],
+                        "propertyOrdering": ["nutrient", "unit", "per_100", "per_serving", "rda_percent"],
+                    },
+                },
+            },
+            "required": ["status", "per_100_basis", "rda_column", "serving_size", "servings_per_pack", "rows"],
+            "propertyOrdering": ["status", "per_100_basis", "rda_column", "serving_size", "servings_per_pack", "rows"],
+        },
         "extraction_notes": {
             "type": "array",
             "items": {"type": "string"},
@@ -418,6 +475,7 @@ VISION_RESPONSE_SCHEMA = {
         "allergen_statement",
         "front_claims",
         "front_claim_footnotes",
+        "nutrition",
         "extraction_notes",
         "confidence",
     ],
@@ -436,6 +494,7 @@ VISION_RESPONSE_SCHEMA = {
         "allergen_statement",
         "front_claims",
         "front_claim_footnotes",
+        "nutrition",
         "extraction_notes",
         "confidence",
     ],

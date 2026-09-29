@@ -52,6 +52,7 @@ from insidelabel.core import engine  # noqa: E402
 from insidelabel.claims import checker as claim_checker  # noqa: E402
 from insidelabel.lenses import allergens as allergen_checker  # noqa: E402
 from insidelabel.lenses import compare as shelf  # noqa: E402
+from insidelabel.lenses import nutrition  # noqa: E402
 from insidelabel.lenses import regulators  # noqa: E402
 from insidelabel.lenses import screen as result_screen  # noqa: E402
 from insidelabel.reliability import gates as rel  # noqa: E402
@@ -651,9 +652,11 @@ def _catalogue_result(hit, avoid_codes, who, compare_regulators, profiles=(), sc
         "screen": result_screen.build(
             verdict=verdict, display=display, claim_check=claim_check, extracted=extracted,
             reliability=reliability, profiles=profiles, allergen_confidence=1.0,
-            allergen_reliable=True, catalogue=catalogue, screen_pack=screen_pack),
+            allergen_reliable=True, catalogue=catalogue, screen_pack=screen_pack,
+            nutrition=hit.get("nutrition")),
         "catalogue": catalogue,
         "product": {"brand": hit["brand"], "name": hit["name"], "variant": hit["variant"]},
+        "nutrition": nutrition.public(hit.get("nutrition")),
         "verdict": verdict,
         "display": display,
         "claim_check": claim_check,
@@ -1310,6 +1313,10 @@ async def scan(
         reader = "cloud_vision" if text is not None else ocr_result.get("reader")
         if reader:
             tr["ocr"] = {"back": {"reader": reader, "text": text}}
+    # D-133: the nutrition table, kept only where the second reading of the same
+    # photo and the table's own arithmetic agree (lenses/nutrition.py).
+    panel = nutrition.check(vision.get("nutrition"), ocr_result.get("ocr_text"),
+                            (vision.get("product") or {}).get("net_quantity"), reader=ocr_result.get("reader"))
     alarm = cloud_vision.take_alarm()
     if alarm:
         _setup_alarm(f"ocr_config:{alarm}", "Cloud Vision refused the call; scans fall back to Tesseract "
@@ -1458,7 +1465,7 @@ async def scan(
             claims_trusted=claims_trusted, reliability=reliability, barcode=barcode,
             device_id=device_id, latency_ms=_ms(t0), model_name=vision.get("_model") or MODEL,
             prompt_version=PROMPT_VERSION, engine_version=ENGINE_VERSION,
-            front_key=keys.get("front"), back_key=keys.get("back"), trace=tr)
+            front_key=keys.get("front"), back_key=keys.get("back"), trace=tr, nutrition=panel)
 
     display = rel.apply_display_rule(verdict, reliability)
     user_claims = _user_claim_check(claim_check, vision.get("front_claims", []))
@@ -1477,7 +1484,8 @@ async def scan(
             verdict=verdict, display=display, claim_check=user_claims, extracted=extracted,
             reliability=reliability, profiles=people, allergen_confidence=allergen_confidence,
             allergen_reliable=allergen_reliable, has_barcode=barcode is not None, pack=pack,
-            screen_pack=None if from_screen else screen_pack),
+            screen_pack=None if from_screen else screen_pack, nutrition=panel,
+            parts_sent=max(1, len(parts))),
         "scan_id": saved["scan_id"] if saved else _str(unlisted_id),
         "catalogue": ({"source": "scan", "product_version_id": saved["product_version_id"],
                        "status": saved["version_status"], "queued_for_review": saved["queued"]}
@@ -1487,6 +1495,7 @@ async def scan(
                       else {"source": "scan", "status": "not_saved", "reason": "no_barcode"} if barcode is None
                       else None),
         "product": vision.get("product"),
+        "nutrition": nutrition.public(panel),
         "verdict": verdict,
         "display": display,
         "claim_check": user_claims,

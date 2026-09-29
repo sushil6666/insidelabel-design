@@ -168,3 +168,13 @@ def test_ingredient_notes_table_and_their_screen_words():
     texts = [t for r in rows for t in [r["title"], *r["summary"]]]
     texts += [screen.NOTES_TITLE, screen.NOTE_MORE, screen.SUGAR_MORE_TITLE]
     assert_clean(texts, "ingredient_notes.json")
+
+
+def test_nutrition_table_words():
+    # D-133: the words the screen puts around a nutrition table. The sentences built
+    # from real tables are linted in test_nutrition.py (all six gold labels).
+    from insidelabel.lenses import nutrition, screen
+    texts = [screen.NUTRITION_TITLE, screen.NUTRITION_MISSING, screen.NUTRITION_UNCLEAR, screen.NUTRITION_PARTIAL,
+             screen.NUTRITION_UNVERIFIED, screen.NUTRITION_ASK, screen.NUTRITION_CHECKED, screen.NUTRITION_ADULTS,
+             *nutrition.THRESHOLDS["trans_fat_tile"]["summary"]]
+    assert_clean(texts, "nutrition table words")

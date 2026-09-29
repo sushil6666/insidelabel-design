@@ -170,6 +170,9 @@ class ReviewService:
               category_source (pack_declared | codex_descriptor | reviewer; default reviewer)
         """
         drafted_by = (form.get("drafted_by") or "").strip() or reviewer
+        # D-133: the nutrition table is published only when the reviewer ticks
+        # that every number shown matches the photo; otherwise without it.
+        nutrition_ok = bool(form.get("nutrition_ok"))
         if drafted_by not in (reviewer,) + AI_DRAFTERS:
             raise ReviewError("Drafted by: yourself, Claude or Gemini.")
         category_source = (form.get("category_source") or "").strip() or "reviewer"
@@ -201,6 +204,9 @@ class ReviewService:
                 raise ReviewError("This was read from an online listing, not the pack. "
                                   "Reject it and scan the physical label instead.")
 
+            if q["kind"] == "nutrition" and not nutrition_ok:
+                raise ReviewError("This item is the nutrition table. Tick that its numbers match the photo, "
+                                  "or reject it.")
             pid = v["product_id"] if v else None
             if pid is None and not barcode:
                 # D-107: the catalogue is filed by barcode. A new product without
@@ -213,6 +219,7 @@ class ReviewService:
             if v and v["status"] == "pending_review":
                 # Correct the waiting version in place, then publish it.
                 self._write_version(c, v["id"], ingredients, statement, claims)
+                self._set_nutrition(c, v["id"], v.get("nutrition") if nutrition_ok else None, reviewer)
                 c.execute("SELECT publish_version(%s, %s)", (v["id"], reviewer))
                 vid, resolution = v["id"], "published"
             elif (v and (v["ingredients_hash"], v["allergen_statement"], v["claims_hash"]) == content
@@ -238,6 +245,7 @@ class ReviewService:
                      src.get("back_image_key") or scan.get("back_image_key"),
                      Jsonb({"derived_from_version": src.get("id"), "review_item": item_id}))).fetchone()["id"]
                 self._write_version(c, vid, ingredients, statement, claims)
+                self._set_nutrition(c, vid, src.get("nutrition") if nutrition_ok else None, reviewer)
                 c.execute("SELECT publish_version(%s, %s)", (vid, reviewer))
                 resolution = "published_new_version"
 
@@ -384,6 +392,14 @@ class ReviewService:
         c.execute("DELETE FROM evidence WHERE product_version_id = %s", (vid,))
         Store._insert_findings(c, vid, self.engine_version,
                                build_findings(ingredients, verdict, cc, self.engine_version))
+
+    @staticmethod
+    def _set_nutrition(c, vid, table, reviewer):
+        """D-133: the table as confirmed, with who confirmed it, or none."""
+        if table:
+            table = {**table, "confirmed_by": reviewer}
+        c.execute("UPDATE product_versions SET nutrition = %s WHERE id = %s",
+                  (Jsonb(table) if table else None, vid))
 
     @staticmethod
     def _close(c, item_id, status, resolution, note, vid):

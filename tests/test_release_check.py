@@ -42,3 +42,27 @@ def test_allergen_miss_is_caught(tmp_path):
 def test_open_decisions_block_release():
     rows = rc.decision_gates()
     assert {n for _, n, _ in rows} == {f"{d} decided" for d in rc.DECISIONS_BEFORE_RELEASE}
+
+
+def _gate(rows):
+    return next(r for r in rows if r[1].startswith("Nutrition numbers read correctly"))
+
+
+def test_nutrition_gate_is_todo_until_a_reading_has_a_table():
+    # D-133: today's predictions were made before the table was read.
+    rows = rc.gates(os.path.join(ROOT, "gold"), os.path.join(ROOT, "predictions"))
+    assert _gate(rows)[0] == rc.TODO
+
+
+def test_nutrition_gate_measures_number_by_number(tmp_path):
+    import json
+    gold = json.load(open(os.path.join(ROOT, "gold", "ziggy-donut-cake-choco-vanilla.json"), encoding="utf-8"))
+    for d in ("gold", "pred"):
+        (tmp_path / d).mkdir()
+    (tmp_path / "gold" / "z.json").write_text(json.dumps(gold))
+    (tmp_path / "pred" / "z.json").write_text(json.dumps(gold))
+    assert _gate(rc.gates(str(tmp_path / "gold"), str(tmp_path / "pred")))[:1] == (rc.PASS,)
+    gold["nutrition"]["rows"][9]["per_100"] = "331.5"               # sodium misread: 10 of 11
+    (tmp_path / "pred" / "z.json").write_text(json.dumps(gold))
+    status, _, detail = _gate(rc.gates(str(tmp_path / "gold"), str(tmp_path / "pred")))
+    assert status == rc.FAIL and detail.startswith("10 of 11 numbers")

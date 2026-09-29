@@ -80,5 +80,84 @@
     "MRP Rs 60.00 and unit sale price Rs 0.59 per g are printed; both are price information.",
     "Nutrition panel: per 100g Energy 398.64 kcal, Protein 5.66g, Carbohydrates 55.93g, Total Sugars 27.85g, Added Sugars 20.26g, Total Fat 16.92g, Saturated 7.45g, Trans 0.03g, Cholesterol 0.82mg, Sodium 331.55mg. Serve size 51g. Recorded here only."
   ],
-  "confidence": { "ingredients": 1.0, "front_claims": 0.9, "product_identity": 1.0 }
+  "confidence": { "ingredients": 1.0, "front_claims": 0.9, "product_identity": 1.0 },
+  "nutrition": {
+    "status": "read",
+    "per_100_basis": "Per 100 g",
+    "rda_column": "% RDA** per serving",
+    "serving_size": "51 g",
+    "servings_per_pack": "2",
+    "rows": [
+      {
+        "nutrient": "Energy",
+        "unit": "kcal",
+        "per_100": "398.64",
+        "per_serving": null,
+        "rda_percent": "10.17"
+      },
+      {
+        "nutrient": "Protein",
+        "unit": "g",
+        "per_100": "5.66",
+        "per_serving": null,
+        "rda_percent": null
+      },
+      {
+        "nutrient": "Carbohydrates",
+        "unit": "g",
+        "per_100": "55.93",
+        "per_serving": null,
+        "rda_percent": null
+      },
+      {
+        "nutrient": "- Total Sugars",
+        "unit": "g",
+        "per_100": "27.85",
+        "per_serving": null,
+        "rda_percent": null
+      },
+      {
+        "nutrient": "- Added Sugars",
+        "unit": "g",
+        "per_100": "20.26",
+        "per_serving": null,
+        "rda_percent": "20.67"
+      },
+      {
+        "nutrient": "Total Fat",
+        "unit": "g",
+        "per_100": "16.92",
+        "per_serving": null,
+        "rda_percent": "12.88"
+      },
+      {
+        "nutrient": "- Saturated Fat",
+        "unit": "g",
+        "per_100": "7.45",
+        "per_serving": null,
+        "rda_percent": "17.27"
+      },
+      {
+        "nutrient": "- Trans Fat",
+        "unit": "g",
+        "per_100": "0.03",
+        "per_serving": null,
+        "rda_percent": "0.77"
+      },
+      {
+        "nutrient": "- Cholesterol",
+        "unit": "mg",
+        "per_100": "0.82",
+        "per_serving": null,
+        "rda_percent": null
+      },
+      {
+        "nutrient": "Sodium",
+        "unit": "mg",
+        "per_100": "331.55",
+        "per_serving": null,
+        "rda_percent": "8.45"
+      }
+    ]
+  }
 }

@@ -63,5 +63,91 @@
     "Nutrition panel: per 100g Energy 471.7 kcal, Total Carbohydrates 71.19g, Total sugars 24.1g, Added sugars 22.24g, Dietary fibre 6.22g, Protein 7.36g, Total Fat 17.18g, Saturated 8.08g, Trans 0.09g, Sodium 352.61mg. Recorded here only.",
     "Product is a milk biscuit despite the working id 'Patan-Atta-Bis'; suggest renaming to patanjali-doodh-biscuits."
   ],
-  "confidence": { "ingredients": 1.0, "front_claims": 0.9, "product_identity": 0.9 }
+  "confidence": { "ingredients": 1.0, "front_claims": 0.9, "product_identity": 0.9 },
+  "nutrition": {
+    "status": "read",
+    "per_100_basis": "Per 100g",
+    "rda_column": "Per serve % Contribution to RDA**",
+    "serving_size": "10g",
+    "servings_per_pack": "80",
+    "rows": [
+      {
+        "nutrient": "Energy",
+        "unit": null,
+        "per_100": "471.7 kcal",
+        "per_serving": null,
+        "rda_percent": "2.36"
+      },
+      {
+        "nutrient": "Total Carbohydrates",
+        "unit": null,
+        "per_100": "71.19g",
+        "per_serving": null,
+        "rda_percent": null
+      },
+      {
+        "nutrient": "-Total sugars",
+        "unit": null,
+        "per_100": "24.1g",
+        "per_serving": null,
+        "rda_percent": null
+      },
+      {
+        "nutrient": "-Added sugars",
+        "unit": null,
+        "per_100": "22.24g",
+        "per_serving": null,
+        "rda_percent": "4.45"
+      },
+      {
+        "nutrient": "Dietary fibre",
+        "unit": null,
+        "per_100": "6.22g",
+        "per_serving": null,
+        "rda_percent": "#2.07"
+      },
+      {
+        "nutrient": "Protein",
+        "unit": null,
+        "per_100": "7.36g",
+        "per_serving": null,
+        "rda_percent": null
+      },
+      {
+        "nutrient": "Total Fat",
+        "unit": null,
+        "per_100": "17.18g",
+        "per_serving": null,
+        "rda_percent": "2.56"
+      },
+      {
+        "nutrient": "-Saturated fat (not more than)",
+        "unit": null,
+        "per_100": "8.08g",
+        "per_serving": null,
+        "rda_percent": "3.67"
+      },
+      {
+        "nutrient": "-Trans fat (not more than)",
+        "unit": null,
+        "per_100": "0.09g",
+        "per_serving": null,
+        "rda_percent": "0.45"
+      },
+      {
+        "nutrient": "Cholesterol",
+        "unit": null,
+        "per_100": "2.13mg",
+        "per_serving": null,
+        "rda_percent": null
+      },
+      {
+        "nutrient": "Sodium",
+        "unit": null,
+        "per_100": "352.61mg",
+        "per_serving": null,
+        "rda_percent": "1.76"
+      }
+    ]
+  }
 }

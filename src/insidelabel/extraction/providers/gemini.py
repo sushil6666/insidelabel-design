@@ -55,7 +55,9 @@ _FENCE = re.compile(r"^\s*```(?:json)?\s*|\s*```\s*$", re.MULTILINE)
 # D-103: Gemini must answer image_content (the schema requires it), but model
 # answers recorded before it existed (tests, saved regressions, predictions/)
 # don't have it, and still have to parse. Missing = unknown = no image rule.
-OPTIONAL_KEYS = {"image_content"}
+# D-133: "nutrition" too. Answers recorded before it (every scan before D-133)
+# have no table and must still parse and replay the same (D-092).
+OPTIONAL_KEYS = {"image_content", "nutrition"}
 REQUIRED_KEYS = set(VISION_RESPONSE_SCHEMA["required"]) - OPTIONAL_KEYS
 _IMAGE_CONTENT = {"food_pack", "screen", "not_food", "not_provided"}
 # D-108: words that state a difference between the two faces, in the model's evidence.
@@ -66,6 +68,7 @@ _DIFFERENCE_CUES = ("different", " vs ", " vs. ", "versus", "does not match", "d
 _FRONT_STATUS = {"read", "not_provided", "unreadable"}
 _BACK_STATUS = {"read", "not_provided", "unreadable"}
 _ING_STATUS = {"read", "partial", "not_found", "unreadable"}
+_NUTRITION_STATUS = {"read", "partial", "not_found", "unreadable"}
 
 
 class VisionError(RuntimeError):
@@ -534,6 +537,19 @@ def harden(vision, sent_front, sent_back):
                 corrections.append(f"image_content.{role} {ic.get(role)!r} invalid -> unknown")
                 ic[role] = "unknown"
         v["image_content"] = ic
+
+    # 1c. The nutrition table (D-133). The model only copies it; lenses/nutrition.py
+    #     judges it. Here only its shape: an unknown status is "unreadable", never
+    #     "read", and rows that aren't a list are no rows.
+    if "nutrition" in v:
+        n = v["nutrition"] if isinstance(v["nutrition"], dict) else {}
+        n = dict(n)
+        if n.get("status") not in _NUTRITION_STATUS:
+            corrections.append(f"nutrition.status {n.get('status')!r} invalid -> unreadable")
+            n["status"] = "unreadable"
+        if not isinstance(n.get("rows"), list):
+            n["rows"] = []
+        v["nutrition"] = n
 
     # 2. The client knows how many images it sent. The model does not get to
     #    claim it read a face that was never transmitted.
