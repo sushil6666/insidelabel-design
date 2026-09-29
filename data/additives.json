@@ -152,9 +152,9 @@
       "fssai_basis": "numeric limits per food category, as PHOSPHATES (Appendix A, Annexure-1)", "verified_on": "2026-09-26"
     },
     {
-      "ins": "407", "name": "Carrageenan", "class": "thickener", "concern": "moderate",
-      "why": "Seaweed thickener. Some studies suggest gut inflammation (contested). NOVA cosmetic marker.",
-      "sources": ["WHO"], "fssai_status": "permitted", "flags": ["gut_inflammation_contested"], "confidence": "medium", "verify": false,
+      "ins": "407", "name": "Carrageenan", "class": "thickener", "concern": "low",
+      "why": "Seaweed thickener. EFSA (2018) found no adverse effects in long-term studies and set a temporary daily limit until better data came in. NOVA cosmetic marker.",
+      "sources": ["EFSA"], "fssai_status": "permitted", "flags": ["efsa_temporary_adi"], "confidence": "medium", "verify": false,
       "fssai_basis": "GMP, all food categories (Appendix A GMP table)", "verified_on": "2026-09-26"
     },
     {
@@ -265,9 +265,9 @@
       "fssai_basis": "numeric limits per food category (Appendix A)", "verified_on": "2026-09-26"
     },
     {
-      "ins": "960", "name": "Steviol glycosides (Stevia)", "class": "sweetener", "concern": "low",
-      "why": "Plant-derived sweetener. Lower concern than synthetic sweeteners but still a NOVA cosmetic marker.",
-      "sources": ["FSSAI"], "fssai_status": "permitted_with_limits", "flags": ["sweetener_natural"], "confidence": "high", "verify": false,
+      "ins": "960", "name": "Steviol glycosides (Stevia)", "class": "sweetener", "concern": "moderate",
+      "why": "Plant-derived sweetener. WHO 2023 advises against non-sugar sweeteners, stevia among them, for weight control. NOVA cosmetic marker.",
+      "sources": ["FSSAI", "WHO"], "fssai_status": "permitted_with_limits", "flags": ["sweetener_natural", "who_nss_advisory"], "confidence": "high", "verify": false,
       "fssai_basis": "numeric limits per food category (Appendix A)", "verified_on": "2026-09-26"
     },
     {
