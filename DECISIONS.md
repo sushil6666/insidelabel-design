@@ -1843,6 +1843,33 @@ person back to the pack.
 - **Later:** matching a screen to the catalogue by brand and name when no barcode is shown (risk of
   the wrong variant); to be proposed separately.
 
+### D-131 · Concern levels for three sweeteners and carrageenan after reading the sources `RECOMMENDED` (2026-09-29)
+Sushil approved the 15 research rows (2026-09-29, "approved"; now in `data/additive_research.json`)
+and asked for a call on whether saccharin (954), acesulfame K (950), sucralose (955) and carrageenan
+(407) stay `moderate`. EFSA's latest opinions on all four found no concern at current intakes
+(saccharin 2024, acesulfame K 2025, sucralose 2026: intakes below the limit; carrageenan 2018: no
+concern on cancer or DNA, no adverse effects in long-term rat studies). Recommended by Claude.
+
+- **954, 950, 955 stay `moderate`.** EFSA answers "is intake within the limit"; the WHO guideline of
+  15 May 2023 (read first-hand) answers a different question and names all three (with aspartame
+  and stevia): it advises against non-sugar sweeteners to control weight, citing no long-term benefit
+  for body fat and possible links in adults to type 2 diabetes, cardiovascular disease and death,
+  rated conditional because the studies may be confounded. That is a published opinion of a health
+  body, the `moderate` definition in `additives.json`. Sucralose also has EFSA's 2026 uncertainty on
+  heating. Drafts in `docs/research_drafts.json` add the WHO sentence to each row, for Sushil's
+  "approved".
+- **407 carrageenan to `low`, its "why" rewritten.** EFSA's temporary limit is about gaps in the data,
+  not an effect it found; the row's "why" ("Some studies suggest gut inflammation (contested)") has no
+  source read first-hand (D-046). Proposed "why": "Seaweed thickener. EFSA (2018) found no adverse
+  effects in long-term studies and set a temporary daily limit until better data came in." Effect: 407
+  leaves "Worth a look" (its research row goes back to the drafts file), its penalty goes from 12 to 0
+  (its flag isn't a low-penalty flag), and it still counts as an industrial ingredient (NOVA marker,
+  scored separately). None of the 6 gold labels contain 407. **Not applied until Sushil says
+  "accepted".**
+- **Open, not proposed:** stevia (960) is `low` though the WHO guideline names it too. Consistency
+  with the reason above would make it `moderate`; that moves scores on stevia packs and is Sushil's
+  call.
+
 ---
 
 ## Open and pending

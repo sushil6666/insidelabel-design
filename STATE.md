@@ -650,6 +650,15 @@ setup alarms.
 
 **NEXT SESSION STARTS HERE (2026-09-28).** Where things stand, newest first:
 
+- **Research rows live, 2026-09-29** (branch `research-approved`, on top of `screen-read`): Sushil
+  "approved" all 15 drafts; they are in `data/additive_research.json` (`reviewed_by` sushil), so the
+  "Worth a look" rows show research with sources. 127 erythrosine still needs the EFSA 2011 PDF by
+  hand. **D-131 RECOMMENDED:** 954, 950, 955 stay `moderate` on the WHO 2023 sweetener guideline
+  (a sentence for each waits in `docs/research_drafts.json` for "approved"); 407 carrageenan to `low`
+  with a sourced "why" (not applied; waits for "accepted"); stevia's `low` is an open question.
+- **Parked by Sushil (2026-09-29, "will check later"):** billing, `insidelabel.in` client hold, the
+  API keys, Candzey hard or chewy (§8 item 1).
+
 - **Problem report #1 (server, 2026-09-28 20:08, "Why photo not allowed?"):** both of the tester's
   scans were refused `back_is_a_screen` (D-103): Gemini said the back photo was a screen, though both
   came from the camera and passed `/check-photo`. Real false alarm or a photographed display: only the
