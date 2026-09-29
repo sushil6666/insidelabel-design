@@ -123,10 +123,19 @@ def test_a_raw_string_is_split_as_the_tokenizer_splits_it():
 RUSK = ["Refined wheat flour (Maida)", "Sugar", "Hydrogenated vegetable fat", "Palm oil", "Salt", "Yeast"]
 
 
-def test_nothing_is_shown_until_a_person_reviewed_the_row():
-    for r in ROWS:
-        if not r["reviewed_by"]:
-            assert r["id"] not in json.dumps(scan(RUSK, profiles=CHILD).json()["screen"].get("ingredient_notes"))
+def test_every_row_in_the_table_was_reviewed():
+    # Sushil, 2026-09-29: "approved, keep the oil line". A new row goes in with
+    # reviewed_by null and stays hidden until a person reviews it (next test).
+    assert all(r["reviewed_by"] == "sushil" for r in ROWS)
+
+
+def test_nothing_is_shown_until_a_person_reviewed_the_row(monkeypatch):
+    rows = copy.deepcopy(screen.NOTES)
+    rows["palm_oil"]["reviewed_by"] = None
+    monkeypatch.setattr(screen, "NOTES", rows)
+    notes = scan(RUSK, profiles=CHILD).json()["screen"]["ingredient_notes"]
+    assert "palm_oil" not in {i["id"] for part in ("tiles", "lines") for i in notes[part]}
+    assert [t["id"] for t in notes["tiles"]] == ["hydrogenated_fat", "maida"]
 
 
 def test_tiles_and_lines(reviewed):
@@ -205,10 +214,10 @@ def _gold_scan(g):
 @pytest.mark.parametrize("name", sorted(GOLD))
 def test_gold_before_and_after(name, monkeypatch):
     g = GOLD[name]
-    before = _gold_scan(g)
-    rows = {k: {**copy.deepcopy(r), "reviewed_by": "test"} for k, r in screen.NOTES.items()}
-    monkeypatch.setattr(screen, "NOTES", rows)
-    after = _gold_scan(g)
+    after = _gold_scan(g)                                  # the reviewed table, as shipped
+    hidden = {k: {**copy.deepcopy(r), "reviewed_by": None} for k, r in screen.NOTES.items()}
+    monkeypatch.setattr(screen, "NOTES", hidden)
+    before = _gold_scan(g)                                 # as it was before D-132
     # Information only: the verdict, the allergens and every other screen field are unchanged.
     assert before["verdict"]["score"] is not None and before["screen"]["state"] == "result"
     assert after["verdict"] == before["verdict"] and after["allergens"] == before["allergens"]

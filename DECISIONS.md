@@ -1912,6 +1912,9 @@ The ingredient-notes review in chat (15 rows, from ICMR-NIN 2024 and WHO). **Acc
 - **What no source said, so the app doesn't:** no source calls sooji refined (it gets FSSAI's
   definition only, no tile); no children's caffeine figure (ICMR-NIN speaks only of pregnancy);
   "bakery fat" has no FSSAI definition (it is treated as a fat whose type isn't named).
+- **Rows approved by Sushil 2026-09-29** ("approved, keep the oil line"): all 14 rows now carry
+  `reviewed_by: "sushil"` and show. The unnamed-oil row keeps its second sentence ("FSSAI's
+  labelling rules ask for the name of the specific edible oil...").
 
 ### D-133 · Read the nutrition table and judge it against ICMR-NIN's own thresholds `LOCKED` (2026-09-29)
 **Accepted by Sushil 2026-09-29** ("keep all 15 rows now ... implement all", row 15 of the review).
@@ -1926,6 +1929,54 @@ built in phase 2 (branch `nutrition-panel`).
 allergen line and headline, each opening a detail page; nothing else open by default; the first
 screen fits a 390 x 844 phone for a pack with 2 warnings. To be built in phase 3 (branch
 `result-tiles`).
+
+### D-135 · Hydrogenated and interesterified fats under the names Indian packs print them count as NOVA markers `RECOMMENDED` (2026-09-29)
+Found while building D-132: the NOVA row "Hydrogenated / interesterified oil" misses the words Indian
+packs use. A rusk listing "Hydrogenated vegetable fat" scores 100, grade A, clean; Britannia's gold
+label lists "INTERESTERIFIED VEGETABLE FAT" and the marker doesn't see it. Sushil asked for the
+write-up ("write up the NOVA proposal", 2026-09-29). Recommended by Claude. **Not applied until
+Sushil says "accepted".**
+
+**The basis (primary sources, read 2026-09-29).**
+- Monteiro et al., "Ultra-processed foods: what they are and how to identify them", Public Health
+  Nutrition 22(5), 2019, pp. 937 to 938 (https://doi.org/10.1017/S1368980018003762, the paper
+  `nova_markers.json` cites): food substances used only in ultra-processed foods include "modified
+  oils (hydrogenated or interesterified oils)", and "The presence in the list of ingredients of one
+  or more of these food substances identifies a product as ultra-processed."
+- ICMR-NIN Dietary Guidelines for Indians 2024, p. 55: hydrogenated fat is "often referred to as
+  'vegetable shortening'".
+- FSS (FPS&FA) Regulations 2011, 2.2.6 (compendium XXVI, PDF pp. 122 to 123): vanaspati is refined
+  vegetable oil "subjected to a process of hydrogenation in any form or chemical or enzymatic
+  interesterification"; "Bakery shortening means vanaspati meant for use as a shortening".
+- FSS (Labelling and Display) Regulations 2020, 5(2)(d) (compendium I, PDF p. 6): the class title
+  for edible vegetable fat names "interesterified vegetable fat" and "hydrogenated oils", so these
+  are the words a pack is told to print.
+
+**The change (data only).** Add to `nova_markers.json` `nova_hydrogenated_oil` aliases:
+"hydrogenated vegetable fat", "partially hydrogenated fat", "interesterified vegetable fat",
+"interesterified vegetable oil", "shortening". Aliases match inside a longer entry, so "vegetable
+shortening" and "bakery shortening" are covered by "shortening". Not bare "hydrogenated": it would
+also match "non-hydrogenated". Not margarine: the paper lists margarines among ultra-processed
+*products*, not among the marker substances.
+
+**What it changes, measured** (engine and `/scan` with replay, no paid call; the NOVA marker costs
+12 points, the `moderate` penalty):
+
+| Label | Now | With D-135 |
+|---|---|---|
+| Britannia Treat Croissant (gold) | 48 D, ultra-processed | 36 D, ultra-processed; "How it's made" leads with "Interesterified vegetable fat"; headline unchanged (sugar) |
+| Limca x2, Maliban, Patanjali, Ziggy (gold) | unchanged | unchanged |
+| Invented: maida, sugar, hydrogenated vegetable fat, salt, yeast | 100 A, clean, "A few things worth knowing." | 88 A, ultra-processed, "Made with industrial ingredients, such as hydrogenated vegetable fat." |
+| Invented: with "Bakery shortening" / "Vegetable shortening" | 100 A, clean | 88 A, ultra-processed |
+| Invented: with "Interesterified vegetable fat" | 100 A, clean | 88 A, ultra-processed |
+
+The laptop database (18 scans) has only the Britannia wording. The server has more; Sushil can count
+them read-only: `sudo -u insidelabel psql -d insidelabel -c "SELECT count(*) FROM scans WHERE
+model_raw::text ~* 'hydrogenated vegetable fat|partially hydrogenated fat|interesterified vegetable|shortening'"`.
+
+**If accepted:** the five aliases, a test per wording (and one that "non-hydrogenated" stays out),
+and the gold label's expected score updated. `compare.py`'s NOVA count reads the same file, so it
+follows without a code change.
 
 ---
 

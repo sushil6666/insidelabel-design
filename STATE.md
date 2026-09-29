@@ -656,10 +656,13 @@ setup alarms.
   lines), sugar answer's `more`. **Every row ships `reviewed_by: null`, so nothing shows until
   Sushil says "approved"** (then set `reviewed_by: "sushil"` on each row). Walked in headless
   Chromium, light and dark, with the rows marked reviewed: no errors. Khandsari, bura, misri in
-  `sugar_aliases` (live on merge; gold set unchanged). **Waiting on Sushil:** "approved" for the
-  rows, merge, phone check. **Proposals, not built:** "hydrogenated vegetable fat" and "shortening"
-  are not NOVA aliases (a rusk with it scores 100, clean): adding them moves scores, so it needs its
-  own decision. **Then phase 2** (D-133, branch `nutrition-panel`); FSSAI L&D 2020 is already read
+  `sugar_aliases` (live on merge; gold set unchanged). **Rows approved by Sushil 2026-09-29**
+  ("approved, keep the oil line"): all 14 carry `reviewed_by: "sushil"` and show on merge.
+  **Waiting on Sushil:** merge, `update.sh`, phone check. **D-135 RECOMMENDED** (write-up only, not
+  applied): "hydrogenated vegetable fat", "partially hydrogenated fat", "interesterified vegetable
+  fat/oil", "shortening" as NOVA aliases (Monteiro 2019 read first-hand); Britannia 48 to 36 (still
+  D), other gold labels unchanged, invented rusk 100 A clean to 88 A ultra-processed. Needs
+  "accepted"; server count query in the entry. **Then phase 2** (D-133, branch `nutrition-panel`); FSSAI L&D 2020 is already read
   (nutrition fields pp. 9 to 13). Test isolation fixed on the way: `conftest.py` clears Cloud
   Vision's per-photo text cache before each test (it made `test_no_barcode` depend on test order).
 

@@ -51,7 +51,8 @@
       "khandsari_bura_misri": "Row 11 of the review is a change to normalization.json sugar_aliases, not a row here (FSSAI FPS&FA 2011 2.8.1 and 2.8.2, compendium XXVI PDF pp. 341 to 342).",
       "coconut_sugar": "No FSSAI standard defines coconut sugar (searched compendium XXVI, 2026-09-29), so it is not added to sugar_aliases.",
       "nutrition_table": "Row 15 of the review is phase 2 (D-133)."
-    }
+    },
+    "reviewed": "All rows approved by Sushil 2026-09-29 (\"approved, keep the oil line\")."
   },
   "rows": [
     {
@@ -85,7 +86,7 @@
       ],
       "position_rule": "tile_if_top3",
       "children_only": false,
-      "reviewed_by": null
+      "reviewed_by": "sushil"
     },
     {
       "id": "refined_flour_starch",
@@ -134,7 +135,7 @@
       ],
       "position_rule": "tile_if_top3",
       "children_only": false,
-      "reviewed_by": null
+      "reviewed_by": "sushil"
     },
     {
       "id": "sooji",
@@ -160,7 +161,7 @@
       ],
       "position_rule": "details",
       "children_only": false,
-      "reviewed_by": null
+      "reviewed_by": "sushil"
     },
     {
       "id": "palm_oil",
@@ -204,7 +205,7 @@
       ],
       "position_rule": "tile",
       "children_only": false,
-      "reviewed_by": null
+      "reviewed_by": "sushil"
     },
     {
       "id": "hydrogenated_fat",
@@ -252,7 +253,7 @@
       ],
       "position_rule": "tile",
       "children_only": false,
-      "reviewed_by": null
+      "reviewed_by": "sushil"
     },
     {
       "id": "coconut_oil",
@@ -283,7 +284,7 @@
       ],
       "position_rule": "tile",
       "children_only": false,
-      "reviewed_by": null
+      "reviewed_by": "sushil"
     },
     {
       "id": "ghee_butter",
@@ -324,7 +325,7 @@
       ],
       "position_rule": "details",
       "children_only": false,
-      "reviewed_by": null
+      "reviewed_by": "sushil"
     },
     {
       "id": "margarine",
@@ -359,7 +360,7 @@
       ],
       "position_rule": "details",
       "children_only": false,
-      "reviewed_by": null
+      "reviewed_by": "sushil"
     },
     {
       "id": "oil_unnamed",
@@ -389,7 +390,7 @@
       ],
       "position_rule": "unnamed",
       "children_only": false,
-      "reviewed_by": null
+      "reviewed_by": "sushil"
     },
     {
       "id": "fat_unnamed",
@@ -418,7 +419,7 @@
       ],
       "position_rule": "unnamed",
       "children_only": false,
-      "reviewed_by": null
+      "reviewed_by": "sushil"
     },
     {
       "id": "sugar",
@@ -445,7 +446,7 @@
       ],
       "position_rule": "sugar_details",
       "children_only": false,
-      "reviewed_by": null
+      "reviewed_by": "sushil"
     },
     {
       "id": "sweetener_children",
@@ -514,7 +515,7 @@
       ],
       "position_rule": "details",
       "children_only": true,
-      "reviewed_by": null
+      "reviewed_by": "sushil"
     },
     {
       "id": "salt",
@@ -553,7 +554,7 @@
       ],
       "position_rule": "details",
       "children_only": false,
-      "reviewed_by": null
+      "reviewed_by": "sushil"
     },
     {
       "id": "caffeine",
@@ -586,7 +587,7 @@
       ],
       "position_rule": "details",
       "children_only": false,
-      "reviewed_by": null
+      "reviewed_by": "sushil"
     }
   ]
 }
