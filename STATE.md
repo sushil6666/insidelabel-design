@@ -650,6 +650,13 @@ setup alarms.
 
 **NEXT SESSION STARTS HERE (2026-09-28).** Where things stand, newest first:
 
+- **Next build, ready to paste: `docs/BUILD_PROMPT_D132-D134.md`** (2026-09-29). Sushil: "keep all 15
+  rows now ... implement all". D-132 ingredient notes (maida, palm oil, hydrogenated fat, all 15 rows
+  from ICMR-NIN 2024 and WHO, read first-hand), D-133 the nutrition table against ICMR-NIN Table 15.1
+  (added sugar 25 g a day, salt 5 g a day), D-134 one-screen result with tiles. Three phases, a branch
+  each. The file also lists what is still needed to complete the beta (billing is the blocker).
+  Rows 3, 8, 9, 11 and a children's caffeine line have no source yet: the build must find one or say so.
+
 - **Deployed 2026-09-29: main `7d0c1b6` (PRs #44 to #50, 603 tests) on the server** (Sushil ran
   `update.sh`: migration 017 applied, health OK, data `f4ba132bf687`). Checked from outside: `/health`
   build `7d0c1b6d2d54`, app web-24, shell `il-shell-24`, shop list in `app.js`. Includes the repro fix,
