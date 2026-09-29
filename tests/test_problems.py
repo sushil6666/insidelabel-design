@@ -232,14 +232,16 @@ def test_a_replay_on_an_invite_only_server_reaches_the_scan(db, monkeypatch):
     # storage_unavailable, then compare() crashed on a result with no screen.
     from insidelabel import repro
     rid = str(uuid.uuid4())
-    first = scan(rid, replay=vision(image_content={"back": "screen", "front": "not_provided"}))
+    # (The report's own scans were screen photos; since D-130 a screen is read, so any
+    # refused scan stands in here.)
+    first = scan(rid, replay=vision(ingredients=[], back_status="unreadable", ingredients_status="unreadable"))
     assert first.status_code == 422
     s = row(db, "SELECT * FROM scans WHERE request_id = %s", rid)
-    assert s["error_code"] == "back_is_a_screen"
+    assert s["outcome"] == "refused" and s["error_code"]
     monkeypatch.setattr(main, "INVITE_ONLY", True)
     out = repro.replay_scan(s, media=None)
     assert main.INVITE_ONLY is True                                    # put back after the replay
-    assert out["status"] == 422 and out["body"]["reliability"]["error"] == "back_is_a_screen"
+    assert out["status"] == 422 and out["body"]["reliability"]["error"] == s["error_code"]
     shown = repro.summary(first.json()["screen"])
     assert repro.compare(shown, repro.summary(out["screen"])) == []
     assert repro.compare(shown, None) == ["the replay showed no result screen"]
