@@ -44,14 +44,16 @@ def no_storage():
     """
     Run the API with nothing persisted: a replay must not create scans or photos.
     Rate limits (D-095) are off too: replaying a long trail isn't a flood.
-    Replay is allowed here whatever the environment says (D-101).
+    Replay is allowed here whatever the environment says (D-101). The invite gate
+    (D-102/D-105) is off too: the scan was let in when it ran, and with no store the
+    gate answers 503 storage_unavailable on a server with INSIDELABEL_INVITE_ONLY=on.
     """
-    old = main.STORE, main.MEDIA, ratelimit.LIMITER.rules, main.REPLAY_ALLOWED
-    main.STORE, main.MEDIA, ratelimit.LIMITER.rules, main.REPLAY_ALLOWED = None, None, {}, True
+    old = main.STORE, main.MEDIA, ratelimit.LIMITER.rules, main.REPLAY_ALLOWED, main.INVITE_ONLY
+    main.STORE, main.MEDIA, ratelimit.LIMITER.rules, main.REPLAY_ALLOWED, main.INVITE_ONLY = None, None, {}, True, False
     try:
         yield
     finally:
-        main.STORE, main.MEDIA, ratelimit.LIMITER.rules, main.REPLAY_ALLOWED = old
+        main.STORE, main.MEDIA, ratelimit.LIMITER.rules, main.REPLAY_ALLOWED, main.INVITE_ONLY = old
 
 
 def form_for(request, model_raw):
@@ -132,5 +134,7 @@ def compare(shown, now):
     """Differences between what the user saw and the replay, as readable lines."""
     if shown is None:
         return ["the phone's trail has no record of what was shown"]
+    if now is None:
+        return ["the replay showed no result screen"]
     return [f"{k}: then {shown.get(k)!r}, now {now.get(k)!r}"
             for k in ("state", "headline", "band", "people") if shown.get(k) != now.get(k)]

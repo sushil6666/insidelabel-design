@@ -659,6 +659,11 @@ setup alarms.
 - **Parked by Sushil (2026-09-29, "will check later"):** billing, `insidelabel.in` client hold, the
   API keys, Candzey hard or chewy (§8 item 1).
 
+- **Problem report #1 (server, 2026-09-28 20:08, "Why photo not allowed?"):** both of the tester's
+  scans were refused `back_is_a_screen` (D-103): Gemini said the back photo was a screen, though both
+  came from the camera and passed `/check-photo`. Real false alarm or a photographed display: only the
+  photo shows (`/var/lib/insidelabel/media`, held). `repro.py show` crashed on the server: replay met the
+  invite gate with no store (503 `storage_unavailable`); fixed on branch `repro-invite-replay` (581 tests).
 - **D-130 LOCKED and built, 2026-09-29** (branch `screen-read`, web-24, migration 017, 602 tests):
   from problem report #1 (a tester's screen photo refused twice). A photo of a screen is read and
   marked "Read from a screen, not the pack"; allergen lines say "on this screen" with the caution in
