@@ -658,11 +658,13 @@ setup alarms.
   Chromium, light and dark, with the rows marked reviewed: no errors. Khandsari, bura, misri in
   `sugar_aliases` (live on merge; gold set unchanged). **Rows approved by Sushil 2026-09-29**
   ("approved, keep the oil line"): all 14 carry `reviewed_by: "sushil"` and show on merge.
-  **Waiting on Sushil:** merge, `update.sh`, phone check. **D-135 RECOMMENDED** (write-up only, not
-  applied): "hydrogenated vegetable fat", "partially hydrogenated fat", "interesterified vegetable
-  fat/oil", "shortening" as NOVA aliases (Monteiro 2019 read first-hand); Britannia 48 to 36 (still
-  D), other gold labels unchanged, invented rusk 100 A clean to 88 A ultra-processed. Needs
-  "accepted"; server count query in the entry. **Then phase 2** (D-133, branch `nutrition-panel`); FSSAI L&D 2020 is already read
+  **Waiting on Sushil:** merge, `update.sh`, phone check. **D-135 LOCKED and built** (same branch,
+  Sushil "D-135 accepted"): "hydrogenated vegetable fat", "partially hydrogenated fat",
+  "interesterified vegetable fat/oil", "shortening" are NOVA aliases (Monteiro 2019 read first-hand);
+  **scores move on merge:** Britannia 48 to 36 (still D), other gold labels unchanged, a pack whose
+  only industrial ingredient is one of these goes 100 A clean to 88 A ultra-processed. A marker
+  right after "non-" no longer counts ("non-hydrogenated fat" was already matching "hydrogenated
+  fat"). Server count query in the D-135 entry. **Then phase 2** (D-133, branch `nutrition-panel`); FSSAI L&D 2020 is already read
   (nutrition fields pp. 9 to 13). Test isolation fixed on the way: `conftest.py` clears Cloud
   Vision's per-photo text cache before each test (it made `test_no_barcode` depend on test order).
 

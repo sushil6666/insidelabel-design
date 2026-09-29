@@ -78,6 +78,11 @@ def _word_in(needle, hay):
     return re.search(r"(?<![a-z])" + re.escape(needle) + r"(?![a-z])", hay) is not None
 
 
+def _marker_in(alias, hay):
+    """A NOVA alias as a word, not negated: "non-hydrogenated fat" is not one (D-135)."""
+    return re.search(r"(?<![a-z])(?<!non-)(?<!non )" + re.escape(alias) + r"(?![a-z])", hay) is not None
+
+
 def _base(token):
     """Ingredient name with parentheticals and percentages removed."""
     t = re.sub(r"\([^)]*\)", " ", token.lower())
@@ -219,7 +224,7 @@ def extract_facts(p: Product, age: str):
 
     # Ultra-processed markers: counted for tie-breaking, one summary line.
     nova_hits = [m["name"] for m in NOVA
-                 if any(_word_in(al, t.lower()) for t in p.ingredients for al in m["aliases"])]
+                 if any(_marker_in(al, t.lower()) for t in p.ingredients for al in m["aliases"])]
     if nova_hits:
         facts.append(Fact("nova", "info",
             f"{len(nova_hits)} ultra-processed ingredient{'s' if len(nova_hits) > 1 else ''}.",

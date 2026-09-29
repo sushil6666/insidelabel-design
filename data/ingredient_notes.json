@@ -225,6 +225,10 @@
         "bakery shortening",
         "shortening"
       ],
+      "exclude": [
+        "non-hydrogenated",
+        "non hydrogenated"
+      ],
       "kind": "fat",
       "summary": [
         "ICMR-NIN says trans fats should be avoided. It describes hydrogenated fat, often called vegetable shortening, as vegetable oil partly hydrogenated so that some of its fat turns into saturated fat and trans fatty acids, which it says can increase the risk of heart disease and stroke.",

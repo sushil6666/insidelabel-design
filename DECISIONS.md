@@ -1930,12 +1930,12 @@ allergen line and headline, each opening a detail page; nothing else open by def
 screen fits a 390 x 844 phone for a pack with 2 warnings. To be built in phase 3 (branch
 `result-tiles`).
 
-### D-135 · Hydrogenated and interesterified fats under the names Indian packs print them count as NOVA markers `RECOMMENDED` (2026-09-29)
+### D-135 · Hydrogenated and interesterified fats under the names Indian packs print them count as NOVA markers `LOCKED` (2026-09-29)
 Found while building D-132: the NOVA row "Hydrogenated / interesterified oil" misses the words Indian
 packs use. A rusk listing "Hydrogenated vegetable fat" scores 100, grade A, clean; Britannia's gold
 label lists "INTERESTERIFIED VEGETABLE FAT" and the marker doesn't see it. Sushil asked for the
-write-up ("write up the NOVA proposal", 2026-09-29). Recommended by Claude. **Not applied until
-Sushil says "accepted".**
+write-up ("write up the NOVA proposal", 2026-09-29). Recommended by Claude. **Accepted by Sushil
+2026-09-29** ("D-135 accepted"); built on branch `ingredient-notes` (see "Built" below).
 
 **The basis (primary sources, read 2026-09-29).**
 - Monteiro et al., "Ultra-processed foods: what they are and how to identify them", Public Health
@@ -1977,6 +1977,16 @@ model_raw::text ~* 'hydrogenated vegetable fat|partially hydrogenated fat|intere
 **If accepted:** the five aliases, a test per wording (and one that "non-hydrogenated" stays out),
 and the gold label's expected score updated. `compare.py`'s NOVA count reads the same file, so it
 follows without a code change.
+
+**Built (2026-09-29).** The five aliases in `nova_markers.json`; `tests/test_nova_label_terms.py`
+checks each printed form (7 wordings), that "Non-hydrogenated vegetable fat/oil" and "Non
+hydrogenated fat" are not the marker, and pins the six gold scores (Britannia 36 D, the rest as
+before). **Found while building, fixed with it:** aliases match inside a longer entry, so the
+existing "hydrogenated fat" already matched "non-hydrogenated fat", and so would the new names. A
+match directly after "non-" or "non " no longer counts (`classify._inside`; the kids lens's NOVA
+count, `compare._marker_in`, the same), and D-132's hydrogenated-fat tile excludes
+"non-hydrogenated" (its approved wording is unchanged). An alias that itself starts with "non-"
+("non-nutritive sweetener") still matches. No gold label contains "non-".
 
 ---
 

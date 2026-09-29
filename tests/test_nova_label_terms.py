@@ -10,6 +10,7 @@ while which row matches (and so the verdict) is unchanged. Labels are invented.
 """
 import base64
 import json
+import os
 import re
 
 import pytest
@@ -17,6 +18,7 @@ from fastapi.testclient import TestClient
 
 from insidelabel.api.main import app
 from insidelabel.core import classify, engine
+from insidelabel.lenses import compare as kids
 
 c = TestClient(app)
 PNG = base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==")
@@ -102,3 +104,57 @@ def test_which_row_matches_is_unchanged():
     assert rows == ["NOVA marker: Added flavour (natural/artificial/nature-identical)",
                     "NOVA marker: Stabiliser / thickener / humectant (cosmetic use)"]
     assert r["nova_ultra_processed"] is True
+
+
+# D-135: modified fats under the names Indian packs print them. Monteiro et al. 2019
+# (the NOVA paper): "modified oils (hydrogenated or interesterified oils)"; ICMR-NIN
+# 2024 p. 55: hydrogenated fat is "vegetable shortening"; FSSAI 2.2.6: bakery
+# shortening is vanaspati; L&D 2020 5(2)(d) names "interesterified vegetable fat".
+MODIFIED_FATS = ["Hydrogenated vegetable fat", "Partially hydrogenated fat", "Interesterified vegetable fat",
+                 "Interesterified vegetable oil", "Shortening", "Vegetable shortening", "Bakery shortening"]
+
+
+@pytest.mark.parametrize("ingredient", MODIFIED_FATS)
+def test_modified_fats_count_as_the_marker(ingredient):
+    r = engine.analyze(f"Wheat flour, {ingredient}, Salt")
+    [f] = [f for f in r["flags"] if f["type"] == "nova_marker"]
+    assert f["matched_as"] == "NOVA marker: Hydrogenated / interesterified oil"
+    assert r["nova_ultra_processed"] and r["binary"] == "ultra-processed"
+    s = screen_for(["Wheat flour", ingredient, "Salt"])
+    assert s["headline"]["text"] == f"Made with industrial ingredients, such as {ingredient.lower()}."
+
+
+@pytest.mark.parametrize("ingredient", ["Non-hydrogenated vegetable fat", "Non-hydrogenated vegetable oil",
+                                        "Non hydrogenated fat"])
+def test_non_hydrogenated_is_not_the_marker(ingredient):
+    r = engine.analyze(f"Wheat flour, {ingredient}, Salt")
+    assert not r["nova_ultra_processed"] and r["binary"] == "clean"
+    # The kids lens counts markers the same way, and D-132's hydrogenated-fat tile stays off.
+    assert kids.extract_facts(kids.Product("x", "x", ["Wheat flour", ingredient]), "kid")._nova == 0
+    assert "hydrogenated_fat" not in {h["id"] for h in engine.ingredient_notes([ingredient])}
+
+
+def test_an_alias_that_starts_with_non_still_matches():
+    r = engine.analyze("Water, Non-nutritive sweetener")
+    assert "NOVA marker: Artificial / non-sugar sweetener" in {f["matched_as"] for f in r["flags"]}
+
+
+GOLD_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "gold")
+
+
+@pytest.mark.parametrize("name, score, grade", [
+    ("britannia-treat-croissant-cocoa", 36, "D"),       # was 48 D: D-135 sees INTERESTERIFIED VEGETABLE FAT
+    ("limca-pet-1l", 76, "B"),
+    ("limca-pet-2250", 76, "B"),
+    ("maliban-wafer-cheese", 56, "C"),
+    ("patanjali-doodh-biscuits", 48, "D"),
+    ("ziggy-donut-cake-choco-vanilla", 4, "E"),
+])
+def test_gold_scores_after_d135(name, score, grade):
+    with open(os.path.join(GOLD_DIR, name + ".json"), encoding="utf-8") as fh:
+        ings = json.load(fh)["ingredients"]
+    r = engine.analyze(", ".join(ings))
+    assert (r["score"], r["grade"], r["binary"]) == (score, grade, "ultra-processed")
+    if name.startswith("britannia"):
+        processing = next(x for x in screen_for(ings)["summary"] if x["key"] == "processing")
+        assert processing["text"].startswith("Interesterified vegetable fat, ")

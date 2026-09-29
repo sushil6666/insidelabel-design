@@ -236,13 +236,13 @@ def test_gold_before_and_after(name, monkeypatch):
 
 
 def test_no_concerns_found_never_sits_over_a_tile(reviewed):
-    # D-123: "Hydrogenated vegetable fat" is not a NOVA alias today, so this pack reads
-    # clean; with its tile it gets the "mixed" words. Verdict untouched (information only).
-    j = scan(["Whole wheat flour", "Hydrogenated vegetable fat", "Salt"], profiles=[]).json()
+    # D-123: palm oil is no NOVA marker or additive, so this pack reads clean; with its
+    # tile it gets the "mixed" words. Verdict untouched (information only).
+    j = scan(["Whole wheat flour", "Palm oil", "Salt"], profiles=[]).json()
     assert j["verdict"]["binary"] == "clean" and j["verdict"]["score"] == 100
     s = j["screen"]
     assert s["headline"] == {"text": "A few things worth knowing.",
-                             "source": {"kind": "ingredient_note", "ref": "hydrogenated_fat"}}
+                             "source": {"kind": "ingredient_note", "ref": "palm_oil"}}
     assert s["band"]["code"] == "mixed" and "No concerns found" not in json.dumps(s)
     plain = scan(["Whole wheat flour", "Salt"], profiles=[]).json()["screen"]
     assert plain["headline"]["text"] == "No concerns found in the ingredients."
