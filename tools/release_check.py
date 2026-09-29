@@ -24,6 +24,7 @@ sys.path.insert(0, os.path.join(ROOT, "src"))
 
 from insidelabel.claims import checker  # noqa: E402
 from insidelabel.core import engine  # noqa: E402
+from insidelabel.lenses import nutrition  # noqa: E402
 from insidelabel.core.tokenize import extract_ins  # noqa: E402
 from insidelabel.lenses import allergens  # noqa: E402
 
@@ -33,6 +34,7 @@ FLAGGED = {"contains", "may_contain"}
 # Blueprint §15 thresholds.
 MIN_GOLD = 20
 MIN_INGREDIENT_MATCH = 0.95
+MIN_NUTRITION_MATCH = 0.98          # D-133: nutrition numbers read correctly
 MAX_FALSE_CONTRADICTION_RATE = 0.01
 MIN_PUBLISHED = 50
 DECISIONS_BEFORE_RELEASE = ["D-051", "D-052", "D-055"]
@@ -128,6 +130,18 @@ def gates(gold_dir, pred_dir):
                 f"{fp} of {checked} checked claims ({rate:.1%})" if checked else
                 "unmeasured: no front claim on the gold labels matches a claim rule yet - "
                 "add packs claiming 'no added sugar' / 'no preservatives' / 'made with real X'"))
+
+    # D-133: the nutrition table, number by number. Predictions made before the
+    # table was read have none, and that is unmeasured, never a pass.
+    scored = [nutrition.accuracy(gold[i].get("nutrition"), pred[i].get("nutrition")) for i in ids]
+    scored = [x for x in scored if x]
+    right, total = sum(x[0] for x in scored), sum(x[1] for x in scored)
+    share = right / total if total else 0.0
+    out.append((TODO if not scored else PASS if share >= MIN_NUTRITION_MATCH else FAIL,
+                f"Nutrition numbers read correctly ≥ {MIN_NUTRITION_MATCH:.0%}",
+                f"{right} of {total} numbers on {len(scored)} labels ({share:.1%})" if scored else
+                "unmeasured: no prediction has a nutrition table yet - re-run the gold set with the D-133 "
+                "prompt (a paid read per label)"))
 
     # Every INS on a gold label is in the table, so none reaches a user unflagged.
     rows = engine._ADDITIVE_BY_INS

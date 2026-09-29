@@ -53,5 +53,84 @@
     "Nutrition panel: per 100g Energy 473.8 kcal, Protein 6.5g, Carbohydrate 75.5g, Total Sugars 30.4g, Added Sugars 30.2g, Total Fat 16.2g, Saturated 9.6g, Trans 0g, Sodium 391.5mg. Recorded here only.",
     "Maliban is a Sri Lankan brand; this pack is marketed in India by Reliance Consumer Products."
   ],
-  "confidence": { "ingredients": 1.0, "front_claims": 1.0, "product_identity": 0.9 }
+  "confidence": { "ingredients": 1.0, "front_claims": 1.0, "product_identity": 0.9 },
+  "nutrition": {
+    "status": "read",
+    "per_100_basis": "APPROX. VALUES PER 100g",
+    "rda_column": "% CONTRIBUTION TO RDA^ PER SERVE",
+    "serving_size": "12g",
+    "servings_per_pack": "5.6",
+    "rows": [
+      {
+        "nutrient": "ENERGY",
+        "unit": null,
+        "per_100": "473.8 kcal",
+        "per_serving": null,
+        "rda_percent": "(2.8%)"
+      },
+      {
+        "nutrient": "PROTEIN",
+        "unit": null,
+        "per_100": "6.5g",
+        "per_serving": null,
+        "rda_percent": "(-)"
+      },
+      {
+        "nutrient": "CARBOHYDRATE",
+        "unit": null,
+        "per_100": "75.5g",
+        "per_serving": null,
+        "rda_percent": "(-)"
+      },
+      {
+        "nutrient": "TOTAL SUGARS",
+        "unit": null,
+        "per_100": "30.4g",
+        "per_serving": null,
+        "rda_percent": "(-)"
+      },
+      {
+        "nutrient": "ADDED SUGARS",
+        "unit": null,
+        "per_100": "30.2g",
+        "per_serving": null,
+        "rda_percent": "(7.2%)"
+      },
+      {
+        "nutrient": "TOTAL FAT",
+        "unit": null,
+        "per_100": "16.2g",
+        "per_serving": null,
+        "rda_percent": "(2.9%)"
+      },
+      {
+        "nutrient": "SATURATED FAT",
+        "unit": null,
+        "per_100": "9.6g",
+        "per_serving": null,
+        "rda_percent": "(5.2%)"
+      },
+      {
+        "nutrient": "TRANS FAT (OTHER THAN NATURALLY OCCURING TRANS FAT)",
+        "unit": null,
+        "per_100": "0g",
+        "per_serving": null,
+        "rda_percent": "(0%)"
+      },
+      {
+        "nutrient": "CHOLESTEROL",
+        "unit": null,
+        "per_100": "0mg",
+        "per_serving": null,
+        "rda_percent": "(-)"
+      },
+      {
+        "nutrient": "SODIUM",
+        "unit": null,
+        "per_100": "391.5mg",
+        "per_serving": null,
+        "rda_percent": "(2.3%)"
+      }
+    ]
+  }
 }

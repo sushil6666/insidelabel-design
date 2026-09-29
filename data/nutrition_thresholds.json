@@ -1,0 +1,45 @@
+{
+  "_meta": {
+    "table": "nutrition_thresholds",
+    "version": "0.1",
+    "purpose": "What the result screen sets beside a nutrition table's numbers (D-133): ICMR-NIN's thresholds per 100 g or 100 ml, its daily amounts, and WHO's shares of daily energy. Information only: nothing here changes a score, a band or a headline (D-004).",
+    "rules": [
+      "Every figure is from a primary source read first-hand, with its page (D-046).",
+      "Adults only: none of these sources gives children's figures (WHO: for children aged 2 to 15, adjust the adult amount down by energy need, with no number).",
+      "Added fat is not applied: packs print total fat, which includes the fat already in the ingredients, so ICMR-NIN's added-fat threshold can't be read off the table."
+    ]
+  },
+  "per_100": {
+    "_source": {"title": "ICMR-NIN, Dietary Guidelines for Indians, 2024, Table 15.1 (nutrients of concern threshold criteria for foods and beverages)", "url": "https://nin.res.in/dietaryguidelines/pdfjs/locale/DGI_2024.pdf", "page": "p. 96 (PDF p. 113)", "read_on": "2026-09-29"},
+    "solid": {"basis": "100 g", "energy_kcal": 250, "salt_mg": 625, "added_sugar_g": 3, "added_fat_g": 4.2},
+    "liquid": {"basis": "100 ml", "energy_kcal": 70, "salt_mg": 175, "added_sugar_g": 2.0, "added_fat_g": 1.5}
+  },
+  "daily": {
+    "added_sugar_g": {"value": 25, "sources": [
+      {"title": "ICMR-NIN, Dietary Guidelines for Indians, 2024", "url": "https://nin.res.in/dietaryguidelines/pdfjs/locale/DGI_2024.pdf", "page": "p. 94 (PDF p. 111)", "read_on": "2026-09-29"}
+    ]},
+    "salt_g": {"value": 5, "sources": [
+      {"title": "ICMR-NIN, Dietary Guidelines for Indians, 2024", "url": "https://nin.res.in/dietaryguidelines/pdfjs/locale/DGI_2024.pdf", "page": "p. 93 (PDF p. 110)", "read_on": "2026-09-29"},
+      {"title": "WHO, Salt reduction (fact sheet)", "url": "https://www.who.int/news-room/fact-sheets/detail/salt-reduction", "page": "", "read_on": "2026-09-29"}
+    ]}
+  },
+  "who_energy_share": {
+    "_source": {"title": "WHO, WHO updates guidelines on fats and carbohydrates (17 July 2023)", "url": "https://www.who.int/news/item/17-07-2023-who-updates-guidelines-on-fats-and-carbohydrates", "page": "", "read_on": "2026-09-29"},
+    "saturated_fat_pct": 10,
+    "trans_fat_pct": 1
+  },
+  "salt_per_sodium": {
+    "_source": {"title": "WHO, Salt reduction (fact sheet): 1 gram of salt is equivalent to 400 mg of sodium", "url": "https://www.who.int/news-room/fact-sheets/detail/salt-reduction", "page": "", "read_on": "2026-09-29"},
+    "value": 2.5
+  },
+  "trans_fat_tile": {
+    "summary": [
+      "ICMR-NIN says trans fats should be avoided, and its guide to labels asks you to choose foods that contain no trans fats.",
+      "WHO advises that no more than 1% of daily energy come from trans fat."
+    ],
+    "sources": [
+      {"title": "ICMR-NIN, Dietary Guidelines for Indians, 2024", "url": "https://nin.res.in/dietaryguidelines/pdfjs/locale/DGI_2024.pdf", "page": "pp. 51, 108 (PDF pp. 68, 125)", "read_on": "2026-09-29"},
+      {"title": "WHO, WHO updates guidelines on fats and carbohydrates (17 July 2023)", "url": "https://www.who.int/news/item/17-07-2023-who-updates-guidelines-on-fats-and-carbohydrates", "page": "", "read_on": "2026-09-29"}
+    ]
+  }
+}

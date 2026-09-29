@@ -20,6 +20,7 @@ import re
 import unicodedata
 
 from insidelabel import barcode as barcode_rules
+from insidelabel.lenses import nutrition
 from insidelabel.trace import DATA_DIR
 
 IN_SCOPE_KINDS = ("new_product", "reformulation")
@@ -233,6 +234,12 @@ def check(draft, ctx):
     add("nothing_lost", section and not lost,
         "no ingredient list found in Cloud Vision's text" if not section else
         (f"in Cloud Vision's ingredient list but not in the draft: {', '.join(lost[:12])}" if lost else ""))
+
+    # D-133: every number of the nutrition table the version would publish is in
+    # Cloud Vision's text of the back photo; otherwise a person looks.
+    lost_numbers = nutrition.not_in_text(ctx.get("nutrition"), ocr)
+    add("nutrition_in_ocr", not lost_numbers,
+        f"nutrition numbers not in Cloud Vision's text: {', '.join(lost_numbers[:8])}" if lost_numbers else "")
 
     statement = draft.get("allergen_statement") or ""
     stray = [w for w in _words(statement) if pool and not _found(w, pool)]

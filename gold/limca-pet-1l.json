@@ -31,5 +31,13 @@
     "ingredients": 1.0,
     "front_claims": 1.0,
     "product_identity": 0.95
+  },
+  "nutrition": {
+    "status": "not_found",
+    "per_100_basis": null,
+    "rda_column": null,
+    "serving_size": null,
+    "servings_per_pack": null,
+    "rows": []
   }
 }

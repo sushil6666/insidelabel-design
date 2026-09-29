@@ -3,7 +3,7 @@
 {% block body %}
 {% set labels = {"new_product": "New product", "reformulation": "Reformulation",
                  "correction": "Reported mistake", "send_to_us": "Sent to us",
-                 "front_photo": "Front photo"} %}
+                 "front_photo": "Front photo", "nutrition": "Nutrition table"} %}
 {% set q = d.item %}
 {# D-106: an uploaded photo could be edited, AI-made or a photo of a screen; a camera photo was taken in the app. #}
 {% macro source_note(src) %}
@@ -83,6 +83,13 @@
         <b>Sent to us after {{ d.attempts|length + 1 }} photos we couldn't read.</b>
         Nothing was read automatically: type the label from the photos. If no photo shows the whole
         ingredient list, reject it and say so. The person is told either way.
+      </div>
+    {% endif %}
+    {% if q.kind == "nutrition" %}
+      <div class="panel" style="margin-bottom:12px">
+        <b>Nutrition table for a published product</b> (D-133). The ingredients are already reviewed; a new scan
+        read the nutrition table. Check its numbers below against the back photo. Publish only if every number
+        matches; if any doesn't, or the photo is another pack, reject it.
       </div>
     {% endif %}
     {% if q.kind == "front_photo" %}
@@ -177,6 +184,21 @@
         <input type="text" id="allergen_statement" name="allergen_statement" value="{{ form.allergen_statement }}">
         <label for="front_claims">Front-of-pack claims: one per line (only if the front photo is this pack)</label>
         <textarea id="front_claims" name="front_claims" rows="3">{{ form.front_claims }}</textarea>
+        {% set nt = (d.version or {}).get("nutrition") %}
+        {% if nt and nt.get("values") %}
+          <div class="panel" style="margin:10px 0">
+            <b>Nutrition table</b>, per {{ nt.basis }}{% if nt.serving %}, serving {{ nt.serving.printed }} {{ nt.serving.unit }}{% endif %}{% if nt.servings %}, {{ nt.servings }} servings{% endif %}.
+            Kept where Cloud Vision's text and the table's own arithmetic agree (D-133).
+            <table class="mono" style="margin-top:6px">
+              {% for r in nt.table.rows %}<tr><td>{{ r.nutrient }}</td><td>{{ r.per_100 or "" }}</td><td>{{ r.rda_percent or "" }}</td></tr>{% endfor %}
+            </table>
+            <div style="margin-top:6px">Shown to users: {% for k, v in nt["values"].items() %}{{ k }} {{ v.printed }}{% if not loop.last %}, {% endif %}{% endfor %}</div>
+            {% if nt.dropped %}<div class="muted" style="margin-top:4px">Not shown: {% for x in nt.dropped %}{{ x.key }} ({{ x.reason }}){% if not loop.last %}; {% endif %}{% endfor %}</div>{% endif %}
+            <label class="choice" style="margin-top:8px"><input type="checkbox" name="nutrition_ok" value="1">
+              Every number shown to users matches the photo</label>
+            <div class="muted" style="font-size:12px">Unticked, the pack is published without its nutrition table.</div>
+          </div>
+        {% endif %}
         <label for="note">Note (optional, kept with the decision)</label>
         <input type="text" id="note" name="note" value="{{ form.note }}">
         <div class="actions">

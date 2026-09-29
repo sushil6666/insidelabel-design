@@ -33,6 +33,7 @@ from insidelabel.core import engine
 from insidelabel.core.tokenize import extract_ins, ins_numbers
 from insidelabel.lenses import allergens as allergen_checker
 from insidelabel.lenses import compare as kids
+from insidelabel.lenses import nutrition
 
 NAME = "{name}"
 MAX_PROFILES = 3                          # D-074
@@ -571,6 +572,174 @@ def _notes(ingredients, profiles, complete):
     return {"title": NOTES_TITLE, "tiles": tiles, "lines": lines}
 
 
+# D-133: the nutrition table beside ICMR-NIN's thresholds (Table 15.1), its daily
+# amounts and WHO's shares of daily energy. The words are here, under the lint;
+# the figures are data/nutrition_thresholds.json; which numbers can be shown at
+# all is lenses/nutrition.py. Information only: no score, band or headline moves,
+# except the D-123 rule that "No concerns found" never sits over a tile.
+NUT = nutrition.THRESHOLDS
+NUTRITION_TITLE = "Nutrition table"
+NUTRITION_MISSING = ("We didn't find a nutrition table in the photo. If the pack has one, add a photo of it "
+                     "and we'll read it too.")
+NUTRITION_UNCLEAR = "We couldn't read the nutrition table clearly."
+NUTRITION_PARTIAL = "We couldn't read the nutrition table clearly, so some of its numbers aren't shown."
+NUTRITION_UNVERIFIED = ("We couldn't check the nutrition table against a second reading of the photo, "
+                        "so its numbers aren't shown.")
+NUTRITION_ASK = "Add a photo of the nutrition table"
+NUTRITION_CHECKED = "As printed on the pack, each number checked against a second reading of the photo."
+NUTRITION_ADULTS = "The daily amounts are for adults."
+MAX_PARTS = 3                            # D-119: the list and the table share the three back photos
+_FRACTIONS = ((0.1, "a tenth"), (0.2, "a fifth"), (0.25, "a quarter"), (1 / 3, "a third"), (0.4, "two fifths"),
+              (0.5, "half"), (0.6, "three fifths"), (2 / 3, "two thirds"), (0.75, "three quarters"))
+
+
+def _fmt(x, places=2):
+    """20.26 -> '20.26', 44.0 -> '44', 0.030 -> '0.03'."""
+    return f"{round(x, places):.{places}f}".rstrip("0").rstrip(".")
+
+
+def _share(x):
+    """What share of a daily amount one serving is, in words: 'about a fifth of'."""
+    if x > 1.05:
+        return "more than"
+    if x >= 0.95:
+        return "about as much as"
+    near = min(_FRACTIONS, key=lambda f: abs(f[0] - x))
+    if abs(near[0] - x) <= 0.025:
+        return f"about {near[1]} of"
+    pct = round(x * 100)
+    return f"about {pct}% of" if pct >= 1 else "less than 1% of"
+
+
+def _amount_words(v, unit):
+    words = {"max": "not more than ", "lt": "less than "}.get(v.get("bound"), "")
+    return f"{words}{v['printed']} {unit}"
+
+
+def _nutrition_rows(panel):
+    vals, u = panel["values"], panel["basis"].split(" ")[1]
+    t = NUT["per_100"][panel["form"]]
+    per = f"per 100 {u}"
+    rows = []
+
+    def row(key, label, text, over):
+        rows.append({"key": key, "label": label, "text": text, "tone": "worth" if over else "calm", "over": over})
+
+    if "energy" in vals:
+        e = vals["energy"]
+        row("energy", "Energy", f"Energy: {_amount_words(e, 'kcal')} {per}. ICMR-NIN counts more than "
+                                f"{_fmt(t['energy_kcal'])} kcal {per} as high.",
+            e["bound"] is None and e["value"] > t["energy_kcal"])
+    if "added_sugars" in vals:
+        a = vals["added_sugars"]
+        row("added_sugars", "Added sugar", f"Added sugar: {_amount_words(a, 'g')} {per}. ICMR-NIN counts more than "
+                                           f"{_fmt(t['added_sugar_g'])} g {per} as high.",
+            a["bound"] is None and a["value"] > t["added_sugar_g"])
+    elif "total_sugars" in vals:
+        row("total_sugars", "Total sugars",
+            f"Total sugars: {_amount_words(vals['total_sugars'], 'g')} {per}. The table doesn't show added sugar on "
+            f"its own line, so ICMR-NIN's added-sugar threshold isn't applied.", False)
+    salt_mg = None
+    if "sodium" in vals:
+        s = vals["sodium"]
+        salt_mg = s["value"] * nutrition.SALT_PER_SODIUM
+        row("salt", "Salt", f"Salt: about {_fmt(salt_mg, 0)} mg {per}, from {_amount_words(s, 'mg')} of sodium "
+                            f"(salt is {_fmt(nutrition.SALT_PER_SODIUM)} times the sodium). ICMR-NIN counts more "
+                            f"than {_fmt(t['salt_mg'])} mg of salt {per} as high.",
+            s["bound"] is None and salt_mg > t["salt_mg"])
+    elif "salt" in vals:
+        s = vals["salt"]
+        salt_mg = s["value"] * 1000
+        row("salt", "Salt", f"Salt: {_amount_words(s, 'g')} {per}. ICMR-NIN counts more than "
+                            f"{_fmt(t['salt_mg'])} mg of salt {per} as high.",
+            s["bound"] is None and salt_mg > t["salt_mg"])
+    who = NUT["who_energy_share"]
+    kcal = (vals.get("energy") or {}).get("value")
+    if "saturated_fat" in vals:
+        f = vals["saturated_fat"]
+        pct = f["value"] * nutrition.FAT_KCAL / kcal * 100 if kcal else None
+        share = f", about {_fmt(pct, 0)}% of the food's energy" if pct is not None else ""
+        row("saturated_fat", "Saturated fat",
+            f"Saturated fat: {_amount_words(f, 'g')} {per}{share}. WHO advises no more than "
+            f"{_fmt(who['saturated_fat_pct'])}% of daily energy from saturated fat.",
+            pct is not None and pct > who["saturated_fat_pct"])
+    if "trans_fat" in vals:
+        f = vals["trans_fat"]
+        row("trans_fat", "Trans fat", f"Trans fat: {_amount_words(f, 'g')} {per}. WHO advises no more than "
+                                      f"{_fmt(who['trans_fat_pct'])}% of daily energy from trans fat.",
+            f["value"] > 0)
+    return rows, salt_mg
+
+
+def _nutrition_servings(panel, salt_mg):
+    """Adults' daily amounts, one serving at a time: added sugar (ICMR-NIN) and salt (ICMR-NIN, WHO)."""
+    s = panel.get("serving")
+    if not s:
+        return []
+    size, vals, out = f"{_fmt(s['value'])} {s['unit']}", panel["values"], []
+    a = vals.get("added_sugars")
+    if a and a["bound"] is None:
+        grams = a["value"] * s["value"] / 100
+        day = NUT["daily"]["added_sugar_g"]["value"]
+        out.append({"key": "added_sugars", "text": f"One serving ({size}) has {_fmt(grams, 1)} g added sugar, "
+                                                   f"{_share(grams / day)} the {_fmt(day)} g a day ICMR-NIN counts as high."})
+    if salt_mg is not None and not (vals.get("sodium") or vals.get("salt") or {}).get("bound"):
+        grams = salt_mg * s["value"] / 100 / 1000
+        day = NUT["daily"]["salt_g"]["value"]
+        out.append({"key": "salt", "text": f"One serving ({size}) has {_fmt(grams, 2)} g salt, "
+                                           f"{_share(grams / day)} the {_fmt(day)} g a day ICMR-NIN counts as high."})
+    return out
+
+
+def _nutrition_sources():
+    srcs = [NUT["per_100"]["_source"], *NUT["daily"]["added_sugar_g"]["sources"],
+            *NUT["daily"]["salt_g"]["sources"], NUT["who_energy_share"]["_source"], nutrition.PANEL["_meta"]["source"]]
+    out, seen = [], set()
+    for x in srcs:
+        cite = x["title"] + (f", {x['page']}" if x.get("page") else "")
+        if cite not in seen:
+            seen.add(cite)
+            out.append({"title": x["title"], "url": x["url"], "page": x.get("page") or None, "cite": cite})
+    return out
+
+
+def _nutrition(panel, parts_sent=1, catalogue=None):
+    """The `nutrition` block, or None for a scan whose answer predates D-133."""
+    if not panel or panel.get("status") in (None, "not_read"):
+        return None
+    status = panel["status"]
+    # A new photo helps only with a photo we took: not a catalogue pack, not a full set of parts.
+    can_ask = not catalogue and parts_sent < MAX_PARTS
+    if status in ("missing", "unclear", "unverified"):
+        text = {"missing": NUTRITION_MISSING, "unclear": NUTRITION_UNCLEAR, "unverified": NUTRITION_UNVERIFIED}[status]
+        ask = can_ask and status != "unverified"
+        return {"title": NUTRITION_TITLE, "state": status, "text": text, "rows": [], "servings": [], "tiles": [],
+                "ask_photo": ask, "ask": NUTRITION_ASK if ask else None}
+    rows, salt_mg = _nutrition_rows(panel)
+    servings = _nutrition_servings(panel, salt_mg)
+    shown = {r["key"] for r in rows} | ({"sodium"} if any(r["key"] == "salt" for r in rows) else set())
+    also = [f"{nutrition.LABEL[k]} {_amount_words(v, v['unit'])}" for k, v in panel["values"].items()
+            if k not in shown and k not in ("salt",)]
+    tiles = []
+    trans = panel["values"].get("trans_fat")
+    if trans and trans["value"] > 0:
+        tt = NUT["trans_fat_tile"]
+        tiles.append({"id": "trans_fat", "kind": "nutrition", "tone": "worth",
+                      "heading": "Worth a look: Trans fat",
+                      "more": f"{_amount_words(trans, 'g')} per 100 {panel['basis'].split(' ')[1]} on the "
+                              f"nutrition table. {NOTE_MORE}",
+                      "body": list(tt["summary"]), "sources": _note_sources(tt),
+                      "label_line": f"{trans['label']}: {trans['printed']}",
+                      "source": {"kind": "nutrition", "ref": "trans_fat"}})
+    partial = status == "partial"
+    return {"title": NUTRITION_TITLE, "state": status, "basis": f"Per {panel['basis']}",
+            "checked": NUTRITION_CHECKED, "rows": rows, "servings": servings,
+            "also": (f"Also on the table, per {panel['basis']}: " + ", ".join(also) + ".") if also else None,
+            "adults": NUTRITION_ADULTS if servings else None,
+            "text": NUTRITION_PARTIAL if partial else None, "tiles": tiles, "sources": _nutrition_sources(),
+            "ask_photo": False, "ask": None}
+
+
 def _sugar_more(summary):
     """D-132 row 10: what ICMR-NIN and WHO say, added to the sugar answer. No new flag."""
     row = NOTES.get("sugar")
@@ -759,11 +928,14 @@ SINCE_UNREAD = "We couldn't read this pack clearly enough to compare it with the
 
 def build(*, verdict, display, claim_check, extracted, reliability, profiles,
           allergen_confidence, allergen_reliable, catalogue=None, has_barcode=True,
-          photos_sent=("back",), pack=None, screen_pack=None):
+          photos_sent=("back",), pack=None, screen_pack=None, nutrition=None, parts_sent=1):
     """
     The `screen` block of a /scan response. verdict=None means the scan was refused.
     pack: for a result read from a screen (D-130), our catalogue's version of the
     same barcode ({ingredients, allergen_statement, verified_on}), or None.
+    nutrition: the checked table from lenses/nutrition.check() (D-133), or None.
+    parts_sent: how many back photos this scan joined (D-119), so the app knows
+    whether one more photo, of the table, can still be added.
     """
     ingredients = (extracted or {}).get("ingredients") or []
     statement = (extracted or {}).get("allergen_statement")
@@ -873,12 +1045,15 @@ def build(*, verdict, display, claim_check, extracted, reliability, profiles,
     notes = _notes(ingredients, profiles, complete)
     if notes:
         out["ingredient_notes"] = notes
-        # D-123 again: "No concerns found" never sits over a "Worth a look" row.
-        # The words change; the engine's band and score don't (D-132 is information only).
-        if notes["tiles"] and out["headline"]["source"]["kind"] == "none":
-            out["headline"] = {"text": BAND_LABEL["mixed"] + ".",
-                               "source": {"kind": "ingredient_note", "ref": notes["tiles"][0]["id"]}}
-            out["band"] = {**out["band"], "code": "mixed", "label": BAND_LABEL["mixed"]}
+    nut = _nutrition(nutrition, parts_sent, catalogue)
+    if nut:
+        out["nutrition"] = nut
+    # D-123 again: "No concerns found" never sits over a "Worth a look" row. The
+    # words change; the engine's band and score don't (D-132, D-133: information only).
+    tile = next(iter((notes or {}).get("tiles") or []), None) or next(iter((nut or {}).get("tiles") or []), None)
+    if tile and out["headline"]["source"]["kind"] == "none":
+        out["headline"] = {"text": BAND_LABEL["mixed"] + ".", "source": tile["source"]}
+        out["band"] = {**out["band"], "code": "mixed", "label": BAND_LABEL["mixed"]}
     out["glance"] = _glance(ingredients, sugar_found)
     out["glossary"] = _glossary(summary, out["glance"], adds, people)
     alert = next((i for i in adds if (i["badge"] or {}).get("kind") == "not_permitted"), None)

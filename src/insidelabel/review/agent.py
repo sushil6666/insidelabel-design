@@ -39,6 +39,7 @@ def context(data, categories):
         "request": scan.get("request") or {},
         "categories": {code for code, _name, _depth in categories},
         "has_front": bool(data["images"].get("front")),
+        "nutrition": v.get("nutrition"),                  # D-133: checked against ocr_text
         "reading": {
             "brand": p.get("brand"), "name": p.get("name"), "variant": p.get("variant"),
             "barcode": p.get("barcode") or (scan.get("request") or {}).get("barcode"),

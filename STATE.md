@@ -650,6 +650,20 @@ setup alarms.
 
 **NEXT SESSION STARTS HERE (2026-09-28).** Where things stand, newest first:
 
+- **D-133 built, phase 2 of `docs/BUILD_PROMPT_D132-D134.md`** (branch `nutrition-panel`, web-26,
+  migration 018, ~745 tests). The nutrition table: prompt rule 10 + `nutrition` schema (new
+  PROMPT_VERSION), `lenses/nutrition.py` (second reading, FSSAI % RDA arithmetic, parts within
+  wholes, salt = sodium x 2.5, servings x size = net), `data/nutrition_panel.json`,
+  `data/nutrition_thresholds.json` (ICMR-NIN Table 15.1), `screen.nutrition` + trans fat tile,
+  "Add a photo of the nutrition table" (a D-119 part; one more paid read), `/review` confirm tick,
+  kind `nutrition` for packs published before, checker `nutrition_in_ocr`, eval line + release gate
+  (TODO). `docs/NUTRITION_PANEL.md`. Walked in headless Chromium, light and dark, through the real
+  photo flow (Gemini and the second reader stood in by Ziggy's gold answer): no errors.
+  **Waiting on Sushil:** merge; migration 018 runs with `update.sh`; check the four gold tables
+  Claude transcribed (gold/*.json "nutrition"); say yes to the paid gold run (6 reads, about Rs 3)
+  to measure the reader; D-136 (score rule) RECOMMENDED: no rule until the gate passes. **Then
+  phase 3** (D-134 tiles).
+
 - **D-132 built, phase 1 of `docs/BUILD_PROMPT_D132-D134.md`** (branch `ingredient-notes`, web-25,
   639 tests). `data/ingredient_notes.json` (14 rows: the review's 1 to 14, with "vegetable fat, type
   not named" split from row 9), `engine.ingredient_notes()`, `screen.ingredient_notes` (tiles +
