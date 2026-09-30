@@ -2122,6 +2122,73 @@ Built with it (no decision needed, the pages only describe what is already built
 tiles (D-134); `/about` lists where the facts come from. `tests/test_wording.py` now lints the site
 pages and the app shell too (all were already clean).
 
+### D-139 · Health supplements and nutraceuticals: a kind of pack with its own checks `RECOMMENDED` (2026-09-30)
+Sushil: "implement supplements and baby food part, part of beta" (2026-09-30), phase 0 of
+`docs/BUILD_PROMPT_SUPPLEMENTS_BABY_FOOD.md`. Full proposal with sources and first data rows:
+`docs/SUPPLEMENTS.md`. **Nothing built until Sushil says "accepted".**
+
+- **Legal basis, read from FSSAI's pages 2026-09-30:** the FSS (Nutra) Regulations 2022 are **not
+  notified**; FSSAI runs them by directions under section 16(5), the latest of 18 October 2022 "with
+  effect from 1st October 2022" (only the draft of 29 June 2022 is in the notifications list). Every
+  citation says "as operationalised by FSSAI's direction of 18 October 2022".
+- **Kind of pack** (`core/pack_kind.py` over `data/pack_kinds.json`, shared with D-140): licence first
+  (D-116 extended: no FSSAI licence on a complete read plus a non-FSSAI manufacturing licence gives
+  `not_food`; shape never decides), then infant words, then medical words (`special_medical`: FSMP,
+  FSDU, "RECOMMENDED TO BE USED UNDER MEDICAL ADVICE ONLY"), then the category words of 5(12)(a)(i)(A)
+  ("HEALTH SUPPLEMENT", "NUTRACEUTICAL", and 6(1)(f)(ii)'s "Dietary supplements", "Food supplements"),
+  then the catalogue's 13.6; otherwise `food`, exactly as today. Disagreements go to a reviewer.
+- **What applies:** allergens first; the 5(12) label statements found or not found (complete read of
+  both faces); additives against Annexure 3 (tablets, capsules, syrups, by name) or the 13.6 list;
+  tiles for Schedule II plant notes (about 54 notes on 48 rows, quoted exactly with the plant part,
+  each row copied from the page image); amounts per daily usage beside ICMR-NIN's RDA (men and women)
+  and upper limit (Short Summary 2020, revised 2024, pp. 30 and 32), a tile only above the upper limit;
+  the 5(10) line for children of 2 to 5. **Off:** NOVA count, D-132 notes (hydrogenated vegetable oil
+  is a listed tablet lubricant, Annexure 3 item 30), Table 15.1, the score; the sugar answer only for
+  food formats; Compare only between supplements.
+- **Corrections to the build prompt:** the statements are 5(12), not "regulation 12"; the pregnant,
+  under-5 and elderly statement belongs to FSDU (6(3)(f)(ii)(A)) and sportsperson food, not to health
+  supplements; the one-RDA limit sits inside the nutrient-claim sentence of 6(1)(c)(i).
+- **Questions for Sushil** (`docs/SUPPLEMENTS.md` section 8): the unnotified regulations' status and
+  the one-RDA sentence (a lawyer); which RDA (men, women, activity); the `kid` band against "2 to 5
+  years"; prebiotic/probiotic foods; English plant names (no source yet); the ICMR-NIN protein-powder
+  line; 3 supplement gold labels (paid reads asked first); timing (D-083).
+
+### D-140 · Baby food: infant formula and complementary foods, released in shadow `RECOMMENDED` (2026-09-30)
+Same request as D-139. Full proposal: `docs/BABY_FOOD.md`. **Nothing built until Sushil says "accepted".**
+
+- **Legal basis:** FSS (Foods for Infant Nutrition) Regulations 2020 (gazetted 4 December 2020,
+  amended 30 August 2022, compendium Version II), **in force from 1 October 2022**; selenium,
+  manganese, iron and biotin limits from FSSAI's direction of 18 October 2022, Annexure-1 (a 2023
+  amendment is a draft). The L&D First Amendment 2026 (from 1 July 2027) makes % RDA optional on
+  these packs. **Not read: the IMS Act 1992** (India Code unreachable from this machine; Sushil to
+  download it). Nothing quotes the Act until it is read.
+- **Kind `infant`** from "MOTHER'S MILK IS BEST FOR YOUR BABY" (4(1)(a)), the six-months statement,
+  "Traditional Food for Infants" (11(3)), the regulation's product names, or category 13.1/13.2; an
+  age statement alone goes to a reviewer. Preterm, lactose-free, hypoallergenic, IEM and mono-grain
+  foods are `special_medical` (allergens and their own statement only). Product type (formula,
+  follow-up, milk cereal, processed cereal, traditional) from the printed name; without it, the
+  type-dependent checks are off.
+- **Checks:** allergens first (4(5) asks for an allergen warning too); regulation 4's statements found
+  or not found; 4(2)'s words "Humanised", "Maternalised", "Full Protein Food", "Energy Food",
+  "Completer Food", "Health Food" (exact words only; pictures of an infant or woman are a reviewer
+  check, never the app's); 5(1) "free from preservatives, added colours and flavours" and 5(2) additives
+  per type; hydrogenated fat by type (7(1)(c), 8(1)(c), 9(1)(d); follow-up formula "partially"; nothing
+  for traditional foods), all with D-111's care; composition beside the type's table where the pack
+  prints the same nutrient (recommended reviewer-only in the beta); ICMR-NIN's breastfeeding line
+  (guideline 3, p. 21) on every infant result.
+- **IMS Act caution, until a lawyer reads it:** no grade, score, band, ranking, "better pick", Compare,
+  shop list, tallies or share card for an infant pack, refused on the server with a test per route;
+  **released in shadow** (like D-051): users get allergens, the breastfeeding line and one sentence;
+  `INSIDELABEL_INFANT_TO_USERS` off by default.
+- **Baby profile band** (D-074, a value): `baby` "Under 2 years", `toddler` "2 to 3 years". On an
+  ordinary food a baby profile gets only sourced lines: added sugar (ICMR-NIN p. 29 "Added sugar must
+  be totally avoided for children below 2 years"), non-sugar sweeteners (WHO 2023 recommendation 5c),
+  honey (ICMR-NIN p. 21), salt (p. 26), HFSS by Table 15.1 (p. 28). WHO's "foods high in sugar, salt
+  and trans fats" is not applied: it gives no threshold.
+- **Questions for Sushil** (`docs/BABY_FOOD.md` section 9): the IMS Act download and a lawyer's view;
+  release; age statements alone; the baby band and existing toddler profiles; composition lines
+  reviewer-only; 3 baby-food gold labels.
+
 ---
 
 ## Open and pending
