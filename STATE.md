@@ -650,6 +650,13 @@ setup alarms.
 
 **NEXT SESSION STARTS HERE (2026-09-30).** Where things stand, newest first:
 
+- **Barcode audit on the server (Sushil, 2026-09-30):** 47 published, 1 MISMATCH (#42), 6 confirmed, 40
+  unconfirmed (no barcode in their photos). **#48 Sugar Free Natura, 4992146143214 (camera), likely a second
+  misread;** Sushil will photograph its barcode if he still has the pack, then `tools/barcodes.py fix` like #42.
+  The audit now lists SUSPECT camera reads (branch `d142-audit-suspects`). 40 of 47 with no barcode in their
+  photos answers D-143's open point: **D-145 RECOMMENDED** (proposal only, not built): the camera frame the
+  scanner accepted goes with the scan as the barcode's evidence photo.
+
 - **Barcodes (2026-09-30, newest first).** D-141 as accepted (a second zxing read at half size, then at
   three-quarter size) failed Sushil's server measurement twice: half size refused 2 of 6 accepted photo reads
   (33.3%), three-quarter 1 of 6 (16.7%, f77b1de8...d1.jpg, 8904089974837 = the camera read, second read

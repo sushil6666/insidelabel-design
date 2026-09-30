@@ -101,3 +101,28 @@ def test_the_audit_writes_nothing(env):
     before = q(uri, "SELECT id, barcode FROM products ORDER BY id")
     barcode_audit.audit(barcode_audit.products(uri), media)
     assert q(uri, "SELECT id, barcode FROM products ORDER BY id") == before
+
+
+def test_a_camera_read_with_an_unusual_prefix_is_suspect(env):
+    """#48's case: 4992146143214 from the camera, prefix 499, no other pack of the brand has it."""
+    uri, media = env
+    ids = {}
+    for key, code, name, brand in (("natura", "4992146143214", "Sugar Free Natura", "Sugar Free"),
+                                   ("oreo", "7622210442864", "Oreo", "Cadbury"),
+                                   ("bournvita", "7622210801128", "Bournvita", "Cadbury")):
+        r = TestClient(main.app).post("/scan", files={"back": ("b.jpg", label_photo(), "image/jpeg")},
+                                      data={"replay": vision(["Sugar", "Salt"]), "barcode": code,
+                                            "barcode_source": "camera"})
+        assert r.status_code == 200, r.text
+        c = client()
+        approve(c, take_next(c), name=name, brand=brand, ingredients="Sugar\nSalt", barcode=code,
+                barcode_checked="1")
+        ids[key] = q(uri, "SELECT id FROM products WHERE barcode = %s", code)[0][0]
+    rows = {r["id"]: r for r in barcode_audit.audit(barcode_audit.products(uri), media)}
+    assert "prefix 499" in rows[ids["natura"]]["suspect"]
+    assert rows[ids["oreo"]]["suspect"] is None and rows[ids["bournvita"]]["suspect"] is None   # the brand's prefix
+    assert all(r["suspect"] is None for r in rows.values() if r["barcode"].startswith("890"))
+    lines = []
+    barcode_audit.report(list(rows.values()), out=lines.append)
+    assert "(SUSPECT: 1)" in lines[0]
+    assert any(x.startswith(f"  #{ids['natura']} Sugar Free Natura: barcode 4992146143214") for x in lines)

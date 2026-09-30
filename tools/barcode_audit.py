@@ -17,6 +17,11 @@ every scan's (those not yet deleted, D-080). The product is:
                barcode may just not be in the photos; the OCR's own codes are listed)
   confirmed    zxing or the OCR text shows the product's code
   no photos    none left to read
+A product whose code nothing confirms is also listed as SUSPECT when that code came
+from the camera scanner and its GS1 prefix (first 3 digits) is not 890 and not the
+prefix of another published product of the same brand (Sushil, 2026-09-30: every
+other camera read was 890 or a known brand's code; #48's 4992146143214 is not).
+Suspect is a reason to photograph the pack's barcode, not a finding.
 
     INSIDELABEL_MEDIA=... INSIDELABEL_DB=... python tools/barcode_audit.py
     il tools/barcode_audit.py                       # on the server
@@ -36,7 +41,10 @@ from insidelabel import barcode  # noqa: E402
 from insidelabel.media import LocalMedia  # noqa: E402
 
 PRODUCTS = """
-SELECT p.id, p.name, p.barcode,
+SELECT p.id, p.name, p.barcode, p.brand_id, b.name AS brand,
+       EXISTS (SELECT 1 FROM scans s JOIN product_versions v ON v.id = s.product_version_id
+                WHERE v.product_id = p.id AND s.request->>'barcode' = p.barcode
+                  AND s.request->>'barcode_source' = 'camera') AS camera_read,
        (SELECT array_agg(DISTINCT k) FROM (
           SELECT unnest(ARRAY[v.back_image_key, v.front_image_key]) FROM product_versions v WHERE v.product_id = p.id
           UNION ALL
@@ -50,10 +58,16 @@ SELECT p.id, p.name, p.barcode,
           FROM scans s JOIN product_versions v ON v.id = s.product_version_id
          WHERE v.product_id = p.id AND s.request->>'barcode' IS NOT NULL) AS sent
   FROM products p
+  LEFT JOIN brands b ON b.id = p.brand_id
  WHERE p.barcode IS NOT NULL
    AND EXISTS (SELECT 1 FROM product_versions v WHERE v.product_id = p.id AND v.status = 'published')
  ORDER BY p.id
 """
+
+
+# The prefix of the catalogue's own packs (Sushil, 2026-09-30); a camera read with
+# another one, that no other pack of the brand shares, is worth a second look.
+HOME_PREFIX = "890"
 
 
 def products(db):
@@ -92,15 +106,38 @@ def audit(rows, media):
             status = "no photos"
         out.append({**p, "zxing": zxing, "read": read, "ocr": ocr, "status": status,
                     "photos_here": have, "photos_gone": missing})
+    for r in out:
+        r["suspect"] = suspect(r, out)
     return out
+
+
+def suspect(r, rows):
+    """Why a camera read nothing confirms looks wrong, or None."""
+    code = r["barcode"] or ""
+    if r["status"] not in ("unconfirmed", "no photos") or not r.get("camera_read") or len(code) != 13:
+        return None
+    prefix = code[:3]
+    if prefix == HOME_PREFIX:
+        return None
+    if any(o["id"] != r["id"] and r.get("brand_id") is not None and o.get("brand_id") == r["brand_id"]
+           and (o["barcode"] or "")[:3] == prefix for o in rows):
+        return None
+    return (f"a camera read with prefix {prefix}, not {HOME_PREFIX}, and no other published product of "
+            f"{r.get('brand') or 'its brand'} has it")
 
 
 def report(rows, show_all=False, out=print):
     count = {}
     for r in rows:
         count[r["status"]] = count.get(r["status"], 0) + 1
+    suspects = [r for r in rows if r.get("suspect")]
     out(f"published products: {len(rows)}  " + "  ".join(
-        f"{k}: {count.get(k, 0)}" for k in ("MISMATCH", "unconfirmed", "confirmed", "no photos")))
+        f"{k}: {count.get(k, 0)}" for k in ("MISMATCH", "unconfirmed", "confirmed", "no photos"))
+        + f"  (SUSPECT: {len(suspects)})")
+    if suspects:
+        out("\nSUSPECT (photograph the pack's barcode):")
+        for r in suspects:
+            out(f"  #{r['id']} {r['name']}: barcode {r['barcode']}: {r['suspect']}")
     for status in ("MISMATCH", "unconfirmed", "no photos") + (("confirmed",) if show_all else ()):
         chosen = [r for r in rows if r["status"] == status]
         if not chosen:
