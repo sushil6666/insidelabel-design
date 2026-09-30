@@ -1,6 +1,6 @@
 # STATE.md - where InsideLabel is, and how to pick it up
 
-**Last updated:** 2026-09-27 (**https://insidelabel.ai is live**, `main` = `45f9feb`, PR #18; branch `live`: notes from the deploy) · **Owner:** Sushil · **Tests:** 538 passing, 8 skipped, 1 expected failure · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 5.7 s on the live server (2026-09-27), Gemini + Cloud Vision, `verdict`
+**Last updated:** 2026-09-30 (**https://insidelabel.ai is live**, `main` = `ee2e45e`, PR #55, deployed; phase 3 (D-134) built on branch `result-tiles`) · **Owner:** Sushil · **Tests:** 754 passing, 8 skipped, 1 expected failure · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 5.7 s on the live server (2026-09-27), Gemini + Cloud Vision, `verdict`
 
 This is the living status document. Read it first in any new session, then
 `DECISIONS.md` for the *why*. Update the "Last updated" line, the numbers and
@@ -648,7 +648,26 @@ to see where each gate stands. §11 has the full list. Done today: D-051/52/55 d
 food categories, PWA built, D-092 reproduction, D-093 Cloud Vision, scan speed,
 setup alarms.
 
-**NEXT SESSION STARTS HERE (2026-09-28).** Where things stand, newest first:
+**NEXT SESSION STARTS HERE (2026-09-30).** Where things stand, newest first:
+
+- **D-134 built, phase 3 of `docs/BUILD_PROMPT_D132-D134.md`** (branch `result-tiles`, web-27,
+  754 tests). Sushil confirmed the phase 2 phone check first. `screen.tiles` + `screen.details`
+  (lenses/screen.py), one-screen result with chips, tile pages at `#/result/<id>/look/<tile id>`,
+  "More about this pack" (web/app.js). Nothing new is judged: tiles are the existing "Worth a look"
+  rows. Walked in headless Chromium, light and dark, from real `/scan` answers and the real photo
+  flow (Limca 1 L: "Add a photo of the nutrition table" on the first screen): no errors; a 2-tile pack
+  ends at 787 of 844 px. Fixed on the way: `row wrap` rows took the page padding (the shop-list gap).
+  **Waiting on Sushil:** merge, `update.sh`, phone check; confirm three choices in D-134 (front-photo
+  ask inside "More", sugar/salt/energy over ICMR-NIN not tiles, shop list for screens only).
+  Still open from phase 2: the four gold tables to check, "run the gold set" (about Rs 3), D-136.
+
+- **Deployed 2026-09-30: main `ee2e45e` (PRs #54 and #55, 737 tests) on the server**: phase 1
+  (D-132 ingredient notes, D-135 NOVA aliases) and phase 2 (D-133 nutrition table); migration 018
+  applied. Checked from outside 2026-09-30: `/health` build `ee2e45eb0937`, data `92c1d160ec6d`,
+  69 additives, 17 NOVA markers; `/app/lib.js` web-26, `/app/sw.js` `il-shell-26`. **Waiting on
+  Sushil:** the phone check (confirmed 2026-09-30: "Checked, start phase 3"); check the four gold tables Claude transcribed (gold/*.json "nutrition"); "run the
+  gold set" for the paid run (6 reads, about Rs 3); D-136 stays RECOMMENDED. **Then phase 3** (D-134
+  tiles, branch `result-tiles`): built, see above.
 
 - **D-133 built, phase 2 of `docs/BUILD_PROMPT_D132-D134.md`** (branch `nutrition-panel`, web-26,
   migration 018, ~745 tests). The nutrition table: prompt rule 10 + `nutrition` schema (new
@@ -705,8 +724,8 @@ setup alarms.
   lines say "on this screen" with the caution in the line; our catalogue's pack beside it (case A: the
   pack lists milk, the screen doesn't; B: they agree; C: no pack); never catalogued (outcome
   `screen_read`); shop list on the phone with "Scan it now", and the pack's result says what differs.
-  DPDP data map row 7a and reviewer point 11. Seen in the walk, not changed: empty space under
-  "Remove" on the shop-list card.
+  DPDP data map row 7a and reviewer point 11. Seen in the walk: empty space under
+  "Remove" on the shop-list card (fixed 2026-09-30 with D-134: `row wrap` took the page's padding).
 - **Research rows live:** Sushil "approved" all 15 (2026-09-29); `data/additive_research.json`,
   `reviewed_by` sushil. 127 erythrosine needs the EFSA 2011 PDF (EFSA Journal 9(1):1854) by hand:
   Wiley refuses scripted downloads. **D-131:** 954, 950, 955 stay `moderate` on the WHO 2023
