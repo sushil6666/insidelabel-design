@@ -2379,6 +2379,13 @@ changed a published product's key and kept nothing of the old one; the other way
    (`barcode.codes_in_text`: the digits under the bars, in their printed groups). MISMATCH (zxing reads
    another code), unconfirmed (nothing shows the code), confirmed, no photos. A mismatch is fixed with point 1
    only after a person reads the printed digits.
+6. **The audit on the server** (Sushil, 2026-09-30): 47 published, 1 MISMATCH (#42, by eye 8901499008343),
+   6 confirmed, 40 unconfirmed (no barcode in their photos), 0 no photos. Sushil spotted a likely second
+   misread among the unconfirmed: #48 Sugar Free Natura, 4992146143214 from the camera (499, where every
+   other camera read is 890 or a known 7622 Mondelez code). So the audit now also lists **SUSPECT**: a camera
+   read nothing confirms, whose GS1 prefix (first 3 digits) is not 890 and not the prefix of another published
+   product of the same brand (branch `d142-audit-suspects`). A reason to photograph the pack's barcode, not a
+   finding; a correction still needs the printed digits read by a person.
 Not done: a /review page for it (the tool is enough for one reviewer; a page later if others need it);
 telling installs that scanned the product under the old code (their saved results show the old code).
 
