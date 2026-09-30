@@ -724,8 +724,8 @@ setup alarms.
   lines say "on this screen" with the caution in the line; our catalogue's pack beside it (case A: the
   pack lists milk, the screen doesn't; B: they agree; C: no pack); never catalogued (outcome
   `screen_read`); shop list on the phone with "Scan it now", and the pack's result says what differs.
-  DPDP data map row 7a and reviewer point 11. Seen in the walk, not changed: empty space under
-  "Remove" on the shop-list card.
+  DPDP data map row 7a and reviewer point 11. Seen in the walk: empty space under
+  "Remove" on the shop-list card (fixed 2026-09-30 with D-134: `row wrap` took the page's padding).
 - **Research rows live:** Sushil "approved" all 15 (2026-09-29); `data/additive_research.json`,
   `reviewed_by` sushil. 127 erythrosine needs the EFSA 2011 PDF (EFSA Journal 9(1):1854) by hand:
   Wiley refuses scripted downloads. **D-131:** 954, 950, 955 stay `moderate` on the WHO 2023
