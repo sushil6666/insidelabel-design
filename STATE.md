@@ -1,6 +1,6 @@
 # STATE.md - where InsideLabel is, and how to pick it up
 
-**Last updated:** 2026-09-30 (**https://insidelabel.ai is live**, `main` = `8045c0f`, PR #56 (phase 3, D-134), deployed and checked from outside) · **Owner:** Sushil · **Tests:** 754 passing, 8 skipped, 1 expected failure · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 5.7 s on the live server (2026-09-27), Gemini + Cloud Vision, `verdict`
+**Last updated:** 2026-09-30 (**https://insidelabel.ai is live**, `main` = `8045c0f`, PR #56 (phase 3, D-134), deployed and checked from outside) · **Owner:** Sushil · **Tests:** 755 passing, 8 skipped, 1 expected failure · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 5.7 s on the live server (2026-09-27), Gemini + Cloud Vision, `verdict`
 
 This is the living status document. Read it first in any new session, then
 `DECISIONS.md` for the *why*. Update the "Last updated" line, the numbers and
@@ -649,6 +649,19 @@ food categories, PWA built, D-092 reproduction, D-093 Cloud Vision, scan speed,
 setup alarms.
 
 **NEXT SESSION STARTS HERE (2026-09-30).** Where things stand, newest first:
+
+- **Beta gates, work Claude could do alone (2026-09-30, branch `beta-gates`, on top of
+  `state-phase3-deployed`).** Nothing live changes except two site pages. (1) **Ingredient match
+  94.5%: D-137 RECOMMENDED.** No word is misread; every miss is where the list was cut. Gold follows
+  prompt rule 4 in two places = 98.0% on the saved predictions; the prompt line for `{ }` and
+  "no added brackets" waits for the paid gold run. Gold files not edited. (2) **D-076 pages:** `/how`
+  explains Not permitted, ingredient notes, the nutrition table and tiles; `/about` lists where the
+  facts come from; the wording test now covers the site pages. **D-138 RECOMMENDED:** the
+  conflict-of-interest policy, `docs/COI_POLICY_DRAFT.md`, every line from D-002 or the blueprint;
+  Sushil fills who pays, industry ties, who is behind it. (3) **Gold set to 20:**
+  `docs/GOLD_SET_PLAN.md`: photos of published packs (never their records), transcribed blind, one
+  paid read of all 20 (about Rs 10). **Waiting on Sushil:** D-137, D-138 and its three blanks, the
+  server query in the plan, whether testers' photos may be used.
 
 - **Deployed 2026-09-30: main `8045c0f` (PR #56, phase 3 D-134, 754 tests) on the server.**
   Checked from outside 2026-09-30: `/health` build `8045c0f3a14f`, data `63346c110198`, 69 additives,

@@ -178,3 +178,16 @@ def test_nutrition_table_words():
              screen.NUTRITION_UNVERIFIED, screen.NUTRITION_ASK, screen.NUTRITION_CHECKED, screen.NUTRITION_ADULTS,
              *nutrition.THRESHOLDS["trans_fat_tile"]["summary"]]
     assert_clean(texts, "nutrition table words")
+
+
+def test_site_pages():
+    # D-076: the public pages (home, about, how, privacy) and the app shell are
+    # consumer copy too. Tags are stripped; only the words a reader sees are checked.
+    import glob
+    import html
+    pages = sorted(glob.glob(os.path.join(ROOT, "web", "site", "*.html"))) + [os.path.join(ROOT, "web", "index.html")]
+    assert len(pages) >= 5
+    for p in pages:
+        with open(p, encoding="utf-8") as f:
+            text = html.unescape(re.sub(r"<[^>]+>", " ", f.read()))
+        assert_clean([" ".join(text.split())], os.path.relpath(p, ROOT))

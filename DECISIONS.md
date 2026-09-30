@@ -2076,6 +2076,52 @@ count, `compare._marker_in`, the same), and D-132's hydrogenated-fat tile exclud
 "non-hydrogenated" (its approved wording is unchanged). An alias that itself starts with "non-"
 ("non-nutritive sweetener") still matches. No gold label contains "non-".
 
+### D-137 · Gold ingredient arrays split where the prompt says to split `RECOMMENDED` (2026-09-30)
+The ingredient match gate reads 94.5% (needs 95%). Diagnosed on the 6 gold labels against the saved
+predictions (read 2026-09-25) and the photos: **no ingredient word is misread.** Four labels match
+exactly; every difference on the other two is where the list was cut into entries:
+
+| Label | Gold | Model | Pack (photo) | Prompt rule 4 ("split on top-level commas only") |
+|---|---|---|---|---|
+| Britannia | bakery improver mix as one entry | split into 3 inside its `{ }` | one bracketed group | model is wrong |
+| Britannia | "... FLAVOURING SUBSTANCES" and "RAISING AGENTS [...]" as two | one entry | "SUBSTANCES AND RAISING AGENTS": no comma | gold departs from the rule |
+| Patanjali | "Natural, Nature identical & Artificial Flavours (...)" as one | "Natural" + the rest | a top-level comma after "Natural" | gold departs from the rule |
+| Patanjali | "Emulsifier INS 322(i)" | "Emulsifier [INS 322(i)]" | no brackets | model added brackets (the gate cannot see it: `norm()` drops brackets) |
+
+The gold was split by meaning; the model is told to split by commas. The gate then counts obeying the
+prompt as a miss. **Recommended by Claude:**
+1. The gold follows prompt rule 4, the one written convention: Britannia's last two gold entries
+   become one ("... FLAVOURING SUBSTANCES AND RAISING AGENTS [450(i) & 338]"), Patanjali's flavours
+   entry becomes two ("Natural", "Nature identical & Artificial Flavours (Milk & Vanilla)"). Nothing
+   else changes; the gate stays whole-entry F1 at 95%. Measured on the saved predictions: **98.0%**
+   (Britannia 0.882, the other five 1.0). The bakery-mix split stays counted, as it should.
+   For comparison, F1 over the tokens the engine actually scores (`engine.tokenize`, D-121) is 98.3%.
+2. With the paid gold run (only when Sushil says "run the gold set"), not before: add a `{ }` and
+   `[ ]` example to rule 4 and a line "do not add brackets that are not printed". A prompt change
+   moves PROMPT_VERSION and invalidates every saved prediction, so it goes in with that run.
+
+Why this isn't fitting gold to output (RUNBOOK: "don't fix gold after seeing a mismatch"): no word
+changes, and both gold splits were the error `tools/new_gold.py` names, writing what the pack means
+rather than what it prints (it prints "SUBSTANCES AND RAISING", and a comma after "Natural"). The
+model's two real mistakes stay counted or noted. Why not change the measure instead: the gate is a
+blueprint number, and passing it by redefining it is the wrong habit. Why it matters little either way: 6 labels is far too few for 94.5 against 95 to
+mean anything; the gold set size gate (20) is the real work. Nothing applied until Sushil decides; the
+gold files are not edited.
+
+### D-138 · The conflict-of-interest policy, in the words already decided `RECOMMENDED` (2026-09-30)
+D-076 asks for the policy at beta launch; `web/site/about.html` still has a bracket where it goes.
+Draft in `docs/COI_POLICY_DRAFT.md`: page-ready text, and for every line the decision it comes from
+(D-002; blueprint §2.5 and §10; "Explicitly not building"; D-053's "scans free forever" and nothing
+on price, which is still open). One new line, recommended so the promise can be checked: a change is
+dated on the page before it takes effect. **Only Sushil can fill:** who pays today, ties to the food
+industry ("none" is an answer), and "who is behind it" (name, photo, a few sentences). Not on the
+site until Sushil says "approved".
+
+Built with it (no decision needed, the pages only describe what is already built): `/how` explains
+"Not permitted in India" (D-111), ingredients worth knowing (D-132), the nutrition table (D-133) and
+tiles (D-134); `/about` lists where the facts come from. `tests/test_wording.py` now lints the site
+pages and the app shell too (all were already clean).
+
 ---
 
 ## Open and pending
