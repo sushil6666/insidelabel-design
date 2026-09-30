@@ -18,6 +18,8 @@ What this module does:
                   statements (they name "infant milk substitute or infant food").
 - statements():   regulation 4's statements found or not found; "not found" only on a
                   complete read of both faces, and only those for the type's chapter.
+- no_milk():      4(3): "Contains no milk or milk products or milk derivatives", found or not
+                  found, only where the allergen check says milk is not listed.
 - words():        4(2)'s words the label shall not exhibit, where printed.
 - free_from():    5(1): preservatives and colours (by the additive's class) and flavours.
 - hydrogenated(): hydrogenated fat, for the types whose section says so.
@@ -31,6 +33,7 @@ import json
 import os
 
 from insidelabel.core.pack_kind import _has, norm
+from insidelabel.lenses import allergens
 from insidelabel.core.tokenize import ins_numbers
 from insidelabel.lenses.nutra import complete_read
 from insidelabel.trace import DATA_DIR
@@ -94,6 +97,27 @@ def statements(vision, ocr_text=None, ptype=None):
         out.append({"id": row["id"], "text": row["text"], "found": hit is not None, "printed": hit,
                     "basis": row["fssai_basis"]})
     return out
+
+
+def no_milk(vision, ocr_text=None):
+    """
+    4(3): {text, found, printed, basis} for a pack whose list shows no milk, or None: when both
+    faces weren't read whole, or the allergen check (D-072's confidence gate) doesn't say milk
+    is not listed (contains, may contain and uncertain say nothing).
+    """
+    if not complete_read(vision):
+        return None
+    confidence = (vision.get("confidence") or {}).get("ingredients", 0.0)
+    milk = allergens.check(vision.get("ingredients") or [], vision.get("allergen_statement"), ["milk"],
+                           confidence=confidence)["milk"]
+    if milk.state != "not_listed":
+        return None
+    row = RULES["no_milk"]
+    texts = [s["text"] for s in vision.get("pack_statements") or []] + [vision.get("allergen_statement")]
+    hit = next((t for t in filter(None, texts) if any(_has(norm(t), m) for m in row["match"])), None)
+    if hit is None and any(_has(norm(ocr_text or ""), m) for m in row["match"]):
+        hit = next(m for m in row["match"] if _has(norm(ocr_text), m))
+    return {"text": row["text"], "found": hit is not None, "printed": hit, "basis": row["fssai_basis"]}
 
 
 def words(vision, ocr_text=None):
@@ -198,6 +222,7 @@ def check(vision, ingredients=None, ocr_text=None):
         "type": ptype,
         "complete_read": complete_read(vision),
         "statements": statements(vision, ocr_text, ptype),
+        "no_milk": no_milk(vision, ocr_text),
         "words": words(vision, ocr_text),
         "free_from": free_from(ingredients),
         "hydrogenated": hydrogenated(ingredients, ptype),

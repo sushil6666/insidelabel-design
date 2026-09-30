@@ -2342,6 +2342,11 @@ Same request as D-139. Full proposal: `docs/BABY_FOOD.md`. **Nothing built until
   carry-over additives, and the type may be misread); compared on the number and any letter suffix, since the
   parser keeps a lone roman "i" ("500i") but drops "ii"; entries under vitamins or minerals (nutrient sources,
   Schedule I) are left out. On /review with the other infant checks; nothing reaches the user.
+- **Phase 3, part 3 (branch `baby-food-no-milk`, 2026-09-30): 4(3).** "The product which contains neither milk
+  nor any milk derivatives shall be labelled "Contains no milk or milk products or milk derivatives" in
+  conspicuous manner." (PDF p. 6.) `lenses/infant.py no_milk()`: found or not found, only when both faces were
+  read whole and the allergen check (lenses/allergens.py, D-072's 0.95 gate) says milk is not listed; contains,
+  may contain, uncertain or cannot confirm say nothing. "Conspicuous" is not judged. Reviewers only.
 
 
 ### D-141 · A barcode read from a photo counts only when two reads agree, or the barcode is big enough `SUPERSEDED by D-144` (2026-09-30)

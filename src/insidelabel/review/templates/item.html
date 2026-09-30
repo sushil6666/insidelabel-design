@@ -165,6 +165,7 @@
           {% endfor %}
           </ul>
         {% endif %}
+        {% if infant.no_milk %}<div>{% if infant.no_milk.found %}Found{% else %}<strong>Not found</strong>{% endif %}: {{ infant.no_milk.text }} <span class="muted">({{ infant.no_milk.basis }}; milk isn't listed on this pack){% if infant.no_milk.printed %}, printed "{{ infant.no_milk.printed }}"{% endif %}</span></div>{% endif %}
         {% for w in infant.words %}<div>The label shows "{{ w.word }}"{% if w.printed %} in "{{ w.printed }}"{% endif %} <span class="muted">(4(2): "shall not exhibit")</span></div>{% endfor %}
         {% for f in infant.free_from %}<div>On the list: "{{ f.entry }}" ({{ f.why|join(", ") }}) <span class="muted">(5(1): "free from preservatives, added colours and flavours")</span></div>{% endfor %}
         {% for h in infant.hydrogenated %}<div>On the list: "{{ h.entry }}" <span class="muted">({{ h.basis }}: "{{ h.text }}")</span></div>{% endfor %}
