@@ -960,6 +960,13 @@ function result(id, sub, tileId) {
   // judges it as a food. Which parts show is the server's (screen.parts).
   if (s.kind) {
     put(kindView(s));
+    // D-139: a supplement's own tiles, each opening its page, its sugar chip for a food
+    // format, and its sections (amounts, statements, additives), all in the server's words.
+    if (s.tiles?.length) put(el("ul", { class: "tiles" }, s.tiles.map(t => el("li", {}, tileLink(h, t)))));
+    if (s.summary?.length) put(answersView(s.summary));
+    (s.sections || []).forEach(x => put(el("div", { class: "card section" },
+      el("h2", {}, x.title), x.lines.map(t => el("p", {}, t)),
+      x.sources?.length > 0 && el("details", { class: "more" }, el("summary", {}, "Sources"), sourceList(x.sources)))));
     if (s.retake) put(el("div", { class: "card warn" }, el("p", {}, s.retake),
       button("Retake the ingredients photo", () => { pending = { ...pending, back: null, barcode: h.barcode }; go("photo"); })));
     if (s.recheck) put(el("div", { class: "card note" }, el("p", {}, s.recheck),

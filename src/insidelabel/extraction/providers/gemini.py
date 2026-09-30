@@ -58,7 +58,8 @@ _FENCE = re.compile(r"^\s*```(?:json)?\s*|\s*```\s*$", re.MULTILINE)
 # D-133: "nutrition" too. Answers recorded before it (every scan before D-133)
 # have no table and must still parse and replay the same (D-092).
 # D-139: "pack_statements" and "licences" too; without them a pack is ordinary food.
-OPTIONAL_KEYS = {"image_content", "nutrition", "pack_statements", "licences"}
+# D-139 phase 2: "composition" too (a supplement's amounts per tablet or serving).
+OPTIONAL_KEYS = {"image_content", "nutrition", "pack_statements", "licences", "composition"}
 REQUIRED_KEYS = set(VISION_RESPONSE_SCHEMA["required"]) - OPTIONAL_KEYS
 _IMAGE_CONTENT = {"food_pack", "screen", "not_food", "not_provided"}
 # D-108: words that state a difference between the two faces, in the model's evidence.
@@ -551,6 +552,16 @@ def harden(vision, sent_front, sent_back):
         if not isinstance(n.get("rows"), list):
             n["rows"] = []
         v["nutrition"] = n
+
+    # 1c'. The composition table (D-139). Copied only; lenses/nutra.py judges it.
+    if "composition" in v:
+        c = dict(v["composition"]) if isinstance(v["composition"], dict) else {}
+        if c.get("status") not in _NUTRITION_STATUS:
+            corrections.append(f"composition.status {c.get('status')!r} invalid -> unreadable")
+            c["status"] = "unreadable"
+        c["rows"] = [r for r in (c.get("rows") if isinstance(c.get("rows"), list) else [])
+                     if isinstance(r, dict) and isinstance(r.get("name"), str) and r["name"].strip()]
+        v["composition"] = c
 
     # 1d. Statements and licences (D-139). Copied text only; core/pack_kind.py
     #     judges them. Entries that aren't {text, face} are dropped, and a face

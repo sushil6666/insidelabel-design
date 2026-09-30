@@ -203,8 +203,10 @@ def test_each_kind_shows_allergens_first_and_nothing_that_judges_it_as_food(name
     assert j["pack_kind"]["code"] == code and list(j)[0] == "allergens"
     assert list(s)[:3] == ["state", "people", "headline"] and s["people"]         # D-060
     assert s["kind"]["code"] == code and s["parts"] == list(pack_kind.parts(code))
-    for absent in ("summary", "tiles", "details", "additives", "glance", "tallies", "ingredient_notes",
-                   "nutrition", "band", "shop_list", "alerts", "additive_alert", "worth_knowing"):
+    # D-139 phase 2: a supplement has its own tiles and sections (and a sugar chip in a food format).
+    own = {"tiles", "details", "summary"} if code == "supplement" else set()
+    for absent in {"summary", "tiles", "details", "additives", "glance", "tallies", "ingredient_notes",
+                   "nutrition", "band", "shop_list", "alerts", "additive_alert", "worth_knowing"} - own:
         assert absent not in s, (name, absent)
     assert s["ingredients"] == ingredients
     assert "breastfeeding" not in s                      # D-140: held until the lawyer answers
@@ -245,7 +247,9 @@ def test_the_same_pack_without_rule_11_is_scored_as_before():
     ingredients, statements, _ = INVENTED["gummy"]
     with_kind = run(reading(ingredients, statements))
     without = run(reading(ingredients, []))
-    assert with_kind["verdict"] == without["verdict"] and with_kind["allergens"] == without["allergens"]
+    # The engine's reading is the same; a supplement's score, grade and band aren't sent (D-139 phase 2).
+    assert with_kind["verdict"]["flags"] == without["verdict"]["flags"] and with_kind["allergens"] == without["allergens"]
+    assert with_kind["verdict"]["score"] is None and without["verdict"]["score"] is not None
     assert without["pack_kind"]["code"] == "food" and "summary" in without["screen"]
 
 
@@ -287,9 +291,10 @@ def test_scan_withholds_every_result_field_for_an_infant_pack():
                              "reason": "infant_in_shadow"}
     assert list(j)[0] == "allergens" and j["allergens"] and j["screen"]["people"]
     assert "score" not in json.dumps(j["screen"]) and "grade" not in json.dumps(j["screen"])
-    # Food and supplements keep theirs (a supplement's own rules are phase 2).
-    for other in ("multivitamin_tablet",):
-        assert run(reading(*INVENTED[other][:2]))["verdict"]["score"] is not None
+    # A supplement keeps its flags but no score (D-139 phase 2); food keeps everything.
+    sup = run(reading(*INVENTED["multivitamin_tablet"][:2]))
+    assert sup["verdict"]["score"] is None and sup["verdict"]["flags"] and sup["display"] is None
+    assert sup["withheld"]["reason"] == "supplement_not_scored"
     assert "withheld" not in run(reading(["Atta", "Salt"]))
 
 

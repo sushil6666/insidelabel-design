@@ -378,3 +378,6 @@ q { quotes: "“" "”"; }
 
 /* D-139, D-140: the kind of pack. The allergen lines stay above it (D-060). */
 .card.kind { border-left: 4px solid var(--ring); }
+/* D-139: a supplement's sections. */
+.card.section > p { font-size: .95rem; }
+.card.section h2 { font-size: 1rem; margin: 0; }

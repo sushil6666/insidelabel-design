@@ -1,0 +1,1059 @@
+{
+  "_meta": {
+    "table": "nutra_additives",
+    "version": "0.1",
+    "purpose": "D-139: the additives FSSAI's supplement rules point to. 5(4)(a) and its footnote: Appendix A's GMP table and Annexure 3 for every supplement (the 10 May 2022 order adds tablet excipients \"in addition to\" the GMP table, so it covers tablets too); 6(1)(e): tablets, capsules, pills and liquids use Annexure 3's list for tablets, capsules and syrups, other formats the 13.6 list. Found in a list: listed. Not found: \"we didn't find it in the lists\", never \"not permitted\" (names vary, and the Drugs and Cosmetics Rules' colour list isn't read).",
+    "source": {
+      "title": "FSS (Nutra) Regulations, 2022, Annexure 3, as operationalised by FSSAI's direction of 18 October 2022; FSSAI order of 10 May 2022",
+      "url": "https://fssai.gov.in/docs/food-law/regulations/Direction_New_compressed.pdf",
+      "read_on": "2026-09-30"
+    },
+    "rules": [
+      "Names as printed, spelling included (\"Manitol\", \"Tocoferol\", \"Saff flower oil\"). Parsed from the text layer and checked against the page images, Annexure pp. 71 to 75.",
+      "Upper-case names in the supplements list are groups (BENZOATES, PHOSPHATES...): matched by the group word on the pack's entry, as the list prints no INS for them.",
+      "The list prints an en dash in \"Caramel III (en dash) Ammonia caramel\" and \"Caramel IV (en dash) Sulfite ammonia caramel\"; written here with a hyphen (no dashes in the project).",
+      "`aliases` on a tablet row are spelling and salt variants used only to match a pack's wording to the row (\"Sodium benzoate\" to \"Benzoic acid and its salts\"); no sentence shows them.",
+      "Tablet-list names mark an entry as an additive only for tablets, capsules and syrups: in a gummy or a powder, gelatin, sucrose or pectin are ingredients."
+    ]
+  },
+  "tablet_capsule_syrup": {
+    "basis": "Annexure 3, \"List of food additives to be used in formats such as tablets, capsules and syrups\", pp. 73 to 75",
+    "verified_on": "2026-09-30",
+    "rows": [
+      {
+        "n": 1,
+        "name": "Acacia gum",
+        "function": "Binding agent",
+        "max": "GMP",
+        "page": 73
+      },
+      {
+        "n": 2,
+        "name": "Acetone",
+        "function": "Solvent for coating",
+        "max": "GMP (does not remain in the tablet and residual levels to be as per IP)",
+        "page": 73
+      },
+      {
+        "n": 3,
+        "name": "Ascorbic acid and its esters and salts",
+        "function": "Antioxidant",
+        "max": "0.5%",
+        "page": 73,
+        "aliases": [
+          "ascorbic acid",
+          "ascorbate",
+          "ascorbyl"
+        ]
+      },
+      {
+        "n": 4,
+        "name": "Benzoic acid and its salts",
+        "function": "Preservative",
+        "max": "0.5%",
+        "page": 73,
+        "aliases": [
+          "benzoic acid",
+          "benzoate"
+        ]
+      },
+      {
+        "n": 5,
+        "name": "BHA",
+        "function": "Antioxidant",
+        "max": "0.5%",
+        "page": 73
+      },
+      {
+        "n": 6,
+        "name": "BHT",
+        "function": "Antioxidant",
+        "max": "0.5%",
+        "page": 73
+      },
+      {
+        "n": 7,
+        "name": "Bronopol",
+        "function": "Preservative",
+        "max": "0.5%",
+        "page": 73
+      },
+      {
+        "n": 8,
+        "name": "Calcium carbonate",
+        "function": "Diluent, Dissintegrant",
+        "max": "GMP",
+        "page": 73
+      },
+      {
+        "n": 9,
+        "name": "Calcium stearate",
+        "function": "Lubricant",
+        "max": "1%",
+        "page": 73
+      },
+      {
+        "n": 10,
+        "name": "Carboxymethyl cellulose Calcium",
+        "function": "Binding agent",
+        "max": "5-15%",
+        "page": 73
+      },
+      {
+        "n": 11,
+        "name": "Carrageenan gum",
+        "function": "Binding agent",
+        "max": "2%",
+        "page": 73
+      },
+      {
+        "n": 12,
+        "name": "Cellulose acetate phthalate",
+        "function": "Coating agent",
+        "max": "2%",
+        "page": 73
+      },
+      {
+        "n": 13,
+        "name": "Citric acid",
+        "function": "Disintegrant",
+        "max": "2%",
+        "page": 73
+      },
+      {
+        "n": 14,
+        "name": "Citric and fatty acid esters of glycerol",
+        "function": "Stabilizer",
+        "max": "2%",
+        "page": 73
+      },
+      {
+        "n": 15,
+        "name": "Copovidone",
+        "function": "Binding agent",
+        "max": "2-5%",
+        "page": 73
+      },
+      {
+        "n": 16,
+        "name": "Corn oil",
+        "function": "Vehicle",
+        "max": "GMP",
+        "page": 73
+      },
+      {
+        "n": 17,
+        "name": "Corn starch",
+        "function": "Diluent, Binding agent, Dissintegrant",
+        "max": "GMP",
+        "page": 73
+      },
+      {
+        "n": 18,
+        "name": "Cross carmellose sodium",
+        "function": "Disintegrant",
+        "max": "0.5 to 5 %",
+        "page": 73,
+        "aliases": [
+          "croscarmellose sodium"
+        ]
+      },
+      {
+        "n": 19,
+        "name": "Cyclodextrin",
+        "function": "Diluent",
+        "max": "GMP",
+        "page": 73
+      },
+      {
+        "n": 20,
+        "name": "Dextrose",
+        "function": "Diluent",
+        "max": "GMP",
+        "page": 73
+      },
+      {
+        "n": 21,
+        "name": "Dicalcium phosphate",
+        "function": "Diluent",
+        "max": "GMP",
+        "page": 73
+      },
+      {
+        "n": 22,
+        "name": "Ethyl acetate",
+        "function": "Solvent for coating",
+        "max": "GMP (does not remain in the tablet and residual levels to be as per IP)",
+        "page": 73
+      },
+      {
+        "n": 23,
+        "name": "Ethyl alcohol",
+        "function": "Solvent for coating",
+        "max": "GMP (does not remain in the tablet and residual levels to be as per IP)",
+        "page": 73
+      },
+      {
+        "n": 24,
+        "name": "Ethyl cellulose",
+        "function": "Coating agent, Ingredient of capsule shells",
+        "max": "GMP",
+        "page": 73
+      },
+      {
+        "n": 25,
+        "name": "Fructose",
+        "function": "Diluent",
+        "max": "GMP",
+        "page": 73
+      },
+      {
+        "n": 26,
+        "name": "Gelatin",
+        "function": "Binding agent, Ingredient of capsule shells",
+        "max": "GMP",
+        "page": 73
+      },
+      {
+        "n": 27,
+        "name": "Glycerin",
+        "function": "Vehicle, Humectant for capsule shells",
+        "max": "GMP",
+        "page": 74
+      },
+      {
+        "n": 28,
+        "name": "Guar gum",
+        "function": "Binding agent",
+        "max": "GMP",
+        "page": 74
+      },
+      {
+        "n": 29,
+        "name": "Hydrogenated castor oil",
+        "function": "Lubricant",
+        "max": "2%",
+        "page": 74
+      },
+      {
+        "n": 30,
+        "name": "Hydrogenated vegetable oil",
+        "function": "Lubricant",
+        "max": "1%",
+        "page": 74
+      },
+      {
+        "n": 31,
+        "name": "Hydroxy propyl methylcellulose",
+        "function": "Coating agent, Ingredient of capsule shells",
+        "max": "GMP",
+        "page": 74,
+        "aliases": [
+          "hydroxypropyl methylcellulose",
+          "hypromellose"
+        ]
+      },
+      {
+        "n": 32,
+        "name": "Isomalt",
+        "function": "Soluble fiber",
+        "max": "15%",
+        "page": 74
+      },
+      {
+        "n": 33,
+        "name": "Kaolin",
+        "function": "Diluent",
+        "max": "GMP",
+        "page": 74
+      },
+      {
+        "n": 34,
+        "name": "Lactitol",
+        "function": "Diluent",
+        "max": "200 mgper capsule",
+        "page": 74
+      },
+      {
+        "n": 35,
+        "name": "Lactose",
+        "function": "Diluent",
+        "max": "GMP",
+        "page": 74
+      },
+      {
+        "n": 36,
+        "name": "Lecithin and its salts/esters from soya or other sources",
+        "function": "Emulsifier, Stabilizer",
+        "max": "GMP",
+        "page": 74,
+        "aliases": [
+          "lecithin"
+        ]
+      },
+      {
+        "n": 37,
+        "name": "Light magnesium carbonate",
+        "function": "Anticaking agent",
+        "max": "0.5%",
+        "page": 74
+      },
+      {
+        "n": 38,
+        "name": "Light magnesium oxide",
+        "function": "Anticaking agent",
+        "max": "0.5%",
+        "page": 74
+      },
+      {
+        "n": 39,
+        "name": "Liquid glucose",
+        "function": "Binding agent",
+        "max": "GMP",
+        "page": 74
+      },
+      {
+        "n": 40,
+        "name": "Magnesium carbonate",
+        "function": "Adsorbant",
+        "max": "0.3%",
+        "page": 74
+      },
+      {
+        "n": 41,
+        "name": "Magnesium stearate",
+        "function": "Antisticking agent, Glidant",
+        "max": "2%",
+        "page": 74
+      },
+      {
+        "n": 42,
+        "name": "Maize Starch",
+        "function": "Diluent, Binding agent, Dissintegrant",
+        "max": "GMP",
+        "page": 74
+      },
+      {
+        "n": 43,
+        "name": "Maltitol",
+        "function": "Sweetener, Diluent",
+        "max": "GMP",
+        "page": 74
+      },
+      {
+        "n": 44,
+        "name": "Maltodextrin",
+        "function": "Diluent",
+        "max": "GMP",
+        "page": 74
+      },
+      {
+        "n": 45,
+        "name": "Maltose",
+        "function": "Diluent",
+        "max": "GMP",
+        "page": 74
+      },
+      {
+        "n": 46,
+        "name": "Manitol",
+        "function": "Diluent, Sweetner",
+        "max": "GMP",
+        "page": 74
+      },
+      {
+        "n": 47,
+        "name": "Methyl paraben and its salts",
+        "function": "Preservative",
+        "max": "0.2%",
+        "page": 74,
+        "aliases": [
+          "methyl paraben",
+          "methylparaben"
+        ]
+      },
+      {
+        "n": 48,
+        "name": "Microcrystalline cellulose",
+        "function": "Diluent",
+        "max": "GMP",
+        "page": 74
+      },
+      {
+        "n": 49,
+        "name": "Peanut oil",
+        "function": "Vehicle",
+        "max": "GMP",
+        "page": 74
+      },
+      {
+        "n": 50,
+        "name": "Pectin",
+        "function": "Binding agent",
+        "max": "GMP",
+        "page": 74
+      },
+      {
+        "n": 51,
+        "name": "PEG 4000",
+        "function": "Diluent for direct compression tablets",
+        "max": "GMP",
+        "page": 74
+      },
+      {
+        "n": 52,
+        "name": "Colors permitted under Rule 127 of Drugs & Cosmetics Rules including lake colours",
+        "function": "Coloring agents",
+        "max": "GMP",
+        "page": 74
+      },
+      {
+        "n": 53,
+        "name": "Poly ethylene glycol (PEG)",
+        "function": "Vehicle, Humectant for capsule shells",
+        "max": "GMP",
+        "page": 74,
+        "aliases": [
+          "polyethylene glycol"
+        ]
+      },
+      {
+        "n": 54,
+        "name": "Povidone",
+        "function": "Binding agent",
+        "max": "5%",
+        "page": 74
+      },
+      {
+        "n": 55,
+        "name": "Propyl paraben and its salts",
+        "function": "Preservative",
+        "max": "0.02%",
+        "page": 74,
+        "aliases": [
+          "propyl paraben",
+          "propylparaben"
+        ]
+      },
+      {
+        "n": 56,
+        "name": "Propylene glycol",
+        "function": "Vehicle, Humectant for capsule shells",
+        "max": "GMP",
+        "page": 74
+      },
+      {
+        "n": 57,
+        "name": "Purified Talc",
+        "function": "Glidant, Dusting powder for coating",
+        "max": "2%",
+        "page": 74
+      },
+      {
+        "n": 58,
+        "name": "Saff flower oil",
+        "function": "Vehicle",
+        "max": "GMP",
+        "page": 75
+      },
+      {
+        "n": 59,
+        "name": "Sodium alginate",
+        "function": "Binding agent",
+        "max": "5%",
+        "page": 75
+      },
+      {
+        "n": 60,
+        "name": "Sodium starch glycolate",
+        "function": "Disintegrant, Binder, Thickening agent",
+        "max": "2%",
+        "page": 75
+      },
+      {
+        "n": 61,
+        "name": "Sorbitan crystalline",
+        "function": "Diluent",
+        "max": "15%",
+        "page": 75
+      },
+      {
+        "n": 62,
+        "name": "Polysorbates (Tweens)",
+        "function": "Solubalizers",
+        "max": "0.5%",
+        "page": 75,
+        "aliases": [
+          "polysorbate"
+        ]
+      },
+      {
+        "n": 63,
+        "name": "Sorbitol liquid",
+        "function": "Vehicle, Humectant for capsule shells",
+        "max": "GMP",
+        "page": 75
+      },
+      {
+        "n": 64,
+        "name": "Starch, pregelatinized",
+        "function": "Disintegrant",
+        "max": "1%",
+        "page": 75
+      },
+      {
+        "n": 65,
+        "name": "Stearic acid",
+        "function": "Antisticking agent, Glidant",
+        "max": "2%",
+        "page": 75
+      },
+      {
+        "n": 66,
+        "name": "Sucrose",
+        "function": "Diluent, Coating agent",
+        "max": "GMP",
+        "page": 75
+      },
+      {
+        "n": 67,
+        "name": "Sunflower oil",
+        "function": "Vehicle",
+        "max": "GMP",
+        "page": 75
+      },
+      {
+        "n": 68,
+        "name": "TBHQ",
+        "function": "Antioxidant",
+        "max": "0.5%",
+        "page": 75
+      },
+      {
+        "n": 69,
+        "name": "Tocoferol and its esters",
+        "function": "Antioxidant",
+        "max": "0.5%",
+        "page": 75,
+        "aliases": [
+          "tocopherol",
+          "tocoferol"
+        ]
+      },
+      {
+        "n": 70,
+        "name": "Tragacanth gum",
+        "function": "Binding agent",
+        "max": "GMP",
+        "page": 75
+      },
+      {
+        "n": 71,
+        "name": "Tribasic calcium phosphate",
+        "function": "Diluent, anticaking agent",
+        "max": "GMP",
+        "page": 75
+      },
+      {
+        "n": 72,
+        "name": "Tricalcium phosphate",
+        "function": "Diluent",
+        "max": "GMP",
+        "page": 75
+      },
+      {
+        "n": 73,
+        "name": "Vegetable oils",
+        "function": "Vehicle",
+        "max": "GMP",
+        "page": 75
+      },
+      {
+        "n": 74,
+        "name": "Xanthan gum",
+        "function": "Binding agent",
+        "max": "GMP",
+        "page": 75
+      },
+      {
+        "n": 75,
+        "name": "Xylitol",
+        "function": "Diluent, Sweetner",
+        "max": "GMP",
+        "page": 75
+      },
+      {
+        "n": 76,
+        "name": "Zinc stearate",
+        "function": "Lubricant",
+        "max": "0.5-1.5%",
+        "page": 75
+      },
+      {
+        "n": 77,
+        "name": "Glycerol palmito stearate",
+        "function": null,
+        "max": "GMP",
+        "page": 75
+      },
+      {
+        "n": 78,
+        "name": "Medium chain triglyceride",
+        "function": null,
+        "max": "GMP",
+        "page": 75
+      },
+      {
+        "n": 79,
+        "name": "Glyceryl behenate",
+        "function": null,
+        "max": "GMP",
+        "page": 75
+      },
+      {
+        "n": 80,
+        "name": "Triethyl citrate",
+        "function": null,
+        "max": "GMP",
+        "page": 75
+      },
+      {
+        "n": 81,
+        "name": "Methacrylate copolymers",
+        "function": null,
+        "max": "GMP",
+        "page": 75
+      },
+      {
+        "n": 82,
+        "name": "Propane 1, 2 diol alginate (INS 405)",
+        "function": null,
+        "max": "1200mg/kg",
+        "page": 75
+      },
+      {
+        "n": 83,
+        "name": "Isopropyl alcohol",
+        "function": "Solvent for coating",
+        "max": "GMP",
+        "page": 75
+      },
+      {
+        "n": 84,
+        "name": "Dichloromethane",
+        "function": "Solvent for coating",
+        "max": "GMP",
+        "page": 75
+      },
+      {
+        "n": 85,
+        "name": "Potassium chloride",
+        "function": "Gelling agent",
+        "max": "GMP",
+        "page": 75
+      },
+      {
+        "n": 86,
+        "name": "Magnesium Aluminometasilicate",
+        "function": null,
+        "max": "1 %",
+        "page": 75
+      }
+    ]
+  },
+  "supplements_13_6": {
+    "basis": "Annexure 3, \"List of food additives for use for Health supplements, Nutraceuticals, Prebiotics and Probiotics\", pp. 71 to 72",
+    "verified_on": "2026-09-30",
+    "rows": [
+      {
+        "n": 1,
+        "name": "Acesulfame potassium",
+        "ins": "950",
+        "max": "2,000 mg/kg",
+        "note": null,
+        "page": 71
+      },
+      {
+        "n": 2,
+        "name": "ASCORBYL ESTERS",
+        "ins": null,
+        "max": "500 mg/kg",
+        "note": null,
+        "page": 71
+      },
+      {
+        "n": 3,
+        "name": "Aspartame",
+        "ins": "951",
+        "max": "5,500 mg/kg",
+        "note": null,
+        "page": 71
+      },
+      {
+        "n": 4,
+        "name": "Aspartame-Acesulfame salt",
+        "ins": "962",
+        "max": "2,000 mg/kg",
+        "note": null,
+        "page": 71
+      },
+      {
+        "n": 5,
+        "name": "Beeswax",
+        "ins": "901",
+        "max": "GMP",
+        "note": null,
+        "page": 71
+      },
+      {
+        "n": 6,
+        "name": "BENZOATES",
+        "ins": null,
+        "max": "2,000 mg/kg",
+        "note": null,
+        "page": 71
+      },
+      {
+        "n": 7,
+        "name": "beta-Carotenes (vegetable)",
+        "ins": "160a(ii)",
+        "max": "600 mg/kg",
+        "note": null,
+        "page": 71
+      },
+      {
+        "n": 8,
+        "name": "Brilliant blue FCF",
+        "ins": "133",
+        "max": "300 mg/kg",
+        "note": null,
+        "page": 71
+      },
+      {
+        "n": 9,
+        "name": "Butylated hydroxyanisole (BHA)",
+        "ins": "320",
+        "max": "400 mg/kg",
+        "note": null,
+        "page": 71
+      },
+      {
+        "n": 10,
+        "name": "Butylated hydroxytoluene (BHT)",
+        "ins": "321",
+        "max": "400 mg/kg",
+        "note": null,
+        "page": 71
+      },
+      {
+        "n": 11,
+        "name": "Candelilla wax",
+        "ins": "902",
+        "max": "GMP",
+        "note": null,
+        "page": 71
+      },
+      {
+        "n": 12,
+        "name": "Caramel III - Ammonia caramel",
+        "ins": "150c",
+        "max": "20,000 mg/kg",
+        "note": null,
+        "page": 71
+      },
+      {
+        "n": 13,
+        "name": "Caramel IV - Sulfite ammonia caramel",
+        "ins": "150d",
+        "max": "20,000 mg/kg",
+        "note": null,
+        "page": 71
+      },
+      {
+        "n": 14,
+        "name": "Carnauba wax",
+        "ins": "903",
+        "max": "5,000 mg/kg",
+        "note": null,
+        "page": 71
+      },
+      {
+        "n": 15,
+        "name": "CAROTENOIDS",
+        "ins": null,
+        "max": "300 mg/kg",
+        "note": null,
+        "page": 71
+      },
+      {
+        "n": 16,
+        "name": "Castor oil",
+        "ins": "1503",
+        "max": "1,000 mg/kg",
+        "note": null,
+        "page": 71
+      },
+      {
+        "n": 17,
+        "name": "CHLOROPHYLLS AND CHLOROPHYLLINS, COPPER COMPLEXES",
+        "ins": null,
+        "max": "500 mg/kg",
+        "note": null,
+        "page": 71
+      },
+      {
+        "n": 18,
+        "name": "Diacetyltartaric and fatty acid esters of glycerol",
+        "ins": "472e",
+        "max": "5,000 mg/kg",
+        "note": null,
+        "page": 71
+      },
+      {
+        "n": 19,
+        "name": "ETHYLENE DIAMINE TETRA ACETATES",
+        "ins": null,
+        "max": "150 mg/kg",
+        "note": null,
+        "page": 71
+      },
+      {
+        "n": 20,
+        "name": "Fast green FCF",
+        "ins": "143",
+        "max": "600 mg/kg",
+        "note": null,
+        "page": 71
+      },
+      {
+        "n": 21,
+        "name": "Grape skin extract",
+        "ins": "163(ii)",
+        "max": "500 mg/kg",
+        "note": null,
+        "page": 71
+      },
+      {
+        "n": 22,
+        "name": "Indigotine (Indigo carmine)",
+        "ins": "132",
+        "max": "300 mg/kg",
+        "note": null,
+        "page": 71
+      },
+      {
+        "n": 23,
+        "name": "IRON OXIDES",
+        "ins": null,
+        "max": "7,500 mg/kg",
+        "note": "For use in surface treatment only",
+        "page": 71
+      },
+      {
+        "n": 24,
+        "name": "Neotame",
+        "ins": "961",
+        "max": "90 mg/kg",
+        "note": null,
+        "page": 71
+      },
+      {
+        "n": 25,
+        "name": "PHOSPHATES",
+        "ins": null,
+        "max": "2,200 mg/kg",
+        "note": null,
+        "page": 71
+      },
+      {
+        "n": 26,
+        "name": "Polydimethylsiloxane",
+        "ins": "900a",
+        "max": "50 mg/kg",
+        "note": null,
+        "page": 71
+      },
+      {
+        "n": 27,
+        "name": "Polyethylene Glycol",
+        "ins": "1521",
+        "max": "70,000 mg/kg",
+        "note": null,
+        "page": 71
+      },
+      {
+        "n": 28,
+        "name": "POLYSORBATES",
+        "ins": null,
+        "max": "25,000 mg/kg",
+        "note": null,
+        "page": 71
+      },
+      {
+        "n": 29,
+        "name": "Polyvinyl alcohol",
+        "ins": "1203",
+        "max": "45,000 mg/kg",
+        "note": null,
+        "page": 71
+      },
+      {
+        "n": 30,
+        "name": "Polyvinyl pyrrolidone",
+        "ins": "1201",
+        "max": "GMP",
+        "note": null,
+        "page": 71
+      },
+      {
+        "n": 31,
+        "name": "Ponceau 4R (Cochineal red A)",
+        "ins": "124",
+        "max": "300 mg/kg",
+        "note": null,
+        "page": 71
+      },
+      {
+        "n": 32,
+        "name": "Propyl gallate",
+        "ins": "310",
+        "max": "400 mg/kg",
+        "note": null,
+        "page": 71
+      },
+      {
+        "n": 33,
+        "name": "RIBOFLAVINS",
+        "ins": null,
+        "max": "300 mg/kg",
+        "note": null,
+        "page": 71
+      },
+      {
+        "n": 34,
+        "name": "SACCHARINS",
+        "ins": null,
+        "max": "1,200 mg/kg",
+        "note": null,
+        "page": 71
+      },
+      {
+        "n": 35,
+        "name": "Shellac, Bleached",
+        "ins": "904",
+        "max": "GMP",
+        "note": null,
+        "page": 71
+      },
+      {
+        "n": 36,
+        "name": "SORBATES",
+        "ins": null,
+        "max": "2,000 mg/kg",
+        "note": null,
+        "page": 71
+      },
+      {
+        "n": 37,
+        "name": "Steviol Glycosides",
+        "ins": "960",
+        "max": "2,500 mg/kg",
+        "note": null,
+        "page": 71
+      },
+      {
+        "n": 38,
+        "name": "Sucralose (Trichloro galactosucrose)",
+        "ins": "955",
+        "max": "2,400 mg/kg",
+        "note": null,
+        "page": 72
+      },
+      {
+        "n": 39,
+        "name": "Sucroglycerides",
+        "ins": "474",
+        "max": "2,500 mg/kg",
+        "note": null,
+        "page": 72
+      },
+      {
+        "n": 40,
+        "name": "Sunset yellow FCF",
+        "ins": "110",
+        "max": "300 mg/kg",
+        "note": null,
+        "page": 72
+      }
+    ]
+  },
+  "order_10_may_2022": {
+    "basis": "FSSAI order of 10 May 2022, 2(i) and 3(i) (direction PDF p. 2): at GMP, in addition to Appendix A's GMP table",
+    "verified_on": "2026-09-30",
+    "rows": [
+      {
+        "name": "Ammonium acetate",
+        "max": "GMP"
+      },
+      {
+        "name": "Ammonium lactate",
+        "max": "GMP"
+      },
+      {
+        "name": "Choline salt and esters",
+        "max": "GMP"
+      },
+      {
+        "name": "Cross carmellose sodium",
+        "max": "GMP"
+      },
+      {
+        "name": "Potassium hydrogen malate",
+        "max": "GMP"
+      },
+      {
+        "name": "Sodium starch glycolate",
+        "max": "GMP"
+      },
+      {
+        "name": "Sucrose oligoesters-Type I and II",
+        "max": "GMP"
+      }
+    ]
+  },
+  "formats": {
+    "tablet_capsule_syrup": [
+      "tablet",
+      "tablets",
+      "capsule",
+      "capsules",
+      "softgel",
+      "softgels",
+      "pill",
+      "pills",
+      "syrup",
+      "drops",
+      "liquid"
+    ],
+    "food": [
+      "gummy",
+      "gummies",
+      "powder",
+      "granules",
+      "bar",
+      "bars",
+      "biscuit",
+      "biscuits",
+      "candy",
+      "candies",
+      "jelly",
+      "strips",
+      "chewable"
+    ],
+    "basis": "5(1)(a), Annexure 1 p. 3: the delivery formats; 6(1)(e): tablet/capsule/pills/liquid against the rest"
+  },
+  "gmp_basis": {
+    "basis": "5(4)(a) and its footnote, Annexure 1 p. 4: Appendix A's GMP table (the additives.json rows whose fssai_basis records the GMP table)",
+    "verified_on": "2026-09-30"
+  }
+}

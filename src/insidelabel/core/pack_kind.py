@@ -35,6 +35,8 @@ KINDS = tuple(TABLE["kinds"])
 PARTS = {k: tuple(v["parts"]) for k, v in TABLE["kinds"].items()}
 # D-140: result fields the server never sends for a kind in shadow; kinds /compare accepts.
 WITHHOLD = {k: tuple(v.get("withhold", ())) for k, v in TABLE["kinds"].items()}
+WITHHOLD_KEYS = {k: v.get("withhold_keys", {}) for k, v in TABLE["kinds"].items()}
+WITHHOLD_REASON = {k: v.get("withhold_reason") for k, v in TABLE["kinds"].items()}
 COMPARABLE = frozenset(TABLE["comparable"])
 _LIC = TABLE["licences"]
 _FSSAI_NUMBER = re.compile(r"(?<!\d)\d{%d}(?!\d)" % _LIC["fssai_number_digits"])
