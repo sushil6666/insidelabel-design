@@ -52,6 +52,7 @@ from insidelabel.core import engine, pack_kind  # noqa: E402
 from insidelabel.claims import checker as claim_checker  # noqa: E402
 from insidelabel.lenses import allergens as allergen_checker  # noqa: E402
 from insidelabel.lenses import compare as shelf  # noqa: E402
+from insidelabel.lenses import infant as infant_lens  # noqa: E402
 from insidelabel.lenses import nutrition  # noqa: E402
 from insidelabel.lenses import regulators  # noqa: E402
 from insidelabel.lenses import screen as result_screen  # noqa: E402
@@ -1436,6 +1437,10 @@ async def scan(
     # D-139, D-140: what kind of pack the printed words and licences say this is.
     # Food answers (and every answer recorded before prompt rule 11) come out as before.
     kind = pack_kind.decide(vision)
+    if kind["code"] == "infant":
+        # D-140 phase 3, in shadow: an infant food's own checks, stored with the reading
+        # (raw_extraction) for reviewers; nothing of it is sent to the user.
+        vision["_infant"] = infant_lens.check(vision, vision["ingredients"], ocr_result.get("ocr_text"))
 
     # D-118: a pack this scan would add to the catalogue, whose ingredient list
     # Cloud Vision can't confirm, gets one request for a clearer photo, before

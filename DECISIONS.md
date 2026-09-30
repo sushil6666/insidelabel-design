@@ -2315,6 +2315,21 @@ Same request as D-139. Full proposal: `docs/BABY_FOOD.md`. **Nothing built until
   an infant pack, even read from a screen. `/compare`'s better pick is the product's only ranking. A test
   for each (`tests/test_pack_kind.py`, `tests/test_pack_kind_db.py`). Back-only reads stay as built (both
   faces needed for not_food; back-only goes to a reviewer).
+- **Phase 3 started 2026-09-30 (Sushil: "start phase 3 (baby food, in shadow) on its own branch from main"),
+  branch `baby-food`, first part:** `data/infant_rules.json` read from the compendium's page images (types
+  from 2(1) and the chapters, PDF pp. 1, 2, 7, 12, 18, 24, 30; regulation 4's statements pp. 4 to 6; 4(2)'s words
+  and 5(1) p. 6; the four hydrogenated-fat sentences pp. 7, 13, 19, 25). Follow-up formula (10) sits in
+  Chapter 3 "Infant Food" with the cereal and traditional foods, so the six-months line of 4(1)(a) ("In case of
+  infant food") applies to it and not to infant formula (Chapter 2 "Infant Milk Substitute").
+  `lenses/infant.py`: the type from the printed name and the front's own words (never from regulation 4's
+  statements, which name "infant milk substitute or infant food" on every pack); statements found or not
+  found on a complete read; 4(2)'s words; 5(1) preservatives, colours (by the additive's class) and flavours
+  (not flavour enhancers); hydrogenated fat by type (follow-up formula: "partially" only; traditional: none).
+  `/scan` computes it for an infant pack and stores it with the reading (`raw_extraction._infant`); nothing
+  of it is sent to the user; `/review` shows it with the reviewer's own check (no picture of an infant or a
+  woman, 4(2)). **Not yet:** 5(2)'s additive tables per type, 4(3) (no milk), composition (reviewer-only),
+  the `baby` band with the one-time toddler question, and `INSIDELABEL_INFANT_TO_USERS` (nothing to switch on
+  until the lawyer answers).
 
 
 ### D-141 · A barcode read from a photo counts only when two reads agree, or the barcode is big enough `SUPERSEDED by D-144` (2026-09-30)

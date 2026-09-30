@@ -26,6 +26,7 @@ from fastapi.templating import Jinja2Templates
 from insidelabel import barcode as barcode_rules
 from insidelabel import ratelimit
 from insidelabel.core import engine
+from insidelabel.lenses import infant as infant_lens
 from insidelabel.db.categories import COMMON
 from insidelabel.review import accounts, checker
 from insidelabel.review.service import ReviewError, ReviewService
@@ -159,6 +160,12 @@ def item(request: Request, item_id: int, name: str = Depends(reviewer), error: s
         })
     raw = (v or {}).get("raw_extraction") or {}
     verdict = engine.analyze(", ".join(ingredients)) if ingredients else None
+    # D-140 phase 3: an infant food's checks, in shadow: as stored with the reading, or
+    # computed from it for a version read before they existed.
+    infant = raw.get("_infant")
+    if infant is None and (v or {}).get("pack_kind") == "infant" and raw.get("ingredients"):
+        ocr = (((data["scan"] or {}).get("ocr") or {}).get("back") or {}).get("text")
+        infant = infant_lens.check(raw, ingredients, ocr)
     # D-106: where the item's photos came from (camera or upload), as the app said.
     sources = ((data["scan"] or {}).get("request") or {}).get("photo_sources") or {}
     # D-143: a barcode only the camera scanner read, shown above the form with a tick box.
@@ -168,7 +175,7 @@ def item(request: Request, item_id: int, name: str = Depends(reviewer), error: s
                  diff=_diff(data["current"]["ingredients"], ingredients) if data["current"] else None,
                  mine=data["item"]["status"] == "claimed" and data["item"]["claimed_by"] == name,
                  correction=corr, categories=SERVICE.categories(), common=COMMON, draft=draft,
-                 barcode_unsure=barcode_rules.check_text(unsure) if unsure else None)
+                 barcode_unsure=barcode_rules.check_text(unsure) if unsure else None, infant=infant)
 
 
 @router.post("/item/{item_id}/claim")

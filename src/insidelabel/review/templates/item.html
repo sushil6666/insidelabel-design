@@ -149,6 +149,30 @@
       </div>
     {% endif %}
 
+    {% if infant %}
+      <div class="panel" id="infant-checks" style="margin-bottom:12px">
+        <b>Infant food checks (in shadow, D-140: users don't see these)</b>
+        <div style="margin-top:4px">Type:
+          {% if infant.type %}{{ infant.type.id|replace("_", " ") }}, from "{{ infant.type.printed }}" ({{ infant.type.basis }})
+          {% else %}no product type in the printed name: the checks that need one are off{% endif %}</div>
+        {% if infant.statements is none %}
+          <div class="muted">Both faces weren't read whole: statements not checked.</div>
+        {% else %}
+          <ul style="margin:6px 0 0 18px;padding:0">
+          {% for st in infant.statements %}
+            <li>{% if st.found %}Found{% else %}<strong>Not found</strong>{% endif %}: {{ st.text }}
+              <span class="muted">({{ st.basis }}){% if st.printed %}, printed "{{ st.printed }}"{% endif %}</span></li>
+          {% endfor %}
+          </ul>
+        {% endif %}
+        {% for w in infant.words %}<div>The label shows "{{ w.word }}"{% if w.printed %} in "{{ w.printed }}"{% endif %} <span class="muted">(4(2): "shall not exhibit")</span></div>{% endfor %}
+        {% for f in infant.free_from %}<div>On the list: "{{ f.entry }}" ({{ f.why|join(", ") }}) <span class="muted">(5(1): "free from preservatives, added colours and flavours")</span></div>{% endfor %}
+        {% for h in infant.hydrogenated %}<div>On the list: "{{ h.entry }}" <span class="muted">({{ h.basis }}: "{{ h.text }}")</span></div>{% endfor %}
+        <div style="margin-top:6px"><b>Your check:</b>
+          {% for c in infant.reviewer_checks %}{{ c.text }} <span class="muted">({{ c.fssai_basis }})</span>{% endfor %}</div>
+      </div>
+    {% endif %}
+
     {% if draft %}
     <div class="panel" id="agent-draft">
       <h3 style="margin-top:0">Agent draft ({{ draft.mode }}, {{ draft.created_at.strftime('%Y-%m-%d %H:%M') }} UTC):
