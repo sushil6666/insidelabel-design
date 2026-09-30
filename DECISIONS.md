@@ -2342,6 +2342,32 @@ reads once, at up to 2400 px, and takes the code that passes `check()`.
 Cost: one more zxing-cpp pass per barcode photo (milliseconds, no paid call). Nothing built until Sushil says
 "accepted".
 
+### D-142 · A product's barcode is corrected only through a recorded, reviewed change `RECOMMENDED` (2026-09-30)
+Found by the D-141 measurement, confirmed on the server by Sushil (2026-09-30): product 42 "Corn Flakes" is
+published under **4901196008343**, the camera scanner's read on scan 799e4f9a (2026-09-27, new_product),
+while two zxing reads of that scan's back photo (03f8277a...bae974.jpg) agree on **8901499008343**. The two
+codes differ in 4 of 95 bar modules and both have a right check digit. **Sushil read the printed digits on
+the photo (2026-09-30): the pack prints 8901499008343**, so product 42 is filed under a camera misread. Until now there was no reviewed
+way: `approve()` wrote `barcode = COALESCE(<form>, barcode)`, so typing another code on the review form
+changed a published product's key and kept nothing of the old one; the other way was SQL.
+
+**Recommended by Claude (built on branch `d142-barcode-correction`, not merged):**
+1. **One way to change it:** `ReviewService.correct_barcode()`, run with `tools/barcodes.py fix` (a dry run
+   until `--yes`). It records old and new code, who (`--by`, an active reviewer account, D-097), when, why
+   (required: where the right code was read) and the photo key as evidence, in `barcode_changes`
+   (migration 020). It refuses a code that fails `barcode.check()`, the code the product already has, and a
+   code another product has (merging two products is a separate decision, not done here).
+2. **The database enforces it:** a trigger refuses any UPDATE of `products.barcode` without a
+   `barcode_changes` row for that product, old and new code, written in the same transaction. A direct SQL
+   UPDATE fails. Setting a barcode where there was none is not a change and is allowed.
+3. **The review form** can no longer change a published product's barcode (it names the correction
+   instead). A never-published product may still get its barcode set at review, because the scan's read can
+   be wrong (D-143); that is recorded too (`via = 'review'`, the item number and the reviewer's note).
+4. **The old code stays findable in the record** (`tools/barcodes.py history <code>`), never by a scan: after
+   the change, a scan of the old code finds nothing, as for any pack not yet checked.
+Not done: a /review page for it (the tool is enough for one reviewer; a page later if others need it);
+telling installs that scanned the product under the old code (their saved results show the old code).
+
 ---
 
 ## Open and pending
