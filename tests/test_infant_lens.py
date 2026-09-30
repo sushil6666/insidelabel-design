@@ -33,7 +33,7 @@ def cereal(statements=NOTICE, ingredients=CEREAL, **kw):
 
 def test_every_row_names_its_page_and_the_day_it_was_read():
     rows = RULES["types"] + RULES["statements"] + RULES["no_hydrogenated"]["rows"] + RULES["reviewer_checks"]
-    rows += [RULES["words_not_to_use"], RULES["free_from"]]
+    rows += [RULES["words_not_to_use"], RULES["free_from"], RULES["no_milk"]]
     for r in rows:
         basis = r.get("fssai_basis") or r.get("basis")
         assert basis and "PDF p." in basis and r["verified_on"] == "2026-09-30", r
@@ -181,3 +181,27 @@ def test_nutrient_sources_and_an_unknown_type_are_left_alone():
     assert infant.additives(["Preservative (INS 211)"], None) is None
     assert infant.check(cereal(ingredients=CEREAL + ["Emulsifier (INS 472e)"]))["additives"]["not_found"] == [
         {"entry": "Emulsifier (INS 472e)", "ins": "472e"}]
+
+
+# ---------------------------------------------------------------- 4(3): no milk
+
+RICE = ["Rice flour", "Sugar", "Minerals", "Vitamins"]
+NO_MILK = st("Contains no milk or milk products or milk derivatives")
+
+
+def test_a_list_without_milk_needs_the_no_milk_statement():
+    got = infant.no_milk(cereal(ingredients=RICE, statements=NOTICE + [NO_MILK]))
+    assert got["found"] and got["basis"] == "4(3), PDF p. 6"
+    got = infant.no_milk(cereal(ingredients=RICE))
+    assert got["found"] is False and got["printed"] is None
+    assert infant.no_milk(cereal(ingredients=RICE), "CONTAINS NO MILK OR MILK PRODUCTS")["found"]
+
+
+def test_milk_on_the_list_or_a_doubt_says_nothing():
+    assert infant.no_milk(cereal()) is None                                           # milk solids
+    assert infant.no_milk(cereal(ingredients=RICE, allergen="May contain milk")) is None
+    assert infant.no_milk(cereal(ingredients=RICE, front="unreadable")) is None
+    low = cereal(ingredients=RICE)
+    low["confidence"]["ingredients"] = 0.9                                            # below D-072's gate
+    assert infant.no_milk(low) is None
+    assert infant.check(cereal(ingredients=RICE))["no_milk"]["found"] is False

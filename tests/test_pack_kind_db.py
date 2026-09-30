@@ -185,3 +185,13 @@ def test_a_food_has_no_infant_checks(env):
     assert "_infant" not in raw
     _item, _c, page = item_page(env, j["catalogue"]["product_version_id"])
     assert 'id="infant-checks"' not in page
+
+
+def test_a_milk_free_infant_cereal_without_the_4_3_statement_shows_on_review(env):
+    v = reading(["Rice flour", "Sugar", "Minerals"], [st("Processed Cereal Based Complementary Food", "front")])
+    j = post(gtin(), v)
+    vid = j["catalogue"]["product_version_id"]
+    [(raw,)] = q(env, "SELECT raw_extraction FROM product_versions WHERE id = %s", vid)
+    assert raw["_infant"]["no_milk"]["found"] is False
+    _item, _c, page = item_page(env, vid)
+    assert "Contains no milk or milk products or milk derivatives" in page and "(4(3), PDF p. 6;" in page

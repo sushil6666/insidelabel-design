@@ -32,6 +32,13 @@
     {"id": "storage", "text": "\"Store in a cool and dry place in an air tight container\" or the like", "match": ["cool and dry place", "cool dry place"], "face": "any", "chapters": ["infant_milk_substitute", "infant_food"], "fssai_basis": "4(1)(f), PDF p. 5", "verified_on": "2026-09-30"},
     {"id": "boiled_water", "text": "\"Warning: Boiled and cooled water shall be used to prepare this product and any leftover product must be discarded to reduce the risk of infection\"", "match": ["boiled and cooled water"], "face": "any", "chapters": ["infant_milk_substitute", "infant_food"], "fssai_basis": "4(6), PDF p. 6", "verified_on": "2026-09-30"}
   ],
+  "no_milk": {
+    "text": "\"Contains no milk or milk products or milk derivatives\", on a product which contains neither milk nor any milk derivatives",
+    "match": ["contains no milk", "no milk or milk products"],
+    "when": "Only when the allergen check (lenses/allergens.py) says milk is not listed on a complete, confident read; contains, may contain or uncertain say nothing.",
+    "fssai_basis": "4(3), PDF p. 6",
+    "verified_on": "2026-09-30"
+  },
   "words_not_to_use": {
     "text": "The terms \"Humanised\" or \"Maternalised\" or any other similar words shall not be used. The package and/or any other label of infant milk substitute or infant food shall not exhibit the words, \"Full Protein Food\", \"Energy Food\", \"Completer Food\" or \"Health Food\" or any other similar expression.",
     "words": ["humanised", "humanized", "maternalised", "maternalized", "full protein food", "energy food", "completer food", "health food"],
