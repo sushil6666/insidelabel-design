@@ -1,6 +1,6 @@
 # STATE.md - where InsideLabel is, and how to pick it up
 
-**Last updated:** 2026-09-30 (**https://insidelabel.ai is live**, `main` = `a769260`, PR #60; D-139 and D-140 LOCKED, phase 1 built on branch `pack-kind`) · **Owner:** Sushil · **Tests:** 834 passing, 8 skipped, 3 expected failures (2 are D-141, until built) · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 5.7 s on the live server (2026-09-27), Gemini + Cloud Vision, `verdict`
+**Last updated:** 2026-09-30 (**https://insidelabel.ai is live**, `main` = `a769260`, PR #60; D-139 and D-140 LOCKED, phase 1 built on branch `pack-kind`) · **Owner:** Sushil · **Tests:** 833 passing, 8 skipped, 3 expected failures (2 are D-141, until built) · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 5.7 s on the live server (2026-09-27), Gemini + Cloud Vision, `verdict`
 
 This is the living status document. Read it first in any new session, then
 `DECISIONS.md` for the *why*. Update the "Last updated" line, the numbers and
