@@ -178,8 +178,16 @@ legend { font-weight: 700; padding: 0 4px; }
   .top nav a { padding: 6px 10px; font-size: .85rem; }
 }
 
+/* D-146: the barcode's digits, checked against the pack; first 3 and last 4 large */
+.digits { font-variant-numeric: tabular-nums; letter-spacing: .06em; margin: 8px 0 4px; color: var(--ink);
+          overflow-wrap: anywhere; }
+.digits .big { font-size: 2.3rem; font-weight: 700; }
+.digits .small { font-size: 1.2rem; color: var(--muted); margin: 0 .25em; }
+
 /* Result (D-060 to D-066) */
 .product { font-weight: 700; color: var(--muted); text-transform: none; }
+.rescan { margin-top: -4px; color: var(--muted); }
+.rescan .btn { padding: 0; min-height: 0; }
 .people > * + * { margin-top: 8px; }
 .person { border-radius: var(--radius); padding: 12px 14px; border-left: 6px solid var(--calm); background: var(--calm-bg); color: var(--calm); }
 .person .who { font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }

@@ -1094,6 +1094,9 @@ async def scan(
     back3_source: Optional[str] = Form(None, examples=[""], description='D-106: as back_source, for back3.'),
     barcode_source: Optional[str] = Form(None, examples=[""],
                                          description='D-104: "camera" (live scanner) or "photo" (read by /check-photo).'),
+    barcode_answer: Optional[str] = Form(None, examples=[""],
+                                         description='D-146: "confirmed" (the digits matched the pack) or "rescanned" '
+                                                     '(read after "Scan again").'),
     device_id: Optional[str] = Form(None, examples=[""], description="Anonymous install id (UUID). No personal data."),
     profiles: Optional[str] = Form(None, examples=[""],
                                    description='JSON [{"ref","age","avoid"}], up to 3. No names (D-074).'),
@@ -1139,6 +1142,12 @@ async def scan(
     if barcode_source not in (None, "camera", "photo"):
         raise HTTPException(status_code=422, detail={
             "error": "bad_barcode_source", "detail": 'barcode_source is "camera" or "photo".'})
+    # D-146: what the user said about the digits, kept with the scan as supporting evidence
+    # for a reviewer (never instead of D-143's check). Nothing is kept for a dropped code.
+    barcode_answer = barcode_answer if barcode_answer and barcode_answer.strip() else None
+    if barcode_answer not in (None, "confirmed", "rescanned"):
+        raise HTTPException(status_code=422, detail={
+            "error": "bad_barcode_answer", "detail": 'barcode_answer is "confirmed" or "rescanned".'})
 
     images = []
     for upload, role in ((back, "back"), (back2, "back2"), (back3, "back3"), (front, "front")):
@@ -1191,7 +1200,8 @@ async def scan(
         "request_id": trace.current_request_id(), "build": trace.BUILD,
         "data_version": trace.DATA_VERSION, "engine_version": ENGINE_VERSION,
         "prompt_version": PROMPT_VERSION,
-        "request": {"barcode": barcode, "barcode_source": barcode_source, "photo_sources": photo_sources,
+        "request": {"barcode": barcode, "barcode_source": barcode_source, "barcode_answer": barcode_answer,
+                    "photo_sources": photo_sources,
                     "avoid": avoid_codes if avoid is not None else None,
                     "profiles": people, "pairing_confirmed": pairing_confirmed,
                     "compare_regulators": compare_regulators,
@@ -1207,10 +1217,13 @@ async def scan(
     if barcode and not images and replay is None:
         hit = _persist(STORE.find_current, barcode) if STORE else None
         if hit is None:
+            # D-146: nothing is stored for a code not in the catalogue; the app shows its
+            # digits back to be checked against the pack before the ingredients photo.
             raise HTTPException(status_code=404, detail={
                 "error": "not_in_catalogue",
                 "detail": "We haven't checked this pack yet.",
                 "hint": "Photograph the back of the pack (the ingredient list).",
+                "barcode_check": result_screen.barcode_check(barcode),
             })
         result = _catalogue_result(hit, avoid_codes, who, compare_regulators, people, screen_pack)
         result["scan_id"] = _str(_persist(STORE.record_cache_hit, hit, device_id=device_id,

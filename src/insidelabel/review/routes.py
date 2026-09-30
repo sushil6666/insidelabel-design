@@ -110,6 +110,13 @@ async def claim_next(request: Request, name: str = Depends(reviewer)):
 
 # ---------------------------------------------------------------- item
 
+# D-146: the tester's answer to "Check these match the numbers under the barcode".
+BARCODE_ANSWER = {
+    "confirmed": "On the phone, the tester said the digits match the numbers under the barcode.",
+    "rescanned": "On the phone, the tester scanned again before this code, then said its digits match the "
+                 "numbers under the barcode.",
+}
+
 def _diff(old, new):
     """Line diff of two ingredient lists for a reformulation."""
     rows = []
@@ -170,12 +177,15 @@ def item(request: Request, item_id: int, name: str = Depends(reviewer), error: s
     sources = ((data["scan"] or {}).get("request") or {}).get("photo_sources") or {}
     # D-143: a barcode only the camera scanner read, shown above the form with a tick box.
     unsure = barcode_rules.unconfirmed((data["scan"] or {}).get("barcode_check"))
+    # D-146: what the tester said about the digits on the phone; supporting evidence only.
+    answer = BARCODE_ANSWER.get(((data["scan"] or {}).get("request") or {}).get("barcode_answer"))
     return _page(request, "item.html", name, d=data, form=form, error=error, sources=sources,
                  verdict=verdict, raw=raw, reliability=raw.get("_reliability") or {},
                  diff=_diff(data["current"]["ingredients"], ingredients) if data["current"] else None,
                  mine=data["item"]["status"] == "claimed" and data["item"]["claimed_by"] == name,
                  correction=corr, categories=SERVICE.categories(), common=COMMON, draft=draft,
-                 barcode_unsure=barcode_rules.check_text(unsure) if unsure else None, infant=infant)
+                 barcode_unsure=barcode_rules.check_text(unsure) if unsure else None, infant=infant,
+                 barcode_answer=answer)
 
 
 @router.post("/item/{item_id}/claim")

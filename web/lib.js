@@ -12,7 +12,7 @@
 //    beyond the headline the user was shown.
 
 // Bump together with VERSION in sw.js: a report then says which shell was cached.
-export const APP_VERSION = "web-29";
+export const APP_VERSION = "web-30";
 
 // ------------------------------------------------------------------ storage
 // localStorage can throw (private mode, blocked site data); the app must still work.
@@ -181,12 +181,14 @@ async function call(path, opts = {}) {
 }
 
 export async function scanRequest({ barcode, barcodeSource, back, front, pairing, backSource, frontSource,
-                                     acceptUnconfirmed, parts = [], partSources = [], screenPack = null }) {
+                                     acceptUnconfirmed, parts = [], partSources = [], screenPack = null,
+                                     barcodeAnswer = null }) {
   const fd = new FormData();
   fd.append("device_id", deviceId());
   fd.append("profiles", JSON.stringify(profilesForServer()));
   if (barcode) fd.append("barcode", barcode);
   if (barcode && barcodeSource) fd.append("barcode_source", barcodeSource);     // D-104: camera or photo
+  if (barcode && barcodeAnswer) fd.append("barcode_answer", barcodeAnswer);     // D-146: confirmed or rescanned
   if (back) fd.append("back", back, "back.jpg");
   // D-119: the list's 2nd and 3rd parts; the server joins them to the back photo.
   parts.slice(0, 2).forEach((p, i) => {

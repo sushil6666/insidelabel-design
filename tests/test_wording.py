@@ -191,3 +191,11 @@ def test_site_pages():
         with open(p, encoding="utf-8") as f:
             text = html.unescape(re.sub(r"<[^>]+>", " ", f.read()))
         assert_clean([" ".join(text.split())], os.path.relpath(p, ROOT))
+
+
+def test_barcode_digit_check_words():
+    """D-146: the digit check before the ingredients photo, and the catalogue hit's way back."""
+    from insidelabel.lenses import screen
+    check = screen.barcode_check("8901499008343")
+    assert_clean([check["title"], check["text"], check["yes"], check["again"], screen.RESCAN_TEXT,
+                  screen.RESCAN_BUTTON], "barcode digit check")

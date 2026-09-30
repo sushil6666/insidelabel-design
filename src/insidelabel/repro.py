@@ -69,6 +69,8 @@ def form_for(request, model_raw):
         data["barcode"] = request["barcode"]
     if request.get("barcode_source"):
         data["barcode_source"] = request["barcode_source"]              # D-143: the check depends on it
+    if request.get("barcode_answer"):
+        data["barcode_answer"] = request["barcode_answer"]              # D-146
     if request.get("screen_pack"):
         data["screen_pack"] = json.dumps(request["screen_pack"])          # D-130
     return data
