@@ -650,6 +650,19 @@ setup alarms.
 
 **NEXT SESSION STARTS HERE (2026-09-30).** Where things stand, newest first:
 
+- **Barcodes (2026-09-30, newest first).** D-141 as accepted (a second zxing read at half size, then at
+  three-quarter size) failed Sushil's server measurement twice: half size refused 2 of 6 accepted photo reads
+  (33.3%), three-quarter 1 of 6 (16.7%, f77b1de8...d1.jpg, 8904089974837 = the camera read, second read
+  empty), all of them right. #66 was reverted (#67, deployed); `barcode-rescale-75` is not to be merged.
+  **Product 42 "Corn Flakes" is filed under a camera misread:** published under 4901196008343, the pack
+  prints 8901499008343 (Sushil, by eye, on 03f8277a...bae974.jpg). The fix waits for D-142 to be deployed:
+  `il tools/barcodes.py fix 42 8901499008343 --by sushil --why "..." --photo 03f8277a...jpg`, then `--yes`.
+  Four RECOMMENDED branches on `main`, stacked, merge in order: **`d142-barcode-correction`** (D-142: the
+  recorded correction, migration 020), **`d142-barcode-audit`** (every published barcode against its own
+  photos), **`d143-camera-barcode-check`** (D-143: a camera code the scan's photos don't show waits for a
+  reviewer), **`d144-photo-barcode-ocr`** (D-144, replacing D-141: two reads agree or the digits are in the
+  photo's OCR text). **Waiting on Sushil:** acceptance of each; the D-144 server measurement.
+
 - **Same branch (`supplements`), after Sushil's review:** Compare stays food-only for the beta, recorded in
   D-139 (Sushil: Compare's ranking rules are for food, no source ranks supplements, a "better choice" between
   them is close to medical advice; revisit after week 4). **Phone check finding (Sushil, phase 1):** a small

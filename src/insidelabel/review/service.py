@@ -213,7 +213,7 @@ class ReviewService:
                 # one could never be found again by a scan.
                 raise ReviewError("A new product needs its barcode. Read it from the photos; "
                                   "if no photo shows one, reject the item.")
-            pid = self._save_product(c, pid, form, barcode)
+            pid = self._save_product(c, pid, form, barcode, reviewer, item_id)
             content = (ingredients_hash(ingredients), statement, claims_hash(claims))
 
             if v and v["status"] == "pending_review":
@@ -343,7 +343,7 @@ class ReviewService:
         key = lambda r: [int(x) for x in r["code"].split(".")]      # noqa: E731 - 7.2.10 after 7.2.9
         return [(r["code"], r["name"], r["code"].count(".")) for r in sorted(rows, key=key)]
 
-    def _save_product(self, c, pid, form, barcode):
+    def _save_product(self, c, pid, form, barcode, reviewer, item_id):
         name = (form.get("name") or "").strip()
         if not name:
             raise ReviewError("Product name is required.")
@@ -367,6 +367,8 @@ class ReviewService:
                    ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name RETURNING id""",
                 (form["brand"].strip(),)).fetchone()["id"]
         variant = (form.get("variant") or "").strip() or None
+        if pid is not None and barcode:
+            self._review_barcode_change(c, pid, barcode, reviewer, item_id, form)
         if pid is None:
             return c.execute("""INSERT INTO products (barcode, brand_id, name, variant, category_id)
                                 VALUES (%s, %s, %s, %s, %s) RETURNING id""",
@@ -407,6 +409,79 @@ class ReviewService:
                         SET status = %s, resolution = %s, resolution_note = %s,
                             resolved_product_version_id = %s, resolved_at = now()
                       WHERE id = %s""", (status, resolution, note, vid, item_id))
+
+    # ---------------------------------------------------------------- D-142
+
+    @staticmethod
+    def _review_barcode_change(c, pid, barcode, reviewer, item_id, form):
+        """
+        D-142: a barcode typed on the review form that differs from the product's.
+        A product never published may get its barcode set here (the scan's read
+        was wrong); it is recorded like a correction. A published product's
+        barcode changes only through correct_barcode(), with a reason.
+        """
+        p = c.execute("SELECT barcode FROM products WHERE id = %s FOR UPDATE", (pid,)).fetchone()
+        if p is None or p["barcode"] is None or p["barcode"] == barcode:
+            return
+        published = c.execute("""SELECT EXISTS (SELECT 1 FROM product_versions
+                                   WHERE product_id = %s AND status = 'published') AS e""", (pid,)).fetchone()["e"]
+        if published:
+            raise ReviewError(f"This product is published under barcode {p['barcode']}. A published barcode "
+                              "is changed with the barcode correction (tools/barcodes.py fix), which keeps the "
+                              "old one and the reason.")
+        note = (form.get("note") or "").strip()
+        c.execute("""INSERT INTO barcode_changes (product_id, old_barcode, new_barcode, changed_by, reason, via)
+                     VALUES (%s, %s, %s, %s, %s, 'review')""",
+                  (pid, p["barcode"], barcode, reviewer,
+                   f"Set at review of item {item_id}" + (f": {note}" if note else "")))
+
+    def correct_barcode(self, product_id, new_barcode, by, reason, evidence=None):
+        """
+        D-142: the reviewed way to change a product's barcode. `by` is an active
+        reviewer account (D-097); `reason` says how the right code was found (the
+        printed digits, which photo). Refuses a code that fails barcode.check(),
+        the code it already has, and a code another product has. The old code is
+        kept in barcode_changes; the database refuses a change without that row.
+        Returns the change as stored.
+        """
+        reason = (reason or "").strip()
+        if not reason:
+            raise ReviewError("Say why: where the right barcode was read (the printed digits, which photo).")
+        code, why = barcode_rules.check(new_barcode)
+        if why:
+            raise ReviewError(f"Barcode: {barcode_rules.MESSAGES[why]}")
+        with self._connect() as c:
+            who = c.execute("SELECT name FROM reviewers WHERE name = %s AND active", (by,)).fetchone()
+            if who is None:
+                raise ReviewError(f"{by!r} is not an active reviewer account (tools/reviewers.py list).")
+            p = c.execute("SELECT id, name, barcode FROM products WHERE id = %s FOR UPDATE",
+                          (product_id,)).fetchone()
+            if p is None:
+                raise ReviewError(f"No product #{product_id}.")
+            if p["barcode"] is None:
+                raise ReviewError(f"Product #{product_id} has no barcode to correct.")
+            if p["barcode"] == code:
+                raise ReviewError(f"Product #{product_id} already has barcode {code}.")
+            other = c.execute("SELECT id, name FROM products WHERE barcode = %s", (code,)).fetchone()
+            if other:
+                raise ReviewError(f"Barcode {code} already belongs to product #{other['id']} ({other['name']}).")
+            row = c.execute(
+                """INSERT INTO barcode_changes (product_id, old_barcode, new_barcode, changed_by, reason,
+                                                evidence, via)
+                   VALUES (%s, %s, %s, %s, %s, %s, 'correction') RETURNING *""",
+                (p["id"], p["barcode"], code, by, reason, (evidence or "").strip() or None)).fetchone()
+            c.execute("UPDATE products SET barcode = %s WHERE id = %s", (code, p["id"]))
+        return {**row, "product_name": p["name"]}
+
+    def barcode_history(self, code=None, product_id=None):
+        """Every recorded change touching a barcode (as old or new) or a product, oldest first."""
+        with self._connect() as c:
+            return c.execute(
+                """SELECT x.*, p.name AS product_name, p.barcode AS barcode_now
+                     FROM barcode_changes x JOIN products p ON p.id = x.product_id
+                    WHERE (%(code)s::text IS NOT NULL AND %(code)s IN (x.old_barcode, x.new_barcode))
+                       OR x.product_id = %(pid)s
+                    ORDER BY x.created_at, x.id""", {"code": code, "pid": product_id}).fetchall()
 
     # ---------------------------------------------------------------- D-070
 

@@ -203,6 +203,16 @@ il tools/reviewers.py disable <name>
 
 The queue: https://insidelabel.ai/review (log in with the reviewer name and password).
 
+**A wrong barcode on a product (D-142).** Read the digits printed under the bars on the product's own
+photo first (`/review/media/<key>`). Never change `products.barcode` with SQL: the database refuses it.
+
+```bash
+il tools/barcodes.py history <product id or barcode>       # the barcode and every recorded change
+il tools/barcodes.py fix <product id> <right code> --by <your reviewer name> \
+    --why "printed under the bars on the back photo: ..." --photo <key>    # dry run
+il tools/barcodes.py fix ... --yes                          # the change, recorded with the old code
+```
+
 ### Scans and problems
 
 ```bash
