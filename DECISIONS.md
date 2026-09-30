@@ -2544,7 +2544,7 @@ the review queue instead.
   > user remove it before sending.
 
 
-### D-146 · A scanned code for a new pack is checked against the digits on the pack before the photo `RECOMMENDED` (2026-09-30)
+### D-146 · A scanned code for a new pack is checked against the digits on the pack before the photo `LOCKED` (2026-09-30)
 Proposed by Sushil (2026-09-30), after two camera misreads were found in the catalogue (#42, #48; D-142 to
 D-145): "After the live camera scanner (or a barcode photo) finds a code for a pack NOT in the catalogue, the
 next screen ("photograph the ingredients") first shows the code with its first 3 and last 4 digits large:
@@ -2580,6 +2580,10 @@ database: a barcode photo of a new pack's code gives the digit check; "Scan agai
 catalogue hit after it shows the product's name with "Not this pack? Scan again" and is stored "rescanned";
 "Yes, they match" goes to the ingredients photo; the only console errors are the two expected 404 lookups.
 Not walked: the live camera (headless Chromium has no BarcodeDetector); it calls the same `lookUp()`.
+- **Accepted by Sushil 2026-09-30, as merged in #79:** "the digit-check screen stays exactly as merged in #79
+  ... Do not remove or change it." (He had asked the same day to remove the digit check under the principle
+  "never make the user do the app's checking"; that message was cancelled before anything was changed. One quick
+  check at the right moment is fine; no second prompt is to be added on top of it.)
 ---
 
 ## Open and pending

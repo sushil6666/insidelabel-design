@@ -667,17 +667,17 @@ setup alarms.
   in DECISIONS.md; nothing is built. `barcode-rescale-75` and the old stack branches
   (`barcode-correction`, `barcode-audit`, `camera-barcode-check`) are not to be merged; they can be deleted.
 
-- **D-146 RECOMMENDED, built on `d146-digit-check`** (Sushil's proposal, 2026-09-30): a scanned code for a
-  pack not in the catalogue is shown back (first 3 and last 4 digits large) with "Yes, they match" / "Scan
-  again" before the ingredients photo; a catalogue hit shows the name with "Not this pack? Scan again"; the
-  answer (confirmed, rescanned) is kept on the scan and shown on /review beside D-143's check. web-30. Walked
-  headless, light and dark. **Waiting on Sushil:** merge, phone check with the live camera; then phase 3 part 4.
+- **D-146 LOCKED (Sushil, 2026-09-30), merged as #79:** a scanned code for a pack not in the catalogue is shown
+  back (first 3 and last 4 digits large) with "Yes, they match" / "Scan again" before the ingredients photo; a
+  catalogue hit shows the name with "Not this pack? Scan again"; the answer (confirmed, rescanned) is kept on the
+  scan and shown on /review beside D-143's check. web-30. It stays exactly as merged (Sushil); no second prompt
+  on top of it. **Waiting on Sushil:** the phone check with the live camera.
 
 - **Phase 3 of D-140 (baby food, in shadow): part 1 merged** (#74, 2026-09-30): an infant food's own checks
   stored for reviewers (see D-140's notes). **Part 2 on `baby-food-additives`:** 5(2), each type's additive
   list (197 rows and 5 carriers from the page images; a follow-up misprint, INS 525 for sodium hydroxide, kept
   as printed), merged (#76). **Part 3 on `baby-food-no-milk`:** 4(3), the no-milk statement where milk isn't
-  listed, merged (#78). Next, after D-146: composition (reviewer-only), then the `baby` band and the toddler
+  listed, merged (#78). **Part 4 on `baby-food-composition`:** composition (reviewer-only). Then the `baby` band and the toddler
   question. Branches from now on: one at a time from the current `main`,
   merged by Sushil before the next starts (Sushil, 2026-09-30). Next parts: 5(2)'s additive tables
   per type, 4(3), composition (reviewer-only), the `baby` band and the one-time toddler question.
