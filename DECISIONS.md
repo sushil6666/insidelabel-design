@@ -2172,8 +2172,8 @@ Sushil: "implement supplements and baby food part, part of beta" (2026-09-30), p
   other special medical infant foods are special_medical, the outcome both docs give), infant words,
   supplement words, the catalogue's 13.x category, else food. A company's name never decides ("... Pvt
   Ltd", "Marketed by"). `/scan` returns `pack_kind`; the screen for any other kind shows the allergen
-  lines first, the kind's lines and printed evidence (infant: ICMR-NIN's breastfeeding line, Sushil's
-  choice), the ingredient list, Scan another, Report a mistake; no summary, tiles, additives, glance,
+  lines first, the kind's lines and printed evidence (the infant breastfeeding line was removed before
+  merge, see D-140), the ingredient list, Scan another, Report a mistake; no summary, tiles, additives, glance,
   nutrition, band, Compare or shop list (the app keeps no compare data for them). **Food is unchanged:**
   the six gold labels' output equals the baseline captured before any change
   (`tests/fixtures/pack_kind_gold_before.json`). Catalogue: `product_versions.pack_kind` and evidence;
@@ -2267,6 +2267,24 @@ Same request as D-139. Full proposal: `docs/BABY_FOOD.md`. **Nothing built until
   `baby-food`) ships in shadow. Questions not answered in the message take the recommendation in
   `docs/BABY_FOOD.md` section 9: an age statement alone stays `food` with the baby lines and a reviewer
   check; composition lines are reviewer-only in the beta.
+- **Changed by Sushil 2026-09-30, before merging phase 1** ("Remove the breastfeeding line for infant packs
+  until the lawyer answers question (c). Infant packs show the allergen lines, the kind in the pack's own
+  words, the ingredient list, and one sentence that results for infant foods aren't shown yet. ... Confirm
+  the server itself refuses a grade, Compare, the shop list and any ranking for an infant pack, with a test
+  for each route"): **the breastfeeding line is removed** until the lawyer answers (the note above, 7(1)'s
+  six particulars, stays for the lawyer; question (b) asks whether an infant-food result is 7(1) material,
+  (c) whether the baby lines make every result so). The infant result: allergen lines, the headline quoting
+  the pack's own kind words ("This pack says "Infant Formula"."), the sentence "Results for infant foods
+  aren't shown yet. We show the allergens on the list and the ingredient list.", the ingredient list.
+  **The server refuses, not only the app** (audited 2026-09-30): `/scan` sent `verdict` (score, grade,
+  band), `display`, `claim_check`, `nutrition` and `regulators` for an infant pack; it now sends them as
+  null with `withheld` (vision and catalogue paths). `/compare` knew no kinds; it now refuses (422
+  `not_comparable`, reason `infant_food`) a pack whose client-reported kind, printed statements (re-decided
+  on the server) or stored scan kind isn't comparable (`data/pack_kinds.json` "comparable": food only, so
+  supplements too until phase 2). The shop list has no server route: `screen.shop_list` is never set for
+  an infant pack, even read from a screen. `/compare`'s better pick is the product's only ranking. A test
+  for each (`tests/test_pack_kind.py`, `tests/test_pack_kind_db.py`). Back-only reads stay as built (both
+  faces needed for not_food; back-only goes to a reviewer).
 
 ---
 

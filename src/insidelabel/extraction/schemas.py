@@ -57,6 +57,11 @@ class ComparePack(BaseModel):
     reliable: bool = Field(
         True, description="/scan reliability: verdict_safe_to_display and ingredients_complete."
     )
+    # D-139, D-140: what the server needs to refuse a pack that can't be compared
+    # (an infant food never, a supplement not yet). Older clients send neither: food.
+    kind: Optional[str] = Field(None, description='/scan pack_kind.code, e.g. "food", "infant".')
+    pack_statements: List[dict] = Field(default_factory=list,
+                                        description="/scan extracted.pack_statements, as printed.")
 
 
 class CompareRequest(BaseModel):

@@ -194,6 +194,17 @@ class Store:
                      LEFT JOIN categories k ON k.id = p.category_id
                     WHERE p.barcode = %s""", (barcode,)).fetchone()
 
+    def kind_of_scan(self, scan_id):
+        """D-140: the kind stored on the version a scan was served or created, else None."""
+        try:
+            sid = uuid.UUID(str(scan_id))
+        except ValueError:
+            return None
+        with self._connect() as conn:
+            row = conn.execute("""SELECT v.pack_kind FROM scans s JOIN product_versions v ON v.id = s.product_version_id
+                                   WHERE s.id = %s""", (sid,)).fetchone()
+        return row and row["pack_kind"]
+
     def version_hit(self, product_version_id):
         """A specific version in find_current()'s shape: what a cached scan was served (D-092)."""
         with self._connect() as conn:

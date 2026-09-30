@@ -219,9 +219,8 @@ beyond", recommendation 1, p. x) and can sit in the sources.
 or other material ... dealing with pre-natal or post-natal care or with the feeding of an infant and
 intended to reach pregnant women or mothers of infants" to include clear information on **six
 particulars, (a) to (f)**, and two more clauses, (fa) and (g) (quoted in section 5). A single
-breastfeeding line covers part of (a) and (b) at most. **Decided by Sushil (D-140, 2026-09-30): the line
-is shown in shadow** with the allergen lines; the lawyer's question 1b asks whether an infant-food result
-is such material, and the design changes if the answer is yes.
+breastfeeding line covers part of (a) and (b) at most. **Sushil, 2026-09-30 (D-140): the line is removed
+until the lawyer answers** (questions 1b and 1c). An infant result shows nothing about feeding.
 
 ## 5. The IMS Act and what the app refuses
 
@@ -267,10 +266,11 @@ side:
 - **Nothing that sets an infant food beside mother's milk** (3(b)): no composition line worded against
   breast milk, no "closer to" or "like".
 - **Released in shadow, like the claim check (D-051):** the whole infant result is computed and stored
-  for reviewers; **users get the allergen lines and the breastfeeding line (4.7)** (Sushil, D-140), and
-  one sentence, **User text:** "This is a food for infants. We show the allergens on the list; our other
-  checks for infant foods are not released yet." Switch: `INSIDELABEL_INFANT_TO_USERS`, off by default,
-  on only after Sushil's decision on a lawyer's reading.
+  for reviewers; **users get the allergen lines, the kind in the pack's own words, the ingredient list and
+  one sentence** (Sushil, D-140), **User text:** "Results for infant foods aren't shown yet. We show the
+  allergens on the list and the ingredient list." The server sends no score, grade, band, claim, nutrition
+  or EU/US result for an infant pack (`withheld`), and `/compare` refuses one. Switch:
+  `INSIDELABEL_INFANT_TO_USERS`, off by default, on only after Sushil's decision on a lawyer's reading.
 
 ## 6. Profiles: a "baby" band (D-074: a value, not a field)
 
@@ -350,7 +350,7 @@ table cells; the traditional type uses the milk cereal table, 11(2)).
 - **No honey-processing, protein-quality, moisture or fatty-acid checks**: not on labels.
 - **No reading of the IMS Act of our own:** the app quotes its words where a label check cites them
   (4.1, 4.2), and never says a pack or maker breaks it (D-042).
-- **No feeding advice on an infant result beyond ICMR-NIN's breastfeeding line** (Sushil's choice) until
+- **No feeding advice on an infant result at all**, the breastfeeding line included (Sushil, D-140), until
   the lawyer answers whether the result is 7(1) material.
 - **Nothing for special medical infant foods** beyond allergens and their own statement.
 

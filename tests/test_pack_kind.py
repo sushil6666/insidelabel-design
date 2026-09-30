@@ -207,7 +207,7 @@ def test_each_kind_shows_allergens_first_and_nothing_that_judges_it_as_food(name
                    "nutrition", "band", "shop_list", "alerts", "additive_alert", "worth_knowing"):
         assert absent not in s, (name, absent)
     assert s["ingredients"] == ingredients
-    assert ("breastfeeding" in s) == (code == "infant")
+    assert "breastfeeding" not in s                      # D-140: held until the lawyer answers
     assert_clean(list(strings(s)), f"screen {name}")
 
 
@@ -218,9 +218,14 @@ def test_the_words_of_each_kind():
     assert s["kind"]["lines"] == [screen.KIND_TEXT["supplement"]]
     assert {"text": "NOT FOR MEDICINAL USE", "face": "back"} in s["kind"]["evidence"]
     s = run(reading(*INVENTED["infant_formula"][:2]))["screen"]
-    assert s["headline"]["text"] == "This is a food for infants."
-    assert s["breastfeeding"]["text"].startswith("ICMR-NIN's dietary guidelines say: \"Ensure exclusive breastfeeding")
-    assert s["breastfeeding"]["sources"][0]["page"] == "p. 21 (PDF p. 38)"
+    # The kind in the pack's own words: the product's name for it before the notice.
+    assert s["headline"]["text"] == 'This pack says "Infant Formula".'
+    assert s["kind"]["lines"] == ["Results for infant foods aren't shown yet. We show the allergens on the list "
+                                  "and the ingredient list."]
+    assert "breastfeeding" not in s
+    k = pack_kind.decide({}, category="13.2")
+    s = screen._kind_screen(k, people=[], ingredients=["Rice"], reliability={})
+    assert s["headline"]["text"] == "Filed in our catalogue as a food for infants."
 
 
 def test_a_pack_that_isnt_food_quotes_its_licence_and_the_act():
@@ -263,3 +268,76 @@ def test_the_app_renders_the_kind_and_keeps_it_out_of_compare():
     src = open(os.path.join(os.path.dirname(HERE), "web", "app.js"), encoding="utf-8").read()
     assert "if (s.kind) {" in src and "function kindView(s)" in src
     assert '(!body.screen.parts || body.screen.parts.includes("compare"))' in src
+
+
+# ---------------------------------------------------------------- D-140: the server refuses, not only the app
+
+def test_scan_withholds_every_result_field_for_an_infant_pack():
+    from fastapi.testclient import TestClient
+    v = reading(*INVENTED["cereal_complementary"][:2])
+    v["front_claims"] = ["No added preservatives"]
+    r = TestClient(main.app).post("/scan", files={"back": ("b.png", b"\x89PNG back", "image/png"),
+                                                  "front": ("f.png", b"\x89PNG front", "image/png")},
+                                  data={"replay": json.dumps(v), "profiles": json.dumps(FAM),
+                                        "pairing_confirmed": "true", "compare_regulators": "true"})
+    j = r.json()
+    for field in ("verdict", "display", "claim_check", "nutrition", "regulators"):
+        assert j[field] is None, field                              # no score, grade, band or other result
+    assert j["withheld"] == {"fields": ["verdict", "display", "claim_check", "nutrition", "regulators"],
+                             "reason": "infant_in_shadow"}
+    assert list(j)[0] == "allergens" and j["allergens"] and j["screen"]["people"]
+    assert "score" not in json.dumps(j["screen"]) and "grade" not in json.dumps(j["screen"])
+    # Food and supplements keep theirs (a supplement's own rules are phase 2).
+    for other in ("multivitamin_tablet",):
+        assert run(reading(*INVENTED[other][:2]))["verdict"]["score"] is not None
+    assert "withheld" not in run(reading(["Atta", "Salt"]))
+
+
+def _compare(packs):
+    from fastapi.testclient import TestClient
+    return TestClient(main.app).post("/compare", json={"packs": packs, "age": "kid"})
+
+
+FOOD_A = {"id": "a", "name": "Atta biscuit", "ingredients": ["Whole wheat flour", "Sugar"]}
+FOOD_B = {"id": "b", "name": "Rusk", "ingredients": ["Refined wheat flour", "Sugar", "Palm oil"]}
+
+
+def test_compare_refuses_an_infant_pack_the_client_reports():
+    r = _compare([FOOD_A, {**FOOD_B, "kind": "infant"}])
+    assert r.status_code == 422
+    body = {k: v for k, v in r.json().items() if k != "request_id"}     # the app's error shape, flattened
+    assert body == {"error": "not_comparable", "reason": "infant_food", "pack": "b",
+                    "detail": "We don't compare or rank foods for infants."}
+
+
+def test_compare_refuses_an_infant_pack_from_its_printed_words_whatever_kind_the_client_says():
+    words = [{"text": "MOTHER'S MILK IS BEST FOR YOUR BABY", "face": "front"}]
+    r = _compare([FOOD_A, {**FOOD_B, "kind": "food", "pack_statements": words}])
+    assert r.status_code == 422 and r.json()["reason"] == "infant_food"
+
+
+def test_compare_refuses_a_supplement_until_phase_2_and_still_ranks_food():
+    r = _compare([FOOD_A, {**FOOD_B, "pack_statements": [{"text": "HEALTH SUPPLEMENT", "face": "front"}]}])
+    assert r.status_code == 422 and r.json()["reason"] == "supplement"
+    r = _compare([FOOD_A, FOOD_B])                                  # older clients send no kind: food
+    assert r.status_code == 200 and r.json()["outcome"] in ("best", "tie", "no_clear_pick", "unknown_additives")
+
+
+def test_no_shop_list_for_an_infant_pack_read_from_a_screen():
+    ingredients, statements, _ = INVENTED["infant_formula"]
+    v = reading(ingredients, statements, front="not_provided")
+    v["image_content"] = {"back": "screen", "front": "not_provided"}
+    s = run(v)["screen"]
+    assert s["kind"]["code"] == "infant" and "from_screen" in s and "shop_list" not in s
+    v = reading(["Atta", "Salt"], front="not_provided")
+    v["image_content"] = {"back": "screen", "front": "not_provided"}
+    assert run(v)["screen"]["shop_list"] is True                    # food read from a screen: as D-130
+
+
+def test_no_ranking_part_for_an_infant_pack():
+    # The only ranking the product has is /compare's better pick (refused above); the
+    # screen carries no score, band, summary chips or "Your scans" tallies for one.
+    parts = pack_kind.parts("infant")
+    for part in ("compare", "shop_list", "tallies", "score", "summary", "tiles"):
+        assert part not in parts
+    assert pack_kind.COMPARABLE == {"food"}
