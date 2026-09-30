@@ -657,10 +657,12 @@ setup alarms.
   in force from 1.10.2022 with four nutrient limits from a direction; label statements are Nutra 5(12)
   (the build prompt said "regulation 12"); the under-5/pregnant statement is FSDU's, not supplements';
   hydrogenated vegetable oil is a permitted tablet lubricant; ICMR-NIN's RDA 2020 (revised 2024) was
-  read in the Drive viewer ICMR-NIN's page embeds (downloads off). **Waiting on Sushil:** the IMS Act
-  PDF from India Code (times out from WSL; nothing quotes it yet); "accepted" or edits for D-139 and
-  D-140 and their questions (a lawyer for the Nutra status, the one-RDA sentence and IMS
-  "promotion"); photos of 3 supplements and 3 baby foods for gold. **Then phase 1** (`pack-kind`).
+  read in the Drive viewer ICMR-NIN's page embeds (downloads off). **IMS Act read** (Sushil downloaded
+  it: `sources/legal/ims-act-1992/`, quote only the "as on 15 December 2025" PDF): 2(f), 2(g), 2(j), 3,
+  6, 7 quoted in `docs/BABY_FOOD.md` and D-140; 7(1) asks educational or other material for six
+  particulars (a) to (f) plus (fa), so the breastfeeding line is held for the lawyer. **Waiting on
+  Sushil:** "accepted" or edits for D-139 and D-140 and their questions (a lawyer for the Nutra status,
+  the one-RDA sentence, IMS "promotion" and whether a result is 7(1) "educational or other material"); photos of 3 supplements and 3 baby foods for gold. **Then phase 1** (`pack-kind`).
   Headless-Chromium tricks that worked for FSSAI's JavaScript site: render the page, type into the
   table's search box and press Enter (`fill` alone doesn't filter).
 

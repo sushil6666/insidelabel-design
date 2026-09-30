@@ -4,11 +4,12 @@ Written 2026-09-30 from primary documents read that day (D-046). **A proposal, n
 marked "User text" are what the app would show; each quotes its source. The kind-of-pack rule and
 `data/pack_kinds.json` are in `docs/SUPPLEMENTS.md` section 2 and 5.1; this file adds the infant words.
 
-**One source is not yet read: the Infant Milk Substitutes, Feeding Bottles and Infant Foods
-(Regulation of Production, Supply and Distribution) Act, 1992 (the IMS Act).** India Code
-(https://www.indiacode.nic.in/handle/123456789/1958) times out from this machine (tried 2026-09-30:
-`www.` times out, the bare host redirects to it). Nothing below quotes the Act; the sections that
-depend on it say so. Sushil: please download the Act's PDF from India Code by hand.
+**The IMS Act** (the Infant Milk Substitutes, Feeding Bottles and Infant Foods (Regulation of
+Production, Supply and Distribution) Act, 1992, Act 41 of 1992) is quoted **only** from
+`sources/legal/ims-act-1992/ims-act-1992-en-as-on-2025-12-15.pdf`, India Code's text "As on the 15th
+December, 2025" (amended by Act 38 of 2003 and the FSS Act 2006), downloaded by Sushil from
+https://www.indiacode.nic.in/handle/123456789/1958 on 2026-09-30 (India Code doesn't answer scripts
+from this machine; see the folder's README). Read 2026-09-30; page numbers are the PDF's own.
 
 ## 0. Legal status (FSSAI's own pages and documents, 2026-09-30)
 
@@ -36,11 +37,23 @@ depend on it say so. Sushil: please download the Act's PDF from India Code by ha
 | Draft FSS (Foods for Infant Nutrition) Amendment Regulations, 2023 | https://fssai.gov.in/docs/food-law/notice-comment/Notification1.pdf | a draft only |
 | FSS (Labelling and Display) Regulations 2020, compendium I, 2(j) | https://www.fssai.gov.in/upload/uploadfiles/files/Compendium_Labelling_Display_23_09_2021.pdf | "Infant" means "a person not more than twelve months of age" (L&D), while the infant regulations cover up to 24 months |
 | L&D First Amendment Regulations, 2026 | https://fssai.gov.in/docs/food-law/notice-comment/69cca2b3f3ce9Notification%20dt%2024.03.2026_NRC.pdf | % RDA optional from 1 July 2027 |
+| IMS Act 1992, as on 15 December 2025 | `sources/legal/ims-act-1992/ims-act-1992-en-as-on-2025-12-15.pdf` (India Code) | 2(a), 2(f), 2(g), 2(j) p. 4; 3 p. 5; 6 pp. 5 to 6; 7 p. 6 |
 | FSS Act 2006, 3(1)(x) and section 100 | https://fssai.gov.in/upload/uploadfiles/files/FOOD-ACT.pdf (PDF pp. 4, 66) | "infant food" and "infant milk substitute" take the IMS Act's meanings (its section 2(f) and 2(g)); section 100 amends the IMS Act's references |
 | WHO Guideline for complementary feeding of infants and young children 6 to 23 months of age, 2023 | https://iris.who.int/server/api/core/bitstreams/5abca011-4db2-4cf1-b959-45b756f7b600/content (printed page, PDF page) | recommendations 1 to 7 pp. x to xiii (PDF 12 to 15); 3.5 unhealthy foods and beverages pp. 32 to 33 (PDF 48 to 49) |
 | ICMR-NIN, Dietary Guidelines for Indians 2024 | https://nin.res.in/dietaryguidelines/pdfjs/locale/DGI_2024.pdf (printed = PDF minus 17) | guideline 3 p. 21; points to register p. 25; complementary feeding pp. 26 to 29; p. 36 |
 
 ## 2. The kind of pack: `infant`, and its product type
+
+The Act's definitions, which the FSS Act 3(1)(x) adopts for "infant food" and "infant milk substitute"
+(IMS Act 2, p. 4):
+- 2(f): ""infant food" means any food (by whatever name called) being marketed or otherwise represented
+  as a complement to mother's milk to meet the growing nutritional needs of the infant after the age of
+  six months and up to the age of two years;"
+- 2(g): ""infant milk substitute" means any food being marketed or otherwise represented as a partial or
+  total replacement for mother's milk for infant up to the age of two years;"
+
+Both turn on how a food is "marketed or otherwise represented", which is what the printed words below
+show; so the rule reads the pack's own words, never the product's recipe.
 
 **Infant** (checked before `supplement`, `docs/SUPPLEMENTS.md` 2.1 step 2) when any of:
 - "MOTHER'S MILK IS BEST FOR YOUR BABY" (4(1)(a): "in capital letters ... on the front of the pack of
@@ -113,6 +126,19 @@ of the front." Only when the front and back were both read completely.
 
 The statements are matched on their key words (the rule lists accepted forms), not letter for letter.
 
+The Act asks for the same notice, IMS Act 6(1), pp. 5 to 6: "no person shall produce, supply or
+distribute any infant milk substitute or infant food unless every container thereof or any label affixed
+thereto indicates in a clear, conspicuous and in an easily readable and understandable manner, the words
+"important notice" in capital letters ... and indicating thereunder the following particulars": "(a) a
+statement "mother's milk is best for your baby" in capital letters; (b) a statement that infant milk
+substitute or infant food should be used only on the advice of a health worker as to the need for its use
+and the proper method of its use; (c) a warning that infant milk substitute or infant food is not the sole
+source of nourishment of an infant; (d) the instructions for its appropriate preparation and a warning
+against the health hazards of its inappropriate preparation; (e) the ingredients used; (f) the composition
+or analysis; (g) the storage conditions required; (h) the batch number, date of its manufacture and the
+date before which it is to be consumed ...; (i) such other particulars as may be prescribed." A "not found"
+line cites the regulation (4(1)) and may add the Act's clause; it never says the Act is broken (D-042).
+
 ### 4.2 Words the regulation says not to use, 4(2) (p. 6)
 
 "The terms "Humanised" or "Maternalised" or any other similar words shall not be used. The package
@@ -126,6 +152,13 @@ similar expression" is a judgement: not made).
 "No containers or label of food for infant nutrition shall have a picture of infant or women or both":
 **not checked by the app.** Seeing a picture is a judgement of the image (D-004); it goes on the
 reviewer's checklist instead.
+
+The Act, 6(2), p. 6: "No container or label referred to in sub-section (1) relating to infant milk
+substitute or infant food shall (a) have pictures of an infant or a woman or both; or (b) have pictures or
+other graphic material or phrases designed to increase the saleability of infant milk substitute or infant
+food; or (c) use on it the word "humanised" or "maternalised" or any other similar word; or (d) bear on it
+such other particulars as may be prescribed." The words check (humanised, maternalised) can cite both;
+(a) and (b) stay reviewer checks.
 
 ### 4.3 Additives, regulation 5 (p. 6) and the tables per type
 
@@ -179,29 +212,65 @@ acid ratios are not on labels: not compared.
 **User text:** "ICMR-NIN's dietary guidelines say: "Ensure exclusive breastfeeding for the first six
 months and continue breastfeeding till two years and beyond"." (DGI 2024, guideline 3, p. 21.) WHO's
 2023 guideline says the same for 6 to 23 months ("Breastfeeding should continue up to 2 years or
-beyond", recommendation 1, p. x) and can sit in the sources. Whether the IMS Act asks for more (the
-build prompt quotes a secondary copy: material on infant feeding "shall include clear information
-relating to the benefits and superiority of breastfeeding") is **unread**: section 5.
+beyond", recommendation 1, p. x) and can sit in the sources.
 
-## 5. The IMS Act and what the app refuses (unread Act: proposals only)
+**Not one line, if the result is "material" under the Act.** IMS Act 7(1) (p. 6) asks every "educational
+or other material ... dealing with pre-natal or post-natal care or with the feeding of an infant and
+intended to reach pregnant women or mothers of infants" to include clear information on **six
+particulars, (a) to (f)**, and two more clauses, (fa) and (g) (quoted in section 5). A single
+breastfeeding line covers part of (a) and (b) at most. So this line **waits for the lawyer's answer**
+(section 9, question 1): if an infant-food result is such material, it needs all of 7(1) or a different
+design; if it is not, the line can go in as written.
 
-The build prompt's reading (from a BPNI copy, not quotable): "promotion" means "to employ directly or
-indirectly any method of encouraging any person to purchase or use infant milk substitute, feeding
-bottle or infant food". The infant regulations themselves say, 3(8), that food for infant nutrition
-"shall comply with the requirements of" the Act "including aspect related to advertisement, marketing
-and promotion ... in accordance with the section 3, 4, 5, 7, 8, 9 and 10 of the said Act", and 12(2):
-"No food business operator shall advertise the infant formula for special medical purpose intended for
-infants." Those bind makers, not us; whether an app showing facts could be "promotion" is a lawyer's
-question. Until it is answered, the proposal stays on the careful side:
+## 5. The IMS Act and what the app refuses
+
+What the Act says (IMS Act as on 15 December 2025):
+- **2(j), p. 4:** ""promotion" means to employ directly or indirectly any method of encouraging any person
+  to purchase or use infant milk substitute, feeding bottle or infant food."
+- **2(a), p. 4** (outside the build prompt's list, read because it bears on an app): ""advertisement"
+  includes any notice, circular, label, wrapper or any other document or visible representation or
+  announcement made by means of any light, sound, smoke or gas or by means of electronic transmission or
+  by audio or visual transmission;"
+- **3, p. 5:** "No person shall (a) advertise, or take part in the publication of any advertisement, for
+  the distribution, sale or supply of infant milk substitutes, feeding bottles or infant foods; or (b) give
+  an impression or create a belief in any manner that feeding of infant milk substitutes and infant foods
+  are equivalent to, or better than, mother's milk; or (c) take part in the promotion of infant milk
+  substitutes, feeding bottles or infant foods."
+- **7(1), p. 6:** "Every educational or other material including advertisements or material relating to
+  promotion of infant milk substitutes, feeding bottles and infant foods, whether audio or visual, dealing
+  with pre-natal or post-natal care or with the feeding of an infant and intended to reach pregnant women
+  or mothers of infants shall include clear information relating to (a) the benefits and superiority of
+  breast-feeding; (b) the preparation for, and the continuance of, breast-feeding; (c) the harmful effects
+  on breast-feeding due to the partial adoption of bottle feeding; (d) the difficulties in reverting to
+  breast-feeding of infants after a period of feeding by infant milk substitute; (e) the financial and
+  social implications in making use of infant milk substitutes and feeding bottles; (f) the health hazards
+  of improper use of infant milk substitutes and feeding bottles; (fa) the date of printing and publication
+  of such material and the name of the printer and publisher; (g) such other matters as may be
+  prescribed."
+- **7(2), p. 6:** "No material referred to in sub-section (1) shall be utilised to promote the use or sale
+  of infant milk substitutes or feeding bottles or infant foods."
+- The infant regulations, 3(8) (p. 3), ask food for infant nutrition to comply with the Act "including
+  aspect related to advertisement, marketing and promotion ... in accordance with the section 3, 4, 5, 7,
+  8, 9 and 10 of the said Act".
+
+Unlike the regulations, section 3 speaks to "No person", not only to makers. Whether InsideLabel showing
+an infant food's facts is "promotion" (2(j)), an "advertisement" by "electronic transmission" (2(a)), an
+"impression ... equivalent to, or better than, mother's milk" (3(b)), or "educational or other material"
+under 7(1) is a lawyer's question (section 9). Until it is answered, the proposal stays on the careful
+side:
 - **No grade, score, band, ranking, "better pick", Compare, shop list, tallies or share card** for an
-  infant pack. On the server: `/compare` returns 422 with `reason: "infant_food"` when any pack in the
+  infant pack: each would be a "method of encouraging any person to purchase or use" one pack over
+  another (2(j)). On the server: `/compare` returns 422 with `reason: "infant_food"` when any pack in the
   request is infant; `screen` never carries `shop_list`, `tallies` or `summary` for one; the score is
   null. A test per route, not only a hidden button.
+- **Nothing that sets an infant food beside mother's milk** (3(b)): no composition line worded against
+  breast milk, no "closer to" or "like".
 - **Released in shadow, like the claim check (D-051):** the whole infant result is computed and stored
-  for reviewers; users get the allergen lines, the breastfeeding line (4.7) and one sentence, **User
-  text:** "This is a food for infants. We show the allergens on the list; our other checks for infant
-  foods are not released yet." Switch: `INSIDELABEL_INFANT_TO_USERS`, off by default, on only after
-  Sushil's decision (ideally a lawyer's reading).
+  for reviewers; users get the allergen lines and one sentence, **User text:** "This is a food for
+  infants. We show the allergens on the list; our other checks for infant foods are not released yet."
+  The breastfeeding line (4.7) waits too: if the result is 7(1) material, one line is not what the Act
+  asks for. Switch: `INSIDELABEL_INFANT_TO_USERS`, off by default, on only after Sushil's decision on a
+  lawyer's reading.
 
 ## 6. Profiles: a "baby" band (D-074: a value, not a field)
 
@@ -279,15 +348,31 @@ table cells; the traditional type uses the milk cereal table, 11(2)).
   where its Table 15.1 says high.
 - **No judgement of pictures** on the pack (4(2)); a reviewer's check.
 - **No honey-processing, protein-quality, moisture or fatty-acid checks**: not on labels.
-- **No statement about the IMS Act** until its text is read from India Code.
+- **No reading of the IMS Act of our own:** the app quotes its words where a label check cites them
+  (4.1, 4.2), and never says a pack or maker breaks it (D-042).
+- **No partial 7(1) material:** until the lawyer answers, no breastfeeding or feeding advice on an
+  infant result at all, rather than some of the six particulars.
 - **Nothing for special medical infant foods** beyond allergens and their own statement.
 
 ## 9. Questions for Sushil (and who else)
 
-1. **The IMS Act (Sushil, then a lawyer):** download it from India Code; then a lawyer's view on
-   whether showing an infant food's facts, even without ranking, could count as "promotion".
-   Recommended meanwhile: section 5 as written (shadow, allergens and breastfeeding line only).
-2. **Release:** infant checks to users only after 1 is answered? Recommended: yes.
+1. **The IMS Act (a lawyer), with section 5's quotes:**
+   a. Could showing an infant food's facts (allergens, label statements found or not found, additives,
+      composition), even without ranking, be "promotion" under 2(j) ("any method of encouraging any
+      person to purchase or use") or taking part in an "advertisement" "by means of electronic
+      transmission" (2(a), 3(a))?
+   b. **Does an infant-food result on the app count as "educational or other material ... dealing with
+      ... the feeding of an infant and intended to reach pregnant women or mothers of infants" under
+      7(1)?** If yes, it must "include clear information relating to" all six particulars (a) to (f), and
+      (fa) "the date of printing and publication of such material and the name of the printer and
+      publisher", not one breastfeeding line; and 7(2) says such material shall not "be utilised to
+      promote the use or sale" of infant foods. If no, may the app add ICMR-NIN's breastfeeding line
+      (4.7) on its own?
+   c. Does the baby profile's advice on ordinary foods (section 6), or the supplement line for a baby, make
+      the app 7(1) material for every result shown to a parent of an infant?
+   Recommended meanwhile: section 5 as written (shadow; allergens and one sentence only).
+2. **Release:** infant checks, and the breastfeeding line, to users only after 1 is answered?
+   Recommended: yes.
 3. **Age statement alone** ("from 6 months" on a biscuit): `food` with the baby lines and a reviewer
    check (recommended), or `infant`?
 4. **The baby band:** `baby` "Under 2 years" with `toddler` "2 to 3 years" (recommended). Existing

@@ -2160,8 +2160,13 @@ Same request as D-139. Full proposal: `docs/BABY_FOOD.md`. **Nothing built until
   amended 30 August 2022, compendium Version II), **in force from 1 October 2022**; selenium,
   manganese, iron and biotin limits from FSSAI's direction of 18 October 2022, Annexure-1 (a 2023
   amendment is a draft). The L&D First Amendment 2026 (from 1 July 2027) makes % RDA optional on
-  these packs. **Not read: the IMS Act 1992** (India Code unreachable from this machine; Sushil to
-  download it). Nothing quotes the Act until it is read.
+  these packs. **IMS Act 1992** quoted only from India Code's text "As on the 15th December, 2025",
+  `sources/legal/ims-act-1992/ims-act-1992-en-as-on-2025-12-15.pdf` (downloaded by Sushil 2026-09-30):
+  2(f) ""infant food" means any food (by whatever name called) being marketed or otherwise represented
+  as a complement to mother's milk to meet the growing nutritional needs of the infant after the age of
+  six months and up to the age of two years"; 2(g) ""infant milk substitute" means any food being
+  marketed or otherwise represented as a partial or total replacement for mother's milk for infant up to
+  the age of two years" (p. 4).
 - **Kind `infant`** from "MOTHER'S MILK IS BEST FOR YOUR BABY" (4(1)(a)), the six-months statement,
   "Traditional Food for Infants" (11(3)), the regulation's product names, or category 13.1/13.2; an
   age statement alone goes to a reviewer. Preterm, lactose-free, hypoallergenic, IEM and mono-grain
@@ -2176,18 +2181,48 @@ Same request as D-139. Full proposal: `docs/BABY_FOOD.md`. **Nothing built until
   for traditional foods), all with D-111's care; composition beside the type's table where the pack
   prints the same nutrient (recommended reviewer-only in the beta); ICMR-NIN's breastfeeding line
   (guideline 3, p. 21) on every infant result.
-- **IMS Act caution, until a lawyer reads it:** no grade, score, band, ranking, "better pick", Compare,
-  shop list, tallies or share card for an infant pack, refused on the server with a test per route;
-  **released in shadow** (like D-051): users get allergens, the breastfeeding line and one sentence;
-  `INSIDELABEL_INFANT_TO_USERS` off by default.
+- **IMS Act caution, until a lawyer reads it.** 2(j) (p. 4): ""promotion" means to employ directly or
+  indirectly any method of encouraging any person to purchase or use infant milk substitute, feeding
+  bottle or infant food." 3 (p. 5): "No person shall (a) advertise, or take part in the publication of
+  any advertisement, for the distribution, sale or supply of infant milk substitutes, feeding bottles or
+  infant foods; or (b) give an impression or create a belief in any manner that feeding of infant milk
+  substitutes and infant foods are equivalent to, or better than, mother's milk; or (c) take part in the
+  promotion of infant milk substitutes, feeding bottles or infant foods." 2(a) counts "electronic
+  transmission" as a means of advertisement. 6 (pp. 5 to 6) is the label notice regulation 4 repeats
+  ("important notice", "mother's milk is best for your baby", and (b) to (i)); 6(2) forbids "pictures
+  of an infant or a woman or both" and "the word "humanised" or "maternalised"". So: no grade, score,
+  band, ranking, "better pick", Compare, shop list, tallies or share card for an infant pack, refused on
+  the server with a test per route; nothing that sets an infant food beside mother's milk; **released in
+  shadow** (like D-051): users get allergens and one sentence; `INSIDELABEL_INFANT_TO_USERS` off by
+  default.
+- **Section 7(1) asks for six particulars, not one breastfeeding line.** 7(1) (p. 6): "Every educational
+  or other material including advertisements or material relating to promotion of infant milk
+  substitutes, feeding bottles and infant foods, whether audio or visual, dealing with pre-natal or
+  post-natal care or with the feeding of an infant and intended to reach pregnant women or mothers of
+  infants shall include clear information relating to (a) the benefits and superiority of
+  breast-feeding; (b) the preparation for, and the continuance of, breast-feeding; (c) the harmful effects
+  on breast-feeding due to the partial adoption of bottle feeding; (d) the difficulties in reverting to
+  breast-feeding of infants after a period of feeding by infant milk substitute; (e) the financial and
+  social implications in making use of infant milk substitutes and feeding bottles; (f) the health
+  hazards of improper use of infant milk substitutes and feeding bottles;" plus (fa) "the date of
+  printing and publication of such material and the name of the printer and publisher" and (g) matters
+  prescribed; 7(2): such material shall not "be utilised to promote the use or sale" of them. The
+  ICMR-NIN breastfeeding line (guideline 3, p. 21) is therefore **held** until the lawyer says whether an
+  infant-food result is such material; one line would cover part of (a) and (b) at most.
 - **Baby profile band** (D-074, a value): `baby` "Under 2 years", `toddler` "2 to 3 years". On an
   ordinary food a baby profile gets only sourced lines: added sugar (ICMR-NIN p. 29 "Added sugar must
   be totally avoided for children below 2 years"), non-sugar sweeteners (WHO 2023 recommendation 5c),
   honey (ICMR-NIN p. 21), salt (p. 26), HFSS by Table 15.1 (p. 28). WHO's "foods high in sugar, salt
   and trans fats" is not applied: it gives no threshold.
-- **Questions for Sushil** (`docs/BABY_FOOD.md` section 9): the IMS Act download and a lawyer's view;
-  release; age statements alone; the baby band and existing toddler profiles; composition lines
-  reviewer-only; 3 baby-food gold labels.
+- **Questions for Sushil** (`docs/BABY_FOOD.md` section 9): for a lawyer, (a) whether showing an infant
+  food's facts is "promotion" (2(j)) or an "advertisement" by "electronic transmission" (2(a), 3(a)),
+  (b) **whether an infant-food result counts as "educational or other material" under 7(1)**, which
+  would need (a) to (f) and (fa), not one line, and (c) whether the baby profile's lines on ordinary
+  foods make every result 7(1) material; release; age statements alone; the baby band and existing
+  toddler profiles; composition lines reviewer-only; 3 baby-food gold labels.
+- **Updated 2026-09-30** (Sushil: "The IMS Act is now in sources/legal/ims-act-1992/ ... Section 7(1)
+  asks for six particulars (a) to (f), not one breastfeeding line"): the Act's quotes above replace
+  "Not read"; the breastfeeding line moved from "shown in shadow" to "held".
 
 ---
 
