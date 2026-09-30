@@ -2365,7 +2365,7 @@ Cost: one more zxing-cpp pass per barcode photo (milliseconds, no paid call). No
   8904089974837 = the camera read, the second read empty. Two reads alone refuse too many right codes.
   Superseded by D-144, which lets the photo's OCR text confirm a code.
 
-### D-142 · A product's barcode is corrected only through a recorded, reviewed change `RECOMMENDED` (2026-09-30)
+### D-142 · A product's barcode is corrected only through a recorded, reviewed change `LOCKED` (2026-09-30)
 Found by the D-141 measurement, confirmed on the server by Sushil (2026-09-30): product 42 "Corn Flakes" is
 published under **4901196008343**, the camera scanner's read on scan 799e4f9a (2026-09-27, new_product),
 while two zxing reads of that scan's back photo (03f8277a...bae974.jpg) agree on **8901499008343**. The two
@@ -2403,8 +2403,11 @@ changed a published product's key and kept nothing of the old one; the other way
    finding; a correction still needs the printed digits read by a person.
 Not done: a /review page for it (the tool is enough for one reviewer; a page later if others need it);
 telling installs that scanned the product under the old code (their saved results show the old code).
+- **Accepted by Sushil 2026-09-30** ("D-142 and D-143 accepted"), merged (#68, #72) and deployed. **#42
+  corrected on the server** the same day: `il tools/barcodes.py history 8901499008343` shows record #1,
+  2026-09-30 16:41, by sushil (4901196008343 to 8901499008343).
 
-### D-143 · A camera barcode is set against the scan's own photos; one they don't show waits for a reviewer's check `RECOMMENDED` (2026-09-30)
+### D-143 · A camera barcode is set against the scan's own photos; one they don't show waits for a reviewer's check `LOCKED` (2026-09-30)
 Found by the D-141 measurement: product 42's camera read (4901196008343) and its back photo's two zxing reads
 (8901499008343) disagree; the pack prints 8901499008343 (Sushil, by eye). `web/camera.js` takes a code seen twice within 1.5 s (D-124), but two frames of one
 view share the blur, so the same wrong code can come twice; the check digit doesn't catch it (4 of 95 bar
@@ -2430,6 +2433,8 @@ Open: `not_shown` may be common, since many back photos don't show the barcode, 
 nothing in the photos to check against. How common is measured by `tools/barcode_audit.py`'s "unconfirmed"
 count on the server; if it is most packs, the answer may be to ask the app for a barcode photo with a new
 pack instead.
+- **Accepted by Sushil 2026-09-30** ("D-142 and D-143 accepted"), merged (#72) and deployed. The open point
+  above is answered by the audit (40 of 47 packs show no barcode): D-145, held until after week 4.
 
 ### D-144 · A photo barcode counts when two reads agree or its digits are in the photo's OCR text `LOCKED` (2026-09-30)
 Replaces D-141. Sushil (2026-09-30): "a barcode from a scan photo counts if two zxing reads agree OR its 13

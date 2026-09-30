@@ -1,6 +1,6 @@
 # STATE.md - where InsideLabel is, and how to pick it up
 
-**Last updated:** 2026-09-30 (**https://insidelabel.ai is live**, `main` = `5d60402`, PR #72: D-142, D-143, D-144 deployed; D-140 phase 3 started on branch `baby-food`) · **Owner:** Sushil · **Tests:** 876 passing, 8 skipped, 1 expected failure (`main`) · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 5.7 s on the live server (2026-09-27), Gemini + Cloud Vision, `verdict`
+**Last updated:** 2026-09-30 (**https://insidelabel.ai is live**, `main` = `11d184e`, PR #74: D-142, D-143, D-144 LOCKED and deployed; D-140 phase 3 part 1 merged) · **Owner:** Sushil · **Tests:** 891 passing, 8 skipped, 1 expected failure (`main`) · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 5.7 s on the live server (2026-09-27), Gemini + Cloud Vision, `verdict`
 
 This is the living status document. Read it first in any new session, then
 `DECISIONS.md` for the *why*. Update the "Last updated" line, the numbers and
@@ -653,21 +653,23 @@ setup alarms.
 - **Barcodes: D-142, D-143, D-144 on `main` and deployed (Sushil, 2026-09-30, PRs #68 and #72; #70 and #71
   merged the stack's branches into each other first).** D-144 measured on the server before the merge: 107
   photos, the old rule accepted 6, the new rule 6 (1 by the Cloud Vision text only, f77b...), **refused 0 of 6
-  (0.0%)**, and the wrong 0921129008343 on 03f8... is dropped; **D-144 accepted by Sushil.** D-142 and D-143
-  were merged and deployed with it; DECISIONS still marks them RECOMMENDED until Sushil says "accepted".
-  The audit on the server: 47 published, 1 MISMATCH (#42), 6 confirmed, 40 unconfirmed (no barcode in their
-  photos). **To do on the server (Sushil):**
-  - **#42 Corn Flakes**, filed under the camera misread 4901196008343; the pack prints 8901499008343 (Sushil,
-    by eye): `il tools/barcodes.py fix 42 8901499008343 --by sushil --why "printed under the bars on the back
-    photo" --photo 03f8277a38250dac003a0936b553eb4988b339e72df213772536d13f81bae974.jpg`, then again with `--yes`.
-  - **#48 Sugar Free Natura**, 4992146143214 from the camera, likely a second misread (SUSPECT in the audit):
-    photograph the pack's barcode if it is still at hand, then the same fix.
+  (0.0%)**, and the wrong 0921129008343 on 03f8... is dropped; **D-144 accepted by Sushil.** **D-142 and D-143
+  accepted by Sushil** the same day; all three LOCKED. The audit on the server: 47 published, 1 MISMATCH (#42),
+  6 confirmed, 40 unconfirmed (no barcode in their photos).
+  - **Done: #42 Corn Flakes corrected** on the server (Sushil, 2026-09-30 16:41): 4901196008343, the camera
+    misread, to 8901499008343, the digits the pack prints; `il tools/barcodes.py history 8901499008343` shows
+    record #1, by sushil.
+  - **Open: #48 Sugar Free Natura**, 4992146143214 from the camera scanner on 27 September and again on 30
+    September; SUSPECT in the audit; its photos show no barcode. Waits for Sushil to read the digits printed on
+    the pack, then `il tools/barcodes.py fix 48 <digits> --by sushil --why "..."` if they differ.
   **D-145** (the scanner's camera frame as the barcode's evidence photo, RECOMMENDED, proposal only, with its
-  DPDP map note) **is held until after week 4** (Sushil); it is on branch `d145-camera-frame`, not merged. `barcode-rescale-75` and the old stack branches (`barcode-correction`,
-  `barcode-audit`, `camera-barcode-check`) are not to be merged; they can be deleted.
+  DPDP map note) **is held until after week 4** (Sushil); it is on branch `d145-camera-frame`, not merged,
+  and will be rebuilt from `main` when it comes back. `barcode-rescale-75` and the old stack branches
+  (`barcode-correction`, `barcode-audit`, `camera-barcode-check`) are not to be merged; they can be deleted.
 
-- **Phase 3 of D-140 (baby food, in shadow) started** on branch `baby-food` (Sushil, 2026-09-30): part 1, an
-  infant food's own checks stored for reviewers (see D-140's last note). Next parts: 5(2)'s additive tables
+- **Phase 3 of D-140 (baby food, in shadow): part 1 merged** (#74, 2026-09-30): an infant food's own checks
+  stored for reviewers (see D-140's last note). Branches from now on: one at a time from the current `main`,
+  merged by Sushil before the next starts (Sushil, 2026-09-30). Next parts: 5(2)'s additive tables
   per type, 4(3), composition (reviewer-only), the `baby` band and the one-time toddler question.
 
 - **Same branch (`supplements`), after Sushil's review:** Compare stays food-only for the beta, recorded in
