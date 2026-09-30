@@ -2416,7 +2416,7 @@ nothing in the photos to check against. How common is measured by `tools/barcode
 count on the server; if it is most packs, the answer may be to ask the app for a barcode photo with a new
 pack instead.
 
-### D-144 · A photo barcode counts when two reads agree or its digits are in the photo's OCR text `RECOMMENDED` (2026-09-30)
+### D-144 · A photo barcode counts when two reads agree or its digits are in the photo's OCR text `LOCKED` (2026-09-30)
 Replaces D-141. Sushil (2026-09-30): "a barcode from a scan photo counts if two zxing reads agree OR its 13
 digits appear in that photo's Cloud Vision/Tesseract text (the D-093 second reading, no extra paid call);
 otherwise refused. /check-photo has no OCR: keep two-reads-agree there and point the user to the live camera
@@ -2448,6 +2448,10 @@ merged):**
    stored text where the text decides the answer. The same 5% line.
 Not covered by the measurement: barcode photos taken on their own are never stored, and two reads alone
 decide them. If refusals there are frequent, the camera scanner is the answer the message gives.
+- **Measured on the server and accepted by Sushil, 2026-09-30:** 107 photos; the old rule accepted 6, the new
+  rule 6 (1 of them by the Cloud Vision text only, f77b..., the photo D-141's two reads refused); refused 0 of
+  6 (0.0%), within the 5% line; the wrong 0921129008343 on 03f8... is dropped. "D-144 accepted (Sushil)."
+  Merged with D-142 and D-143 (PRs #68, #72) and deployed.
 
 ---
 
