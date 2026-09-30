@@ -1,6 +1,6 @@
 # STATE.md - where InsideLabel is, and how to pick it up
 
-**Last updated:** 2026-09-30 (**https://insidelabel.ai is live**, `main` = `a769260`, PR #60; D-139 and D-140 LOCKED, phase 1 built on branch `pack-kind`) · **Owner:** Sushil · **Tests:** 833 passing, 8 skipped, 3 expected failures (2 are D-141, until built) · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 5.7 s on the live server (2026-09-27), Gemini + Cloud Vision, `verdict`
+**Last updated:** 2026-09-30 (**https://insidelabel.ai is live**, `main` = `a769260`, PR #60; D-139 and D-140 LOCKED, phase 1 built on branch `pack-kind`) · **Owner:** Sushil · **Tests:** 875 passing, 8 skipped, 1 expected failure (branch `d144-photo-barcode-ocr`, the top of the D-142 to D-144 stack) · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 5.7 s on the live server (2026-09-27), Gemini + Cloud Vision, `verdict`
 
 This is the living status document. Read it first in any new session, then
 `DECISIONS.md` for the *why*. Update the "Last updated" line, the numbers and
@@ -650,6 +650,13 @@ setup alarms.
 
 **NEXT SESSION STARTS HERE (2026-09-30).** Where things stand, newest first:
 
+- **Barcode audit on the server (Sushil, 2026-09-30):** 47 published, 1 MISMATCH (#42), 6 confirmed, 40
+  unconfirmed (no barcode in their photos). **#48 Sugar Free Natura, 4992146143214 (camera), likely a second
+  misread;** Sushil will photograph its barcode if he still has the pack, then `tools/barcodes.py fix` like #42.
+  The audit now lists SUSPECT camera reads (branch `d142-audit-suspects`). 40 of 47 with no barcode in their
+  photos answers D-143's open point: **D-145 RECOMMENDED** (proposal only, not built): the camera frame the
+  scanner accepted goes with the scan as the barcode's evidence photo.
+
 - **Barcodes (2026-09-30, newest first).** D-141 as accepted (a second zxing read at half size, then at
   three-quarter size) failed Sushil's server measurement twice: half size refused 2 of 6 accepted photo reads
   (33.3%), three-quarter 1 of 6 (16.7%, f77b1de8...d1.jpg, 8904089974837 = the camera read, second read
@@ -661,7 +668,7 @@ setup alarms.
   recorded correction, migration 020), **`d142-barcode-audit`** (every published barcode against its own
   photos), **`d143-camera-barcode-check`** (D-143: a camera code the scan's photos don't show waits for a
   reviewer), **`d144-photo-barcode-ocr`** (D-144, replacing D-141: two reads agree or the digits are in the
-  photo's OCR text). **Waiting on Sushil:** acceptance of each; the D-144 server measurement.
+  photo's OCR text). **Waiting on Sushil:** the D-144 server measurement (command in its PR), then acceptance of each.
 
 - **Same branch (`supplements`), after Sushil's review:** Compare stays food-only for the beta, recorded in
   D-139 (Sushil: Compare's ranking rules are for food, no source ranks supplements, a "better choice" between

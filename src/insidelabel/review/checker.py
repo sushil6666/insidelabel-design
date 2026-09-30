@@ -262,6 +262,9 @@ def check(draft, ctx):
     bc = (draft.get("barcode") or (ctx.get("request") or {}).get("barcode") or "").strip()
     reason = barcode_rules.check(bc)[1] if bc else "missing"
     add("barcode", reason is None, "" if reason is None else f"barcode {bc or '(none)'}: {reason}")
+    # D-143: a code only the camera scanner read goes to a person, who reads the printed digits.
+    unsure = barcode_rules.unconfirmed(ctx.get("barcode_check"))
+    add("barcode_confirmed", not unsure, barcode_rules.check_text(unsure) if unsure else "")
     conf = ((raw.get("confidence") or {}).get("ingredients") or 0)
     complete = raw.get("ingredients_status") == "read"
     add("reading_gate", conf >= 0.95 and complete,

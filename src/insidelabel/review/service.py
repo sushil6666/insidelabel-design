@@ -208,6 +208,17 @@ class ReviewService:
                 raise ReviewError("This item is the nutrition table. Tick that its numbers match the photo, "
                                   "or reject it.")
             pid = v["product_id"] if v else None
+            # D-143: a barcode nothing but the camera scanner shows is published
+            # only once a reviewer has checked it, or typed another one.
+            unsure = self._unconfirmed_barcode(c, q)
+            if unsure:
+                final = barcode or (pid and c.execute("SELECT barcode FROM products WHERE id = %s",
+                                                      (pid,)).fetchone()["barcode"])
+                if final == unsure["code"] and not form.get("barcode_checked"):
+                    raise ReviewError(barcode_rules.check_text(unsure) + ' If it is right, tick "I checked the '
+                                      'barcode"; if not, type the right one.')
+                if final == unsure["code"]:
+                    c.execute("UPDATE review_queue SET barcode_checked_by = %s WHERE id = %s", (reviewer, item_id))
             if pid is None and not barcode:
                 # D-107: the catalogue is filed by barcode. A new product without
                 # one could never be found again by a scan.
@@ -409,6 +420,16 @@ class ReviewService:
                         SET status = %s, resolution = %s, resolution_note = %s,
                             resolved_product_version_id = %s, resolved_at = now()
                       WHERE id = %s""", (status, resolution, note, vid, item_id))
+
+    # ---------------------------------------------------------------- D-143
+
+    @staticmethod
+    def _unconfirmed_barcode(c, q):
+        """The scan's barcode check when a reviewer must look at the barcode, else None."""
+        if not q["scan_id"]:
+            return None
+        row = c.execute("SELECT barcode_check FROM scans WHERE id = %s", (q["scan_id"],)).fetchone()
+        return barcode_rules.unconfirmed(row and row["barcode_check"])
 
     # ---------------------------------------------------------------- D-142
 

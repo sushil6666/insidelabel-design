@@ -177,6 +177,13 @@
           <div><label for="variant">Variant</label><input type="text" id="variant" name="variant" value="{{ form.variant }}"></div>
           <div><label for="barcode">Barcode</label><input type="text" id="barcode" name="barcode" value="{{ form.barcode }}" inputmode="numeric"></div>
         </div>
+        {% if barcode_unsure %}
+          <div class="notice" id="barcode-unsure">{{ barcode_unsure }}
+            <label class="choice" style="margin-top:6px"><input type="checkbox" name="barcode_checked" value="1">
+              I checked the barcode</label>
+            <div style="font-size:12px">If the photo shows another number, type it above instead (D-143).</div>
+          </div>
+        {% endif %}
         <label for="category">FSSAI food category (Appendix A), required</label>
         <select id="category" name="category" required>
           <option value="">Choose a category</option>

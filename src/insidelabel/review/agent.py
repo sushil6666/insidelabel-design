@@ -40,6 +40,7 @@ def context(data, categories):
         "categories": {code for code, _name, _depth in categories},
         "has_front": bool(data["images"].get("front")),
         "nutrition": v.get("nutrition"),                  # D-133: checked against ocr_text
+        "barcode_check": scan.get("barcode_check"),       # D-143: the camera's code against the photos
         "reading": {
             "brand": p.get("brand"), "name": p.get("name"), "variant": p.get("variant"),
             "barcode": p.get("barcode") or (scan.get("request") or {}).get("barcode"),

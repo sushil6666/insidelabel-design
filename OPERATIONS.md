@@ -207,6 +207,7 @@ The queue: https://insidelabel.ai/review (log in with the reviewer name and pass
 photo first (`/review/media/<key>`). Never change `products.barcode` with SQL: the database refuses it.
 
 ```bash
+il tools/barcode_audit.py                                  # every published barcode against its own photos (read-only)
 il tools/barcodes.py history <product id or barcode>       # the barcode and every recorded change
 il tools/barcodes.py fix <product id> <right code> --by <your reviewer name> \
     --why "printed under the bars on the back photo: ..." --photo <key>    # dry run
