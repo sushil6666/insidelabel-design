@@ -2317,7 +2317,7 @@ Same request as D-139. Full proposal: `docs/BABY_FOOD.md`. **Nothing built until
   faces needed for not_food; back-only goes to a reviewer).
 
 
-### D-141 · A barcode read from a photo counts only when two reads agree, or the barcode is big enough `LOCKED` (2026-09-30; the size part not built)
+### D-141 · A barcode read from a photo counts only when two reads agree, or the barcode is big enough `RECOMMENDED` (2026-09-30)
 Found by Sushil in the phone check of phase 1 (2026-09-30): a small, blurry barcode photo made zxing-cpp read
 **0961676012608** where the pack prints **8901058018608**, and `barcode.check()` accepted it. Six of the 13
 digits differ, yet the check digit is right: a check digit catches any single wrong digit, but when several
@@ -2341,25 +2341,6 @@ reads once, at up to 2400 px, and takes the code that passes `check()`.
    without failing, and flips to a plain test when it is.
 Cost: one more zxing-cpp pass per barcode photo (milliseconds, no paid call). Nothing built until Sushil says
 "accepted".
-- **Accepted by Sushil 2026-09-30, with two conditions:** "1. Build only "two reads agree" now (the photo's own
-  size and one rescale; a disagreement or an empty second read gets "We couldn't read that barcode clearly").
-  No size threshold yet. 2. Before it ships, measure it: write a read-only tool that runs the old and the new
-  rule over the barcode photos already stored on the server (no Gemini, no Cloud Vision), and prints how many
-  photos each accepts, which codes differ, and how many the new rule would refuse that the old one accepted.
-  ... If more than 5% of today's accepted reads would be refused, stop and report." So point 1 is built
-  (`barcode.read_from_photo()`: the photo as before, up to 2400 px, then half size; problem `barcode_unsure`),
-  point 2 (big enough) is not. `tools/barcode_reads.py` is the measurement.
-- **What "stored on the server" can mean** (found building it): `/check-photo` stores nothing (D-104), so a
-  barcode photo taken on its own is never kept. The server keeps scan photos (back, front, 30 days, D-080);
-  a barcode on one is read by the same function (point 3), so the tool reads every stored photo, and
-  `--dir` adds any folder of barcode photos. Back photos often show the barcode small, so this is the harder
-  test of the two. With the database it also prints what each changed photo's scan recorded (camera scanner
-  or photo), which tells a refused correct read from a refused misread.
-- **Measured by Claude before the build was pushed (2026-09-30, a synthetic sweep, not a gate):** an EAN-13
-  pasted at 1 to 6 pixels per bar module, sharp and blurred. The first read gets it from 1.5 px up; the half
-  size read agrees from 3.5 px up (and at 2 px), and refuses the correct code at 2.5 and 3 px. A close-up
-  barcode photo is far above 3.5 px per module; a whole back label may not be. The local store (51 photos,
-  2 with a barcode): 0 refused. The server run decides.
 
 ---
 

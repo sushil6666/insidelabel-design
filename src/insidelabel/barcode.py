@@ -34,9 +34,6 @@ MESSAGES = {
                   "Scan the barcode printed on the pack, or photograph the ingredient list.",
     "not_a_product": "That barcode isn't for a food pack (it may be a book, magazine or coupon). "
                      "Scan the barcode on the food pack.",
-    # D-141: two reads of one photo disagree, or the second finds nothing.
-    "barcode_unsure": "We couldn't read that barcode clearly. Hold the phone closer, with the barcode flat "
-                      "and in focus, or use the camera scanner.",
 }
 
 
@@ -95,44 +92,26 @@ def upce_to_upca(code):
     return ns + body + check
 
 
-def read_from_photo(data, two_reads=True):
+def read_from_photo(data):
     """
     Every retail barcode zxing-cpp finds in the photo: ([codes that pass
     check()], [reasons for ones that don't]). ([], []) when none is found or
     the photo can't be decoded here (HEIC).
-
-    D-141: a code counts only when two reads agree: the photo as read before
-    (up to 2400 px) and once more at half that size. A check digit catches one
-    wrong digit, not several: on 2026-09-30 a small, blurry photo read as
-    0961676012608 for 8901058018608 and passed check(). A code the second read
-    doesn't find is "barcode_unsure", never a guess. The second read runs only
-    when the first found a code. two_reads=False is the rule before D-141, kept
-    for tools/barcode_reads.py to measure against.
     """
     try:
+        import zxingcpp
         from PIL import Image
         im = Image.open(io.BytesIO(data))
         im.draft("L", (2400, 2400))                # JPEG: decode near the size needed, fast
         im = im.convert("L")
         im.thumbnail((2400, 2400))
-        good, bad = _read_once(im)
-        if good and two_reads:
-            again, _ = _read_once(im.reduce(2))
-            unsure = [c for c in good if c not in again]
-            good = [c for c in good if c in again]
-            bad = ["barcode_unsure"] * bool(unsure) + bad
+        formats = [zxingcpp.BarcodeFormat.EAN13, zxingcpp.BarcodeFormat.EAN8,
+                   zxingcpp.BarcodeFormat.UPCA, zxingcpp.BarcodeFormat.UPCE]
+        found = zxingcpp.read_barcodes(im, formats=formats)
     except Exception:                              # noqa: BLE001 - undecodable image or no library: nothing read
         return [], []
-    return good, bad
-
-
-def _read_once(im):
-    """One zxing-cpp pass over a greyscale image: (codes that pass check(), reasons for ones that don't)."""
-    import zxingcpp
-    formats = [zxingcpp.BarcodeFormat.EAN13, zxingcpp.BarcodeFormat.EAN8,
-               zxingcpp.BarcodeFormat.UPCA, zxingcpp.BarcodeFormat.UPCE]
     good, bad = [], []
-    for r in zxingcpp.read_barcodes(im, formats=formats):
+    for r in found:
         raw = r.text
         if r.format == zxingcpp.BarcodeFormat.UPCE:
             raw = upce_to_upca(raw)
