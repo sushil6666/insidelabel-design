@@ -2374,6 +2374,33 @@ changed a published product's key and kept nothing of the old one; the other way
 Not done: a /review page for it (the tool is enough for one reviewer; a page later if others need it);
 telling installs that scanned the product under the old code (their saved results show the old code).
 
+### D-143 · A camera barcode is set against the scan's own photos; one they don't show waits for a reviewer's check `RECOMMENDED` (2026-09-30)
+Found by the D-141 measurement: product 42's camera read (4901196008343) and its back photo's two zxing reads
+(8901499008343) disagree; the pack prints 8901499008343 (Sushil, by eye). `web/camera.js` takes a code seen twice within 1.5 s (D-124), but two frames of one
+view share the blur, so the same wrong code can come twice; the check digit doesn't catch it (4 of 95 bar
+modules differ). Sushil (2026-09-30): "Include camera reads in the D-141 rule: when the scan also has a
+photo, the camera code must match the photo's read or the digits in its OCR text; otherwise the reviewer is
+asked to check the barcode before publishing."
+
+**Recommended by Claude (built on branch `d143-camera-barcode-check`, stacked on `d142-barcode-audit`, not merged):**
+1. **At `/scan`**, when a barcode comes with photos: `barcode.confirm()` reads every photo of the scan as
+   `/check-photo` does and looks for the code in the Cloud Vision text of the back (`codes_in_text`, the printed
+   digit groups). `confirmed` (a photo or the OCR shows it), `mismatch` (a photo reads another code and none
+   reads it), `not_shown` (nothing shows it). Kept on the scan row (`scans.barcode_check`, migration 021, with
+   the source), and its time in `timings.barcode_check_ms`. **The user's result doesn't change.**
+2. **At `/review`**: a camera code that isn't `confirmed` is shown above the form ("... came from the camera
+   scanner, but the photos read ...") with a tick box, "I checked the barcode". `approve()` publishes it only
+   when ticked (the reviewer is recorded, `review_queue.barcode_checked_by`), or when the reviewer types
+   another code (recorded as a D-142 change, `via = 'review'`).
+3. **The review agents** (D-117) get a check, `barcode_confirmed`, that fails for such a code, so it never
+   publishes without a person.
+4. **Only camera reads are held.** A code read from a barcode photo by `/check-photo` has its own rule (D-144, replacing D-141). The app always
+   says where a code came from (D-104); a request that doesn't (an API client, a test) is recorded, not held.
+Open: `not_shown` may be common, since many back photos don't show the barcode, and then the reviewer has
+nothing in the photos to check against. How common is measured by `tools/barcode_audit.py`'s "unconfirmed"
+count on the server; if it is most packs, the answer may be to ask the app for a barcode photo with a new
+pack instead.
+
 ---
 
 ## Open and pending

@@ -23,6 +23,7 @@ from fastapi.responses import RedirectResponse, Response
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.templating import Jinja2Templates
 
+from insidelabel import barcode as barcode_rules
 from insidelabel import ratelimit
 from insidelabel.core import engine
 from insidelabel.db.categories import COMMON
@@ -160,11 +161,14 @@ def item(request: Request, item_id: int, name: str = Depends(reviewer), error: s
     verdict = engine.analyze(", ".join(ingredients)) if ingredients else None
     # D-106: where the item's photos came from (camera or upload), as the app said.
     sources = ((data["scan"] or {}).get("request") or {}).get("photo_sources") or {}
+    # D-143: a barcode only the camera scanner read, shown above the form with a tick box.
+    unsure = barcode_rules.unconfirmed((data["scan"] or {}).get("barcode_check"))
     return _page(request, "item.html", name, d=data, form=form, error=error, sources=sources,
                  verdict=verdict, raw=raw, reliability=raw.get("_reliability") or {},
                  diff=_diff(data["current"]["ingredients"], ingredients) if data["current"] else None,
                  mine=data["item"]["status"] == "claimed" and data["item"]["claimed_by"] == name,
-                 correction=corr, categories=SERVICE.categories(), common=COMMON, draft=draft)
+                 correction=corr, categories=SERVICE.categories(), common=COMMON, draft=draft,
+                 barcode_unsure=barcode_rules.check_text(unsure) if unsure else None)
 
 
 @router.post("/item/{item_id}/claim")

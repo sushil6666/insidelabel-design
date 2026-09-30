@@ -55,7 +55,7 @@ def publish(uri, code, photo, name, ocr=None):
             c.execute("UPDATE scans SET ocr = %s WHERE id = %s",
                       (json.dumps({"back": {"reader": "cloud_vision", "text": ocr}}), r.json()["scan_id"]))
     c = client()
-    approve(c, take_next(c), name=name, ingredients="Corn grits\nSalt", barcode=code)
+    approve(c, take_next(c), name=name, ingredients="Corn grits\nSalt", barcode=code, barcode_checked="1")
     return q(uri, "SELECT id FROM products WHERE barcode = %s", code)[0][0]
 
 

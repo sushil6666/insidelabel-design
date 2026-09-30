@@ -1442,6 +1442,15 @@ async def scan(
     # the result, while it is still in hand. "Use this one anyway" goes on.
     # Only when Cloud Vision read the photo: no independent read, nothing to fail.
     ocr_text = ((tr.get("ocr") or {}).get("back") or {})
+    # D-143: the barcode sent against the scan's own photos and the OCR text. A code
+    # nothing else shows goes to a reviewer to check before it is published; the
+    # user's result doesn't change. Kept on the scan row (migration 021).
+    if barcode and images:
+        t_bc = time.monotonic()
+        tr["barcode_check"] = {**await run_in_threadpool(
+            barcode_rules.confirm, barcode, [(r, d) for d, _m, r in images], ocr_text.get("text")),
+            "source": barcode_source}
+        tr["timings"]["barcode_check_ms"] = _ms(t_bc)
     from_screen = bool(reliability.get("from_screen"))
     if (barcode and STORE and not accept_unconfirmed and not from_screen
             and ocr_text.get("reader") == "cloud_vision"

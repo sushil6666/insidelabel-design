@@ -109,6 +109,54 @@ def codes_in_text(text):
     return found
 
 
+def confirm(code, photos, ocr_text=None):
+    """
+    D-143: does anything besides the barcode reader that sent `code` show it?
+    photos: [(role, bytes)], the scan's own photos; ocr_text: the independent
+    reader's text of the back (D-093). The camera scanner takes a code seen in
+    two frames of one view, so one blur can give the same wrong code twice
+    (product 42: 4901196008343 for 8901499008343).
+      confirmed  a photo's read (read_from_photo) or the OCR text shows `code`
+      mismatch   a photo reads another code and none reads `code`
+      not_shown  nothing shows `code` (the OCR text's own codes are listed, not
+                 trusted: a licence number can hold a 13-digit run that passes)
+    """
+    read = {}
+    for role, data in photos:
+        codes, _why = read_from_photo(data)
+        if codes:
+            read[role] = codes
+    ocr = codes_in_text(ocr_text) if ocr_text else []
+    shown = {c for codes in read.values() for c in codes}
+    status = "confirmed" if code in shown or code in ocr else ("mismatch" if shown else "not_shown")
+    return {"code": code, "status": status, "photo_codes": read, "ocr_codes": ocr}
+
+
+def unconfirmed(check):
+    """
+    D-143: a scan's barcode_check that a reviewer must look at: the code came
+    from the camera scanner and no photo or OCR text shows it. Only camera
+    reads are held (Sushil, 2026-09-30); a code read from a barcode photo by
+    /check-photo has its own rule (D-144). The app always says which (D-104),
+    so a request that doesn't say (an API client, a test) is recorded, not held.
+    """
+    if not check or check.get("status") == "confirmed" or check.get("source") != "camera":
+        return None
+    return check
+
+
+def check_text(check):
+    """What the reviewer is told about an unconfirmed barcode."""
+    source = {"camera": "the camera scanner"}.get(check.get("source"), "the app")
+    if check["status"] == "mismatch":
+        read = sorted({c for codes in (check.get("photo_codes") or {}).values() for c in codes})
+        return (f"Barcode {check['code']} came from {source}, but the photos read {', '.join(read)}. "
+                "Read the digits printed under the bars on the photo.")
+    ocr = check.get("ocr_codes") or []
+    return (f"Barcode {check['code']} came from {source} alone: no photo and no OCR text shows it"
+            + (f" (the OCR text has {', '.join(ocr)})" if ocr else "") + ".")
+
+
 def upce_to_upca(code):
     """An 8-digit UPC-E (number system, 6 digits, check) as its 12-digit UPC-A (GS1 GenSpecs 5.2.2.4.2)."""
     if len(code) != 8 or not code.isdigit():
