@@ -152,3 +152,33 @@ def test_a_published_infant_pack_is_served_without_any_result(env):
     assert hit["catalogue"]["source"] == "catalogue" and hit["pack_kind"]["code"] == "infant"
     assert hit["verdict"] is None and hit["display"] is None and hit["withheld"]["reason"] == "infant_in_shadow"
     assert hit["screen"]["headline"]["text"] == 'This pack says "Processed Cereal Based Complementary Food".'
+
+
+def test_an_infant_foods_own_checks_are_stored_for_reviewers_and_never_sent(env):
+    """D-140 phase 3, in shadow: computed at /scan, kept with the reading, shown on /review only."""
+    v = reading(["Rice flour", "Milk solids", "Added flavour (vanilla)", "Hydrogenated vegetable fat"],
+                [st("Processed Cereal Based Complementary Food", "front"),
+                 st("MOTHER'S MILK IS BEST FOR YOUR BABY", "front"), st("The complete Energy Food", "front")])
+    j = post(gtin(), v)
+    assert "_infant" not in json.dumps(j) and "Energy Food" not in json.dumps(j.get("screen"))
+    assert j["verdict"] is None and j["withheld"]["reason"] == "infant_in_shadow"
+    vid = j["catalogue"]["product_version_id"]
+    [(raw,)] = q(env, "SELECT raw_extraction FROM product_versions WHERE id = %s", vid)
+    got = raw["_infant"]
+    assert got["type"]["id"] == "processed_cereal"
+    assert {s["id"] for s in got["statements"] if not s["found"]} >= {"boiled_water", "not_sole"}
+    assert [w["word"] for w in got["words"]] == ["energy food"]
+    assert got["free_from"] == [{"entry": "Added flavour (vanilla)", "why": ["flavour"]}]
+    assert [h["entry"] for h in got["hydrogenated"]] == ["Hydrogenated vegetable fat"]
+    _item, _c, page = item_page(env, vid)
+    assert 'id="infant-checks"' in page and "users don't see these" in page
+    assert "processed cereal, from" in page and "Not found</strong>: " in page
+    assert "No picture of an infant or a woman" in page
+
+
+def test_a_food_has_no_infant_checks(env):
+    j = post(gtin(), reading(["Wheat flour", "Sugar"], [st("Glucose biscuits", "front")]))
+    [(raw,)] = q(env, "SELECT raw_extraction FROM product_versions WHERE id = %s", j["catalogue"]["product_version_id"])
+    assert "_infant" not in raw
+    _item, _c, page = item_page(env, j["catalogue"]["product_version_id"])
+    assert 'id="infant-checks"' not in page

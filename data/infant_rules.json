@@ -1,0 +1,64 @@
+{
+  "_meta": {
+    "table": "infant_rules",
+    "version": "0.1",
+    "purpose": "D-140 phase 3: an infant food's own checks from FSSAI's rules for foods for infant nutrition (lenses/infant.py). Computed and stored for reviewers only (in shadow, D-140): users see the allergen lines, the kind and the ingredient list.",
+    "source": {
+      "title": "FSS (Foods for Infant Nutrition) Regulations, 2020, compendium Version II (04.01.2024)",
+      "url": "https://fssai.gov.in/docs/food-law/regulations/Comp_IFR_VERSION-II_04_01_2024.pdf",
+      "status": "in force from 1 October 2022 (FSSAI order 29.03.2022, direction 18.10.2022; docs/BABY_FOOD.md section 0)",
+      "pages": "PDF page numbers; every row read from the page image by Claude on 2026-09-30 (D-046)"
+    },
+    "rules": [
+      "Phrases are matched as whole words on the text lower-cased, apostrophes removed, anything else not a letter or digit a space (core/pack_kind.norm).",
+      "A statement is 'not found' only when both faces were read whole (lenses/nutra.complete_read); otherwise nothing is said.",
+      "The product type comes from the product's printed name and the front's own words, never from regulation 4's statements: those name 'infant milk substitute or infant food' whatever the type."
+    ]
+  },
+  "types": [
+    {"id": "follow_up_formula", "phrases": ["follow up formula"], "chapter": "infant_food", "basis": "2(1)(e), PDF p. 1; 10, PDF p. 24 (Chapter 3 'Infant Food')", "verified_on": "2026-09-30"},
+    {"id": "milk_cereal", "phrases": ["milk cereal based complementary food"], "chapter": "infant_food", "basis": "2(1)(i), PDF p. 2; 8, PDF p. 12 (Chapter 3 'Infant Food')", "verified_on": "2026-09-30"},
+    {"id": "processed_cereal", "phrases": ["processed cereal based complementary food"], "chapter": "infant_food", "basis": "2(1)(j), PDF p. 2; 9, PDF p. 18 (Chapter 3 'Infant Food')", "verified_on": "2026-09-30"},
+    {"id": "traditional", "phrases": ["traditional food for infants", "food for infants based on traditional food ingredients"], "chapter": "infant_food", "basis": "2(1)(c), PDF p. 1; 11(3), PDF p. 30 (Chapter 3 'Infant Food')", "verified_on": "2026-09-30"},
+    {"id": "infant_formula", "phrases": ["infant formula", "infant milk substitute", "infant milk food"], "chapter": "infant_milk_substitute", "basis": "2(1)(h), PDF p. 2; 7, PDF p. 7 (Chapter 2 'Infant Milk Substitute'); 7(3), PDF p. 12 ('Infant Milk Food')", "verified_on": "2026-09-30"}
+  ],
+  "statements": [
+    {"id": "important_notice", "text": "the words \"IMPORTANT NOTICE\" in capital letters", "match": ["important notice"], "face": "any", "chapters": ["infant_milk_substitute", "infant_food"], "fssai_basis": "4(1), PDF p. 4", "verified_on": "2026-09-30"},
+    {"id": "mothers_milk", "text": "\"MOTHER'S MILK IS BEST FOR YOUR BABY\" in capital letters, on the front of the pack", "match": ["mothers milk is best for your baby"], "face": "front", "chapters": ["infant_milk_substitute", "infant_food"], "fssai_basis": "4(1)(a), PDF p. 4", "verified_on": "2026-09-30"},
+    {"id": "six_months", "text": "\"Infant food shall be introduced only after the age of six months and up to the age of two years\"", "match": ["introduced only after the age of six months", "introduced only after the age of 6 months"], "face": "any", "chapters": ["infant_food"], "fssai_basis": "4(1)(a), PDF p. 4 ('In case of infant food')", "verified_on": "2026-09-30"},
+    {"id": "health_worker", "text": "a statement that infant milk substitute or infant food shall be used only on the advice of a health worker as to the need for its use and the proper method of its use", "match": ["advice of a health worker", "advice of health worker"], "face": "any", "chapters": ["infant_milk_substitute", "infant_food"], "fssai_basis": "4(1)(b), PDF p. 5", "verified_on": "2026-09-30"},
+    {"id": "not_sole", "text": "a warning that Infant milk substitute or infant food is not the sole source of nourishment of an infant", "match": ["not the sole source of nourishment"], "face": "any", "chapters": ["infant_milk_substitute", "infant_food"], "fssai_basis": "4(1)(c), PDF p. 5", "verified_on": "2026-09-30"},
+    {"id": "preparation", "text": "\"Warning/Caution-Careful and hygienic preparation of infant foods or infant milk substitute is most essential for health.\"", "match": ["careful and hygienic preparation"], "face": "any", "chapters": ["infant_milk_substitute", "infant_food"], "fssai_basis": "4(1)(d), PDF p. 5", "verified_on": "2026-09-30"},
+    {"id": "storage", "text": "\"Store in a cool and dry place in an air tight container\" or the like", "match": ["cool and dry place", "cool dry place"], "face": "any", "chapters": ["infant_milk_substitute", "infant_food"], "fssai_basis": "4(1)(f), PDF p. 5", "verified_on": "2026-09-30"},
+    {"id": "boiled_water", "text": "\"Warning: Boiled and cooled water shall be used to prepare this product and any leftover product must be discarded to reduce the risk of infection\"", "match": ["boiled and cooled water"], "face": "any", "chapters": ["infant_milk_substitute", "infant_food"], "fssai_basis": "4(6), PDF p. 6", "verified_on": "2026-09-30"}
+  ],
+  "words_not_to_use": {
+    "text": "The terms \"Humanised\" or \"Maternalised\" or any other similar words shall not be used. The package and/or any other label of infant milk substitute or infant food shall not exhibit the words, \"Full Protein Food\", \"Energy Food\", \"Completer Food\" or \"Health Food\" or any other similar expression.",
+    "words": ["humanised", "humanized", "maternalised", "maternalized", "full protein food", "energy food", "completer food", "health food"],
+    "note": "The regulation's words and their -ized spelling only; 'any other similar words' and 'similar expression' are judgements, not made (docs/BABY_FOOD.md 4.2). A picture of an infant or a woman is a reviewer check, never the app's.",
+    "fssai_basis": "4(2), PDF p. 6",
+    "verified_on": "2026-09-30"
+  },
+  "free_from": {
+    "text": "Food for infant nutrition shall be free from preservatives, added colours and flavours.",
+    "classes": ["preservative", "colour"],
+    "flavour_words": ["flavour", "flavours", "flavor", "flavors", "flavouring", "flavourings", "flavoring", "flavorings"],
+    "not_flavour": ["flavour enhancer", "flavour enhancers", "flavor enhancer", "flavor enhancers"],
+    "note": "Additive classes from data/additives.json by INS (core/tokenize.ins_numbers); a flavour enhancer is its own class, not a flavour.",
+    "fssai_basis": "5(1), PDF p. 6",
+    "verified_on": "2026-09-30"
+  },
+  "no_hydrogenated": {
+    "names_from": "data/ingredient_notes.json row hydrogenated_fat (names and exclude, D-132/D-135)",
+    "rows": [
+      {"type": "infant_formula", "text": "Hydrogenated vegetable oils and fats shall not be used in infant formula.", "fssai_basis": "7(1)(c), PDF p. 7", "verified_on": "2026-09-30"},
+      {"type": "milk_cereal", "text": "It shall not contain hydrogenated vegetable fats and oils.", "fssai_basis": "8(1)(c), PDF p. 13", "verified_on": "2026-09-30"},
+      {"type": "processed_cereal", "text": "It shall not contain hydrogenated vegetable oils and fats.", "fssai_basis": "9(1)(d), PDF p. 19", "verified_on": "2026-09-30"},
+      {"type": "follow_up_formula", "text": "Partially hydrogenated oils and fats shall not be used in follow-up formula.", "partial_only": true, "fssai_basis": "10(1)(d), PDF p. 25", "verified_on": "2026-09-30"}
+    ],
+    "note": "Traditional foods (11) have no such sentence: nothing is said for them."
+  },
+  "reviewer_checks": [
+    {"id": "no_pictures", "text": "No picture of an infant or a woman or both, and no picture or other graphic material or phrase designed to increase the saleability", "fssai_basis": "4(2), PDF p. 6", "verified_on": "2026-09-30"}
+  ]
+}
