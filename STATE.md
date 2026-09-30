@@ -662,9 +662,9 @@ setup alarms.
   - **Open: #48 Sugar Free Natura**, 4992146143214 from the camera scanner on 27 September and again on 30
     September; SUSPECT in the audit; its photos show no barcode. Waits for Sushil to read the digits printed on
     the pack, then `il tools/barcodes.py fix 48 <digits> --by sushil --why "..."` if they differ.
-  **D-145** (the scanner's camera frame as the barcode's evidence photo, RECOMMENDED, proposal only, with its
-  DPDP map note) **is held until after week 4** (Sushil); it is on branch `d145-camera-frame`, not merged,
-  and will be rebuilt from `main` when it comes back. `barcode-rescale-75` and the old stack branches
+  **D-145** (the scanner's camera frame as the barcode's evidence photo, RECOMMENDED, proposal only) **is held
+  until after week 4** (Sushil; D-083, D-105): the full entry, with its proposed DPDP data map point 9a, is
+  in DECISIONS.md; nothing is built. `barcode-rescale-75` and the old stack branches
   (`barcode-correction`, `barcode-audit`, `camera-barcode-check`) are not to be merged; they can be deleted.
 
 - **Phase 3 of D-140 (baby food, in shadow): part 1 merged** (#74, 2026-09-30): an infant food's own checks
