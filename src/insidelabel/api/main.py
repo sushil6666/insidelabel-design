@@ -1442,14 +1442,27 @@ async def scan(
     # the result, while it is still in hand. "Use this one anyway" goes on.
     # Only when Cloud Vision read the photo: no independent read, nothing to fail.
     ocr_text = ((tr.get("ocr") or {}).get("back") or {})
-    # D-143: the barcode sent against the scan's own photos and the OCR text. A code
-    # nothing else shows goes to a reviewer to check before it is published; the
-    # user's result doesn't change. Kept on the scan row (migration 021).
-    if barcode and images:
+    # The OCR text of the back, from either reader (D-093): the second reading the
+    # barcode rules below use, at no extra call.
+    back_text = ocr_result.get("ocr_text")
+    photos = [(r, d) for d, _m, r in images]
+    if barcode is None and images:
+        # D-144: sent without a barcode, but a scan photo shows one. It counts when
+        # two reads agree or its digits are printed in the back's OCR text; the app
+        # took it from /check-photo before, which has no OCR text (so only two reads).
         t_bc = time.monotonic()
-        tr["barcode_check"] = {**await run_in_threadpool(
-            barcode_rules.confirm, barcode, [(r, d) for d, _m, r in images], ocr_text.get("text")),
-            "source": barcode_source}
+        found = await run_in_threadpool(barcode_rules.photo_code, photos, back_text)
+        tr["barcode_check"] = {**found, "source": "scan_photo"}
+        tr["timings"]["barcode_check_ms"] = _ms(t_bc)
+        if found["code"]:
+            barcode, barcode_source = found["code"], "scan_photo"
+    elif barcode and images:
+        # D-143: the barcode sent against the scan's own photos and the OCR text. A code
+        # nothing else shows goes to a reviewer to check before it is published; the
+        # user's result doesn't change. Kept on the scan row (migration 021).
+        t_bc = time.monotonic()
+        tr["barcode_check"] = {**await run_in_threadpool(barcode_rules.confirm, barcode, photos, back_text),
+                               "source": barcode_source}
         tr["timings"]["barcode_check_ms"] = _ms(t_bc)
     from_screen = bool(reliability.get("from_screen"))
     if (barcode and STORE and not accept_unconfirmed and not from_screen

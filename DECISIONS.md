@@ -2317,7 +2317,7 @@ Same request as D-139. Full proposal: `docs/BABY_FOOD.md`. **Nothing built until
   faces needed for not_food; back-only goes to a reviewer).
 
 
-### D-141 · A barcode read from a photo counts only when two reads agree, or the barcode is big enough `RECOMMENDED` (2026-09-30)
+### D-141 · A barcode read from a photo counts only when two reads agree, or the barcode is big enough `SUPERSEDED by D-144` (2026-09-30)
 Found by Sushil in the phone check of phase 1 (2026-09-30): a small, blurry barcode photo made zxing-cpp read
 **0961676012608** where the pack prints **8901058018608**, and `barcode.check()` accepted it. Six of the 13
 digits differ, yet the check digit is right: a check digit catches any single wrong digit, but when several
@@ -2341,6 +2341,14 @@ reads once, at up to 2400 px, and takes the code that passes `check()`.
    without failing, and flips to a plain test when it is.
 Cost: one more zxing-cpp pass per barcode photo (milliseconds, no paid call). Nothing built until Sushil says
 "accepted".
+- **What happened (2026-09-30).** Accepted by Sushil with two conditions: build only "two reads agree" (no
+  size threshold), and measure it on the server first (stop above 5% of today's accepted reads refused).
+  Built with a half-size second read (PR #66, merged and deployed before the measurement came back): the
+  server run refused **2 of 6** accepted photo reads (33.3%), both right (they matched the camera read on
+  the same scan). Sushil rolled the server back and #66 was reverted (#67, deployed). A three-quarter-size
+  second read (branch `barcode-rescale-75`, never merged) refused **1 of 6** (16.7%): f77b1de8...d1.jpg,
+  8904089974837 = the camera read, the second read empty. Two reads alone refuse too many right codes.
+  Superseded by D-144, which lets the photo's OCR text confirm a code.
 
 ### D-142 · A product's barcode is corrected only through a recorded, reviewed change `RECOMMENDED` (2026-09-30)
 Found by the D-141 measurement, confirmed on the server by Sushil (2026-09-30): product 42 "Corn Flakes" is
@@ -2400,6 +2408,39 @@ Open: `not_shown` may be common, since many back photos don't show the barcode, 
 nothing in the photos to check against. How common is measured by `tools/barcode_audit.py`'s "unconfirmed"
 count on the server; if it is most packs, the answer may be to ask the app for a barcode photo with a new
 pack instead.
+
+### D-144 · A photo barcode counts when two reads agree or its digits are in the photo's OCR text `RECOMMENDED` (2026-09-30)
+Replaces D-141. Sushil (2026-09-30): "a barcode from a scan photo counts if two zxing reads agree OR its 13
+digits appear in that photo's Cloud Vision/Tesseract text (the D-093 second reading, no extra paid call);
+otherwise refused. /check-photo has no OCR: keep two-reads-agree there and point the user to the live camera
+scanner on a refusal." Why both: a check digit catches one wrong digit, not several (0961676012608 for
+8901058018608, 0921129008343 and 4901196008343 for 8901499008343 all pass it), and two reads alone refused
+right codes (D-141's measurement). The digits printed under the bars, read by a different reader, are
+independent evidence of the same code.
+
+**Recommended by Claude (built on branch `d144-photo-barcode-ocr`, stacked on `d143-camera-barcode-check`, not
+merged):**
+1. **The rule**, `barcode.read_from_photo(data, ocr_text=...)`: zxing-cpp reads the photo (up to 2400 px); a
+   code counts when a second read at three-quarter size (`SECOND_READ`, the better of the two scales measured)
+   finds it too, or when `codes_in_text()` finds it in that photo's OCR text. Otherwise `barcode_unsure`. The
+   second read is skipped when the OCR text already shows the code.
+2. **`/check-photo`** has no OCR text: two reads decide, for a barcode photo and for "Barcode ... found on it
+   too" on a back or front photo. A refused barcode photo gets "We couldn't read that barcode clearly from the
+   photo. Scan it with the camera scanner instead, or take the photo again closer, with the barcode flat and
+   in focus."
+3. **`/scan`** has the OCR text (Cloud Vision, or Tesseract when it falls back), for the back photo only. The
+   app takes a back photo's barcode from `/check-photo`, where the OCR text doesn't exist yet, so a code only
+   the OCR text confirms would never arrive. So: **a scan sent without a barcode reads its own photos**
+   (`barcode.photo_code()`), and one code that counts (the back with its OCR text, the front with two reads)
+   becomes the scan's barcode (`barcode_source` "scan_photo", recorded in `scans.barcode_check`). None, or
+   more than one: the scan goes on without one (D-107: the result, an unlisted row). A barcode the app sent is
+   never replaced (a camera read is D-143's).
+4. **D-143's check** reads the back photo with its OCR text too.
+5. **Measure before any merge:** `tools/barcode_reads.py`, the old rule (one read) against this one over every
+   stored photo, with each back photo's stored OCR text; Tesseract (local, free) only for a back photo with no
+   stored text where the text decides the answer. The same 5% line.
+Not covered by the measurement: barcode photos taken on their own are never stored, and two reads alone
+decide them. If refusals there are frequent, the camera scanner is the answer the message gives.
 
 ---
 
