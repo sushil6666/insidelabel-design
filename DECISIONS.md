@@ -2122,7 +2122,7 @@ Built with it (no decision needed, the pages only describe what is already built
 tiles (D-134); `/about` lists where the facts come from. `tests/test_wording.py` now lints the site
 pages and the app shell too (all were already clean).
 
-### D-139 · Health supplements and nutraceuticals: a kind of pack with its own checks `RECOMMENDED` (2026-09-30)
+### D-139 · Health supplements and nutraceuticals: a kind of pack with its own checks `LOCKED` (2026-09-30)
 Sushil: "implement supplements and baby food part, part of beta" (2026-09-30), phase 0 of
 `docs/BUILD_PROMPT_SUPPLEMENTS_BABY_FOOD.md`. Full proposal with sources and first data rows:
 `docs/SUPPLEMENTS.md`. **Nothing built until Sushil says "accepted".**
@@ -2152,16 +2152,32 @@ Sushil: "implement supplements and baby food part, part of beta" (2026-09-30), p
   the one-RDA sentence (a lawyer); which RDA (men, women, activity); the `kid` band against "2 to 5
   years"; prebiotic/probiotic foods; English plant names (no source yet); the ICMR-NIN protein-powder
   line; 3 supplement gold labels (paid reads asked first); timing (D-083).
+- **Accepted by Sushil 2026-09-30**, with his choices (the same message for D-140): "D-139 and D-140 accepted, with these choices: 1. Lawyer: I will send all three questions ... Until the answer, quote the supplement rules "as operationalised by FSSAI's direction of 18 October 2022", and show amounts beside the RDA without calling one RDA a limit. 2. Baby food ships in shadow, like the claim check (D-051): computed and stored; users see only the allergens and the breastfeeding line until the lawyer answers. 3. New band "baby, under 2"; "toddler" becomes 2 to 3 years. Ask existing toddler profiles once, on their next result, whether the child is under 2. Never relabel silently. 4. Show the ICMR-NIN RDA for men and for women side by side. 5. Protein-powder note: approved only if every sentence is quoted from ICMR-NIN with its page; otherwise drop it. 6. Gold labels: I will photograph 3 supplements and 3 baby foods myself, one of each in poor light. Ask me before the paid reads. 7. Timing: build phase 1 (kind of pack) and phase 2 (supplements) before the first cohort; baby food (phase 3) in shadow."
+  For D-139 that means: (1) every citation reads "as operationalised by FSSAI's direction of 18
+  October 2022"; amounts per daily usage are shown beside ICMR-NIN's RDA and upper limit, and **the
+  RDA is never called a limit** (no "exceeds one RDA" finding); the lawyer gets the status and one-RDA
+  questions. (4) Men's and women's RDA side by side. (5) The protein-powder note ships as proposed:
+  both sentences are ICMR-NIN's own words on DGI 2024 printed p. 60 (PDF p. 77), cited with the page.
+  (6) Sushil photographs 3 supplements (one in poor light); paid reads asked first. (7) Built before
+  the first cohort: phase 1 (kind of pack, branch `pack-kind`), then phase 2 (branch `supplements`).
+  Questions not answered in the message take the recommendation in `docs/SUPPLEMENTS.md` section 8:
+  the 2-to-5 line for `toddler` and `kid`; prebiotic and probiotic foods stay ordinary food; plants
+  matched on the schedule's Latin and Indian names only, no English names until a source gives them.
 
-### D-140 · Baby food: infant formula and complementary foods, released in shadow `RECOMMENDED` (2026-09-30)
+### D-140 · Baby food: infant formula and complementary foods, released in shadow `LOCKED` (2026-09-30)
 Same request as D-139. Full proposal: `docs/BABY_FOOD.md`. **Nothing built until Sushil says "accepted".**
 
 - **Legal basis:** FSS (Foods for Infant Nutrition) Regulations 2020 (gazetted 4 December 2020,
   amended 30 August 2022, compendium Version II), **in force from 1 October 2022**; selenium,
   manganese, iron and biotin limits from FSSAI's direction of 18 October 2022, Annexure-1 (a 2023
   amendment is a draft). The L&D First Amendment 2026 (from 1 July 2027) makes % RDA optional on
-  these packs. **Not read: the IMS Act 1992** (India Code unreachable from this machine; Sushil to
-  download it). Nothing quotes the Act until it is read.
+  these packs. **IMS Act 1992** quoted only from India Code's text "As on the 15th December, 2025",
+  `sources/legal/ims-act-1992/ims-act-1992-en-as-on-2025-12-15.pdf` (downloaded by Sushil 2026-09-30):
+  2(f) ""infant food" means any food (by whatever name called) being marketed or otherwise represented
+  as a complement to mother's milk to meet the growing nutritional needs of the infant after the age of
+  six months and up to the age of two years"; 2(g) ""infant milk substitute" means any food being
+  marketed or otherwise represented as a partial or total replacement for mother's milk for infant up to
+  the age of two years" (p. 4).
 - **Kind `infant`** from "MOTHER'S MILK IS BEST FOR YOUR BABY" (4(1)(a)), the six-months statement,
   "Traditional Food for Infants" (11(3)), the regulation's product names, or category 13.1/13.2; an
   age statement alone goes to a reviewer. Preterm, lactose-free, hypoallergenic, IEM and mono-grain
@@ -2176,18 +2192,60 @@ Same request as D-139. Full proposal: `docs/BABY_FOOD.md`. **Nothing built until
   for traditional foods), all with D-111's care; composition beside the type's table where the pack
   prints the same nutrient (recommended reviewer-only in the beta); ICMR-NIN's breastfeeding line
   (guideline 3, p. 21) on every infant result.
-- **IMS Act caution, until a lawyer reads it:** no grade, score, band, ranking, "better pick", Compare,
-  shop list, tallies or share card for an infant pack, refused on the server with a test per route;
-  **released in shadow** (like D-051): users get allergens, the breastfeeding line and one sentence;
-  `INSIDELABEL_INFANT_TO_USERS` off by default.
+- **IMS Act caution, until a lawyer reads it.** 2(j) (p. 4): ""promotion" means to employ directly or
+  indirectly any method of encouraging any person to purchase or use infant milk substitute, feeding
+  bottle or infant food." 3 (p. 5): "No person shall (a) advertise, or take part in the publication of
+  any advertisement, for the distribution, sale or supply of infant milk substitutes, feeding bottles or
+  infant foods; or (b) give an impression or create a belief in any manner that feeding of infant milk
+  substitutes and infant foods are equivalent to, or better than, mother's milk; or (c) take part in the
+  promotion of infant milk substitutes, feeding bottles or infant foods." 2(a) counts "electronic
+  transmission" as a means of advertisement. 6 (pp. 5 to 6) is the label notice regulation 4 repeats
+  ("important notice", "mother's milk is best for your baby", and (b) to (i)); 6(2) forbids "pictures
+  of an infant or a woman or both" and "the word "humanised" or "maternalised"". So: no grade, score,
+  band, ranking, "better pick", Compare, shop list, tallies or share card for an infant pack, refused on
+  the server with a test per route; nothing that sets an infant food beside mother's milk; **released in
+  shadow** (like D-051): users get allergens and one sentence; `INSIDELABEL_INFANT_TO_USERS` off by
+  default.
+- **Section 7(1) asks for six particulars, not one breastfeeding line.** 7(1) (p. 6): "Every educational
+  or other material including advertisements or material relating to promotion of infant milk
+  substitutes, feeding bottles and infant foods, whether audio or visual, dealing with pre-natal or
+  post-natal care or with the feeding of an infant and intended to reach pregnant women or mothers of
+  infants shall include clear information relating to (a) the benefits and superiority of
+  breast-feeding; (b) the preparation for, and the continuance of, breast-feeding; (c) the harmful effects
+  on breast-feeding due to the partial adoption of bottle feeding; (d) the difficulties in reverting to
+  breast-feeding of infants after a period of feeding by infant milk substitute; (e) the financial and
+  social implications in making use of infant milk substitutes and feeding bottles; (f) the health
+  hazards of improper use of infant milk substitutes and feeding bottles;" plus (fa) "the date of
+  printing and publication of such material and the name of the printer and publisher" and (g) matters
+  prescribed; 7(2): such material shall not "be utilised to promote the use or sale" of them. The
+  ICMR-NIN breastfeeding line (guideline 3, p. 21) is therefore **held** until the lawyer says whether an
+  infant-food result is such material; one line would cover part of (a) and (b) at most.
 - **Baby profile band** (D-074, a value): `baby` "Under 2 years", `toddler` "2 to 3 years". On an
   ordinary food a baby profile gets only sourced lines: added sugar (ICMR-NIN p. 29 "Added sugar must
   be totally avoided for children below 2 years"), non-sugar sweeteners (WHO 2023 recommendation 5c),
   honey (ICMR-NIN p. 21), salt (p. 26), HFSS by Table 15.1 (p. 28). WHO's "foods high in sugar, salt
   and trans fats" is not applied: it gives no threshold.
-- **Questions for Sushil** (`docs/BABY_FOOD.md` section 9): the IMS Act download and a lawyer's view;
-  release; age statements alone; the baby band and existing toddler profiles; composition lines
-  reviewer-only; 3 baby-food gold labels.
+- **Questions for Sushil** (`docs/BABY_FOOD.md` section 9): for a lawyer, (a) whether showing an infant
+  food's facts is "promotion" (2(j)) or an "advertisement" by "electronic transmission" (2(a), 3(a)),
+  (b) **whether an infant-food result counts as "educational or other material" under 7(1)**, which
+  would need (a) to (f) and (fa), not one line, and (c) whether the baby profile's lines on ordinary
+  foods make every result 7(1) material; release; age statements alone; the baby band and existing
+  toddler profiles; composition lines reviewer-only; 3 baby-food gold labels.
+- **Updated 2026-09-30** (Sushil: "The IMS Act is now in sources/legal/ims-act-1992/ ... Section 7(1)
+  asks for six particulars (a) to (f), not one breastfeeding line"): the Act's quotes above replace
+  "Not read"; the breastfeeding line moved from "shown in shadow" to "held".
+- **Accepted by Sushil 2026-09-30** with the choices quoted under D-139. For D-140: (1) the lawyer gets
+  all three IMS questions (2(j), 3, 7). (2) **Shadow, like D-051:** computed and stored; **users see only
+  the allergen lines and the breastfeeding line** (ICMR-NIN guideline 3, p. 21) until the lawyer
+  answers. Claude flagged once, on recording it: 7(1) asks "educational or other material" for all six
+  particulars (a) to (f) and (fa), and one line covers part of (a) and (b) at most, which is why the
+  update above had held it; Sushil's choice stands and the lawyer's question (b) covers it. (3) New
+  band `baby` "Under 2 years"; `toddler` becomes "2 to 3 years"; a phone's existing toddler profiles are
+  **asked once, on their next result, whether the child is under 2**, never relabelled silently. (6)
+  Sushil photographs 3 baby foods (one in poor light); paid reads asked first. (7) Phase 3 (branch
+  `baby-food`) ships in shadow. Questions not answered in the message take the recommendation in
+  `docs/BABY_FOOD.md` section 9: an age statement alone stays `food` with the baby lines and a reviewer
+  check; composition lines are reviewer-only in the beta.
 
 ---
 
