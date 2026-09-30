@@ -127,3 +127,57 @@ def test_check_gathers_everything_with_the_reviewers_own_check():
     assert got["type"]["id"] == "processed_cereal" and got["complete_read"]
     assert got["free_from"][0]["entry"] == "Added flavour"
     assert got["reviewer_checks"][0]["id"] == "no_pictures"
+
+
+# ---------------------------------------------------------------- 5(2): each type's additive list
+
+ADDS = json.load(open(os.path.join(HERE, "..", "data", "infant_additives.json"), encoding="utf-8"))
+
+
+def test_every_additive_row_is_on_its_page():
+    pages = {"infant_formula": range(10, 13), "milk_cereal": range(15, 19), "processed_cereal": range(20, 25),
+             "follow_up_formula": range(27, 30)}
+    counts = {t: len(ADDS["types"][t]["rows"]) for t in pages}
+    assert counts == {"infant_formula": 28, "milk_cereal": 70, "processed_cereal": 70, "follow_up_formula": 29}
+    for t, span in pages.items():
+        assert all(r["page"] in span and r["max"] for r in ADDS["types"][t]["rows"]), t
+    assert [r["ins"] for r in ADDS["carriers"]["rows"]] == ["414", "551", "421", "1450", "301"]
+    assert ADDS["types"]["traditional"]["same_as"] == "milk_cereal"
+
+
+def test_processed_cereal_prints_the_milk_cereal_rows():
+    strip = [[(r["name"], r["ins"], r["max"]) for r in ADDS["types"][t]["rows"]] for t in ("milk_cereal", "processed_cereal")]
+    assert strip[0] == strip[1]
+
+
+def test_the_follow_up_misprint_is_kept_as_printed():
+    (row,) = [r for r in ADDS["types"]["follow_up_formula"]["rows"] if r["name"] == "Sodium hydroxide"]
+    assert row["ins"] == "525" and "potassium hydroxide" in row["note"]
+
+
+def test_roman_sub_numbers_and_letter_suffixes():
+    assert infant._key("500ii") == infant._key("500i") == "500" and infant._key("472c") == "472c"
+    _b, keys = infant.type_additives("infant_formula")
+    assert {"500", "339", "472c", "307b", "304", "414", "421"} <= keys and "472e" not in keys
+    _b, keys = infant.type_additives("follow_up_formula")
+    assert {"307a", "307c", "322"} <= keys and "524" not in keys          # printed 525 twice (sic)
+
+
+def test_additives_not_in_the_types_list():
+    mc = {"id": "milk_cereal"}
+    got = infant.additives(["Rice flour", "Emulsifier (INS 471)", "Acidity regulator (INS 500(ii))",
+                            "Preservative (INS 211)", "Emulsifier (INS 472e)"], mc)
+    assert [a["ins"] for a in got["not_found"]] == ["211", "472e"] and got["basis"].startswith("8(2)(a)")
+    # infant formula's list is shorter: 1404 is only in the cereal lists
+    assert infant.additives(["Thickener (INS 1404)"], {"id": "infant_formula"})["not_found"][0]["ins"] == "1404"
+    assert infant.additives(["Thickener (INS 1404)"], {"id": "traditional"})["not_found"] == []   # 11(2)
+    # a carrier from Schedule I(d) is on every list
+    assert infant.additives(["Mannitol (INS 421)"], {"id": "processed_cereal"})["not_found"] == []
+
+
+def test_nutrient_sources_and_an_unknown_type_are_left_alone():
+    assert infant.additives(["Minerals (Calcium carbonate (INS 170i), Ferric pyrophosphate)"],
+                            {"id": "infant_formula"})["not_found"] == []
+    assert infant.additives(["Preservative (INS 211)"], None) is None
+    assert infant.check(cereal(ingredients=CEREAL + ["Emulsifier (INS 472e)"]))["additives"]["not_found"] == [
+        {"entry": "Emulsifier (INS 472e)", "ins": "472e"}]
