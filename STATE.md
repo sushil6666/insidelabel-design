@@ -650,6 +650,16 @@ setup alarms.
 
 **NEXT SESSION STARTS HERE (2026-09-30).** Where things stand, newest first:
 
+- **D-139 and D-140 LOCKED** (Sushil 2026-09-30, "D-139 and D-140 accepted, with these choices"): the
+  lawyer gets three questions (Nutra status on a direction, the one-RDA sentence, IMS 2(j)/3/7); amounts
+  beside ICMR-NIN's RDA for men and women, never "one RDA" as a limit; baby food in shadow, users see
+  allergens and the breastfeeding line only (Claude flagged 7(1)'s six particulars once; Sushil's call
+  stands); band `baby` "Under 2", `toddler` "2 to 3", existing toddler profiles asked once on their next
+  result; protein-powder note ships as quoted (DGI p. 60); Sushil photographs 3 + 3 gold packs, paid
+  reads asked first. **Order: phase 1 `pack-kind` and phase 2 `supplements` before the first cohort,
+  phase 3 `baby-food` in shadow.** Merge `categories-research` (IMS Act folder, LOCKED entries) before
+  `pack-kind`, which is branched from it.
+
 - **Phase 0 of `docs/BUILD_PROMPT_SUPPLEMENTS_BABY_FOOD.md` done** (branch `categories-research`, docs
   only, 755 tests unchanged): `docs/SUPPLEMENTS.md` (**D-139 RECOMMENDED**) and `docs/BABY_FOOD.md`
   (**D-140 RECOMMENDED**), every line from sources read 2026-09-30. Found on the way: the 2022 Nutra

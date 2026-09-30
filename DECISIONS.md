@@ -2122,7 +2122,7 @@ Built with it (no decision needed, the pages only describe what is already built
 tiles (D-134); `/about` lists where the facts come from. `tests/test_wording.py` now lints the site
 pages and the app shell too (all were already clean).
 
-### D-139 · Health supplements and nutraceuticals: a kind of pack with its own checks `RECOMMENDED` (2026-09-30)
+### D-139 · Health supplements and nutraceuticals: a kind of pack with its own checks `LOCKED` (2026-09-30)
 Sushil: "implement supplements and baby food part, part of beta" (2026-09-30), phase 0 of
 `docs/BUILD_PROMPT_SUPPLEMENTS_BABY_FOOD.md`. Full proposal with sources and first data rows:
 `docs/SUPPLEMENTS.md`. **Nothing built until Sushil says "accepted".**
@@ -2152,8 +2152,19 @@ Sushil: "implement supplements and baby food part, part of beta" (2026-09-30), p
   the one-RDA sentence (a lawyer); which RDA (men, women, activity); the `kid` band against "2 to 5
   years"; prebiotic/probiotic foods; English plant names (no source yet); the ICMR-NIN protein-powder
   line; 3 supplement gold labels (paid reads asked first); timing (D-083).
+- **Accepted by Sushil 2026-09-30**, with his choices (the same message for D-140): "D-139 and D-140 accepted, with these choices: 1. Lawyer: I will send all three questions ... Until the answer, quote the supplement rules "as operationalised by FSSAI's direction of 18 October 2022", and show amounts beside the RDA without calling one RDA a limit. 2. Baby food ships in shadow, like the claim check (D-051): computed and stored; users see only the allergens and the breastfeeding line until the lawyer answers. 3. New band "baby, under 2"; "toddler" becomes 2 to 3 years. Ask existing toddler profiles once, on their next result, whether the child is under 2. Never relabel silently. 4. Show the ICMR-NIN RDA for men and for women side by side. 5. Protein-powder note: approved only if every sentence is quoted from ICMR-NIN with its page; otherwise drop it. 6. Gold labels: I will photograph 3 supplements and 3 baby foods myself, one of each in poor light. Ask me before the paid reads. 7. Timing: build phase 1 (kind of pack) and phase 2 (supplements) before the first cohort; baby food (phase 3) in shadow."
+  For D-139 that means: (1) every citation reads "as operationalised by FSSAI's direction of 18
+  October 2022"; amounts per daily usage are shown beside ICMR-NIN's RDA and upper limit, and **the
+  RDA is never called a limit** (no "exceeds one RDA" finding); the lawyer gets the status and one-RDA
+  questions. (4) Men's and women's RDA side by side. (5) The protein-powder note ships as proposed:
+  both sentences are ICMR-NIN's own words on DGI 2024 printed p. 60 (PDF p. 77), cited with the page.
+  (6) Sushil photographs 3 supplements (one in poor light); paid reads asked first. (7) Built before
+  the first cohort: phase 1 (kind of pack, branch `pack-kind`), then phase 2 (branch `supplements`).
+  Questions not answered in the message take the recommendation in `docs/SUPPLEMENTS.md` section 8:
+  the 2-to-5 line for `toddler` and `kid`; prebiotic and probiotic foods stay ordinary food; plants
+  matched on the schedule's Latin and Indian names only, no English names until a source gives them.
 
-### D-140 · Baby food: infant formula and complementary foods, released in shadow `RECOMMENDED` (2026-09-30)
+### D-140 · Baby food: infant formula and complementary foods, released in shadow `LOCKED` (2026-09-30)
 Same request as D-139. Full proposal: `docs/BABY_FOOD.md`. **Nothing built until Sushil says "accepted".**
 
 - **Legal basis:** FSS (Foods for Infant Nutrition) Regulations 2020 (gazetted 4 December 2020,
@@ -2223,6 +2234,18 @@ Same request as D-139. Full proposal: `docs/BABY_FOOD.md`. **Nothing built until
 - **Updated 2026-09-30** (Sushil: "The IMS Act is now in sources/legal/ims-act-1992/ ... Section 7(1)
   asks for six particulars (a) to (f), not one breastfeeding line"): the Act's quotes above replace
   "Not read"; the breastfeeding line moved from "shown in shadow" to "held".
+- **Accepted by Sushil 2026-09-30** with the choices quoted under D-139. For D-140: (1) the lawyer gets
+  all three IMS questions (2(j), 3, 7). (2) **Shadow, like D-051:** computed and stored; **users see only
+  the allergen lines and the breastfeeding line** (ICMR-NIN guideline 3, p. 21) until the lawyer
+  answers. Claude flagged once, on recording it: 7(1) asks "educational or other material" for all six
+  particulars (a) to (f) and (fa), and one line covers part of (a) and (b) at most, which is why the
+  update above had held it; Sushil's choice stands and the lawyer's question (b) covers it. (3) New
+  band `baby` "Under 2 years"; `toddler` becomes "2 to 3 years"; a phone's existing toddler profiles are
+  **asked once, on their next result, whether the child is under 2**, never relabelled silently. (6)
+  Sushil photographs 3 baby foods (one in poor light); paid reads asked first. (7) Phase 3 (branch
+  `baby-food`) ships in shadow. Questions not answered in the message take the recommendation in
+  `docs/BABY_FOOD.md` section 9: an age statement alone stays `food` with the baby lines and a reviewer
+  check; composition lines are reviewer-only in the beta.
 
 ---
 

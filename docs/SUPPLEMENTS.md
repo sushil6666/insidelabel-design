@@ -1,6 +1,8 @@
 # Health supplements and nutraceuticals: what the app would do (D-139, phase 0)
 
-Written 2026-09-30 from primary documents read that day (D-046). **A proposal, nothing built.**
+Written 2026-09-30 from primary documents read that day (D-046). **Accepted by Sushil 2026-09-30 (D-139
+LOCKED, with his choices recorded there: amounts beside the RDA, never "one RDA" as a limit; men and women
+side by side; the protein-powder note as quoted).**
 Every sentence here that the app would show is marked "User text" and quotes a source; everything
 else is working notes for the build. The companion file is `docs/BABY_FOOD.md` (D-140); the
 kind-of-pack rule and `data/pack_kinds.json` are shared and written out once, here.
