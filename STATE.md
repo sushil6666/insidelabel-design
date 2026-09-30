@@ -1,6 +1,6 @@
 # STATE.md - where InsideLabel is, and how to pick it up
 
-**Last updated:** 2026-09-30 (**https://insidelabel.ai is live**, `main` = `a769260`, PR #60; D-139 and D-140 LOCKED, phase 1 built on branch `pack-kind`) · **Owner:** Sushil · **Tests:** 831 passing, 8 skipped, 1 expected failure · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 5.7 s on the live server (2026-09-27), Gemini + Cloud Vision, `verdict`
+**Last updated:** 2026-09-30 (**https://insidelabel.ai is live**, `main` = `a769260`, PR #60; D-139 and D-140 LOCKED, phase 1 built on branch `pack-kind`) · **Owner:** Sushil · **Tests:** 833 passing, 8 skipped, 3 expected failures (2 are D-141, until built) · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 5.7 s on the live server (2026-09-27), Gemini + Cloud Vision, `verdict`
 
 This is the living status document. Read it first in any new session, then
 `DECISIONS.md` for the *why*. Update the "Last updated" line, the numbers and
@@ -649,6 +649,15 @@ food categories, PWA built, D-092 reproduction, D-093 Cloud Vision, scan speed,
 setup alarms.
 
 **NEXT SESSION STARTS HERE (2026-09-30).** Where things stand, newest first:
+
+- **Same branch (`supplements`), after Sushil's review:** Compare stays food-only for the beta, recorded in
+  D-139 (Sushil: Compare's ranking rules are for food, no source ranks supplements, a "better choice" between
+  them is close to medical advice; revisit after week 4). **Phone check finding (Sushil, phase 1):** a small
+  blurry barcode photo made zxing-cpp read 0961676012608 for 8901058018608 and `barcode.check()` accepted it
+  (6 digits wrong, check digit right). **D-141 RECOMMENDED:** a photo barcode counts only when two reads agree
+  (as sent and one half-size rescale) or the barcode is big enough (threshold from the gold photos); the case
+  is `tests/test_barcode_two_reads.py`, two strict xfails until built. **Waiting on Sushil:** "accepted" for
+  D-141.
 
 - **Phase 2 of D-139 built: supplements** (branch `supplements`, web-29, 831 tests, PROMPT_VERSION `4efbe2214842`, no
   migration). Phase 1 (`pack-kind`, PRs #62 and #63) merged, deployed, phone check done by Sushil 2026-09-30.

@@ -2209,6 +2209,11 @@ Sushil: "implement supplements and baby food part, part of beta" (2026-09-30), p
   names "the better pick for a child", and FSSAI's 5(10) says supplements for children of 2 to 5 years
   "shall only be given under medical advice", so supplements stay out of Compare until Sushil says what a
   supplement comparison should say.
+- **Compare, decided by Sushil 2026-09-30** ("keep supplements out of Compare for the beta, as you built it"):
+  supplements stay out of Compare for the beta. Compare's ranking rules are for food, no source we read ranks
+  one supplement above another, and a "better choice" between supplements is close to medical advice.
+  Revisit after the week-4 result (D-083). `/compare` already refuses them (`data/pack_kinds.json`
+  "comparable": food only), with a test.
 
 ### D-140 · Baby food: infant formula and complementary foods, released in shadow `LOCKED` (2026-09-30)
 Same request as D-139. Full proposal: `docs/BABY_FOOD.md`. **Nothing built until Sushil says "accepted".**
@@ -2310,6 +2315,32 @@ Same request as D-139. Full proposal: `docs/BABY_FOOD.md`. **Nothing built until
   an infant pack, even read from a screen. `/compare`'s better pick is the product's only ranking. A test
   for each (`tests/test_pack_kind.py`, `tests/test_pack_kind_db.py`). Back-only reads stay as built (both
   faces needed for not_food; back-only goes to a reviewer).
+
+
+### D-141 · A barcode read from a photo counts only when two reads agree, or the barcode is big enough `RECOMMENDED` (2026-09-30)
+Found by Sushil in the phone check of phase 1 (2026-09-30): a small, blurry barcode photo made zxing-cpp read
+**0961676012608** where the pack prints **8901058018608**, and `barcode.check()` accepted it. Six of the 13
+digits differ, yet the check digit is right: a check digit catches any single wrong digit, but when several
+are wrong about one misread in ten still passes, and every other rule in `check()` (length, case codes, store
+codes, books) is about what kind of code it is, not whether the bars were read right. The barcode is the
+catalogue key (D-024): this read would have filed the pack under another product. Today `read_from_photo()`
+reads once, at up to 2400 px, and takes the code that passes `check()`.
+
+**Recommended by Claude:**
+1. A photo barcode counts when **two reads agree**: zxing-cpp on the photo as now (up to 2400 px) and once more
+   on one rescale of it (half size), both giving the same code. Two reads that disagree, or a second read that
+   finds nothing, are refused with a new message ("We couldn't read that barcode clearly. Hold the phone
+   closer, with the barcode flat and in focus, or use the camera scanner."), never a guess.
+2. **Or the barcode is big enough** that one read is enough: its width in the photo at or above a threshold
+   set from Sushil's barcode photos (the gold photos, D-139 point 6). Starting point to measure, not yet
+   sourced: 2 pixels per bar module; an EAN-13's width in modules would be read first-hand in GS1's
+   specification before the number is fixed.
+3. The live camera scanner is unchanged. A barcode found on a back photo (`barcode_too`) follows the same rule.
+4. **The case as a test:** `tests/test_barcode_two_reads.py` stands in for zxing-cpp with Sushil's two codes.
+   The refusal is an expected failure (`xfail`, strict) until this is built, so the suite shows the gap
+   without failing, and flips to a plain test when it is.
+Cost: one more zxing-cpp pass per barcode photo (milliseconds, no paid call). Nothing built until Sushil says
+"accepted".
 
 ---
 
