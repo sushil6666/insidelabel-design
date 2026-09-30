@@ -2365,6 +2365,12 @@ changed a published product's key and kept nothing of the old one; the other way
    be wrong (D-143); that is recorded too (`via = 'review'`, the item number and the reviewer's note).
 4. **The old code stays findable in the record** (`tools/barcodes.py history <code>`), never by a scan: after
    the change, a scan of the old code finds nothing, as for any pack not yet checked.
+5. **Look for others** (branch `d142-barcode-audit`, Sushil's item 2): `tools/barcode_audit.py`, read-only,
+   sets every published product's barcode against zxing reads of its own photos (every version's and scan's,
+   as `/check-photo` reads them) and the barcodes printed in its scans' stored OCR text
+   (`barcode.codes_in_text`: the digits under the bars, in their printed groups). MISMATCH (zxing reads
+   another code), unconfirmed (nothing shows the code), confirmed, no photos. A mismatch is fixed with point 1
+   only after a person reads the printed digits.
 Not done: a /review page for it (the tool is enough for one reviewer; a page later if others need it);
 telling installs that scanned the product under the old code (their saved results show the old code).
 

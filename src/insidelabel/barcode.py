@@ -75,6 +75,40 @@ def check(raw):
     return (None, reason) if reason else (code, None)
 
 
+def codes_in_text(text):
+    """
+    The retail barcodes printed as digits in a text (an OCR read of a label),
+    normalised by check(), in the order found. The digits under the bars are
+    printed in groups ("8 901499 008343"), so digit groups separated only by
+    spaces or line breaks are joined, trying every run of consecutive groups.
+    Any other character ends a run. str methods only, like the rest of this file.
+    """
+    runs, groups, digits = [], [], ""
+    for ch in (text or "") + "\x00":
+        if ch.isdigit():
+            digits += ch
+            continue
+        if digits:
+            groups.append(digits)
+            digits = ""
+        if not ch.isspace():
+            if groups:
+                runs.append(groups)
+            groups = []
+    found = []
+    for groups in runs:
+        for i in range(len(groups)):
+            joined = ""
+            for g in groups[i:]:
+                joined += g
+                if len(joined) > 14:
+                    break
+                code, reason = check(joined) if len(joined) in (8, 12, 13, 14) else (None, None)
+                if code and code not in found:
+                    found.append(code)
+    return found
+
+
 def upce_to_upca(code):
     """An 8-digit UPC-E (number system, 6 digits, check) as its 12-digit UPC-A (GS1 GenSpecs 5.2.2.4.2)."""
     if len(code) != 8 or not code.isdigit():
