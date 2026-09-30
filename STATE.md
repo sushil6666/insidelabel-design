@@ -1,6 +1,6 @@
 # STATE.md - where InsideLabel is, and how to pick it up
 
-**Last updated:** 2026-09-30 (**https://insidelabel.ai is live**, `main` = `a769260`, PR #60; D-139 and D-140 LOCKED, phase 1 built on branch `pack-kind`) · **Owner:** Sushil · **Tests:** 833 passing, 8 skipped, 3 expected failures (2 are D-141, until built) · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 5.7 s on the live server (2026-09-27), Gemini + Cloud Vision, `verdict`
+**Last updated:** 2026-09-30 (**https://insidelabel.ai is live**, `main` = `a769260`, PR #60; D-139 and D-140 LOCKED, phase 1 built on branch `pack-kind`) · **Owner:** Sushil · **Tests:** 841 passing, 8 skipped, 1 expected failure (branch `barcode-two-reads`) · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 5.7 s on the live server (2026-09-27), Gemini + Cloud Vision, `verdict`
 
 This is the living status document. Read it first in any new session, then
 `DECISIONS.md` for the *why*. Update the "Last updated" line, the numbers and
@@ -649,6 +649,16 @@ food categories, PWA built, D-092 reproduction, D-093 Cloud Vision, scan speed,
 setup alarms.
 
 **NEXT SESSION STARTS HERE (2026-09-30).** Where things stand, newest first:
+
+- **D-141 accepted with two conditions, point 1 built** (branch `barcode-two-reads`, off `supplements`, 841
+  tests): a photo barcode counts only when the photo (up to 2400 px) and a half-size read agree; otherwise
+  `barcode_unsure`, "We couldn't read that barcode clearly...". No size threshold (Sushil: not yet). The two
+  xfails are plain tests. **Condition 2, the gate before it ships:** `tools/barcode_reads.py` (read-only,
+  zxing-cpp only) over every photo the server holds (no barcode photo is stored: `/check-photo` keeps
+  nothing, so it reads back and front photos, where the same rule applies). Local store: 2 of 51 photos
+  carry a barcode, 0 refused. A synthetic sweep: half size refuses a correct code at 2.5 to 3 px per bar
+  module, agrees from 3.5 px. **Waiting on Sushil:** the server run (command in the PR); above 5% refused =
+  stop, don't merge.
 
 - **Same branch (`supplements`), after Sushil's review:** Compare stays food-only for the beta, recorded in
   D-139 (Sushil: Compare's ranking rules are for food, no source ranks supplements, a "better choice" between
