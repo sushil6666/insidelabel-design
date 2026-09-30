@@ -57,7 +57,8 @@ _FENCE = re.compile(r"^\s*```(?:json)?\s*|\s*```\s*$", re.MULTILINE)
 # don't have it, and still have to parse. Missing = unknown = no image rule.
 # D-133: "nutrition" too. Answers recorded before it (every scan before D-133)
 # have no table and must still parse and replay the same (D-092).
-OPTIONAL_KEYS = {"image_content", "nutrition"}
+# D-139: "pack_statements" and "licences" too; without them a pack is ordinary food.
+OPTIONAL_KEYS = {"image_content", "nutrition", "pack_statements", "licences"}
 REQUIRED_KEYS = set(VISION_RESPONSE_SCHEMA["required"]) - OPTIONAL_KEYS
 _IMAGE_CONTENT = {"food_pack", "screen", "not_food", "not_provided"}
 # D-108: words that state a difference between the two faces, in the model's evidence.
@@ -550,6 +551,24 @@ def harden(vision, sent_front, sent_back):
         if not isinstance(n.get("rows"), list):
             n["rows"] = []
         v["nutrition"] = n
+
+    # 1d. Statements and licences (D-139). Copied text only; core/pack_kind.py
+    #     judges them. Entries that aren't {text, face} are dropped, and a face
+    #     that was never sent becomes the one that was: the words came from it.
+    for key in ("pack_statements", "licences"):
+        if key not in v:
+            continue
+        kept = []
+        for e in v[key] if isinstance(v[key], list) else []:
+            if not (isinstance(e, dict) and isinstance(e.get("text"), str) and e["text"].strip()):
+                continue
+            face = e.get("face")
+            if face not in ("front", "back") or (face == "front" and not sent_front) or (face == "back" and not sent_back):
+                fixed = "back" if sent_back else "front"
+                corrections.append(f"{key} face {face!r} -> {fixed}")
+                face = fixed
+            kept.append({"text": e["text"].strip(), "face": face})
+        v[key] = kept
 
     # 2. The client knows how many images it sent. The model does not get to
     #    claim it read a face that was never transmitted.

@@ -827,7 +827,8 @@ function finish(body) {
     catalogue: body.catalogue || null,
     disclosures: body.disclosures || [],
     // What /compare needs later, kept so a comparison costs no new scan (D-057).
-    pack: body.screen?.state === "result" ? {
+    // D-139, D-140: only a kind that can be compared keeps what /compare needs.
+    pack: body.screen?.state === "result" && (!body.screen.parts || body.screen.parts.includes("compare")) ? {
       ingredients: body.extracted?.ingredients || [],
       allergen_statement: body.extracted?.allergen_statement || null,
       confidence: rel.confidence?.ingredients ?? 1.0,
@@ -951,6 +952,22 @@ function result(id, sub, tileId) {
     return view;
   }
 
+  // D-139, D-140: a supplement, an infant food, a special medical food or a pack that
+  // isn't food: the allergen lines above, then the server's lines, and nothing that
+  // judges it as a food. Which parts show is the server's (screen.parts).
+  if (s.kind) {
+    put(kindView(s));
+    if (s.retake) put(el("div", { class: "card warn" }, el("p", {}, s.retake),
+      button("Retake the ingredients photo", () => { pending = { ...pending, back: null, barcode: h.barcode }; go("photo"); })));
+    if (s.recheck) put(el("div", { class: "card note" }, el("p", {}, s.recheck),
+      button("Photograph the back", () => { resetPending(); pending.barcode = h.barcode; go("photo"); })));
+    put(el("div", { class: "row wrap" }, button("Scan another", () => { resetPending(); go("scan"); }, "primary")),
+      reportLink(h));
+    put(el("details", { class: "item more-pack" }, el("summary", {}, s.more_title || "More about this pack"),
+      el("div", { class: "stack more-body" }, moreAbout(h, false))));
+    return view;
+  }
+
   // 3. D-134: one tile per thing worth a look, each opening its own page. Results
   // kept on the phone from before web-27 have no tiles: their rows show as before.
   if (s.tiles) {
@@ -1010,6 +1027,18 @@ function result(id, sub, tileId) {
   put(el("details", { class: "item more-pack" }, el("summary", {}, s.more_title || "More about this pack"),
     el("div", { class: "stack more-body" }, moreAbout(h, !askTable))));
   return view;
+}
+
+// D-139, D-140: the kind of pack, in the server's words, with what the pack prints.
+function kindView(s) {
+  const k = s.kind;
+  return el("div", { class: "card kind", role: "note" },
+    k.lines.map(t => el("p", {}, t)),
+    k.evidence.length > 0 && el("p", { class: "muted small" }, "On the pack: ",
+      k.evidence.map((e, i) => [i ? ", " : "", el("q", {}, e.text)])),
+    s.breastfeeding && el("p", { class: "breastfeeding" }, s.breastfeeding.text),
+    [...(k.sources || []), ...(s.breastfeeding?.sources || [])].length > 0 &&
+      sourceList([...(k.sources || []), ...(s.breastfeeding?.sources || [])]));
 }
 
 // D-134: a tile. Its words (title, chip) are the server's; the icon is decoration.
@@ -1099,7 +1128,7 @@ function moreAbout(h, askTable) {
       n.body.map(t => el("p", {}, t)),
       el("p", { class: "muted small" }, "On the label: ", el("q", {}, n.label_line)),
       sourceList(n.sources))))));
-  if (s.band.note && s.summary?.length) put(el("details", { class: "item" },
+  if (s.band?.note && s.summary?.length) put(el("details", { class: "item" },
     el("summary", {}, "What does \"industrial\" mean?"), el("p", {}, s.band.note)));
   if (s.catalogue_note) put(el("p", { class: "card note" }, s.catalogue_note));      // D-107
   if (s.front_note) put(el("p", { class: "card note" }, s.front_note));              // D-108

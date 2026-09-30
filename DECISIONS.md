@@ -2163,6 +2163,27 @@ Sushil: "implement supplements and baby food part, part of beta" (2026-09-30), p
   Questions not answered in the message take the recommendation in `docs/SUPPLEMENTS.md` section 8:
   the 2-to-5 line for `toddler` and `kid`; prebiotic and probiotic foods stay ordinary food; plants
   matched on the schedule's Latin and Indian names only, no English names until a source gives them.
+- **Phase 1 built (2026-09-30, branch `pack-kind`, web-28, migration 019, 794 tests).** Prompt rule 11
+  copies `pack_statements` and `licences` word for word with their face (new PROMPT_VERSION
+  `b26cc0ca9c24`, was `9593e129ab49`); rule 7a no longer tells the model to call "medicines" not food, so
+  tablets and capsules are read and the licences decide. `core/pack_kind.py` over `data/pack_kinds.json`
+  (every phrase with its regulation and page): licence first (not_food only on a complete read of both
+  faces; a back-only drug licence goes to a reviewer), then medical words (so preterm, hypoallergenic and
+  other special medical infant foods are special_medical, the outcome both docs give), infant words,
+  supplement words, the catalogue's 13.x category, else food. A company's name never decides ("... Pvt
+  Ltd", "Marketed by"). `/scan` returns `pack_kind`; the screen for any other kind shows the allergen
+  lines first, the kind's lines and printed evidence (infant: ICMR-NIN's breastfeeding line, Sushil's
+  choice), the ingredient list, Scan another, Report a mistake; no summary, tiles, additives, glance,
+  nutrition, band, Compare or shop list (the app keeps no compare data for them). **Food is unchanged:**
+  the six gold labels' output equals the baseline captured before any change
+  (`tests/fixtures/pack_kind_gold_before.json`). Catalogue: `product_versions.pack_kind` and evidence;
+  /review shows them, and for not_food pre-fills "Not food under the FSS Act: a drug licence, no FSSAI
+  licence (D-116, D-139)" after the whole-pack check; the review checker's `pack_kind` check sends every
+  kind but food, and any printed-kind and category disagreement, to a person. Walked in headless
+  Chromium, light and dark, 390 x 844: no errors. **Found on the way:** the test suite sent its fake
+  photos to Cloud Vision whenever the shell had `GOOGLE_VISION_KEY` set (conftest cleared the database
+  URI, not the keys); `conftest.py` now clears both keys (suite with the key in the shell: 0 Google
+  calls; it runs slower, about 8.5 minutes, on the Tesseract fallback).
 
 ### D-140 · Baby food: infant formula and complementary foods, released in shadow `LOCKED` (2026-09-30)
 Same request as D-139. Full proposal: `docs/BABY_FOOD.md`. **Nothing built until Sushil says "accepted".**

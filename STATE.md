@@ -1,6 +1,6 @@
 # STATE.md - where InsideLabel is, and how to pick it up
 
-**Last updated:** 2026-09-30 (**https://insidelabel.ai is live**, `main` = `8045c0f`, PR #56 (phase 3, D-134), deployed and checked from outside) · **Owner:** Sushil · **Tests:** 755 passing, 8 skipped, 1 expected failure · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 5.7 s on the live server (2026-09-27), Gemini + Cloud Vision, `verdict`
+**Last updated:** 2026-09-30 (**https://insidelabel.ai is live**, `main` = `a769260`, PR #60; D-139 and D-140 LOCKED, phase 1 built on branch `pack-kind`) · **Owner:** Sushil · **Tests:** 794 passing, 8 skipped, 1 expected failure · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 5.7 s on the live server (2026-09-27), Gemini + Cloud Vision, `verdict`
 
 This is the living status document. Read it first in any new session, then
 `DECISIONS.md` for the *why*. Update the "Last updated" line, the numbers and
@@ -649,6 +649,17 @@ food categories, PWA built, D-092 reproduction, D-093 Cloud Vision, scan speed,
 setup alarms.
 
 **NEXT SESSION STARTS HERE (2026-09-30).** Where things stand, newest first:
+
+- **Phase 1 of D-139/D-140 built** (branch `pack-kind`, web-28, migration 019, 794 tests; PROMPT_VERSION
+  `b26cc0ca9c24`). Kind of pack from printed words and licences (`core/pack_kind.py`,
+  `data/pack_kinds.json`); a short result for supplement, infant (allergens and the breastfeeding line),
+  special_medical and not_food; food output identical to the baseline for the six gold labels; kind and
+  evidence on the catalogue version, on /review, in the review checker. **Fixed:** the suite no longer
+  calls Cloud Vision when the shell has `GOOGLE_VISION_KEY` (it did before, on every photo-posting test;
+  Google refused the fake images, "Bad image data"). **Waiting on Sushil:** merge `categories-research`
+  first, then `pack-kind`; `update.sh` (migration 019); phone check. The prompt change means the next paid
+  gold run reads with rule 11 (still only when Sushil says "run the gold set"). **Then phase 2**
+  (`supplements`).
 
 - **D-139 and D-140 LOCKED** (Sushil 2026-09-30, "D-139 and D-140 accepted, with these choices"): the
   lawyer gets three questions (Nutra status on a direction, the one-RDA sentence, IMS 2(j)/3/7); amounts

@@ -20,6 +20,7 @@ import re
 import unicodedata
 
 from insidelabel import barcode as barcode_rules
+from insidelabel.core import pack_kind
 from insidelabel.lenses import nutrition
 from insidelabel.trace import DATA_DIR
 
@@ -274,6 +275,13 @@ def check(draft, ctx):
     sources = (ctx.get("request") or {}).get("photo_sources") or {}
     uploaded = [k for k, v in sources.items() if v == "upload"]
     add("camera_photos", not uploaded, f"uploaded, not taken: {', '.join(uploaded)} (D-106)" if uploaded else "")
+
+    # D-139, D-140: the kind the pack's printed words give, against the chosen category.
+    # Anything but ordinary food goes to a person: its own checks aren't built yet.
+    kind = pack_kind.decide(raw, category=code)
+    add("pack_kind", kind["code"] == "food" and not kind["review"],
+        "" if kind["code"] == "food" and not kind["review"] else
+        "; ".join([f"the pack reads as {kind['code']}"] * (kind["code"] != "food") + kind["review"]))
 
     # What always needs a person.
     ayush = bool(draft.get("ayush_licence_seen")) or bool(_AYUSH.search(ocr))

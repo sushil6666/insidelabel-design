@@ -1,0 +1,51 @@
+{
+  "_meta": {
+    "table": "pack_kinds",
+    "version": "0.1",
+    "purpose": "D-139, D-140: the kind of pack (food, supplement, infant, special_medical, not_food), decided by core/pack_kind.py from words printed on the pack, and which parts of the result each kind shows (lenses/screen.py). The model only copies the words (prompt rule 11); this table and the rule decide (D-004).",
+    "rules": [
+      "Every phrase is printed words a regulation names, cited in `basis` with the page, read first-hand (D-046). Phrases are matched as whole words on the text lower-cased, apostrophes removed, hyphens and punctuation as spaces.",
+      "Order: licence (D-116 extended) first, then medical words, then infant words, then supplement words, then the catalogue's category, else food. Medical words come before infant words so that a preterm, hypoallergenic or other special medical infant food is special_medical (docs/BABY_FOOD.md section 2).",
+      "An ordinary food must come out exactly as before D-139 (tests/test_pack_kind.py pins the six gold labels).",
+      "Parts not built yet (phase 2 supplements, phase 3 infant checks) are simply absent from a kind's list."
+    ],
+    "sources": {
+      "nutra": {"title": "FSS (Health Supplements, Nutraceuticals, Food for Special Dietary Use, Food for Special Medical Purpose and Prebiotic and Probiotic Food) Regulations, 2022, Annexure 1, as operationalised by FSSAI's direction of 18 October 2022", "url": "https://fssai.gov.in/docs/food-law/regulations/Direction_New_compressed.pdf", "read_on": "2026-09-30"},
+      "infant": {"title": "FSS (Foods for Infant Nutrition) Regulations, 2020, compendium Version II (04.01.2024)", "url": "https://fssai.gov.in/docs/food-law/regulations/Comp_IFR_VERSION-II_04_01_2024.pdf", "read_on": "2026-09-30"},
+      "fss_act": {"title": "Food Safety and Standards Act, 2006, section 3(1)(j)", "url": "https://fssai.gov.in/upload/uploadfiles/files/FOOD-ACT.pdf", "read_on": "2026-09-30"}
+    }
+  },
+  "kinds": {
+    "food": {"parts": ["people", "headline", "tiles", "summary", "additives", "ingredient_notes", "nutrition", "glance", "glossary", "claims", "compare", "shop_list", "tallies", "score"]},
+    "supplement": {"parts": ["people", "headline", "kind_note", "ingredient_list"]},
+    "infant": {"parts": ["people", "headline", "kind_note", "breastfeeding_line", "ingredient_list"]},
+    "special_medical": {"parts": ["people", "headline", "kind_note", "ingredient_list"]},
+    "not_food": {"parts": ["people", "headline", "kind_note", "ingredient_list"]}
+  },
+  "words": [
+    {"id": "fsmp", "kind": "special_medical", "phrases": ["food for special medical purpose", "foods for special medical purpose"], "basis": "nutra 6(4)(f), Annexure 1 p. 14; infant 16(3)(a), PDF p. 37", "verified_on": "2026-09-30"},
+    {"id": "fsdu", "kind": "special_medical", "phrases": ["food for special dietary use", "foods for special dietary use"], "basis": "nutra 6(3)(f)(i)(A), Annexure 1 p. 10", "verified_on": "2026-09-30"},
+    {"id": "medical_advice", "kind": "special_medical", "phrases": ["recommended to be used under medical advice only", "recommended to be taken under medical advice only"], "basis": "nutra 6(4)(f)(i)(A), Annexure 1 p. 14; infant 13(2)(b), 14(3), 15(3), 16(3)(c), PDF pp. 34 to 37", "verified_on": "2026-09-30"},
+    {"id": "dietary_management", "kind": "special_medical", "phrases": ["for the dietary management of", "for the nutrition management of"], "basis": "nutra 6(4)(f)(i)(B), Annexure 1 p. 14; infant 16(3)(b), PDF p. 37", "verified_on": "2026-09-30"},
+    {"id": "preterm", "kind": "special_medical", "phrases": ["for the preterm baby"], "basis": "infant 13(2)(a), PDF p. 34", "verified_on": "2026-09-30"},
+    {"id": "hypoallergenic", "kind": "special_medical", "phrases": ["hypoallergenic formula"], "basis": "infant 15(3), PDF p. 35", "verified_on": "2026-09-30"},
+    {"id": "mono_grain", "kind": "special_medical", "phrases": ["for use in specific conditions under medical guidance only"], "basis": "infant 9(3), PDF p. 24", "verified_on": "2026-09-30"},
+    {"id": "mothers_milk", "kind": "infant", "phrases": ["mothers milk is best for your baby"], "basis": "infant 4(1)(a), PDF p. 4", "verified_on": "2026-09-30"},
+    {"id": "six_months", "kind": "infant", "phrases": ["infant food shall be introduced only after the age of six months"], "basis": "infant 4(1)(a), PDF p. 4", "verified_on": "2026-09-30"},
+    {"id": "traditional", "kind": "infant", "phrases": ["traditional food for infants"], "basis": "infant 11(3), PDF p. 30", "verified_on": "2026-09-30"},
+    {"id": "infant_names", "kind": "infant", "phrases": ["infant formula", "infant milk substitute", "infant milk food", "follow up formula", "milk cereal based complementary food", "processed cereal based complementary food"], "basis": "infant 2(1)(e), (h), (i), (j), PDF pp. 1 to 2; 7(3), PDF p. 12", "verified_on": "2026-09-30"},
+    {"id": "supplement_words", "kind": "supplement", "phrases": ["health supplement", "health supplements", "nutraceutical", "nutraceuticals", "dietary supplement", "dietary supplements", "food supplement", "food supplements"], "basis": "nutra 5(12)(a)(i)(A), Annexure 1 p. 5; 6(1)(f)(ii), p. 8", "verified_on": "2026-09-30"}
+  ],
+  "company_words": {"phrases": ["pvt", "ltd", "limited", "llp", "inc", "marketed by", "manufactured by", "mfd by", "mkd by", "mktd by", "packed by", "imported by"], "why": "A company's name is not a kind: \"Testco Nutraceuticals Pvt Ltd\" says nothing about the pack. Text with any of these words never decides a kind."},
+  "supporting": [
+    {"id": "not_medicinal", "phrases": ["not for medicinal use"], "note": "Supporting evidence only: alone it doesn't decide (docs/SUPPLEMENTS.md 2.1).", "basis": "nutra 5(12)(a)(ii)(A), Annexure 1 p. 6", "verified_on": "2026-09-30"}
+  ],
+  "licences": {
+    "fssai_words": ["fssai", "f s s a i"],
+    "fssai_number_digits": 14,
+    "licence_words": ["lic no", "lic", "licence no", "license no", "licence", "license", "mfg lic", "drug lic", "dl no", "reg no"],
+    "basis": "D-116 (FSS Act 3(1)(j): \"food\" does not include \"drugs and medicinal products\"); the FSSAI logo and 14-digit licence number, as D-116's reviewer checks them",
+    "verified_on": "2026-09-30"
+  },
+  "catalogue_categories": {"13.1.3": "special_medical", "13.1": "infant", "13.2": "infant", "13.3": "special_medical", "13.4": "special_medical", "13.5": "special_medical", "13.6": "supplement"}
+}

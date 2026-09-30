@@ -186,10 +186,12 @@ class Store:
                 """SELECT p.id AS product_id, p.barcode, p.name, p.variant, b.name AS brand,
                           p.net_qty_value, p.net_qty_unit,
                           v.id AS product_version_id, v.version_no, v.ingredients,
-                          v.allergen_statement, v.front_claims, v.verified_at, v.nutrition, """ + self._FRONT_WANTED + """
+                          v.allergen_statement, v.front_claims, v.verified_at, v.nutrition,
+                          v.pack_kind, v.pack_kind_evidence, k.code AS category_code, """ + self._FRONT_WANTED + """
                      FROM products p
                      JOIN product_versions v ON v.product_id = p.id AND v.is_current
                      LEFT JOIN brands b ON b.id = p.brand_id
+                     LEFT JOIN categories k ON k.id = p.category_id
                     WHERE p.barcode = %s""", (barcode,)).fetchone()
 
     def version_hit(self, product_version_id):
@@ -199,10 +201,12 @@ class Store:
                 """SELECT p.id AS product_id, p.barcode, p.name, p.variant, b.name AS brand,
                           p.net_qty_value, p.net_qty_unit,
                           v.id AS product_version_id, v.version_no, v.ingredients,
-                          v.allergen_statement, v.front_claims, v.verified_at, v.nutrition, """ + self._FRONT_WANTED + """
+                          v.allergen_statement, v.front_claims, v.verified_at, v.nutrition,
+                          v.pack_kind, v.pack_kind_evidence, k.code AS category_code, """ + self._FRONT_WANTED + """
                      FROM product_versions v
                      JOIN products p ON p.id = v.product_id
                      LEFT JOIN brands b ON b.id = p.brand_id
+                     LEFT JOIN categories k ON k.id = p.category_id
                     WHERE v.id = %s""", (product_version_id,)).fetchone()
 
     # -- writes --------------------------------------------------------
@@ -304,14 +308,18 @@ class Store:
     def save_scan(self, *, vision, verdict, claim_check, claims_trusted, reliability,
                   barcode=None, device_id=None, latency_ms=None,
                   model_name=None, prompt_version=None, engine_version=None,
-                  front_key=None, back_key=None, trace=None, nutrition=None):
+                  front_key=None, back_key=None, trace=None, nutrition=None, pack_kind=None):
         """
         Store a vision-path scan: product (found or created), a version waiting
         for review (new, or an identical one already waiting), its findings and
         evidence, a review-queue item, and the scan row. One transaction.
         nutrition: the checked table (lenses/nutrition.check, D-133); kept only
         when it has numbers, for a reviewer to confirm.
+        pack_kind: core/pack_kind.decide()'s answer (D-139); a new version keeps its
+        code and evidence, for /review and for later catalogue hits.
         """
+        kind_code = (pack_kind or {}).get("code")
+        kind_evidence = Jsonb({k: pack_kind[k] for k in ("evidence", "review")}) if pack_kind else None
         ingredients = vision["ingredients"]
         table = nutrition if (nutrition or {}).get("status") in ("read", "partial") else None
         ihash = ingredients_hash(ingredients)
@@ -377,14 +385,17 @@ class Store:
                          (product_id, version_no, ingredient_lines, ingredients, allergen_statement,
                           front_claims, raw_extraction, ingredients_hash, claims_hash,
                           model_name, prompt_version, engine_version, source, status,
-                          front_image_key, back_image_key, nutrition)
-                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'scan', 'pending_review', %s, %s, %s)
+                          front_image_key, back_image_key, nutrition, pack_kind, pack_kind_evidence)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'scan', 'pending_review', %s, %s, %s,
+                               %s, %s)
                        RETURNING id""",
                     (pid, n, Jsonb(current["ingredient_lines"]), Jsonb(current["ingredients"]),
                      current["allergen_statement"], Jsonb(current["front_claims"]),
                      Jsonb({"derived_from_version": current["id"], "nutrition_from_scan": True}),
                      current["ingredients_hash"], current["claims_hash"], model_name, prompt_version,
-                     engine_version, current["front_image_key"], back_key, Jsonb(table))).fetchone()["id"]
+                     engine_version, current["front_image_key"], back_key, Jsonb(table),
+                     current["pack_kind"], current["pack_kind_evidence"] and Jsonb(current["pack_kind_evidence"]))
+                ).fetchone()["id"]
                 vstatus = "pending_review"
                 self._insert_findings(conn, vid, engine_version, build_findings(
                     current["ingredients"], verdict, None, engine_version))
@@ -399,14 +410,15 @@ class Store:
                          (product_id, version_no, ingredient_lines, ingredients, allergen_statement,
                           front_claims, raw_extraction, ingredients_hash, claims_hash,
                           model_name, prompt_version, engine_version, source, status,
-                          front_image_key, back_image_key, nutrition)
-                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'scan', 'pending_review', %s, %s, %s)
+                          front_image_key, back_image_key, nutrition, pack_kind, pack_kind_evidence)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'scan', 'pending_review', %s, %s, %s,
+                               %s, %s)
                        RETURNING id""",
                     (pid, n, Jsonb(vision.get("ingredient_lines") or ingredients), Jsonb(ingredients),
                      vision.get("allergen_statement"), Jsonb(front_claims), Jsonb(raw), ihash,
                      claims_hash(front_claims), model_name, prompt_version, engine_version,
                      front_key if claims_trusted else None, back_key,
-                     Jsonb(table) if table else None)).fetchone()["id"]
+                     Jsonb(table) if table else None, kind_code, kind_evidence)).fetchone()["id"]
                 vstatus = "pending_review"
                 self._insert_findings(conn, vid, engine_version, build_findings(
                     ingredients, verdict, claim_check if claims_trusted else None, engine_version))

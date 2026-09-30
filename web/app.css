@@ -375,3 +375,7 @@ q { quotes: "“" "”"; }
 .tile-text { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 10px; }
 .tile-text strong { display: inline; }
 .tile-chip { display: inline; }
+
+/* D-139, D-140: the kind of pack. The allergen lines stay above it (D-060). */
+.card.kind { border-left: 4px solid var(--ring); }
+.card.kind .breastfeeding { font-weight: 600; }

@@ -185,8 +185,12 @@ RULES
      Use "screen" even when a food pack or an ingredient list is visible on
      that screen.
    - "not_food": anything else: documents, software, people, rooms, a
-     product that is not food or drink (cosmetics, cleaning products,
-     medicines), a blank or unrecognisable image.
+     product that is not taken by mouth (cosmetics, cleaning products), a
+     blank or unrecognisable image.
+   - Tablets, capsules, gummies, powders, syrups and drops taken by mouth, and
+     baby formula or baby cereal, are "food_pack" even when they look like a
+     medicine: code downstream decides from the licences printed on the pack
+     (rule 11), never you.
    - "not_provided": that image was not supplied.
    This describes the image, not the product. When the image is "screen" or
    "not_food", still set the statuses below honestly and transcribe nothing
@@ -247,6 +251,31 @@ RULES
      blank cell. A cell you can't read is null, and say so in extraction_notes.
    - Never add a nutrient that isn't printed. Never use a typical value for
      this kind of food.
+
+11. STATEMENTS AND LICENCES (pack_statements, licences). COPY; NEVER CLASSIFY.
+   - pack_statements: copy, word for word, every printed statement of these
+     kinds, one entry each, with the face it is on ("front" or "back"):
+       the words naming what kind of product it is, near the name
+         ("HEALTH SUPPLEMENT", "NUTRACEUTICAL", "Dietary Supplement",
+         "FOOD FOR SPECIAL DIETARY USE", "FOOD FOR SPECIAL MEDICAL PURPOSE",
+         "PROBIOTIC FOOD", "Infant Formula", "Processed Cereal Based
+         Complementary Food", "Traditional Food for Infants")
+       "NOT FOR MEDICINAL USE"; "IMPORTANT NOTICE"; "MOTHER'S MILK IS BEST
+         FOR YOUR BABY"; "RECOMMENDED TO BE USED UNDER MEDICAL ADVICE ONLY"
+       how much to take and for how long ("Take 1 tablet daily after meals",
+         "Not to exceed the recommended daily usage")
+       who it is for or not for, and ages ("For adults", "From 6 months to
+         24 months", "Not recommended for pregnant women", "Keep out of reach
+         of children")
+       other warnings and advisories printed as sentences.
+     Do not copy claims (they go in front_claims), the ingredient list, the
+     nutrition table, addresses or customer care details. Copy capitals,
+     apostrophes and asterisks as printed. If there are none, return [].
+   - licences: every printed licence or registration line, word for word,
+     with its number and face: "FSSAI Lic. No. 10012345678901",
+     "Mfg. Lic. No. A-2755", "Drug Lic. No. ...". Copy the label's own words
+     for what the licence is; never write what kind it is yourself. If none is
+     legible, return [].
 
 EXAMPLE (fragment, to show entry splitting only)
 
@@ -444,6 +473,26 @@ VISION_RESPONSE_SCHEMA = {
             "required": ["status", "per_100_basis", "rda_column", "serving_size", "servings_per_pack", "rows"],
             "propertyOrdering": ["status", "per_100_basis", "rda_column", "serving_size", "servings_per_pack", "rows"],
         },
+        "pack_statements": {
+            "type": "array",
+            "description": "Rule 11: statements printed on the pack, word for word, with their face. Never classified.",
+            "items": {
+                "type": "object",
+                "properties": {"text": {"type": "string"}, "face": {"type": "string", "enum": ["front", "back"]}},
+                "required": ["text", "face"],
+                "propertyOrdering": ["text", "face"],
+            },
+        },
+        "licences": {
+            "type": "array",
+            "description": "Rule 11: every licence or registration line as printed, with its face.",
+            "items": {
+                "type": "object",
+                "properties": {"text": {"type": "string"}, "face": {"type": "string", "enum": ["front", "back"]}},
+                "required": ["text", "face"],
+                "propertyOrdering": ["text", "face"],
+            },
+        },
         "extraction_notes": {
             "type": "array",
             "items": {"type": "string"},
@@ -476,6 +525,8 @@ VISION_RESPONSE_SCHEMA = {
         "front_claims",
         "front_claim_footnotes",
         "nutrition",
+        "pack_statements",
+        "licences",
         "extraction_notes",
         "confidence",
     ],
@@ -495,6 +546,8 @@ VISION_RESPONSE_SCHEMA = {
         "front_claims",
         "front_claim_footnotes",
         "nutrition",
+        "pack_statements",
+        "licences",
         "extraction_notes",
         "confidence",
     ],
