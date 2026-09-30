@@ -21,6 +21,9 @@ What this module does:
 - words():        4(2)'s words the label shall not exhibit, where printed.
 - free_from():    5(1): preservatives and colours (by the additive's class) and flavours.
 - hydrogenated(): hydrogenated fat, for the types whose section says so.
+- additives():    5(2): an INS number on the list that the type's additive list (and
+                  Schedule I(d)'s carriers, data/infant_additives.json) doesn't name,
+                  "not found in the list", never "not permitted".
 Pictures (4(2)) are a reviewer's check (reviewer_checks), never the app's.
 """
 
@@ -39,6 +42,7 @@ def _load(name):
 
 
 RULES = _load("infant_rules.json")
+ADDITIVES = _load("infant_additives.json")
 _TYPES = {t["id"]: t for t in RULES["types"]}
 _CLASS = {r["ins"]: r["class"] for r in _load("additives.json")["additives"]}
 _HYDRO = next(r for r in _load("ingredient_notes.json")["rows"] if r["id"] == "hydrogenated_fat")
@@ -137,6 +141,54 @@ def hydrogenated(ingredients, ptype):
     return out
 
 
+def _key(ins):
+    """An INS number compared on its number and any letter suffix, not roman sub-numbers: the
+    parser keeps a lone 'i' ("500i") but drops 'ii' ("500ii" reads 500)."""
+    digits = "".join(c for c in ins if c.isdigit())
+    suffix = ins[len(digits):] if ins.startswith(digits) else ""
+    return digits if set(suffix) <= set("iv") else digits + suffix
+
+
+def _keys(rows):
+    out = set()
+    for r in rows:
+        if r["ins"]:
+            out |= {_key(i) for i in ins_numbers(f"INS {r['ins']}")} | set(r.get("also") or [])
+    return out
+
+
+def type_additives(type_id):
+    """(basis, the INS keys the type's list and Schedule I(d) name), or (None, None) for no list."""
+    t = ADDITIVES["types"].get(type_id)
+    if t is None:
+        return None, None
+    rows = ADDITIVES["types"][t["same_as"]]["rows"] if t.get("same_as") else t["rows"]
+    return t["basis"], _keys(rows) | _keys(ADDITIVES["carriers"]["rows"])
+
+
+def additives(ingredients, ptype):
+    """
+    5(2): {"basis", "not_found": [{entry, ins}]} for the INS numbers on the list that the type's
+    additive list (and Schedule I(d)) don't name, or None without a type. Never "not permitted":
+    carry-over additives are allowed (5(2)) and the type may be misread. Entries under vitamins or
+    minerals are nutrient sources (Schedule I), not additives: left out.
+    """
+    if ptype is None:
+        return None
+    basis, keys = type_additives(ptype["id"])
+    if keys is None:
+        return None
+    out = []
+    for entry in ingredients or []:
+        n = norm(entry)
+        if any(_has(n, w) for w in ("vitamin", "vitamins", "mineral", "minerals")):
+            continue
+        for ins in sorted(ins_numbers(entry)):
+            if _key(ins) not in keys:
+                out.append({"entry": entry, "ins": ins})
+    return {"basis": basis, "not_found": out}
+
+
 def check(vision, ingredients=None, ocr_text=None):
     """Every infant check for one reading, as stored with the scan for reviewers (D-140, in shadow)."""
     ingredients = vision.get("ingredients") if ingredients is None else ingredients
@@ -149,5 +201,6 @@ def check(vision, ingredients=None, ocr_text=None):
         "words": words(vision, ocr_text),
         "free_from": free_from(ingredients),
         "hydrogenated": hydrogenated(ingredients, ptype),
+        "additives": additives(ingredients, ptype),
         "reviewer_checks": RULES["reviewer_checks"],
     }

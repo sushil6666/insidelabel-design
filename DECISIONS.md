@@ -2330,6 +2330,18 @@ Same request as D-139. Full proposal: `docs/BABY_FOOD.md`. **Nothing built until
   woman, 4(2)). **Not yet:** 5(2)'s additive tables per type, 4(3) (no milk), composition (reviewer-only),
   the `baby` band with the one-time toddler question, and `INSIDELABEL_INFANT_TO_USERS` (nothing to switch on
   until the lawyer answers).
+- **Phase 3, part 2 (branch `baby-food-additives`, 2026-09-30): 5(2), each type's additive list.**
+  `data/infant_additives.json`, every row copied by hand from the page images: infant formula 7(2)(a), 28 rows,
+  PDF pp. 10 to 12; milk cereal 8(2)(a), 70 rows, pp. 15 to 18; processed cereal 9(2)(a), the same 70 rows and
+  limits, pp. 20 to 24; follow-up formula 10(2)(a), 29 rows, pp. 27 to 29; traditional foods use the milk
+  cereal list (11(2), p. 29); Schedule I(d)'s five nutrient carriers (414, 551, 421, 1450, 301), p. 52, which
+  each type's (b) allows. **A misprint kept as printed:** 10(2)(a) gives sodium hydroxide INS 525, potassium
+  hydroxide's number (7(2)(a) and 8(2)(a) give 524); a follow-up formula's 524 is therefore "not found", for a
+  reviewer. `lenses/infant.py additives()`: for a known type, an INS number on the list (core/tokenize) that
+  the list doesn't name is "not found in this type's additive list", never "not permitted" (5(2) allows
+  carry-over additives, and the type may be misread); compared on the number and any letter suffix, since the
+  parser keeps a lone roman "i" ("500i") but drops "ii"; entries under vitamins or minerals (nutrient sources,
+  Schedule I) are left out. On /review with the other infant checks; nothing reaches the user.
 
 
 ### D-141 · A barcode read from a photo counts only when two reads agree, or the barcode is big enough `SUPERSEDED by D-144` (2026-09-30)

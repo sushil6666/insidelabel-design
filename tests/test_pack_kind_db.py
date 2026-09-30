@@ -156,7 +156,8 @@ def test_a_published_infant_pack_is_served_without_any_result(env):
 
 def test_an_infant_foods_own_checks_are_stored_for_reviewers_and_never_sent(env):
     """D-140 phase 3, in shadow: computed at /scan, kept with the reading, shown on /review only."""
-    v = reading(["Rice flour", "Milk solids", "Added flavour (vanilla)", "Hydrogenated vegetable fat"],
+    v = reading(["Rice flour", "Milk solids", "Added flavour (vanilla)", "Hydrogenated vegetable fat",
+                 "Emulsifier (INS 472e)"],
                 [st("Processed Cereal Based Complementary Food", "front"),
                  st("MOTHER'S MILK IS BEST FOR YOUR BABY", "front"), st("The complete Energy Food", "front")])
     j = post(gtin(), v)
@@ -170,10 +171,12 @@ def test_an_infant_foods_own_checks_are_stored_for_reviewers_and_never_sent(env)
     assert [w["word"] for w in got["words"]] == ["energy food"]
     assert got["free_from"] == [{"entry": "Added flavour (vanilla)", "why": ["flavour"]}]
     assert [h["entry"] for h in got["hydrogenated"]] == ["Hydrogenated vegetable fat"]
+    assert got["additives"]["not_found"] == [{"entry": "Emulsifier (INS 472e)", "ins": "472e"}]
     _item, _c, page = item_page(env, vid)
     assert 'id="infant-checks"' in page and "users don't see these" in page
     assert "processed cereal, from" in page and "Not found</strong>: " in page
     assert "No picture of an infant or a woman" in page
+    assert "Not found in this type&#39;s additive list: INS 472e" in page or "Not found in this type's additive list: INS 472e" in page
 
 
 def test_a_food_has_no_infant_checks(env):

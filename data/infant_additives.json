@@ -1,0 +1,1474 @@
+{
+  "_meta": {
+    "table": "infant_additives",
+    "version": "0.1",
+    "purpose": "D-140 phase 3: 5(2) of the FSS (Foods for Infant Nutrition) Regulations 2020, \"Only the food additives listed under these regulations shall be used\", one list per product type, plus Schedule I(d)'s nutrient carriers, which each type's (b) allows. Used by lenses/infant.py, in shadow: an INS number on a pack's list that isn't in its type's list is said as \"not found in the list\", never \"not permitted\" (carry-over additives are allowed by 5(2), and the type may be misread; a reviewer confirms).",
+    "source": {
+      "title": "FSS (Foods for Infant Nutrition) Regulations, 2020, compendium Version II (04.01.2024)",
+      "url": "https://fssai.gov.in/docs/food-law/regulations/Comp_IFR_VERSION-II_04_01_2024.pdf",
+      "read_on": "2026-09-30",
+      "how": "Every row copied by hand from the page images (the text layer merges table cells), PDF page numbers."
+    },
+    "rules": [
+      "`ins` is as printed; lenses/infant.py reads it with core/tokenize.ins_numbers (the one INS parser) and compares on the number and any letter suffix, not roman sub-numbers (the parser keeps a lone 'i' but drops 'ii').",
+      "`max` is the regulation's words; a shared cell is repeated on each row it covers. Not compared with anything: labels don't print additive amounts.",
+      "Traditional foods (11(2), PDF p. 29): \"If required, the food additives specified for milk cereal based complementary food under these regulations may be used.\""
+    ]
+  },
+  "types": {
+    "infant_formula": {
+      "basis": "7(2)(a), PDF pp. 10 to 12, per 100 ml of the product ready for consumption; footnote *: \"If more than one of the substances INS 322, 471 are added the maximum level for each of those substance is lowered with the relative part as present of the other substances.\"",
+      "verified_on": "2026-09-30",
+      "rows": [
+        {
+          "name": "Guar gum",
+          "ins": "412",
+          "class": "thickener",
+          "max": "0.1 gm in liquid formulas containing hydrolysed protein",
+          "page": 10
+        },
+        {
+          "name": "Carob bean gum (Locust bean gum)",
+          "ins": "410",
+          "class": "thickener",
+          "max": "0.1gm in all types of infant formula",
+          "page": 10
+        },
+        {
+          "name": "Distarch phosphate",
+          "ins": "1412",
+          "class": "thickener",
+          "max": "0.5 gm singly or in combination in soy based infant formula only; 2.5 gm singly or in combination in hydrolysed protein and / or amino acid based infant formula only",
+          "page": 11
+        },
+        {
+          "name": "Acetylated distarch phosphate",
+          "ins": "1414",
+          "class": "thickener",
+          "max": "0.5 gm singly or in combination in soy based infant formula only; 2.5 gm singly or in combination in hydrolysed protein and / or amino acid based infant formula only",
+          "page": 11
+        },
+        {
+          "name": "Phosphated distarch phosphate",
+          "ins": "1413",
+          "class": "thickener",
+          "max": "0.5 gm singly or in combination in soy based infant formula only; 2.5 gm singly or in combination in hydrolysed protein and / or amino acid based infant formula only",
+          "page": 11
+        },
+        {
+          "name": "Hydroxypropyl starch",
+          "ins": "1440",
+          "class": "thickener",
+          "max": "0.5 gm singly or in combination in soy based infant formula only; 2.5 gm singly or in combination in hydrolysed protein and / or amino acid based infant formula only",
+          "page": 11
+        },
+        {
+          "name": "Carrageenan",
+          "ins": "407",
+          "class": "thickener",
+          "max": "0.03 gm (in regular milk and soy based liquid infant formula only); 0.1 gm in hydrolysed protein and / or amino acid based liquid infant formula only",
+          "page": 11
+        },
+        {
+          "name": "Lecithin",
+          "ins": "322",
+          "class": "emulsifier",
+          "max": "0.5 gm in all types of infant formula*",
+          "page": 11
+        },
+        {
+          "name": "Mono- and diglycerides",
+          "ins": "471",
+          "class": "emulsifier",
+          "max": "0.4 gm in all types of infant formula*",
+          "page": 11
+        },
+        {
+          "name": "Citric and fatty acid esters of glycerol",
+          "ins": "472c",
+          "class": "emulsifier",
+          "max": "0.9 gm in all types of liquid infant formula; 0.75 gm in all types of powdered infant formula",
+          "page": 11
+        },
+        {
+          "name": "Sodium hydroxide",
+          "ins": "524",
+          "class": "acidity_regulator",
+          "max": "0.2 gm singly or in combination and within the limits for sodium, potassium and calcium in provision (g) of sub-regulation 7(1) in all types of infant formula",
+          "page": 11
+        },
+        {
+          "name": "Sodium hydrogen carbonate",
+          "ins": "500ii",
+          "class": "acidity_regulator",
+          "max": "0.2 gm singly or in combination and within the limits for sodium, potassium and calcium in provision (g) of sub-regulation 7(1) in all types of infant formula",
+          "page": 11
+        },
+        {
+          "name": "Sodium carbonate",
+          "ins": "500i",
+          "class": "acidity_regulator",
+          "max": "0.2 gm singly or in combination and within the limits for sodium, potassium and calcium in provision (g) of sub-regulation 7(1) in all types of infant formula",
+          "page": 11
+        },
+        {
+          "name": "Potassium hydrogen carbonate",
+          "ins": "501ii",
+          "class": "acidity_regulator",
+          "max": "0.2 gm singly or in combination and within the limits for sodium, potassium and calcium in provision (g) of sub-regulation 7(1) in all types of infant formula",
+          "page": 11
+        },
+        {
+          "name": "Potassium carbonate",
+          "ins": "501i",
+          "class": "acidity_regulator",
+          "max": "0.2 gm singly or in combination and within the limits for sodium, potassium and calcium in provision (g) of sub-regulation 7(1) in all types of infant formula",
+          "page": 11
+        },
+        {
+          "name": "Potassium hydroxide",
+          "ins": "525",
+          "class": "acidity_regulator",
+          "max": "0.2 gm singly or in combination and within the limits for sodium, potassium and calcium in provision (g) of sub-regulation 7(1) in all types of infant formula",
+          "page": 11
+        },
+        {
+          "name": "Calcium hydroxide",
+          "ins": "526",
+          "class": "acidity_regulator",
+          "max": "0.2 gm singly or in combination and within the limits for sodium, potassium and calcium in provision (g) of sub-regulation 7(1) in all types of infant formula",
+          "page": 11
+        },
+        {
+          "name": "L(+) lactic acid",
+          "ins": "270",
+          "class": "acidity_regulator",
+          "max": "GMP in all types of infant formula",
+          "page": 11
+        },
+        {
+          "name": "Citric acid",
+          "ins": "330",
+          "class": "acidity_regulator",
+          "max": "GMP in all types of infant formula",
+          "page": 11
+        },
+        {
+          "name": "Sodium dihydrogen citrate",
+          "ins": "331i",
+          "class": "acidity_regulator",
+          "max": "GMP in all types of infant formula",
+          "page": 11
+        },
+        {
+          "name": "Trisodium citrate",
+          "ins": "331iii",
+          "class": "acidity_regulator",
+          "max": "GMP in all types of infant formula",
+          "page": 11
+        },
+        {
+          "name": "Potassium citrate",
+          "ins": "332",
+          "class": "acidity_regulator",
+          "max": "GMP in all types of infant formula",
+          "page": 11
+        },
+        {
+          "name": "Sodium dihydrogen phosphate, disodium hydrogen phosphate and trisodium phosphate",
+          "ins": "339 i, ii and iii",
+          "class": "acidity_regulator",
+          "max": "45 mg as phosphorous singly or in combination and within limits for sodium, potassium and phosphorous in provision (g) of sub-regulation 7(1) in all types of infant formula",
+          "page": 12
+        },
+        {
+          "name": "Potassium dihydrogen phosphate, dipotassium hydrogen phosphate and tripotassium phosphate",
+          "ins": "340 i, ii and iii",
+          "class": "acidity_regulator",
+          "max": "45 mg as phosphorous singly or in combination and within limits for sodium, potassium and phosphorous in provision (g) of sub-regulation 7(1) in all types of infant formula",
+          "page": 12
+        },
+        {
+          "name": "Mixed tocopherol concentrate",
+          "ins": "307b",
+          "class": "antioxidant",
+          "max": "1 mg in all types of infant formula singly or in combination",
+          "page": 12
+        },
+        {
+          "name": "Ascorbyl palmitate",
+          "ins": "304i",
+          "class": "antioxidant",
+          "max": "1 mg in all type of infant formula singly or in combination",
+          "page": 12
+        },
+        {
+          "name": "Carbon dioxide",
+          "ins": "290",
+          "class": "packaging_gas",
+          "max": "GMP",
+          "page": 12
+        },
+        {
+          "name": "Nitrogen",
+          "ins": "941",
+          "class": "packaging_gas",
+          "max": "GMP",
+          "page": 12
+        }
+      ]
+    },
+    "milk_cereal": {
+      "basis": "8(2)(a), PDF pp. 15 to 18, per 100 g of the product ready for consumption",
+      "verified_on": "2026-09-30",
+      "rows": [
+        {
+          "name": "Lecithins",
+          "ins": "322",
+          "class": "emulsifier",
+          "max": "1500 mg",
+          "page": 15
+        },
+        {
+          "name": "Mono- and diglycerides",
+          "ins": "471",
+          "class": "emulsifier",
+          "max": "5000 mg singly or in combination",
+          "page": 15
+        },
+        {
+          "name": "Acetic fatty acid esters of glycerol",
+          "ins": "472a",
+          "class": "emulsifier",
+          "max": "5000 mg singly or in combination",
+          "page": 15
+        },
+        {
+          "name": "Lactic fatty acid esters of glycerol",
+          "ins": "472b",
+          "class": "emulsifier",
+          "max": "5000 mg singly or in combination",
+          "page": 15
+        },
+        {
+          "name": "Citric acid fatty acid esters of glycerol",
+          "ins": "472c",
+          "class": "emulsifier",
+          "max": "5000 mg singly or in combination",
+          "page": 15
+        },
+        {
+          "name": "Sodium hydrogen carbonate",
+          "ins": "500ii",
+          "class": "acidity_regulator",
+          "max": "GMP",
+          "page": 15
+        },
+        {
+          "name": "Potassium hydrogen carbonate",
+          "ins": "501ii",
+          "class": "acidity_regulator",
+          "max": "GMP",
+          "page": 15
+        },
+        {
+          "name": "Calcium carbonate",
+          "ins": "170i",
+          "class": "acidity_regulator",
+          "max": "GMP",
+          "page": 16
+        },
+        {
+          "name": "L(+)lactic acid",
+          "ins": "270",
+          "class": "acidity_regulator",
+          "max": "GMP",
+          "page": 16
+        },
+        {
+          "name": "Citric acid",
+          "ins": "330",
+          "class": "acidity_regulator",
+          "max": "GMP",
+          "page": 16
+        },
+        {
+          "name": "Acetic acid",
+          "ins": "260",
+          "class": "acidity_regulator",
+          "max": "GMP",
+          "page": 16
+        },
+        {
+          "name": "Potassium acetate",
+          "ins": "261",
+          "class": "acidity_regulator",
+          "max": "GMP",
+          "page": 16
+        },
+        {
+          "name": "Sodium acetate",
+          "ins": "262i",
+          "class": "acidity_regulator",
+          "max": "GMP",
+          "page": 16
+        },
+        {
+          "name": "Calcium acetate",
+          "ins": "263",
+          "class": "acidity_regulator",
+          "max": "GMP",
+          "page": 16
+        },
+        {
+          "name": "Malic acid (DL)-L(+) form only",
+          "ins": "296",
+          "class": "acidity_regulator",
+          "max": "GMP",
+          "page": 16
+        },
+        {
+          "name": "Sodium lactate (solution)-L(+) form only",
+          "ins": "325",
+          "class": "acidity_regulator",
+          "max": "GMP",
+          "page": 16
+        },
+        {
+          "name": "Potassium lactate (solution)-L(+) form only",
+          "ins": "326",
+          "class": "acidity_regulator",
+          "max": "GMP",
+          "page": 16
+        },
+        {
+          "name": "Calcium lactate-L(+) form only",
+          "ins": "327",
+          "class": "acidity_regulator",
+          "max": "GMP",
+          "page": 16
+        },
+        {
+          "name": "Monosodium citrate",
+          "ins": "331i",
+          "class": "acidity_regulator",
+          "max": "GMP",
+          "page": 16
+        },
+        {
+          "name": "Trisodium citrate",
+          "ins": "331ii",
+          "class": "acidity_regulator",
+          "max": "GMP",
+          "page": 16
+        },
+        {
+          "name": "Monopotassium citrate",
+          "ins": "332i",
+          "class": "acidity_regulator",
+          "max": "GMP",
+          "page": 16
+        },
+        {
+          "name": "Tripotassium citrate",
+          "ins": "332ii",
+          "class": "acidity_regulator",
+          "max": "GMP",
+          "page": 16
+        },
+        {
+          "name": "Calcium citrate",
+          "ins": "333",
+          "class": "acidity_regulator",
+          "max": "GMP",
+          "page": 16
+        },
+        {
+          "name": "Hydrochloric acid",
+          "ins": "507",
+          "class": "acidity_regulator",
+          "max": "GMP",
+          "page": 16
+        },
+        {
+          "name": "Sodium hydroxide",
+          "ins": "524",
+          "class": "acidity_regulator",
+          "max": "GMP",
+          "page": 16
+        },
+        {
+          "name": "Potassium hydroxide",
+          "ins": "525",
+          "class": "acidity_regulator",
+          "max": "GMP",
+          "page": 16
+        },
+        {
+          "name": "Calcium hydroxide",
+          "ins": "526",
+          "class": "acidity_regulator",
+          "max": "GMP",
+          "page": 16
+        },
+        {
+          "name": "Glucono-delta-lactone",
+          "ins": "575",
+          "class": "acidity_regulator",
+          "max": "GMP",
+          "page": 16
+        },
+        {
+          "name": "L(+)Tartaric acid",
+          "ins": "334",
+          "class": "acidity_regulator",
+          "max": "500 mg singly or in combination",
+          "page": 16
+        },
+        {
+          "name": "Disodium tartarate",
+          "ins": "335ii",
+          "class": "acidity_regulator",
+          "max": "500 mg singly or in combination",
+          "page": 16
+        },
+        {
+          "name": "Potassium sodium L(+) tartrate L(+) form only",
+          "ins": "337",
+          "class": "acidity_regulator",
+          "max": "500 mg singly or in combination",
+          "page": 16
+        },
+        {
+          "name": "Ortho phosphoric acid",
+          "ins": "338",
+          "class": "acidity_regulator",
+          "max": "Only for pH adjustment; 440 mg singly or in combination as phosphorous",
+          "page": 16
+        },
+        {
+          "name": "Mono sodium ortho phosphate",
+          "ins": "339i",
+          "class": "acidity_regulator",
+          "max": "Only for pH adjustment; 440 mg singly or in combination as phosphorous",
+          "page": 16
+        },
+        {
+          "name": "Disodium orthophosphate",
+          "ins": "339ii",
+          "class": "acidity_regulator",
+          "max": "Only for pH adjustment; 440 mg singly or in combination as phosphorous",
+          "page": 16
+        },
+        {
+          "name": "Trisodium orthophosphate",
+          "ins": "339iii",
+          "class": "acidity_regulator",
+          "max": "Only for pH adjustment; 440 mg singly or in combination as phosphorous",
+          "page": 17
+        },
+        {
+          "name": "Monopotassium orthophosphate",
+          "ins": "340i",
+          "class": "acidity_regulator",
+          "max": "Only for pH adjustment; 440 mg singly or in combination as phosphorous",
+          "page": 17
+        },
+        {
+          "name": "Dipotassium orthophosphate",
+          "ins": "340ii",
+          "class": "acidity_regulator",
+          "max": "Only for pH adjustment; 440 mg singly or in combination as phosphorous",
+          "page": 17
+        },
+        {
+          "name": "Tripotassium orthophosphate",
+          "ins": "340iii",
+          "class": "acidity_regulator",
+          "max": "Only for pH adjustment; 440 mg singly or in combination as phosphorous",
+          "page": 17
+        },
+        {
+          "name": "Monocalcium orthophosphate",
+          "ins": "341i",
+          "class": "acidity_regulator",
+          "max": "Only for pH adjustment; 440 mg singly or in combination as phosphorous",
+          "page": 17
+        },
+        {
+          "name": "Dicalcium orthophosphate",
+          "ins": "341ii",
+          "class": "acidity_regulator",
+          "max": "Only for pH adjustment; 440 mg singly or in combination as phosphorous",
+          "page": 17
+        },
+        {
+          "name": "Tricalcium orthophosphate",
+          "ins": "341iii",
+          "class": "acidity_regulator",
+          "max": "Only for pH adjustment; 440 mg singly or in combination as phosphorous",
+          "page": 17
+        },
+        {
+          "name": "Mixed tocopherol concentrate",
+          "ins": "306",
+          "class": "antioxidant",
+          "max": "300 mg/kg fat or oil singly or in combination",
+          "page": 17
+        },
+        {
+          "name": "Alpha tocopherol",
+          "ins": "307",
+          "class": "antioxidant",
+          "max": "300 mg/kg fat or oil singly or in combination",
+          "page": 17
+        },
+        {
+          "name": "L-ascorbylpalmitate",
+          "ins": "304",
+          "class": "antioxidant",
+          "max": "200 mg/kg fat or oil",
+          "page": 17
+        },
+        {
+          "name": "L-ascorbic acid",
+          "ins": "300",
+          "class": "antioxidant",
+          "max": "50 mg expressed as ascorbic acid",
+          "page": 17
+        },
+        {
+          "name": "Sodium ascorbate",
+          "ins": "301",
+          "class": "antioxidant",
+          "max": "50 mg expressed as ascorbic acid",
+          "page": 17
+        },
+        {
+          "name": "Potassium ascorbate",
+          "ins": "303",
+          "class": "antioxidant",
+          "max": "50 mg expressed as ascorbic acid",
+          "page": 17
+        },
+        {
+          "name": "Calcium ascorbate",
+          "ins": "302",
+          "class": "antioxidant",
+          "max": "20 mg expressed as ascorbic acid",
+          "page": 17
+        },
+        {
+          "name": "Ammonium carbonate",
+          "ins": "503i",
+          "class": "raising_agent",
+          "max": "GMP",
+          "page": 17
+        },
+        {
+          "name": "Ammonium hydrogen carbonate",
+          "ins": "503ii",
+          "class": "raising_agent",
+          "max": "GMP",
+          "page": 17
+        },
+        {
+          "name": "Sodium carbonate",
+          "ins": "500i",
+          "class": "raising_agent",
+          "max": "GMP",
+          "page": 17
+        },
+        {
+          "name": "sodium hydrogen carbonate",
+          "ins": "500ii",
+          "class": "raising_agent",
+          "max": "GMP",
+          "page": 17
+        },
+        {
+          "name": "Carob bean gum",
+          "ins": "410",
+          "class": "thickener",
+          "max": "1000 mg singly or in combination; 2000 mg in gluten free cereal based foods",
+          "page": 17
+        },
+        {
+          "name": "Guar gum",
+          "ins": "412",
+          "class": "thickener",
+          "max": "1000 mg singly or in combination; 2000 mg in gluten free cereal based foods",
+          "page": 17
+        },
+        {
+          "name": "Gum Arabic",
+          "ins": "414",
+          "class": "thickener",
+          "max": "1000 mg singly or in combination; 2000 mg in gluten free cereal based foods",
+          "page": 17
+        },
+        {
+          "name": "Xanthan gum",
+          "ins": "415",
+          "class": "thickener",
+          "max": "1000 mg singly or in combination; 2000 mg in gluten free cereal based foods",
+          "page": 17
+        },
+        {
+          "name": "Pectins (amidated and non amidated)",
+          "ins": "440",
+          "class": "thickener",
+          "max": "1000 mg singly or in combination; 2000 mg in gluten free cereal based foods",
+          "page": 17
+        },
+        {
+          "name": "Oxidized starch",
+          "ins": "1404",
+          "class": "thickener",
+          "max": "5000 mg singly or in combination",
+          "page": 17
+        },
+        {
+          "name": "Mono starch phosphate",
+          "ins": "1410",
+          "class": "thickener",
+          "max": "5000 mg singly or in combination",
+          "page": 17
+        },
+        {
+          "name": "Distarch phosphate",
+          "ins": "1412",
+          "class": "thickener",
+          "max": "5000 mg singly or in combination",
+          "page": 18
+        },
+        {
+          "name": "Phosphateddistarch phosphate",
+          "ins": "1413",
+          "class": "thickener",
+          "max": "5000 mg singly or in combination",
+          "page": 18
+        },
+        {
+          "name": "Acetylated distarch phosphate",
+          "ins": "1414",
+          "class": "thickener",
+          "max": "5000 mg singly or in combination",
+          "page": 18
+        },
+        {
+          "name": "Acetylated distarchadipate",
+          "ins": "1422",
+          "class": "thickener",
+          "max": "5000 mg singly or in combination",
+          "page": 18
+        },
+        {
+          "name": "Starch acetate esterified with acetic anhydride",
+          "ins": "1420",
+          "class": "thickener",
+          "max": "5000 mg singly or in combination",
+          "page": 18
+        },
+        {
+          "name": "Starch sodium octenyl succinate",
+          "ins": "1450",
+          "class": "thickener",
+          "max": "5000 mg singly or in combination",
+          "page": 18
+        },
+        {
+          "name": "Acetylated oxidized starch",
+          "ins": "1451",
+          "class": "thickener",
+          "max": "5000 mg singly or in combination",
+          "page": 18
+        },
+        {
+          "name": "Silicon dioxide",
+          "ins": "551",
+          "class": "anticaking",
+          "max": "GMP",
+          "page": 18
+        },
+        {
+          "name": "Carbon dioxide",
+          "ins": "290",
+          "class": "packaging_gas",
+          "max": "GMP",
+          "page": 18
+        },
+        {
+          "name": "Nitrogen",
+          "ins": "941",
+          "class": "packaging_gas",
+          "max": "GMP",
+          "page": 18
+        },
+        {
+          "name": "Alpha amylase",
+          "ins": null,
+          "class": "enzyme",
+          "max": "GMP",
+          "page": 18
+        }
+      ]
+    },
+    "processed_cereal": {
+      "basis": "9(2)(a), PDF pp. 20 to 24, per 100 g of the product ready for consumption (the same rows and limits as 8(2)(a))",
+      "verified_on": "2026-09-30",
+      "rows": [
+        {
+          "name": "Lecithins",
+          "ins": "322",
+          "class": "emulsifier",
+          "max": "1500 mg",
+          "page": 20
+        },
+        {
+          "name": "Mono- and diglycerides",
+          "ins": "471",
+          "class": "emulsifier",
+          "max": "5000 mg singly or in combination",
+          "page": 21
+        },
+        {
+          "name": "Acetic fatty acid esters of glycerol",
+          "ins": "472a",
+          "class": "emulsifier",
+          "max": "5000 mg singly or in combination",
+          "page": 21
+        },
+        {
+          "name": "Lactic fatty acid esters of glycerol",
+          "ins": "472b",
+          "class": "emulsifier",
+          "max": "5000 mg singly or in combination",
+          "page": 21
+        },
+        {
+          "name": "Citric acid fatty acid esters of glycerol",
+          "ins": "472c",
+          "class": "emulsifier",
+          "max": "5000 mg singly or in combination",
+          "page": 21
+        },
+        {
+          "name": "Sodium hydrogen carbonate",
+          "ins": "500ii",
+          "class": "acidity_regulator",
+          "max": "GMP",
+          "page": 21
+        },
+        {
+          "name": "Potassium hydrogen carbonate",
+          "ins": "501ii",
+          "class": "acidity_regulator",
+          "max": "GMP",
+          "page": 21
+        },
+        {
+          "name": "Calcium carbonate",
+          "ins": "170i",
+          "class": "acidity_regulator",
+          "max": "GMP",
+          "page": 21
+        },
+        {
+          "name": "L(+)lactic acid",
+          "ins": "270",
+          "class": "acidity_regulator",
+          "max": "GMP",
+          "page": 21
+        },
+        {
+          "name": "Citric acid",
+          "ins": "330",
+          "class": "acidity_regulator",
+          "max": "GMP",
+          "page": 21
+        },
+        {
+          "name": "Acetic acid",
+          "ins": "260",
+          "class": "acidity_regulator",
+          "max": "GMP",
+          "page": 21
+        },
+        {
+          "name": "Potassium acetate",
+          "ins": "261",
+          "class": "acidity_regulator",
+          "max": "GMP",
+          "page": 21
+        },
+        {
+          "name": "Sodium acetate",
+          "ins": "262i",
+          "class": "acidity_regulator",
+          "max": "GMP",
+          "page": 21
+        },
+        {
+          "name": "Calcium acetate",
+          "ins": "263",
+          "class": "acidity_regulator",
+          "max": "GMP",
+          "page": 21
+        },
+        {
+          "name": "Malic acid (DL)-L(+) form only",
+          "ins": "296",
+          "class": "acidity_regulator",
+          "max": "GMP",
+          "page": 21
+        },
+        {
+          "name": "Sodium lactate (solution)-L(+) form only",
+          "ins": "325",
+          "class": "acidity_regulator",
+          "max": "GMP",
+          "page": 21
+        },
+        {
+          "name": "Potassium lactate (solution)-L(+) form only",
+          "ins": "326",
+          "class": "acidity_regulator",
+          "max": "GMP",
+          "page": 21
+        },
+        {
+          "name": "Calcium lactate-L(+) form only",
+          "ins": "327",
+          "class": "acidity_regulator",
+          "max": "GMP",
+          "page": 21
+        },
+        {
+          "name": "Monosodium citrate",
+          "ins": "331i",
+          "class": "acidity_regulator",
+          "max": "GMP",
+          "page": 21
+        },
+        {
+          "name": "Trisodium citrate",
+          "ins": "331ii",
+          "class": "acidity_regulator",
+          "max": "GMP",
+          "page": 21
+        },
+        {
+          "name": "Monopotassium citrate",
+          "ins": "332i",
+          "class": "acidity_regulator",
+          "max": "GMP",
+          "page": 21
+        },
+        {
+          "name": "Tripotassium citrate",
+          "ins": "332ii",
+          "class": "acidity_regulator",
+          "max": "GMP",
+          "page": 21
+        },
+        {
+          "name": "Calcium citrate",
+          "ins": "333",
+          "class": "acidity_regulator",
+          "max": "GMP",
+          "page": 22
+        },
+        {
+          "name": "Hydrochloric acid",
+          "ins": "507",
+          "class": "acidity_regulator",
+          "max": "GMP",
+          "page": 22
+        },
+        {
+          "name": "Sodium hydroxide",
+          "ins": "524",
+          "class": "acidity_regulator",
+          "max": "GMP",
+          "page": 22
+        },
+        {
+          "name": "Potassium hydroxide",
+          "ins": "525",
+          "class": "acidity_regulator",
+          "max": "GMP",
+          "page": 22
+        },
+        {
+          "name": "Calcium hydroxide",
+          "ins": "526",
+          "class": "acidity_regulator",
+          "max": "GMP",
+          "page": 22
+        },
+        {
+          "name": "Glucono-delta-lactone",
+          "ins": "575",
+          "class": "acidity_regulator",
+          "max": "GMP",
+          "page": 22
+        },
+        {
+          "name": "L(+)Tartaric acid",
+          "ins": "334",
+          "class": "acidity_regulator",
+          "max": "500 mg singly or in combination",
+          "page": 22
+        },
+        {
+          "name": "Disodium tartarate",
+          "ins": "335ii",
+          "class": "acidity_regulator",
+          "max": "500 mg singly or in combination",
+          "page": 22
+        },
+        {
+          "name": "Potassium sodium L(+) tartrate L(+) form only",
+          "ins": "337",
+          "class": "acidity_regulator",
+          "max": "500 mg singly or in combination",
+          "page": 22
+        },
+        {
+          "name": "Ortho phosphoric acid",
+          "ins": "338",
+          "class": "acidity_regulator",
+          "max": "Only for pH adjustment; 440 mg singly or in combination as phosphorous",
+          "page": 22
+        },
+        {
+          "name": "Mono sodium ortho phosphate",
+          "ins": "339i",
+          "class": "acidity_regulator",
+          "max": "Only for pH adjustment; 440 mg singly or in combination as phosphorous",
+          "page": 22
+        },
+        {
+          "name": "Disodium orthophosphate",
+          "ins": "339ii",
+          "class": "acidity_regulator",
+          "max": "Only for pH adjustment; 440 mg singly or in combination as phosphorous",
+          "page": 22
+        },
+        {
+          "name": "Trisodium orthophosphate",
+          "ins": "339iii",
+          "class": "acidity_regulator",
+          "max": "Only for pH adjustment; 440 mg singly or in combination as phosphorous",
+          "page": 22
+        },
+        {
+          "name": "Monopotassium orthophosphate",
+          "ins": "340i",
+          "class": "acidity_regulator",
+          "max": "Only for pH adjustment; 440 mg singly or in combination as phosphorous",
+          "page": 22
+        },
+        {
+          "name": "Dipotassium orthophosphate",
+          "ins": "340ii",
+          "class": "acidity_regulator",
+          "max": "Only for pH adjustment; 440 mg singly or in combination as phosphorous",
+          "page": 22
+        },
+        {
+          "name": "Tripotassium orthophosphate",
+          "ins": "340iii",
+          "class": "acidity_regulator",
+          "max": "Only for pH adjustment; 440 mg singly or in combination as phosphorous",
+          "page": 22
+        },
+        {
+          "name": "Monocalcium orthophosphate",
+          "ins": "341i",
+          "class": "acidity_regulator",
+          "max": "Only for pH adjustment; 440 mg singly or in combination as phosphorous",
+          "page": 22
+        },
+        {
+          "name": "Dicalcium orthophosphate",
+          "ins": "341ii",
+          "class": "acidity_regulator",
+          "max": "Only for pH adjustment; 440 mg singly or in combination as phosphorous",
+          "page": 22
+        },
+        {
+          "name": "Tricalcium orthophosphate",
+          "ins": "341iii",
+          "class": "acidity_regulator",
+          "max": "Only for pH adjustment; 440 mg singly or in combination as phosphorous",
+          "page": 22
+        },
+        {
+          "name": "Mixed tocopherol concentrate",
+          "ins": "306",
+          "class": "antioxidant",
+          "max": "300 mg/kg fat or oil singly or in combination",
+          "page": 22
+        },
+        {
+          "name": "Alpha tocopherol",
+          "ins": "307",
+          "class": "antioxidant",
+          "max": "300 mg/kg fat or oil singly or in combination",
+          "page": 22
+        },
+        {
+          "name": "L-ascorbylpalmitate",
+          "ins": "304",
+          "class": "antioxidant",
+          "max": "200 mg/kg fat or oil",
+          "page": 22
+        },
+        {
+          "name": "L-ascorbic acid",
+          "ins": "300",
+          "class": "antioxidant",
+          "max": "50 mg expressed as ascorbic acid",
+          "page": 23
+        },
+        {
+          "name": "Sodium ascorbate",
+          "ins": "301",
+          "class": "antioxidant",
+          "max": "50 mg expressed as ascorbic acid",
+          "page": 23
+        },
+        {
+          "name": "Potassium ascorbate",
+          "ins": "303",
+          "class": "antioxidant",
+          "max": "50 mg expressed as ascorbic acid",
+          "page": 23
+        },
+        {
+          "name": "Calcium ascorbate",
+          "ins": "302",
+          "class": "antioxidant",
+          "max": "20 mg expressed as ascorbic acid",
+          "page": 23
+        },
+        {
+          "name": "Ammonium carbonate",
+          "ins": "503i",
+          "class": "raising_agent",
+          "max": "GMP",
+          "page": 23
+        },
+        {
+          "name": "Ammonium hydrogen carbonate",
+          "ins": "503ii",
+          "class": "raising_agent",
+          "max": "GMP",
+          "page": 23
+        },
+        {
+          "name": "Sodium carbonate",
+          "ins": "500i",
+          "class": "raising_agent",
+          "max": "GMP",
+          "page": 23
+        },
+        {
+          "name": "sodium hydrogen carbonate",
+          "ins": "500ii",
+          "class": "raising_agent",
+          "max": "GMP",
+          "page": 23
+        },
+        {
+          "name": "Carob bean gum",
+          "ins": "410",
+          "class": "thickener",
+          "max": "1000 mg singly or in combination; 2000 mg in gluten free cereal based foods",
+          "page": 23
+        },
+        {
+          "name": "Guar gum",
+          "ins": "412",
+          "class": "thickener",
+          "max": "1000 mg singly or in combination; 2000 mg in gluten free cereal based foods",
+          "page": 23
+        },
+        {
+          "name": "Gum Arabic",
+          "ins": "414",
+          "class": "thickener",
+          "max": "1000 mg singly or in combination; 2000 mg in gluten free cereal based foods",
+          "page": 23
+        },
+        {
+          "name": "Xanthan gum",
+          "ins": "415",
+          "class": "thickener",
+          "max": "1000 mg singly or in combination; 2000 mg in gluten free cereal based foods",
+          "page": 23
+        },
+        {
+          "name": "Pectins (amidated and non amidated)",
+          "ins": "440",
+          "class": "thickener",
+          "max": "1000 mg singly or in combination; 2000 mg in gluten free cereal based foods",
+          "page": 23
+        },
+        {
+          "name": "Oxidized starch",
+          "ins": "1404",
+          "class": "thickener",
+          "max": "5000 mg singly or in combination",
+          "page": 23
+        },
+        {
+          "name": "Mono starch phosphate",
+          "ins": "1410",
+          "class": "thickener",
+          "max": "5000 mg singly or in combination",
+          "page": 23
+        },
+        {
+          "name": "Distarch phosphate",
+          "ins": "1412",
+          "class": "thickener",
+          "max": "5000 mg singly or in combination",
+          "page": 23
+        },
+        {
+          "name": "Phosphateddistarch phosphate",
+          "ins": "1413",
+          "class": "thickener",
+          "max": "5000 mg singly or in combination",
+          "page": 23
+        },
+        {
+          "name": "Acetylated distarch phosphate",
+          "ins": "1414",
+          "class": "thickener",
+          "max": "5000 mg singly or in combination",
+          "page": 23
+        },
+        {
+          "name": "Acetylated distarchadipate",
+          "ins": "1422",
+          "class": "thickener",
+          "max": "5000 mg singly or in combination",
+          "page": 23
+        },
+        {
+          "name": "Starch acetate esterified with acetic anhydride",
+          "ins": "1420",
+          "class": "thickener",
+          "max": "5000 mg singly or in combination",
+          "page": 23
+        },
+        {
+          "name": "Starch sodium octenyl succinate",
+          "ins": "1450",
+          "class": "thickener",
+          "max": "5000 mg singly or in combination",
+          "page": 23
+        },
+        {
+          "name": "Acetylated oxidized starch",
+          "ins": "1451",
+          "class": "thickener",
+          "max": "5000 mg singly or in combination",
+          "page": 23
+        },
+        {
+          "name": "Silicon dioxide",
+          "ins": "551",
+          "class": "anticaking",
+          "max": "GMP",
+          "page": 24
+        },
+        {
+          "name": "Carbon dioxide",
+          "ins": "290",
+          "class": "packaging_gas",
+          "max": "GMP",
+          "page": 24
+        },
+        {
+          "name": "Nitrogen",
+          "ins": "941",
+          "class": "packaging_gas",
+          "max": "GMP",
+          "page": 24
+        },
+        {
+          "name": "Alpha amylase",
+          "ins": null,
+          "class": "enzyme",
+          "max": "GMP",
+          "page": 24
+        }
+      ]
+    },
+    "follow_up_formula": {
+      "basis": "10(2)(a), PDF pp. 27 to 29, per 100 ml of product ready for consumption",
+      "verified_on": "2026-09-30",
+      "rows": [
+        {
+          "name": "Guar gum",
+          "ins": "412",
+          "class": "thickener",
+          "max": "0.1 g",
+          "page": 27
+        },
+        {
+          "name": "Locust bean gum (carob bean gum)",
+          "ins": "410",
+          "class": "thickener",
+          "max": "0.5 g singly or in combination",
+          "page": 27
+        },
+        {
+          "name": "Distarch phosphate",
+          "ins": "1412",
+          "class": "thickener",
+          "max": "0.5 g singly or in combination",
+          "page": 27
+        },
+        {
+          "name": "Acetylated distarch phosphate",
+          "ins": "1414",
+          "class": "thickener",
+          "max": "0.5 g singly or in combination",
+          "page": 27
+        },
+        {
+          "name": "Phosphateddistarch phosphate",
+          "ins": "1413",
+          "class": "thickener",
+          "max": "0.5 g singly or in combination",
+          "page": 27
+        },
+        {
+          "name": "Acetylated distarchadipate",
+          "ins": "1422",
+          "class": "thickener",
+          "max": "2.5 g singly or in combination in hydrolyzed protein and / or amino acid based products only",
+          "page": 28
+        },
+        {
+          "name": "Carrageenan",
+          "ins": "407",
+          "class": "thickener",
+          "max": "0.03 g singly or in combination in milk and soy based products only; 0.1 g singly or in combination in hydrolyzed protein and / or amino acid based liquid products only",
+          "page": 28
+        },
+        {
+          "name": "Pectins",
+          "ins": "440",
+          "class": "thickener",
+          "max": "1 g",
+          "page": 28
+        },
+        {
+          "name": "Lecithin",
+          "ins": "322(i)",
+          "class": "emulsifier",
+          "max": "0.5 g",
+          "page": 28
+        },
+        {
+          "name": "Mono- and diglycerides",
+          "ins": "471",
+          "class": "emulsifier",
+          "max": "0.4 g",
+          "page": 28
+        },
+        {
+          "name": "Sodium hydrogen carbonate",
+          "ins": "500ii",
+          "class": "acidity_regulator",
+          "max": "GMP within the limits for sodium in clause (h) of sub-regulation (1) of regulation 10",
+          "page": 28
+        },
+        {
+          "name": "Sodium carbonate",
+          "ins": "500i",
+          "class": "acidity_regulator",
+          "max": "GMP within the limits for sodium in clause (h) of sub-regulation (1) of regulation 10",
+          "page": 28
+        },
+        {
+          "name": "Sodium citrate",
+          "ins": "331i",
+          "class": "acidity_regulator",
+          "max": "GMP within the limits for sodium in clause (h) of sub-regulation (1) of regulation 10",
+          "page": 28
+        },
+        {
+          "name": "Potassium hydrogen carbonate",
+          "ins": "501ii",
+          "class": "acidity_regulator",
+          "max": "GMP within the limits for sodium in clause (h) of sub-regulation (1) of regulation 10",
+          "page": 28
+        },
+        {
+          "name": "Potassium carbonate",
+          "ins": "501i",
+          "class": "acidity_regulator",
+          "max": "GMP within the limits for sodium in clause (h) of sub-regulation (1) of regulation 10",
+          "page": 28
+        },
+        {
+          "name": "Potassium citrate",
+          "ins": "332i",
+          "class": "acidity_regulator",
+          "max": "GMP within the limits for sodium in clause (h) of sub-regulation (1) of regulation 10",
+          "page": 28
+        },
+        {
+          "name": "Sodium hydroxide",
+          "ins": "525",
+          "class": "acidity_regulator",
+          "max": "GMP within the limits for sodium in clause (h) of sub-regulation (1) of regulation 10",
+          "page": 28,
+          "note": "Printed 525, the number of potassium hydroxide on the next row; sodium hydroxide is 524 in 7(2)(a) and 8(2)(a). Kept as printed: a pack's 524 is not matched to this row."
+        },
+        {
+          "name": "Potassium hydroxide",
+          "ins": "525",
+          "class": "acidity_regulator",
+          "max": "GMP within the limits for sodium in clause (h) of sub-regulation (1) of regulation 10",
+          "page": 28
+        },
+        {
+          "name": "Calcium hydroxide",
+          "ins": "526",
+          "class": "acidity_regulator",
+          "max": "GMP within the limits for sodium in clause (h) of sub-regulation (1) of regulation 10",
+          "page": 28
+        },
+        {
+          "name": "L(+) lactic acid; L(+) lactic acid producing cultures",
+          "ins": "270",
+          "class": "acidity_regulator",
+          "max": "GMP within the limits for sodium in clause (h) of sub-regulation (1) of regulation 10",
+          "page": 28
+        },
+        {
+          "name": "Citric acid",
+          "ins": "330",
+          "class": "acidity_regulator",
+          "max": "GMP within the limits for sodium in clause (h) of sub-regulation (1) of regulation 10",
+          "page": 28
+        },
+        {
+          "name": "Mixed tocopherol concentrate",
+          "ins": "307b",
+          "class": "antioxidant",
+          "max": "3 mg singly or in combination",
+          "page": 28
+        },
+        {
+          "name": "Alpha tocopherol",
+          "ins": "307a&c",
+          "class": "antioxidant",
+          "max": "3 mg singly or in combination",
+          "page": 28,
+          "also": [
+            "307c"
+          ],
+          "note": "Printed \"307a&c\"; the parser reads 307a, so 307c is listed too."
+        },
+        {
+          "name": "L-ascorbylpalmitate",
+          "ins": "304",
+          "class": "antioxidant",
+          "max": "5 mg singly or in combination expressed as ascorbic acid",
+          "page": 29
+        },
+        {
+          "name": "L-ascorbic acid",
+          "ins": "300",
+          "class": "antioxidant",
+          "max": "5 mg singly or in combination expressed as ascorbic acid",
+          "page": 29
+        },
+        {
+          "name": "Sodium ascorbate",
+          "ins": "301",
+          "class": "antioxidant",
+          "max": "5 mg singly or in combination expressed as ascorbic acid",
+          "page": 29
+        },
+        {
+          "name": "Calcium ascorbate",
+          "ins": "302",
+          "class": "antioxidant",
+          "max": "5 mg singly or in combination expressed as ascorbic acid",
+          "page": 29
+        },
+        {
+          "name": "Carbon dioxide",
+          "ins": "290",
+          "class": "packaging_gas",
+          "max": "GMP",
+          "page": 29
+        },
+        {
+          "name": "Nitrogen",
+          "ins": "941",
+          "class": "packaging_gas",
+          "max": "GMP",
+          "page": 29
+        }
+      ]
+    },
+    "traditional": {
+      "basis": "11(2), PDF p. 29: the milk cereal list",
+      "same_as": "milk_cereal",
+      "verified_on": "2026-09-30"
+    }
+  },
+  "carriers": {
+    "basis": "Schedule I(d), PDF p. 52, \"Advisory list of food additives for special nutrient formulations\", mg/kg in ready-to-use foods for infant nutrition; each type's (b) (7(2)(b), 8(2)(b), 9(2)(b), 10(2)(b), which prints 'Annexure I (d)')",
+    "verified_on": "2026-09-30",
+    "rows": [
+      {
+        "name": "Gum Arabic-(gum acacia)",
+        "ins": "414",
+        "class": "carrier",
+        "max": "10",
+        "page": 52
+      },
+      {
+        "name": "Silicon dioxide",
+        "ins": "551",
+        "class": "carrier",
+        "max": "10",
+        "page": 52
+      },
+      {
+        "name": "Mannitol (for vitamin B12 dry rubbing, 0.1% only)",
+        "ins": "421",
+        "class": "carrier",
+        "max": "10",
+        "page": 52
+      },
+      {
+        "name": "Starch sodium octenyl succinate",
+        "ins": "1450",
+        "class": "carrier",
+        "max": "100",
+        "page": 52
+      },
+      {
+        "name": "Sodium L-ascorbate (in coating of nutrient preparations containing polyunsaturated fatty acids)",
+        "ins": "301",
+        "class": "carrier",
+        "max": "75",
+        "page": 52
+      }
+    ]
+  }
+}
