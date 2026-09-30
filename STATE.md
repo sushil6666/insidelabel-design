@@ -650,6 +650,15 @@ setup alarms.
 
 **NEXT SESSION STARTS HERE (2026-09-30).** Where things stand, newest first:
 
+- **Next build, ready to paste: `docs/BUILD_PROMPT_SUPPLEMENTS_BABY_FOOD.md`** (2026-09-30, Sushil:
+  "implement supplements and baby food part, part of beta"). Phase 0 reads the FSSAI Nutra
+  Regulations 2022, the Infant Nutrition Regulations 2020 (Version II), the IMS Act 1992, WHO 2023
+  complementary feeding and ICMR-NIN's RDA, and proposes D-139 and D-140; nothing is built until
+  Sushil accepts. Must land before the first cohort (D-083). **Legal:** the IMS Act forbids
+  "promotion" of infant foods, so no grade, ranking, Compare or shop list for them; releasing
+  infant-food results needs Sushil's decision (a lawyer ideally). India Code times out from WSL: the
+  Act's PDF needs a manual download.
+
 - **Beta gates, work Claude could do alone (2026-09-30, branch `beta-gates`, on top of
   `state-phase3-deployed`).** Nothing live changes except two site pages. (1) **Ingredient match
   94.5%: D-137 RECOMMENDED.** No word is misread; every miss is where the list was cut. Gold follows
