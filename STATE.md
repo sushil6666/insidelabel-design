@@ -657,7 +657,9 @@ setup alarms.
   three choices in D-134 (front-photo ask inside "More", sugar/salt/energy over ICMR-NIN not tiles,
   shop list for screens only). Still open from phase 2: the four gold tables to check, "run the
   gold set" (about Rs 3), D-136. Phases 1 to 3 of `docs/BUILD_PROMPT_D132-D134.md` are all live;
-  its beta list (billing is the blocker) is what comes after.
+  its beta list (billing is the blocker) is what comes after. **Not sourced:** a tile page's
+  "who it concerns" is always empty: no approved row states it apart from its research sentence
+  (D-134). A row gets one only when Sushil names the sentence to use from its source.
 
 - **D-134 built, phase 3 of `docs/BUILD_PROMPT_D132-D134.md`** (branch `result-tiles`, web-27,
   754 tests). Sushil confirmed the phase 2 phone check first. `screen.tiles` + `screen.details`
