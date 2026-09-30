@@ -2485,6 +2485,59 @@ decide them. If refusals there are frequent, the camera scanner is the answer th
   6 (0.0%), within the 5% line; the wrong 0921129008343 on 03f8... is dropped. "D-144 accepted (Sushil)."
   Merged with D-142 and D-143 (PRs #68, #72) and deployed.
 
+
+### D-145 · The camera frame the scanner accepted goes with the scan as the barcode's evidence photo `RECOMMENDED, held until after week 4 (D-083, D-105)` (2026-09-30)
+Answers D-143's open point with the server audit (Sushil, 2026-09-30): **40 of 47 published packs have no
+barcode in their photos**, so for most packs nothing on the server can check the camera's code, and a
+reviewer asked to "check the barcode" has nothing to check it against. Two camera misreads are already in
+the catalogue (#42 certain, #48 likely). Today nothing from the live scanner leaves the phone:
+`web/camera.js` decodes on the device (BarcodeDetector) and sends only the digits.
+Sushil (2026-09-30): "when the live camera scanner accepts a code, the app sends that camera frame with the
+scan as the barcode's evidence photo, checked by zxing and the OCR text on the server like any other photo,
+and kept with the version under D-080 retention. Note the privacy side for the DPDP map."
+
+**Recommended by Claude (proposal only, nothing built):**
+1. **The frame.** When `camera.js` accepts a code (the second frame agreeing, D-124), it draws that video
+   frame to a canvas and keeps it as a JPEG with the code. **Cropped to the barcode:** the detector reports
+   each code's `boundingBox`; the app keeps that box widened enough to hold the printed digits under the bars
+   (the margin to be set on the phone), not the whole frame. Data minimisation (DPDP s.8(1), purpose), and a
+   hand or a room mostly falls outside the crop. Nothing else of the video is kept.
+2. **When it is sent.** Only with a scan that sends label photos (a pack the catalogue may add or re-read), as
+   a new part, `barcode_photo`, with `barcode_source` "camera". A catalogue lookup (barcode only, D-024) sends
+   no frame: nothing would be added, so nothing needs evidence. Kept on the phone only until that scan is sent.
+3. **Checked like any other photo.** `/scan` stores it (media, content-hash key) and reads it with the D-144
+   rule: two zxing reads agree, or the code's digits are in its OCR text. The OCR text for it: **Tesseract
+   (free, on the server) only when the two reads don't agree**, not Cloud Vision, which would be a new paid
+   call on every new pack; Sushil's choice if he prefers Cloud Vision. D-143's check then has a photo that
+   shows the barcode for almost every camera scan. **A limit to know:** the frame is the one the phone's
+   decoder read, so it carries the same blur; zxing is a different decoder and the printed digits are a
+   different reading, but the frame's main value is to a person: the reviewer reads the digits in it.
+4. **Kept with the version (D-080).** New columns `barcode_image_key` on `scans` and `product_versions`
+   (one migration); `retention.py` treats it like the back and front keys: deleted 30 days after the scan
+   unless held, kept while it is a published version's record. `/review` shows it beside the barcode field.
+5. **The privacy side** (for the DPDP map, row 4 and point 9): this is new data leaving the phone. Today the
+   live camera sends nothing but digits; with this, one cropped frame goes to the server with a new-pack scan.
+   It may still show a finger, a hand or part of a background; it is never sent to Gemini; with Tesseract as
+   its reader it is not sent to Google either. The privacy page and "Before you start" must say so before it
+   ships, which changes the terms version (D-105: users agree again). The data map gets the frame in row 4
+   (and row 10 if Cloud Vision ever reads it).
+Not decided here: whether a user can see and remove the frame before sending (a thumbnail with "Sent with
+your scan" is cheap); the crop margin; whether old catalogue entries (the 40) should get a barcode photo from
+the review queue instead.
+- **Held by Sushil, 2026-09-30:** "D-145 stays held until after week 4": a Wave 2 build waits for the W4 number
+  (D-083), and it changes what "Before you start" must say, so every tester would agree again (D-105).
+- **For the DPDP data map, when it is built** (proposed point 9a; `docs/DPDP_DATA_MAP.md` is unchanged until then):
+  > 9a. **Proposed, not built (D-145): a camera frame with the barcode.** Today the live barcode scanner
+  > decodes on the phone and sends only the digits. D-145 proposes sending the one frame it accepted,
+  > cropped to the barcode and its printed digits, with a scan that adds a pack to the catalogue, as
+  > evidence that the digits are right (two camera misreads were found in the catalogue, 2026-09-30).
+  > Stored like a pack photo (row 4: deleted at 30 days unless it becomes the catalogue record), never
+  > sent to Gemini, read on the server by zxing and, only if needed, Tesseract (so not sent to Google).
+  > The crop keeps most of a hand or a room out, but a finger or background can remain. Before it ships
+  > the privacy page and the terms must say so (users agree again, D-105), and row 4 names it. The
+  > reviewer should say whether this is enough, or whether the app should show the frame and let the
+  > user remove it before sending.
+
 ---
 
 ## Open and pending
