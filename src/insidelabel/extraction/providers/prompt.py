@@ -277,6 +277,24 @@ RULES
      for what the licence is; never write what kind it is yourself. If none is
      legible, return [].
 
+12. THE COMPOSITION TABLE (composition). COPY IT; NEVER CALCULATE.
+   - Supplements and some other packs print the amounts in each tablet,
+     capsule, scoop or serving: "Each film coated tablet contains:", "Per 2
+     capsules", "Supplement Facts", "Composition per serving (30 g)". Copy
+     that block. The nutrition table of rule 10 stays in nutrition.
+   - status: "read" | "partial" | "not_found" | "unreadable", as in rule 10.
+   - basis: the heading as printed ("Each tablet contains", "Per 2 capsules"),
+     or null.
+   - rows: one entry per printed line, in printed order:
+       name         exactly as printed, brackets included ("Zinc (as Zinc
+                    Sulphate Monohydrate)", "Vitamin D3", "Withania
+                    somnifera (Root) Extract")
+       amount       the amount exactly as printed, with its unit ("10 mg",
+                    "400 IU", "2.2 mcg", "500 mg", "Q.S."), else null
+       rda_percent  the % RDA cell exactly as printed, else null
+   - Copy numbers digit for digit. Never convert units, never add up, never
+     fill a blank. If there is no such block, status "not_found" and rows [].
+
 EXAMPLE (fragment, to show entry splitting only)
 
 Printed on back:
@@ -473,6 +491,29 @@ VISION_RESPONSE_SCHEMA = {
             "required": ["status", "per_100_basis", "rda_column", "serving_size", "servings_per_pack", "rows"],
             "propertyOrdering": ["status", "per_100_basis", "rda_column", "serving_size", "servings_per_pack", "rows"],
         },
+        "composition": {
+            "type": "object",
+            "description": "Rule 12: the amounts per tablet, capsule, scoop or serving, copied as printed. Never computed.",
+            "properties": {
+                "status": {"type": "string", "enum": ["read", "partial", "not_found", "unreadable"]},
+                "basis": {"type": "string", "nullable": True},
+                "rows": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {"type": "string"},
+                            "amount": {"type": "string", "nullable": True},
+                            "rda_percent": {"type": "string", "nullable": True},
+                        },
+                        "required": ["name", "amount", "rda_percent"],
+                        "propertyOrdering": ["name", "amount", "rda_percent"],
+                    },
+                },
+            },
+            "required": ["status", "basis", "rows"],
+            "propertyOrdering": ["status", "basis", "rows"],
+        },
         "pack_statements": {
             "type": "array",
             "description": "Rule 11: statements printed on the pack, word for word, with their face. Never classified.",
@@ -525,6 +566,7 @@ VISION_RESPONSE_SCHEMA = {
         "front_claims",
         "front_claim_footnotes",
         "nutrition",
+        "composition",
         "pack_statements",
         "licences",
         "extraction_notes",
@@ -546,6 +588,7 @@ VISION_RESPONSE_SCHEMA = {
         "front_claims",
         "front_claim_footnotes",
         "nutrition",
+        "composition",
         "pack_statements",
         "licences",
         "extraction_notes",

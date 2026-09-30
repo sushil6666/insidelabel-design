@@ -641,7 +641,13 @@ def _withhold(kind, result):
     if fields:
         for f in fields:
             result[f] = None
-        result["withheld"] = {"fields": list(fields), "reason": f"{kind['code']}_in_shadow"}
+        result["withheld"] = {"fields": list(fields), "reason": pack_kind.WITHHOLD_REASON[kind["code"]]}
+    # D-139: a supplement has no score, grade, band or NOVA count; its flags stay for reviewers.
+    for field, keys in pack_kind.WITHHOLD_KEYS.get(kind["code"], {}).items():
+        if isinstance(result.get(field), dict):
+            result[field] = {k: (None if k in keys else v) for k, v in result[field].items()}
+            result.setdefault("withheld", {"fields": [], "reason": pack_kind.WITHHOLD_REASON[kind["code"]]})
+            result["withheld"]["fields"].append(field + "." + ",".join(keys))
     return result
 
 
@@ -696,7 +702,9 @@ def _catalogue_result(hit, avoid_codes, who, compare_regulators, profiles=(), sc
             verdict=verdict, display=display, claim_check=claim_check, extracted=extracted,
             reliability=reliability, profiles=profiles, allergen_confidence=1.0,
             allergen_reliable=True, catalogue=catalogue, screen_pack=screen_pack,
-            nutrition=hit.get("nutrition"), kind=kind),
+            nutrition=hit.get("nutrition"), kind=kind,
+            # D-139: no reading from the catalogue; the published name still says tablet or powder.
+            nutra_input={"product": {"name": hit["name"], "variant": hit["variant"]}}),
         "pack_kind": {k: kind[k] for k in ("code", "evidence", "review")},
         "catalogue": catalogue,
         "product": {"brand": hit["brand"], "name": hit["name"], "variant": hit["variant"]},
@@ -1535,7 +1543,8 @@ async def scan(
             reliability=reliability, profiles=people, allergen_confidence=allergen_confidence,
             allergen_reliable=allergen_reliable, has_barcode=barcode is not None, pack=pack,
             screen_pack=None if from_screen else screen_pack, nutrition=panel,
-            parts_sent=max(1, len(parts)), kind=kind),
+            parts_sent=max(1, len(parts)), kind=kind,
+            nutra_input={"vision": vision, "ocr_text": ocr_result.get("ocr_text")}),
         "pack_kind": {k: kind[k] for k in ("code", "evidence", "review")},
         "scan_id": saved["scan_id"] if saved else _str(unlisted_id),
         "catalogue": ({"source": "scan", "product_version_id": saved["product_version_id"],

@@ -2185,6 +2185,31 @@ Sushil: "implement supplements and baby food part, part of beta" (2026-09-30), p
   URI, not the keys); `conftest.py` now clears both keys (suite with the key in the shell: 0 Google
   calls; it runs slower, about 8.5 minutes, on the Tesseract fallback).
 
+- **Phase 2 built (2026-09-30, branch `supplements`, web-29, PROMPT_VERSION `4efbe2214842`).** Prompt rule 12
+  copies the composition table ("Each tablet contains...") as printed. `lenses/nutra.py` over three tables,
+  each row from its page: `data/nutra_botanicals.json` (53 notes on 48 Schedule II rows, every one of the 33
+  schedule pages read from the image; names printed on two rows left out: "Sage", "Saral"; six notes the
+  schedule doesn't box to one part carry `placement`), `data/nutra_additives.json` (Annexure 3: 86 tablet,
+  capsule and syrup additives, 40 for supplements; the 10 May 2022 order's 7), `data/nutra_rules.json`
+  (5(12) statements, ICMR-NIN's RDA for men and women and upper limits from the Short Summary pp. 30 to 32,
+  the 5(10) line, the protein-powder sentences). A supplement's result: allergen lines first; tiles for a
+  plant note (the note quoted, only for the part it belongs to), a day's amount above ICMR-NIN's upper limit,
+  an additive not found in the lists; sections: "For children" (5(10), with a toddler or child profile), a
+  day's amounts beside the RDA for men and for women ("RDA" never called a limit, Sushil's choice), the 5(12)
+  statements found or not found (only on a complete read of both faces; the second reading counts too),
+  additives against the list for the format (Appendix A's GMP table applies to every format, 5(4)(a) and the
+  10 May order; tablet-list names mark additives only in tablets; a colour in a tablet isn't checked, the D&C
+  Rules' list isn't read), ICMR-NIN's protein-powder sentences (DGI p. 60) for a protein powder; the sugar
+  chip only for a food format. No score, grade, band or NOVA count in the /scan answer (`withheld`,
+  `supplement_not_scored`); flags stay for reviewers. Every amount must be in the second reading of the photo
+  (D-133), else none is shown. Not compared: folate (packs print folic acid), vitamin A (form), vitamin D in
+  micrograms (ICMR-NIN's table is in IU), biotin and pantothenic acid. From the catalogue (no photos): plants
+  and additives only. `tests/test_supplements.py` (29); phase 1 tests updated. Walked in headless Chromium,
+  light and dark: no errors. **Not built, for Sushil:** "Compare only between supplements": today's Compare
+  names "the better pick for a child", and FSSAI's 5(10) says supplements for children of 2 to 5 years
+  "shall only be given under medical advice", so supplements stay out of Compare until Sushil says what a
+  supplement comparison should say.
+
 ### D-140 · Baby food: infant formula and complementary foods, released in shadow `LOCKED` (2026-09-30)
 Same request as D-139. Full proposal: `docs/BABY_FOOD.md`. **Nothing built until Sushil says "accepted".**
 

@@ -1,0 +1,1294 @@
+{
+  "_meta": {
+    "table": "nutra_botanicals",
+    "version": "0.1",
+    "purpose": "D-139: the plants in Schedule II of the FSS (Nutra) Regulations 2022 whose row carries a note a user would read (pregnancy, children, conception, diabetics, prolonged use...). A supplement listing one gets a tile quoting the note exactly, with the part.",
+    "source": {
+      "title": "FSS (Health Supplements, Nutraceuticals, Food for Special Dietary Use, Food for Special Medical Purpose and Prebiotic and Probiotic Food) Regulations, 2022, Annexure 2, Schedule II, as operationalised by FSSAI's direction of 18 October 2022",
+      "url": "https://fssai.gov.in/docs/food-law/regulations/Direction_New_compressed.pdf",
+      "pages": "Annexure pp. 23 to 55 (PDF pp. 26 to 58)",
+      "read_on": "2026-09-30"
+    },
+    "rules": [
+      "Every row was copied from the page image (the PDF's text layer merges cells at page breaks), all 33 pages read. Rows without a note are not here: the schedule says nothing a user would read about them beyond the usage range.",
+      "The note is quoted exactly as printed, spelling included (row 370: \"recommdeded\", \"beow\").",
+      "Names are the schedule's own (its Latin names and its \"Official and common names\" column). A name printed on two rows is left out: \"Sage\" (rows 363 and 427), \"Saral\" (rows 312 and 314). No other English names (D-139).",
+      "A note belongs to a part. When the plant has other parts in the schedule, the tile shows only if the pack's entry names the noted part (parts_in_schedule). `placement` marks a note the schedule doesn't box to one part.",
+      "Schedule II Notes 4 and 5 (p. 55): the usage range for children 5 to 16 years is half the adult range, 2 to 5 years a quarter."
+    ],
+    "who_values": "pregnancy | under_5 | under_16 | conceiving | lactating | children | diabetes | condition | all"
+  },
+  "rows": [
+    {
+      "id": "allium_sativum_bulb",
+      "row": 19,
+      "botanical": [
+        "Allium sativum"
+      ],
+      "part": "Bulb",
+      "parts_in_schedule": [
+        "Bulb",
+        "Leaf"
+      ],
+      "names": [
+        "Rason",
+        "Lahsun"
+      ],
+      "usage_adult_per_day": "1-3 g",
+      "note": "Not recommended during pregnancy",
+      "who": [
+        "pregnancy"
+      ],
+      "fssai_basis": "Schedule II row 19, Annexure 1 p. 24, read from the page image",
+      "verified_on": "2026-09-30"
+    },
+    {
+      "id": "anacyclus_pyrethrum_root",
+      "row": 30,
+      "botanical": [
+        "Anacyclus pyrethrum"
+      ],
+      "part": "Root/ Seed",
+      "parts_in_schedule": [
+        "Root/ Seed"
+      ],
+      "names": [
+        "Akarkar"
+      ],
+      "usage_adult_per_day": "100 - 250 mg (as powder)",
+      "note": "Not recommended for children below 5 years",
+      "who": [
+        "under_5"
+      ],
+      "fssai_basis": "Schedule II row 30, Annexure 1 p. 24, read from the page image",
+      "verified_on": "2026-09-30"
+    },
+    {
+      "id": "ananas_comosus_fruit",
+      "row": 31,
+      "botanical": [
+        "Ananas comosus"
+      ],
+      "part": "Fruit",
+      "parts_in_schedule": [
+        "Fruit"
+      ],
+      "names": [
+        "Ananas",
+        "Pineapple"
+      ],
+      "usage_adult_per_day": "50-100 g (as fresh), 50-100 ml (as juice)",
+      "note": "Not recommended during pregnancy",
+      "who": [
+        "pregnancy"
+      ],
+      "fssai_basis": "Schedule II row 31, Annexure 1 p. 24, read from the page image",
+      "verified_on": "2026-09-30"
+    },
+    {
+      "id": "annona_squamosa_leaf",
+      "row": 35,
+      "botanical": [
+        "Annona squamosa",
+        "Annona reticulata",
+        "Annona muricata",
+        "Annona cherimola"
+      ],
+      "part": "Leaf",
+      "parts_in_schedule": [
+        "Fruit pulp",
+        "Leaf"
+      ],
+      "names": [
+        "Shareefa",
+        "Sitaphal",
+        "Ramphal",
+        "Laxmanphal",
+        "Hanuman phal"
+      ],
+      "usage_adult_per_day": "3-5 g (as powder)",
+      "note": "Not recommended for children below 16 years",
+      "who": [
+        "under_16"
+      ],
+      "fssai_basis": "Schedule II row 35, Annexure 1 p. 25, read from the page image",
+      "verified_on": "2026-09-30"
+    },
+    {
+      "id": "azadirachta_indica_leaf",
+      "row": 51,
+      "botanical": [
+        "Azadirachta indica"
+      ],
+      "part": "Leaf",
+      "parts_in_schedule": [
+        "Leaf",
+        "Fruit",
+        "Flower",
+        "Bark / Root bark"
+      ],
+      "names": [
+        "Nimba",
+        "Neem",
+        "Margosa tree"
+      ],
+      "usage_adult_per_day": "1-3 g (as powder)",
+      "note": "Not recommended for males and females planning to conceive",
+      "who": [
+        "conceiving"
+      ],
+      "fssai_basis": "Schedule II row 51, Annexure 1 p. 26, read from the page image",
+      "verified_on": "2026-09-30"
+    },
+    {
+      "id": "azadirachta_indica_fruit",
+      "row": 51,
+      "botanical": [
+        "Azadirachta indica"
+      ],
+      "part": "Fruit",
+      "parts_in_schedule": [
+        "Leaf",
+        "Fruit",
+        "Flower",
+        "Bark / Root bark"
+      ],
+      "names": [
+        "Neem"
+      ],
+      "usage_adult_per_day": "1-2 g (as pulp)",
+      "note": "Not recommended for males and females planning to conceive; Not recommended for children below 5 years",
+      "who": [
+        "conceiving",
+        "under_5"
+      ],
+      "fssai_basis": "Schedule II row 51, Annexure 1 p. 26, read from the page image",
+      "verified_on": "2026-09-30"
+    },
+    {
+      "id": "capsicum_annum_unripe_fruit",
+      "row": 78,
+      "botanical": [
+        "Capsicum annum"
+      ],
+      "part": "Unripe fruit",
+      "parts_in_schedule": [
+        "Unripe fruit",
+        "Ripe fruit"
+      ],
+      "names": [
+        "Hari Mirch"
+      ],
+      "usage_adult_per_day": "1-5 g",
+      "note": "Not recommended for children below 5 years",
+      "who": [
+        "under_5"
+      ],
+      "fssai_basis": "Schedule II row 78, Annexure 1 p. 28, read from the page image",
+      "verified_on": "2026-09-30"
+    },
+    {
+      "id": "capsicum_annum_ripe_fruit",
+      "row": 78,
+      "botanical": [
+        "Capsicum annum"
+      ],
+      "part": "Ripe fruit",
+      "parts_in_schedule": [
+        "Unripe fruit",
+        "Ripe fruit"
+      ],
+      "names": [
+        "Lal Mirch"
+      ],
+      "usage_adult_per_day": "0.5-1 g (as powder)",
+      "note": "Not recommended for children below 5 years",
+      "who": [
+        "under_5"
+      ],
+      "fssai_basis": "Schedule II row 78, Annexure 1 p. 28, read from the page image",
+      "verified_on": "2026-09-30"
+    },
+    {
+      "id": "carica_papaya_unripe_fruit",
+      "row": 80,
+      "botanical": [
+        "Carica papaya"
+      ],
+      "part": "Unripe fruit",
+      "parts_in_schedule": [
+        "Ripe fruit",
+        "Unripe fruit",
+        "Leaf/Juice"
+      ],
+      "names": [
+        "Papita"
+      ],
+      "usage_adult_per_day": "30 -50 g",
+      "note": "Not recommended during pregnancy",
+      "who": [
+        "pregnancy"
+      ],
+      "fssai_basis": "Schedule II row 80, Annexure 1 p. 28, read from the page image",
+      "verified_on": "2026-09-30"
+    },
+    {
+      "id": "carica_papaya_leaf",
+      "row": 80,
+      "botanical": [
+        "Carica papaya"
+      ],
+      "part": "Leaf/Juice",
+      "parts_in_schedule": [
+        "Ripe fruit",
+        "Unripe fruit",
+        "Leaf/Juice"
+      ],
+      "names": [
+        "Papita"
+      ],
+      "usage_adult_per_day": "5 - 10 g/ml (for decoction)",
+      "note": "Not recommended during pregnancy",
+      "who": [
+        "pregnancy"
+      ],
+      "fssai_basis": "Schedule II row 80, Annexure 1 p. 28, read from the page image",
+      "verified_on": "2026-09-30"
+    },
+    {
+      "id": "cinnamomum_zeylanicum_bark",
+      "row": 101,
+      "botanical": [
+        "Cinnamomum zeylanicum",
+        "Cinnamomum verum",
+        "Cinnamomum cassia",
+        "Cinnamomum aromaticum"
+      ],
+      "part": "Bark",
+      "parts_in_schedule": [
+        "Bark"
+      ],
+      "names": [
+        "Twak",
+        "Dalchini"
+      ],
+      "usage_adult_per_day": "1-2 g",
+      "note": "Not recommended during pregnancy",
+      "who": [
+        "pregnancy"
+      ],
+      "fssai_basis": "Schedule II row 101, Annexure 1 p. 30, read from the page image",
+      "verified_on": "2026-09-30"
+    },
+    {
+      "id": "citrullus_colocynthis_fruit",
+      "row": 104,
+      "botanical": [
+        "Citrullus colocynthis"
+      ],
+      "part": "Fruit / Root / Leaf",
+      "parts_in_schedule": [
+        "Fruit / Root / Leaf"
+      ],
+      "names": [
+        "Indarvaruni",
+        "Indarun",
+        "Indrayan"
+      ],
+      "usage_adult_per_day": "0.25-0.5 g (as powder)",
+      "note": "Not recommended during pregnancy",
+      "who": [
+        "pregnancy"
+      ],
+      "fssai_basis": "Schedule II row 104, Annexure 1 p. 30, read from the page image",
+      "verified_on": "2026-09-30"
+    },
+    {
+      "id": "coccinia_grandis_leaf",
+      "row": 117,
+      "botanical": [
+        "Coccinia grandis",
+        "Coccinia indica",
+        "Coccinia cardifolia"
+      ],
+      "part": "Leaf",
+      "parts_in_schedule": [
+        "Leaf",
+        "Stem",
+        "Whole plant",
+        "Fruit"
+      ],
+      "names": [
+        "Bimbi",
+        "Kundru phal",
+        "Kuntru shak"
+      ],
+      "usage_adult_per_day": "5-10 g",
+      "note": "Not recommended for children below 5 years",
+      "who": [
+        "under_5"
+      ],
+      "fssai_basis": "Schedule II row 117, Annexure 1 p. 30, read from the page image",
+      "verified_on": "2026-09-30"
+    },
+    {
+      "id": "coffea_arabica_seed",
+      "row": 121,
+      "botanical": [
+        "Coffea arabica",
+        "Coffea robusta"
+      ],
+      "part": "Seed (Dry/Green)",
+      "parts_in_schedule": [
+        "Seed (Dry/Green)"
+      ],
+      "names": [
+        "Kaaphi",
+        "Kahava",
+        "Coffee"
+      ],
+      "usage_adult_per_day": "3-5 g",
+      "note": "Not recommended for children below 5 years",
+      "who": [
+        "under_5"
+      ],
+      "fssai_basis": "Schedule II row 121, Annexure 1 p. 31, read from the page image",
+      "verified_on": "2026-09-30"
+    },
+    {
+      "id": "coleus_forskohlii_root",
+      "row": 122,
+      "botanical": [
+        "Coleus forskohlii",
+        "Coleus aromaticus",
+        "Coleus barbatus"
+      ],
+      "part": "Root / Leaf / Whole plant",
+      "parts_in_schedule": [
+        "Root / Leaf / Whole plant"
+      ],
+      "names": [
+        "Gandiva",
+        "Pathachoor",
+        "Parn-yavani"
+      ],
+      "usage_adult_per_day": "3-5 g (as powder)",
+      "note": "Not recommended for children below 5 years",
+      "who": [
+        "under_5"
+      ],
+      "fssai_basis": "Schedule II row 122, Annexure 1 p. 31, read from the page image",
+      "verified_on": "2026-09-30"
+    },
+    {
+      "id": "coleticum_luteum_corm",
+      "row": 124,
+      "botanical": [
+        "Coleticum luteum"
+      ],
+      "part": "Corm",
+      "parts_in_schedule": [
+        "Corm"
+      ],
+      "names": [
+        "Suranjan",
+        "Suranjan-kadvi"
+      ],
+      "usage_adult_per_day": "0.5 - 1 g",
+      "note": "Not recommended in children below 5 years and pregnant mothers",
+      "who": [
+        "under_5",
+        "pregnancy"
+      ],
+      "fssai_basis": "Schedule II row 124, Annexure 1 p. 31, read from the page image",
+      "verified_on": "2026-09-30"
+    },
+    {
+      "id": "colocasia_antiquorum_rhizome",
+      "row": 125,
+      "botanical": [
+        "Colocasia antiquorum",
+        "Colocasia esculenta"
+      ],
+      "part": "Rhizome",
+      "parts_in_schedule": [
+        "Rhizome"
+      ],
+      "names": [
+        "Pindalaka",
+        "Arvi",
+        "Aaluki"
+      ],
+      "usage_adult_per_day": "20-30 g (as fresh)",
+      "note": "Not recommended for children below 16 years",
+      "who": [
+        "under_16"
+      ],
+      "fssai_basis": "Schedule II row 125, Annexure 1 p. 31, read from the page image",
+      "verified_on": "2026-09-30"
+    },
+    {
+      "id": "commiphora_wightii_oleoresin",
+      "row": 127,
+      "botanical": [
+        "Commiphora wightii"
+      ],
+      "part": "Oleoresin",
+      "parts_in_schedule": [
+        "Oleoresin"
+      ],
+      "names": [
+        "Guggal"
+      ],
+      "usage_adult_per_day": "2-4 g",
+      "note": "Not recommended for children below 5 years",
+      "who": [
+        "under_5"
+      ],
+      "fssai_basis": "Schedule II row 127, Annexure 1 p. 31, read from the page image",
+      "verified_on": "2026-09-30"
+    },
+    {
+      "id": "commiphora_myrrha_oleoresin",
+      "row": 128,
+      "botanical": [
+        "Commiphora myrrha"
+      ],
+      "part": "Oleoresin",
+      "parts_in_schedule": [
+        "Oleoresin"
+      ],
+      "names": [
+        "Hirabol"
+      ],
+      "usage_adult_per_day": "2-4 g",
+      "note": "Not recommended for children below 5 years",
+      "who": [
+        "under_5"
+      ],
+      "fssai_basis": "Schedule II row 128, Annexure 1 p. 31, read from the page image",
+      "verified_on": "2026-09-30"
+    },
+    {
+      "id": "costus_speciosus_rhizome",
+      "row": 136,
+      "botanical": [
+        "Costus speciosus",
+        "Costus koeniga"
+      ],
+      "part": "Rhizome / Root",
+      "parts_in_schedule": [
+        "Rhizome / Root"
+      ],
+      "names": [
+        "Kebuka",
+        "Kemuk"
+      ],
+      "usage_adult_per_day": "2-4 g (as powder)",
+      "note": "Not recommended for children below 5 years",
+      "who": [
+        "under_5"
+      ],
+      "fssai_basis": "Schedule II row 136, Annexure 1 p. 32, read from the page image",
+      "verified_on": "2026-09-30"
+    },
+    {
+      "id": "crocus_sativus_style",
+      "row": 138,
+      "botanical": [
+        "Crocus sativus"
+      ],
+      "part": "Style/ Stigma",
+      "parts_in_schedule": [
+        "Style/ Stigma"
+      ],
+      "names": [
+        "Kumkum",
+        "Kesar"
+      ],
+      "usage_adult_per_day": "25-50 mg",
+      "note": "Not recommended for children below 16 years",
+      "who": [
+        "under_16"
+      ],
+      "fssai_basis": "Schedule II row 138, Annexure 1 p. 32, read from the page image",
+      "verified_on": "2026-09-30"
+    },
+    {
+      "id": "daucus_carota_seed",
+      "row": 153,
+      "botanical": [
+        "Daucus carota"
+      ],
+      "part": "Seed",
+      "parts_in_schedule": [
+        "Tuberous root",
+        "Seed"
+      ],
+      "names": [
+        "Gajar"
+      ],
+      "usage_adult_per_day": "1-2 g (as powder)",
+      "note": "Not recommended during pregnancy",
+      "who": [
+        "pregnancy"
+      ],
+      "fssai_basis": "Schedule II row 153, Annexure 1 p. 33, read from the page image",
+      "verified_on": "2026-09-30"
+    },
+    {
+      "id": "embelia_ribes_fruit",
+      "row": 170,
+      "botanical": [
+        "Embelia ribes"
+      ],
+      "part": "Fruit",
+      "parts_in_schedule": [
+        "Fruit"
+      ],
+      "names": [
+        "Vidanga",
+        "Vai-vidanga",
+        "Bhabhiranga"
+      ],
+      "usage_adult_per_day": "1-2 g",
+      "note": "Not recommended for females planning to conceive",
+      "who": [
+        "conceiving"
+      ],
+      "fssai_basis": "Schedule II row 170, Annexure 1 p. 34, read from the page image",
+      "verified_on": "2026-09-30"
+    },
+    {
+      "id": "euphorbia_neriifolia_leaf",
+      "row": 175,
+      "botanical": [
+        "Euphorbia neriifolia",
+        "Euphorbia pilosa",
+        "Euphorbia royalana",
+        "Euphorbia dracunculoides"
+      ],
+      "part": "Leaf",
+      "parts_in_schedule": [
+        "Stem (tender) after boiling",
+        "Leaf",
+        "Latex"
+      ],
+      "names": [
+        "Snuhi",
+        "Thuhar",
+        "Sehund"
+      ],
+      "usage_adult_per_day": "3-5 g (as fresh)",
+      "note": "Not recommended for children below 5 years and pregnant women",
+      "who": [
+        "under_5",
+        "pregnancy"
+      ],
+      "fssai_basis": "Schedule II row 175, Annexure 1 p. 35, read from the page image",
+      "verified_on": "2026-09-30"
+    },
+    {
+      "id": "gloriosa_superba_root",
+      "row": 196,
+      "botanical": [
+        "Gloriosa superba"
+      ],
+      "part": "Root / Tubers",
+      "parts_in_schedule": [
+        "Root / Tubers"
+      ],
+      "names": [
+        "Langali",
+        "Kalihari"
+      ],
+      "usage_adult_per_day": "125 - 250 mg",
+      "note": "not indicated in children and lactating mothers",
+      "who": [
+        "children",
+        "lactating"
+      ],
+      "fssai_basis": "Schedule II row 196, Annexure 1 p. 36, read from the page image",
+      "verified_on": "2026-09-30"
+    },
+    {
+      "id": "hibiscus_rosasinensis_flower",
+      "row": 210,
+      "botanical": [
+        "Hibiscus rosasinensis"
+      ],
+      "part": "Flower",
+      "parts_in_schedule": [
+        "Flower"
+      ],
+      "names": [
+        "Japakusum",
+        "Gudahal"
+      ],
+      "usage_adult_per_day": "1-3 g (as powder)",
+      "note": "Not recommended during pregnancy",
+      "who": [
+        "pregnancy"
+      ],
+      "fssai_basis": "Schedule II row 210, Annexure 1 p. 37, read from the page image",
+      "verified_on": "2026-09-30"
+    },
+    {
+      "id": "ipomia_nil_seed",
+      "row": 222,
+      "botanical": [
+        "Ipomia nil",
+        "Convolvulus nil",
+        "Convolvulus biobatus"
+      ],
+      "part": "Seed",
+      "parts_in_schedule": [
+        "Seed"
+      ],
+      "names": [
+        "Shankhini",
+        "Krishanbeej",
+        "Kaaladana"
+      ],
+      "usage_adult_per_day": "3-5 g",
+      "note": "Not recommended in children below 5 years and pregnant women",
+      "who": [
+        "under_5",
+        "pregnancy"
+      ],
+      "fssai_basis": "Schedule II row 222, Annexure 1 p. 38, read from the page image",
+      "verified_on": "2026-09-30"
+    },
+    {
+      "id": "lepidium_sativum_seed",
+      "row": 232,
+      "botanical": [
+        "Lepidium sativum"
+      ],
+      "part": "Seed",
+      "parts_in_schedule": [
+        "Seed",
+        "Aerial part"
+      ],
+      "names": [
+        "Chandershoola",
+        "Chansur",
+        "Halon",
+        "Garden cress"
+      ],
+      "usage_adult_per_day": "3-6 g (as powder)",
+      "note": "Not recommended during pregnancy",
+      "who": [
+        "pregnancy"
+      ],
+      "fssai_basis": "Schedule II row 232, Annexure 1 p. 39, read from the page image",
+      "verified_on": "2026-09-30"
+    },
+    {
+      "id": "momordica_charantia_extract",
+      "row": 255,
+      "botanical": [
+        "Momordica charantia"
+      ],
+      "part": "Extract",
+      "parts_in_schedule": [
+        "Fresh fruit / seed",
+        "Dried fruit / seed",
+        "Extract"
+      ],
+      "names": [
+        "Karabelwa",
+        "Karela"
+      ],
+      "usage_adult_per_day": "0.5-1 g",
+      "note": "Not recommended for females planning to conceive and children below 5 years",
+      "who": [
+        "conceiving",
+        "under_5"
+      ],
+      "fssai_basis": "Schedule II row 255, Annexure 1 p. 40, read from the page image",
+      "verified_on": "2026-09-30",
+      "placement": "The note sits under this part's range at the end of the row; the schedule doesn't box it to one part."
+    },
+    {
+      "id": "myristica_fragrans_seed",
+      "row": 265,
+      "botanical": [
+        "Myristica fragrans"
+      ],
+      "part": "Seed (kernel)",
+      "parts_in_schedule": [
+        "Seed (kernel)",
+        "Aril (outer part of fruit)"
+      ],
+      "names": [
+        "Jatiphala",
+        "Jaiphala",
+        "Jatipatra"
+      ],
+      "usage_adult_per_day": "0.25- 1.0 g",
+      "note": "Caution: excessive use may cause giddiness",
+      "who": [
+        "all"
+      ],
+      "fssai_basis": "Schedule II row 265, Annexure 1 p. 41, read from the page image",
+      "verified_on": "2026-09-30"
+    },
+    {
+      "id": "nigella_sativa_seed",
+      "row": 271,
+      "botanical": [
+        "Nigella sativa"
+      ],
+      "part": "Seed",
+      "parts_in_schedule": [
+        "Seed"
+      ],
+      "names": [
+        "Kalaunji",
+        "Kaala jaaji"
+      ],
+      "usage_adult_per_day": "1-3 g",
+      "note": "Not recommended during pregnancy",
+      "who": [
+        "pregnancy"
+      ],
+      "fssai_basis": "Schedule II row 271, Annexure 1 p. 42, read from the page image",
+      "verified_on": "2026-09-30"
+    },
+    {
+      "id": "operculina_turpethum_root",
+      "row": 280,
+      "botanical": [
+        "Operculina turpethum",
+        "Ipomea turpethum"
+      ],
+      "part": "Root/Seed",
+      "parts_in_schedule": [
+        "Root/Seed"
+      ],
+      "names": [
+        "Trivrat",
+        "Nishoth"
+      ],
+      "usage_adult_per_day": "1-3 g",
+      "note": "Not recommended for children below 5 years",
+      "who": [
+        "under_5"
+      ],
+      "fssai_basis": "Schedule II row 280, Annexure 1 p. 43, read from the page image",
+      "verified_on": "2026-09-30"
+    },
+    {
+      "id": "pinus_excelsa_bark",
+      "row": 312,
+      "botanical": [
+        "Pinus excelsa",
+        "Pinus wallichiana"
+      ],
+      "part": "Bark",
+      "parts_in_schedule": [
+        "Fruit",
+        "Oil",
+        "Bark"
+      ],
+      "names": [
+        "Kail"
+      ],
+      "usage_adult_per_day": "2 - 3 g",
+      "note": "Not recommended for children below 5 years",
+      "who": [
+        "under_5"
+      ],
+      "fssai_basis": "Schedule II row 312, Annexure 1 p. 45, read from the page image",
+      "verified_on": "2026-09-30",
+      "placement": "The note sits under this part's range at the end of the row; the schedule doesn't box it to one part."
+    },
+    {
+      "id": "pinus_roxburghii_oil",
+      "row": 314,
+      "botanical": [
+        "Pinus roxburghii",
+        "Pinus longifolia"
+      ],
+      "part": "Oil",
+      "parts_in_schedule": [
+        "Fruit",
+        "Oleoresin",
+        "Oil"
+      ],
+      "names": [
+        "Cheer",
+        "Cheel"
+      ],
+      "usage_adult_per_day": "1-2 ml",
+      "note": "Not recommended for children below 5 years",
+      "who": [
+        "under_5"
+      ],
+      "fssai_basis": "Schedule II row 314, Annexure 1 p. 45, read from the page image",
+      "verified_on": "2026-09-30",
+      "placement": "The note sits under this part's range at the end of the row; the schedule doesn't box it to one part."
+    },
+    {
+      "id": "piper_betle_leaf",
+      "row": 315,
+      "botanical": [
+        "Piper betle"
+      ],
+      "part": "Leaf",
+      "parts_in_schedule": [
+        "Leaf"
+      ],
+      "names": [
+        "Tambula",
+        "Pana-patta",
+        "Paan"
+      ],
+      "usage_adult_per_day": "2-5 g",
+      "note": "Not recommended for children below 5 years",
+      "who": [
+        "under_5"
+      ],
+      "fssai_basis": "Schedule II row 315, Annexure 1 p. 45, read from the page image",
+      "verified_on": "2026-09-30"
+    },
+    {
+      "id": "piper_longum_fruit",
+      "row": 318,
+      "botanical": [
+        "Piper longum",
+        "Piper retrofractum"
+      ],
+      "part": "Fruit",
+      "parts_in_schedule": [
+        "Fruit"
+      ],
+      "names": [
+        "Pippaali",
+        "Long pepper",
+        "Magha"
+      ],
+      "usage_adult_per_day": "0.5-2 g (as powder)",
+      "note": "Not recommended for prolonged use",
+      "who": [
+        "all"
+      ],
+      "fssai_basis": "Schedule II row 318, Annexure 1 p. 45, read from the page image",
+      "verified_on": "2026-09-30"
+    },
+    {
+      "id": "plumbago_zeylanica_root",
+      "row": 325,
+      "botanical": [
+        "Plumbago zeylanica",
+        "Plumbago indica"
+      ],
+      "part": "Root",
+      "parts_in_schedule": [
+        "Root"
+      ],
+      "names": [
+        "Chitraka",
+        "Chitra-sfed",
+        "Lal-pushp"
+      ],
+      "usage_adult_per_day": "1-2 g (as powder) after purification",
+      "note": "Not recommended for children below 5 years and pregnant women",
+      "who": [
+        "under_5",
+        "pregnancy"
+      ],
+      "fssai_basis": "Schedule II row 325, Annexure 1 p. 46, read from the page image",
+      "verified_on": "2026-09-30"
+    },
+    {
+      "id": "podophyllum_hexandrum_fruit",
+      "row": 326,
+      "botanical": [
+        "Podophyllum hexandrum",
+        "Podophyllum emodii"
+      ],
+      "part": "Fruit / Rhizome / Root",
+      "parts_in_schedule": [
+        "Fruit / Rhizome / Root"
+      ],
+      "names": [
+        "Ban-kakadi",
+        "Giriparpat"
+      ],
+      "usage_adult_per_day": "125-250 mg",
+      "note": "Not recommended for children below 5 years and pregnant women",
+      "who": [
+        "under_5",
+        "pregnancy"
+      ],
+      "fssai_basis": "Schedule II row 326, Annexure 1 p. 46, read from the page image",
+      "verified_on": "2026-09-30"
+    },
+    {
+      "id": "prunus_domestika_stem_extract",
+      "row": 336,
+      "botanical": [
+        "Prunus domestika",
+        "Prunus communis"
+      ],
+      "part": "Stem extract",
+      "parts_in_schedule": [
+        "Fruit",
+        "Seed Oil",
+        "Stem extract"
+      ],
+      "names": [
+        "Aarak",
+        "Aaluuchar",
+        "Aaluubhukaara"
+      ],
+      "usage_adult_per_day": "200 mg, Max",
+      "note": "not recommended for usage beyond 30 days.",
+      "who": [
+        "all"
+      ],
+      "fssai_basis": "Schedule II row 336, Annexure 1 p. 47, read from the page image",
+      "verified_on": "2026-09-30"
+    },
+    {
+      "id": "putranjiva_roxburghii_fruit_seed_kernel",
+      "row": 344,
+      "botanical": [
+        "Putranjiva roxburghii"
+      ],
+      "part": "Fruit seed kernel",
+      "parts_in_schedule": [
+        "Fruit seed kernel"
+      ],
+      "names": [
+        "Putrajivak",
+        "Jiya-pota"
+      ],
+      "usage_adult_per_day": "3-6 g",
+      "note": "Not recommended for children below 5 years",
+      "who": [
+        "under_5"
+      ],
+      "fssai_basis": "Schedule II row 344, Annexure 1 p. 47, read from the page image",
+      "verified_on": "2026-09-30"
+    },
+    {
+      "id": "ricinus_communis_oil",
+      "row": 353,
+      "botanical": [
+        "Ricinus communis"
+      ],
+      "part": "Oil",
+      "parts_in_schedule": [
+        "Seed/ Root",
+        "Leaf",
+        "Oil"
+      ],
+      "names": [
+        "Erand",
+        "Arand",
+        "Castor seed"
+      ],
+      "usage_adult_per_day": "1-5 ml (as laxative occassionally)",
+      "note": "Not recommended for children below 5 years",
+      "who": [
+        "under_5"
+      ],
+      "fssai_basis": "Schedule II row 353, Annexure 1 p. 48, read from the page image",
+      "verified_on": "2026-09-30",
+      "placement": "The note sits under this part's range at the end of the row; the schedule doesn't box it to one part."
+    },
+    {
+      "id": "rumex_vesicarius_leaf",
+      "row": 357,
+      "botanical": [
+        "Rumex vesicarius",
+        "Rumex nepalensis",
+        "Rumex maritimus",
+        "Rumex acetosella"
+      ],
+      "part": "Leaf",
+      "parts_in_schedule": [
+        "Leaf"
+      ],
+      "names": [
+        "Ambat chukka",
+        "Chukra"
+      ],
+      "usage_adult_per_day": "10-20 g",
+      "note": "Not recommended for children below 5 years",
+      "who": [
+        "under_5"
+      ],
+      "fssai_basis": "Schedule II row 357, Annexure 1 p. 48, read from the page image",
+      "verified_on": "2026-09-30"
+    },
+    {
+      "id": "saccharum_officinarum_stem__juice",
+      "row": 359,
+      "botanical": [
+        "Saccharum officinarum"
+      ],
+      "part": "Stem - Juice",
+      "parts_in_schedule": [
+        "Stem - Juice",
+        "Root",
+        "Sugar",
+        "Jaggery"
+      ],
+      "names": [
+        "Iiksashu",
+        "Ganna"
+      ],
+      "usage_adult_per_day": "100-200 ml (as juice), 5-15 g (for decoction)",
+      "note": "Not recommended for diabetics",
+      "who": [
+        "diabetes"
+      ],
+      "fssai_basis": "Schedule II row 359, Annexure 1 p. 48, read from the page image",
+      "verified_on": "2026-09-30",
+      "placement": "The note starts under the stem juice's range on p. 48 and ends in the root row on p. 49; it may belong to either."
+    },
+    {
+      "id": "saccharum_officinarum_sugar",
+      "row": 359,
+      "botanical": [
+        "Saccharum officinarum"
+      ],
+      "part": "Sugar",
+      "parts_in_schedule": [
+        "Stem - Juice",
+        "Root",
+        "Sugar",
+        "Jaggery"
+      ],
+      "names": [
+        "Chini",
+        "Shakkar"
+      ],
+      "usage_adult_per_day": "15-30 g",
+      "note": "Not recommended for diabetics",
+      "who": [
+        "diabetes"
+      ],
+      "fssai_basis": "Schedule II row 359, Annexure 1 p. 49, read from the page image",
+      "verified_on": "2026-09-30"
+    },
+    {
+      "id": "saccharum_officinarum_jaggery",
+      "row": 359,
+      "botanical": [
+        "Saccharum officinarum"
+      ],
+      "part": "Jaggery",
+      "parts_in_schedule": [
+        "Stem - Juice",
+        "Root",
+        "Sugar",
+        "Jaggery"
+      ],
+      "names": [
+        "Gud"
+      ],
+      "usage_adult_per_day": "15-30 g",
+      "note": "Not recommended for diabetics",
+      "who": [
+        "diabetes"
+      ],
+      "fssai_basis": "Schedule II row 359, Annexure 1 p. 49, read from the page image",
+      "verified_on": "2026-09-30"
+    },
+    {
+      "id": "saraca_asoca_bark",
+      "row": 365,
+      "botanical": [
+        "Saraca asoca",
+        "Saraca indica"
+      ],
+      "part": "Bark/Leaf",
+      "parts_in_schedule": [
+        "Bark/Leaf"
+      ],
+      "names": [
+        "Ashok"
+      ],
+      "usage_adult_per_day": "5-10 g",
+      "note": "Not recommended for children below 5 years",
+      "who": [
+        "under_5"
+      ],
+      "fssai_basis": "Schedule II row 365, Annexure 1 p. 49, read from the page image",
+      "verified_on": "2026-09-30"
+    },
+    {
+      "id": "saussurea_lappa_root",
+      "row": 366,
+      "botanical": [
+        "Saussurea lappa",
+        "Saussurea costus"
+      ],
+      "part": "Root/Rhizome",
+      "parts_in_schedule": [
+        "Root/Rhizome",
+        "Oil"
+      ],
+      "names": [
+        "Kushta",
+        "Kuth"
+      ],
+      "usage_adult_per_day": "3-5 g",
+      "note": "Not recommended for children below 5 years",
+      "who": [
+        "under_5"
+      ],
+      "fssai_basis": "Schedule II row 366, Annexure 1 p. 49, read from the page image",
+      "verified_on": "2026-09-30"
+    },
+    {
+      "id": "semicarpus_anacardium_fruits",
+      "row": 370,
+      "botanical": [
+        "Semicarpus anacardium"
+      ],
+      "part": "Fruits / Nuts",
+      "parts_in_schedule": [
+        "Fruits / Nuts"
+      ],
+      "names": [
+        "Bhallataka",
+        "Bhallava"
+      ],
+      "usage_adult_per_day": "Detoxified fruit 1-2 g in milk confection",
+      "note": "Not recommdeded for children beow 5 years and pregnant women",
+      "who": [
+        "under_5",
+        "pregnancy"
+      ],
+      "fssai_basis": "Schedule II row 370, Annexure 1 p. 50, read from the page image",
+      "verified_on": "2026-09-30"
+    },
+    {
+      "id": "tamarindus_indica_fruit_pulp",
+      "row": 391,
+      "botanical": [
+        "Tamarindus indica",
+        "Tamarindus officinalis"
+      ],
+      "part": "Fruit pulp",
+      "parts_in_schedule": [
+        "Fruit pulp",
+        "Seed"
+      ],
+      "names": [
+        "Amlika",
+        "Chincha",
+        "Imali",
+        "Tamarind"
+      ],
+      "usage_adult_per_day": "2-5 g",
+      "note": "Not recommended during skin ailments",
+      "who": [
+        "condition"
+      ],
+      "fssai_basis": "Schedule II row 391, Annexure 1 p. 51, read from the page image",
+      "verified_on": "2026-09-30"
+    },
+    {
+      "id": "trichosanthes_bracteata_root",
+      "row": 418,
+      "botanical": [
+        "Trichosanthes bracteata",
+        "Trichosanthes palmata"
+      ],
+      "part": "Root / Fruit",
+      "parts_in_schedule": [
+        "Root / Fruit"
+      ],
+      "names": [
+        "Inder Vaaruni",
+        "Vishaalaa"
+      ],
+      "usage_adult_per_day": "0.5-1 g (as powder)",
+      "note": "Not recommended for children below 5 years and pregnant women",
+      "who": [
+        "under_5",
+        "pregnancy"
+      ],
+      "fssai_basis": "Schedule II row 418, Annexure 1 p. 53, read from the page image",
+      "verified_on": "2026-09-30"
+    },
+    {
+      "id": "urginea_indica_bulb",
+      "row": 421,
+      "botanical": [
+        "Urginea indica",
+        "Drimia indica"
+      ],
+      "part": "Bulb / Root / Leaf",
+      "parts_in_schedule": [
+        "Bulb / Root / Leaf"
+      ],
+      "names": [
+        "Van palandu",
+        "jangali piyaz",
+        "kolakand"
+      ],
+      "usage_adult_per_day": "125-250 mg",
+      "note": "Not recommended for children below 5 years and pregnant women",
+      "who": [
+        "under_5",
+        "pregnancy"
+      ],
+      "fssai_basis": "Schedule II row 421, Annexure 1 p. 53, read from the page image",
+      "verified_on": "2026-09-30"
+    },
+    {
+      "id": "vitex_agnus_castus_leaf",
+      "row": 427,
+      "botanical": [
+        "Vitex agnus-castus"
+      ],
+      "part": "Leaf",
+      "parts_in_schedule": [
+        "Seed",
+        "Leaf"
+      ],
+      "names": [
+        "Renuka beej"
+      ],
+      "usage_adult_per_day": "1-3 g",
+      "note": "Not recommended for children below 5 years",
+      "who": [
+        "under_5"
+      ],
+      "fssai_basis": "Schedule II row 427, Annexure 1 p. 54, read from the page image",
+      "verified_on": "2026-09-30"
+    },
+    {
+      "id": "zingiber_officinale_extract",
+      "row": 437,
+      "botanical": [
+        "Zingiber officinale"
+      ],
+      "part": "Extract",
+      "parts_in_schedule": [
+        "Rhizome",
+        "Extract"
+      ],
+      "names": [
+        "Adrakh",
+        "Shunti"
+      ],
+      "usage_adult_per_day": "0.1 - 1 g",
+      "note": "Not recommended during hypertension and bleeding disorders",
+      "who": [
+        "condition"
+      ],
+      "fssai_basis": "Schedule II row 437, Annexure 1 p. 54, read from the page image",
+      "verified_on": "2026-09-30",
+      "placement": "The row runs across pp. 54 to 55; the note sits under the extract's range and continues on p. 55, where the part is labelled Extract."
+    }
+  ]
+}

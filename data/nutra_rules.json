@@ -1,0 +1,445 @@
+{
+  "_meta": {
+    "table": "nutra_rules",
+    "version": "0.1",
+    "purpose": "D-139: what the supplement result says from FSSAI's supplement rules and ICMR-NIN's RDA. Sushil 2026-09-30: amounts are shown beside the RDA for men and for women, and the RDA is never called a limit; a tile only above ICMR-NIN's own upper limit.",
+    "sources": {
+      "nutra": {
+        "title": "FSS (Health Supplements, Nutraceuticals, Food for Special Dietary Use, Food for Special Medical Purpose and Prebiotic and Probiotic Food) Regulations, 2022, Annexure 1, as operationalised by FSSAI's direction of 18 October 2022",
+        "url": "https://fssai.gov.in/docs/food-law/regulations/Direction_New_compressed.pdf",
+        "read_on": "2026-09-30"
+      },
+      "icmr_rda": {
+        "title": "ICMR-NIN, Short Summary Report: Nutrient Requirements for Indians, Recommended Dietary Allowances and Estimated Average Requirements (2020, revised 2024)",
+        "url": "https://www.nin.res.in/RDA_short_Report_2024.html",
+        "read_on": "2026-09-30",
+        "how_read": "ICMR-NIN's page embeds the report as a Google Drive file with downloads off; read in the viewer, tables checked on screenshots of the pages"
+      }
+    },
+    "not_compared": {
+      "folate": "Packs print folic acid; ICMR-NIN's table gives folate, and no source read gives the conversion.",
+      "vitamin_a": "Packs print retinol, beta-carotene or IU; the form behind ICMR-NIN's microgram figure isn't stated in the summary tables.",
+      "vitamin_d_in_micrograms": "ICMR-NIN's table is in IU; no source read gives the conversion.",
+      "biotin_pantothenic_acid": "Adequate intake in the report's text, not in table A2.",
+      "protein": "Given per kg of body weight."
+    }
+  },
+  "statements": [
+    {
+      "id": "category_words",
+      "text": "HEALTH SUPPLEMENT/ NUTRACEUTICAL/ FOOD FOR SPECIAL DIETARY USE/ FOOD FOR SPECIAL MEDICAL PURPOSE/ PREBIOTIC FOOD /PROBIOTIC FOOD",
+      "match": [
+        "health supplement",
+        "nutraceutical",
+        "dietary supplement",
+        "food supplement"
+      ],
+      "face": "front",
+      "fssai_basis": "5(12)(a)(i)(A), Annexure 1 p. 5 (and 6(1)(f)(ii), p. 8)",
+      "verified_on": "2026-09-30",
+      "ask": "the words \"HEALTH SUPPLEMENT\" or \"NUTRACEUTICAL\", in capital and bold letters near the name, on the front"
+    },
+    {
+      "id": "not_medicinal",
+      "text": "NOT FOR MEDICINAL USE",
+      "match": [
+        "not for medicinal use"
+      ],
+      "face": "front_or_back",
+      "fssai_basis": "5(12)(a)(ii)(A), Annexure 1 p. 6",
+      "verified_on": "2026-09-30",
+      "ask": "the words \"NOT FOR MEDICINAL USE\""
+    },
+    {
+      "id": "usage_level",
+      "text": "Recommended usage level",
+      "match": [
+        "take",
+        "daily",
+        "a day",
+        "per day",
+        "twice",
+        "once",
+        "recommended usage",
+        "recommended dose",
+        "dosage",
+        "directions for use"
+      ],
+      "face": "front_or_back",
+      "fssai_basis": "5(12)(a)(ii)(B), Annexure 1 p. 6",
+      "verified_on": "2026-09-30",
+      "ask": "the recommended usage level"
+    },
+    {
+      "id": "not_exceed",
+      "text": "Not to exceed the recommended daily usage",
+      "match": [
+        "not to exceed the recommended daily usage",
+        "do not exceed the recommended daily",
+        "not to exceed the recommended daily",
+        "do not exceed the recommended dose",
+        "do not exceed the recommended usage"
+      ],
+      "face": "front_or_back",
+      "fssai_basis": "5(12)(a)(ii)(D), Annexure 1 p. 6",
+      "verified_on": "2026-09-30",
+      "ask": "\"Not to exceed the recommended daily usage\""
+    },
+    {
+      "id": "varied_diet",
+      "text": "product is not to be used as a substitute for a varied diet",
+      "match": [
+        "substitute for a varied diet",
+        "substitute for varied diet"
+      ],
+      "face": "front_or_back",
+      "fssai_basis": "5(12)(a)(ii)(G), Annexure 1 p. 6",
+      "verified_on": "2026-09-30",
+      "ask": "a statement that the \"product is not to be used as a substitute for a varied diet\""
+    },
+    {
+      "id": "out_of_reach",
+      "text": "product is required to be stored out of reach of children",
+      "match": [
+        "out of reach of children",
+        "away from the reach of children",
+        "out of the reach of children"
+      ],
+      "face": "front_or_back",
+      "fssai_basis": "5(12)(a)(ii)(H), Annexure 1 p. 6",
+      "verified_on": "2026-09-30",
+      "ask": "a warning that the \"product is required to be stored out of reach of children\""
+    }
+  ],
+  "rda": [
+    {
+      "nutrient": "calcium",
+      "label": "calcium",
+      "unit": "mg",
+      "rda_men": 1000,
+      "rda_women": 1000,
+      "tul_adult": 2500,
+      "table": "A2 p. 30 (adults, sedentary where the table splits by activity); A6 p. 32",
+      "names": [
+        "calcium"
+      ],
+      "verified_on": "2026-09-30"
+    },
+    {
+      "nutrient": "magnesium",
+      "label": "magnesium",
+      "unit": "mg",
+      "rda_men": 440,
+      "rda_women": 370,
+      "tul_adult": 350,
+      "table": "A2 p. 30 (adults, sedentary where the table splits by activity); A6 p. 32",
+      "names": [
+        "magnesium"
+      ],
+      "verified_on": "2026-09-30",
+      "note": "For Magnesium the TUL values are only for non-dietary pharmacological doses."
+    },
+    {
+      "nutrient": "iron",
+      "label": "iron",
+      "unit": "mg",
+      "rda_men": 19,
+      "rda_women": 29,
+      "tul_adult": 45,
+      "table": "A2 p. 30 (adults, sedentary where the table splits by activity); A6 p. 32",
+      "names": [
+        "iron"
+      ],
+      "verified_on": "2026-09-30"
+    },
+    {
+      "nutrient": "zinc",
+      "label": "zinc",
+      "unit": "mg",
+      "rda_men": 17,
+      "rda_women": 13.2,
+      "tul_adult": 40,
+      "table": "A2 p. 30 (adults, sedentary where the table splits by activity); A6 p. 32",
+      "names": [
+        "zinc"
+      ],
+      "verified_on": "2026-09-30"
+    },
+    {
+      "nutrient": "iodine",
+      "label": "iodine",
+      "unit": "ug",
+      "rda_men": 140,
+      "rda_women": 140,
+      "tul_adult": 1100,
+      "table": "A2 p. 30 (adults, sedentary where the table splits by activity); A6 p. 32",
+      "names": [
+        "iodine"
+      ],
+      "verified_on": "2026-09-30"
+    },
+    {
+      "nutrient": "thiamine",
+      "label": "thiamine (vitamin B1)",
+      "unit": "mg",
+      "rda_men": 1.4,
+      "rda_women": 1.4,
+      "tul_adult": null,
+      "table": "A2 p. 30 (adults, sedentary where the table splits by activity); A6 p. 32",
+      "names": [
+        "thiamine",
+        "thiamin",
+        "vitamin b1"
+      ],
+      "verified_on": "2026-09-30"
+    },
+    {
+      "nutrient": "riboflavin",
+      "label": "riboflavin (vitamin B2)",
+      "unit": "mg",
+      "rda_men": 2.0,
+      "rda_women": 1.9,
+      "tul_adult": null,
+      "table": "A2 p. 30 (adults, sedentary where the table splits by activity); A6 p. 32",
+      "names": [
+        "riboflavin",
+        "vitamin b2"
+      ],
+      "verified_on": "2026-09-30"
+    },
+    {
+      "nutrient": "niacin",
+      "label": "niacin (vitamin B3)",
+      "unit": "mg",
+      "rda_men": 14,
+      "rda_women": 11,
+      "tul_adult": 35,
+      "table": "A2 p. 30 (adults, sedentary where the table splits by activity); A6 p. 32",
+      "names": [
+        "niacin",
+        "niacinamide",
+        "nicotinamide",
+        "vitamin b3"
+      ],
+      "verified_on": "2026-09-30"
+    },
+    {
+      "nutrient": "vitamin_b6",
+      "label": "vitamin B6",
+      "unit": "mg",
+      "rda_men": 1.9,
+      "rda_women": 1.9,
+      "tul_adult": 100,
+      "table": "A2 p. 30 (adults, sedentary where the table splits by activity); A6 p. 32",
+      "names": [
+        "vitamin b6",
+        "pyridoxine"
+      ],
+      "verified_on": "2026-09-30"
+    },
+    {
+      "nutrient": "vitamin_b12",
+      "label": "vitamin B12",
+      "unit": "ug",
+      "rda_men": 2.2,
+      "rda_women": 2.2,
+      "tul_adult": null,
+      "table": "A2 p. 30 (adults, sedentary where the table splits by activity); A6 p. 32",
+      "names": [
+        "vitamin b12",
+        "cyanocobalamin",
+        "methylcobalamin",
+        "cobalamin"
+      ],
+      "verified_on": "2026-09-30"
+    },
+    {
+      "nutrient": "vitamin_c",
+      "label": "vitamin C",
+      "unit": "mg",
+      "rda_men": 80,
+      "rda_women": 65,
+      "tul_adult": 2000,
+      "table": "A2 p. 30 (adults, sedentary where the table splits by activity); A6 p. 32",
+      "names": [
+        "vitamin c",
+        "ascorbic acid"
+      ],
+      "verified_on": "2026-09-30"
+    },
+    {
+      "nutrient": "vitamin_d",
+      "label": "vitamin D",
+      "unit": "IU",
+      "rda_men": 600,
+      "rda_women": 600,
+      "tul_adult": 4000,
+      "table": "A2 p. 30 (adults, sedentary where the table splits by activity); A6 p. 32",
+      "names": [
+        "vitamin d",
+        "vitamin d3",
+        "cholecalciferol",
+        "vitamin d2",
+        "ergocalciferol"
+      ],
+      "verified_on": "2026-09-30",
+      "note": "Compared only when the pack prints IU, the unit of ICMR-NIN's table."
+    },
+    {
+      "nutrient": "phosphorus",
+      "label": "phosphorus",
+      "unit": "mg",
+      "rda_men": 600,
+      "rda_women": 600,
+      "tul_adult": null,
+      "table": "A5 p. 31 (adults, adequate intake)",
+      "names": [
+        "phosphorus",
+        "phosphorous"
+      ],
+      "verified_on": "2026-09-30"
+    },
+    {
+      "nutrient": "potassium",
+      "label": "potassium",
+      "unit": "mg",
+      "rda_men": 3500,
+      "rda_women": 3500,
+      "tul_adult": null,
+      "table": "A5 p. 31 (adults)",
+      "names": [
+        "potassium"
+      ],
+      "verified_on": "2026-09-30"
+    },
+    {
+      "nutrient": "copper",
+      "label": "copper",
+      "unit": "mg",
+      "rda_men": 1.7,
+      "rda_women": 1.7,
+      "tul_adult": null,
+      "table": "A5 p. 31 (adults)",
+      "names": [
+        "copper"
+      ],
+      "verified_on": "2026-09-30"
+    },
+    {
+      "nutrient": "manganese",
+      "label": "manganese",
+      "unit": "mg",
+      "rda_men": 4,
+      "rda_women": 4,
+      "tul_adult": null,
+      "table": "A5 p. 31 (adults)",
+      "names": [
+        "manganese"
+      ],
+      "verified_on": "2026-09-30"
+    },
+    {
+      "nutrient": "chromium",
+      "label": "chromium",
+      "unit": "ug",
+      "rda_men": 50,
+      "rda_women": 50,
+      "tul_adult": null,
+      "table": "A5 p. 31 (adults)",
+      "names": [
+        "chromium"
+      ],
+      "verified_on": "2026-09-30"
+    },
+    {
+      "nutrient": "selenium",
+      "label": "selenium",
+      "unit": "ug",
+      "rda_men": 40,
+      "rda_women": 40,
+      "tul_adult": null,
+      "table": "A5 p. 31 (adults)",
+      "names": [
+        "selenium"
+      ],
+      "verified_on": "2026-09-30"
+    }
+  ],
+  "units": {
+    "mg": [
+      "mg",
+      "milligram",
+      "milligrams"
+    ],
+    "ug": [
+      "mcg",
+      "µg",
+      "μg",
+      "ug",
+      "microgram",
+      "micrograms"
+    ],
+    "g": [
+      "g",
+      "gm",
+      "gram",
+      "grams"
+    ],
+    "IU": [
+      "iu",
+      "i.u."
+    ]
+  },
+  "salt_words": [
+    "fumarate",
+    "sulphate",
+    "sulfate",
+    "carbonate",
+    "oxide",
+    "citrate",
+    "gluconate",
+    "chloride",
+    "bisglycinate",
+    "glycinate",
+    "picolinate",
+    "phosphate",
+    "hydrochloride",
+    "mononitrate",
+    "ascorbate",
+    "succinate",
+    "lactate",
+    "iodide",
+    "iodate",
+    "selenite",
+    "selenate",
+    "acetate",
+    "orotate",
+    "aspartate"
+  ],
+  "salt_amount_of_nutrient": [
+    "as ",
+    "eq",
+    "equivalent",
+    "elemental",
+    "providing",
+    "yields"
+  ],
+  "children_2_to_5": {
+    "text": "The products covered under these regulations intended for children of 2 to 5 years of age, shall only be given under medical advice by a recognized medical doctor or dietician or nutritionist.",
+    "fssai_basis": "5(10), Annexure 1 p. 5",
+    "verified_on": "2026-09-30"
+  },
+  "protein_powder": {
+    "quotes": [
+      "Consuming high level of protein, especially in the form of protein supplement powders, is therefore not advisable.",
+      "Most athletes can get the recommended amount of protein through food alone, without the use of supplements."
+    ],
+    "source": {
+      "title": "ICMR-NIN, Dietary Guidelines for Indians, 2024",
+      "url": "https://nin.res.in/dietaryguidelines/pdfjs/locale/DGI_2024.pdf",
+      "page": "p. 60 (PDF p. 77)",
+      "read_on": "2026-09-30"
+    },
+    "approved": "Sushil 2026-09-30 (D-139 choice 5: every sentence quoted from ICMR-NIN with its page)"
+  }
+}

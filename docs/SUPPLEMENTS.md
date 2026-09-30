@@ -3,6 +3,9 @@
 Written 2026-09-30 from primary documents read that day (D-046). **Accepted by Sushil 2026-09-30 (D-139
 LOCKED, with his choices recorded there: amounts beside the RDA, never "one RDA" as a limit; men and women
 side by side; the protein-powder note as quoted).**
+**Built in phase 2 (2026-09-30, branch `supplements`): see D-139's "Phase 2 built". Two corrections to this
+proposal from the build: Appendix A's GMP table applies to tablets too (5(4)(a) and the 10 May 2022 order),
+and the plant table has 53 notes on 48 rows, all read from the page images.**
 Every sentence here that the app would show is marked "User text" and quotes a source; everything
 else is working notes for the build. The companion file is `docs/BABY_FOOD.md` (D-140); the
 kind-of-pack rule and `data/pack_kinds.json` are shared and written out once, here.

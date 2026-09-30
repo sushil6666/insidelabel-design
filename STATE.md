@@ -1,6 +1,6 @@
 # STATE.md - where InsideLabel is, and how to pick it up
 
-**Last updated:** 2026-09-30 (**https://insidelabel.ai is live**, `main` = `a769260`, PR #60; D-139 and D-140 LOCKED, phase 1 built on branch `pack-kind`) · **Owner:** Sushil · **Tests:** 802 passing, 8 skipped, 1 expected failure · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 5.7 s on the live server (2026-09-27), Gemini + Cloud Vision, `verdict`
+**Last updated:** 2026-09-30 (**https://insidelabel.ai is live**, `main` = `a769260`, PR #60; D-139 and D-140 LOCKED, phase 1 built on branch `pack-kind`) · **Owner:** Sushil · **Tests:** 831 passing, 8 skipped, 1 expected failure · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 5.7 s on the live server (2026-09-27), Gemini + Cloud Vision, `verdict`
 
 This is the living status document. Read it first in any new session, then
 `DECISIONS.md` for the *why*. Update the "Last updated" line, the numbers and
@@ -649,6 +649,17 @@ food categories, PWA built, D-092 reproduction, D-093 Cloud Vision, scan speed,
 setup alarms.
 
 **NEXT SESSION STARTS HERE (2026-09-30).** Where things stand, newest first:
+
+- **Phase 2 of D-139 built: supplements** (branch `supplements`, web-29, 831 tests, PROMPT_VERSION `4efbe2214842`, no
+  migration). Phase 1 (`pack-kind`, PRs #62 and #63) merged, deployed, phone check done by Sushil 2026-09-30.
+  Prompt rule 12 reads the composition table; `lenses/nutra.py` over `data/nutra_botanicals.json`,
+  `nutra_additives.json`, `nutra_rules.json` (every row from its page image). A supplement result: plant-note
+  tiles by part, a day's amounts beside ICMR-NIN's RDA for men and women (never called a limit) with a tile
+  above the upper limit, 5(12) statements found or not found, additives against the format's list (GMP table
+  for all), the 5(10) children line, the protein-powder note, the sugar chip for gummies and powders; no score
+  sent. Walked, light and dark, no errors. **Waiting on Sushil:** merge, `update.sh`, phone check; what
+  "Compare only between supplements" should say (kept out for now); 3 supplement photos for gold (paid reads
+  asked first). **Then phase 3** (`baby-food`, in shadow).
 
 - **Phase 1 of D-139/D-140 built** (branch `pack-kind`, web-28, migration 019, 802 tests; PROMPT_VERSION
   `b26cc0ca9c24`). Kind of pack from printed words and licences (`core/pack_kind.py`,

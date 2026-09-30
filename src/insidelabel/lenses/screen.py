@@ -33,7 +33,7 @@ from insidelabel.core import engine, pack_kind
 from insidelabel.core.tokenize import extract_ins, ins_numbers
 from insidelabel.lenses import allergens as allergen_checker
 from insidelabel.lenses import compare as kids
-from insidelabel.lenses import nutrition
+from insidelabel.lenses import nutra, nutrition
 
 NAME = "{name}"
 MAX_PROFILES = 3                          # D-074
@@ -1019,7 +1019,8 @@ SINCE_UNREAD = "We couldn't read this pack clearly enough to compare it with the
 
 def build(*, verdict, display, claim_check, extracted, reliability, profiles,
           allergen_confidence, allergen_reliable, catalogue=None, has_barcode=True,
-          photos_sent=("back",), pack=None, screen_pack=None, nutrition=None, parts_sent=1, kind=None):
+          photos_sent=("back",), pack=None, screen_pack=None, nutrition=None, parts_sent=1, kind=None,
+          nutra_input=None):
     """
     The `screen` block of a /scan response. verdict=None means the scan was refused.
     pack: for a result read from a screen (D-130), our catalogue's version of the
@@ -1063,7 +1064,8 @@ def build(*, verdict, display, claim_check, extracted, reliability, profiles,
         }
 
     if kind and kind["code"] != "food":
-        out = _kind_screen(kind, people=people, ingredients=ingredients, reliability=reliability)
+        out = _kind_screen(kind, people=people, ingredients=ingredients, reliability=reliability,
+                           nutra_input=nutra_input, profiles=profiles)
         return _notes_for_every_result(out, catalogue=catalogue, profiles=profiles, screen_pack=screen_pack,
                                        ingredients=ingredients, statement=statement,
                                        allergen_confidence=allergen_confidence,
@@ -1207,8 +1209,10 @@ def _notes_for_every_result(out, *, catalogue, profiles, screen_pack, ingredient
 # here, under the wording lint (D-091); which parts show is data/pack_kinds.json.
 # Allergen lines stay first for every kind (D-060).
 KIND_TEXT = {
-    "supplement": ("Our checks for foods, such as sugar, additives and how a food is made, don't apply to "
-                   "a supplement, so we show the allergens and the ingredient list."),
+    # D-139 phase 2: a supplement is checked against FSSAI's rules for supplements, not the food checks.
+    "supplement": ("We check a supplement against FSSAI's rules for supplements, as operationalised by FSSAI's "
+                   "direction of 18 October 2022, and ICMR-NIN's nutrient requirements, not against our checks "
+                   "for foods."),
     "special_medical": ("We show the allergens on the list and nothing else for a food for special dietary "
                         "or medical use."),
     # D-140 (Sushil, 2026-09-30): until the lawyer answers, one sentence and nothing else about the food.
@@ -1233,7 +1237,174 @@ FSS_ACT_SOURCE = {"title": "Food Safety and Standards Act, 2006, section 3(1)(j)
                   "cite": "Food Safety and Standards Act, 2006, section 3(1)(j)"}
 
 
-def _kind_screen(kind, *, people, ingredients, reliability):
+# D-139 phase 2: a supplement's own checks (lenses/nutra.py); every sentence here.
+UNIT_TEXT = {"mg": "mg", "ug": "\u00b5g", "g": "g", "IU": "IU"}
+NUTRA_SOURCE = nutra.RULES["_meta"]["sources"]["nutra"]
+ICMR_SOURCE = nutra.RULES["_meta"]["sources"]["icmr_rda"]
+TUL_DEFINITION = ("ICMR-NIN: \"The TUL is the maximum level of habitual intake from all sources of a nutrient or "
+                  "related substance judged to be unlikely to lead to adverse health effects in humans.\"")
+SUPPLEMENT_TITLES = {"children": "For children", "amounts": "Amounts beside ICMR-NIN's RDA",
+                     "statements": "What FSSAI's rules ask the label to say", "additives": "Additives",
+                     "protein": "Protein powder"}
+_FORMAT_WORDS = {"tablet_capsule_syrup": "tablets, capsules and syrups", "supplements_13_6": "supplements"}
+
+
+def _cite(src, page=None):
+    return {"title": src["title"], "url": src["url"], "page": page,
+            "cite": src["title"] + (f", {page}" if page else "")}
+
+
+def _n(x):
+    return _fmt(x, 2)
+
+
+def _rda_words(r):
+    u = UNIT_TEXT[r["unit"]]
+    rda = (f"ICMR-NIN's RDA for adults is {_n(r['rda_men'])} {u} a day" if r["rda_men"] == r["rda_women"] else
+           f"ICMR-NIN's RDA is {_n(r['rda_men'])} {u} a day for adult men and {_n(r['rda_women'])} {u} for adult women")
+    tul = f", and its upper limit for adults is {_n(r['tul'])} {u} a day" if r["tul"] is not None else ""
+    return rda + tul + "."
+
+
+def _supplement_parts(kind, *, ingredients, vision, ocr_text, profiles, product=None):
+    """(tiles, details, sections, summary) for a supplement (D-139). vision None: a catalogue
+    result, with its published name (`product`) and list but no photos to read."""
+    vision = vision or {}
+    tiles, details, sections = [], {}, []
+    fmt = nutra.format_of(vision or {"product": product or {}})
+    child = any(p["age"] in kids.AGE_BANDS and p["age"] != "young" for p in profiles)
+
+    if child:
+        sections.append({"id": "children", "title": SUPPLEMENT_TITLES["children"],
+                         "lines": ["FSSAI's rules for supplements say products for children of 2 to 5 years \"shall only "
+                                   "be given under medical advice by a recognized medical doctor or dietician or "
+                                   "nutritionist\"."],
+                         "sources": [_cite(NUTRA_SOURCE, "5(10), Annexure 1 p. 5")]})
+
+    # Plants with a note in Schedule II: a tile each, the note quoted as printed.
+    hits = nutra.plants(ingredients, vision)
+    hits.sort(key=lambda h: not (child and set(h["row"]["who"]) & {"under_5", "under_16", "children"}))
+    for h in hits:
+        row = h["row"]
+        tid = _tile_id("plant", row["id"])
+        title = f"{row['botanical'][0]}, {row['part'].lower()}"
+        found = [f"FSSAI's schedule of plants for supplements says, for this part: \"{row['note']}\"."]
+        if row.get("placement"):
+            found.append(f"The schedule's layout: {row['placement']}")
+        if child:
+            found.append("The schedule gives children 5 to 16 years half the adult range and children 2 to 5 years "
+                         "a quarter of it.")
+        tiles.append({"id": tid, "kind": "supplement", "title": title, "chip": row["note"], "tone": "worth",
+                      "source": {"kind": "plant", "ref": row["id"]}})
+        details[tid] = {"title": title, "chip": row["note"], "kind": "supplement",
+                        "what_it_is": (f"FSSAI's schedule lists {row['botanical'][0]} ({row['part'].lower()}) at "
+                                       f"{row['usage_adult_per_day']} a day for adults."),
+                        "what_research_found": found, "who_it_concerns": None, "on_the_label": h["entry"],
+                        "where": None, "note": None,
+                        "sources": [_cite(NUTRA_SOURCE, row["fssai_basis"].split(", read")[0])]}
+
+    # Amounts in a day's usage beside ICMR-NIN's RDA (never called a limit) and upper limit.
+    if vision.get("composition") is not None or vision.get("pack_statements") is not None:
+        a = nutra.amounts(vision, ocr_text)
+        lines = []
+        if a["state"] == "not_read":
+            lines.append("We didn't find a table of amounts per tablet, capsule or serving in the photos.")
+        elif a["state"] == "unverified":
+            lines.append("We couldn't check the amounts against a second reading of the photo, so they aren't shown.")
+        elif a["rows"]:
+            if a["daily"]:
+                lines.append(f"A day's usage, as the pack says: \"{a['daily']['text']}\".")
+            elif a.get("per"):
+                lines.append(f"Amounts in one {a['per']['unit']}, as printed. We couldn't read how many a day the "
+                             "pack says to take, so a day's amounts aren't worked out.")
+            for r in a["rows"]:
+                u = UNIT_TEXT[r["unit"]]
+                amount = (f"{_n(r['value'])} {u} a day" if a["daily"] else
+                          f"{_n(r['value'])} {u} in one {a['per']['unit']}" if a.get("per") else r["printed"])
+                lines.append(f"{r['label'][0].upper() + r['label'][1:]}: {amount}. {_rda_words(r)}")
+                if r["note"] and r["nutrient"] == "magnesium":
+                    lines.append(f"ICMR-NIN's note: \"{r['note']}\"")
+                if r["over_tul"]:
+                    tid = _tile_id("tul", r["nutrient"])
+                    title = f"{r['label'][0].upper() + r['label'][1:]}: {_n(r['value'])} {u} a day"
+                    chip = "Above ICMR-NIN's upper limit for adults"
+                    tiles.append({"id": tid, "kind": "supplement", "title": title, "chip": chip, "tone": "worth",
+                                  "source": {"kind": "tul", "ref": r["nutrient"]}})
+                    details[tid] = {"title": title, "chip": chip, "kind": "supplement", "what_it_is": None,
+                                    "what_research_found": [f"ICMR-NIN's upper limit for adults is {_n(r['tul'])} {u} "
+                                                            f"a day.", TUL_DEFINITION]
+                                    + ([f"ICMR-NIN's note: \"{r['note']}\""] if r["note"] else []),
+                                    "who_it_concerns": None, "on_the_label": f"{r['line']}: {r['printed']}",
+                                    "where": f"A day's usage, as the pack says: \"{a['daily']['text']}\".",
+                                    "note": None, "sources": [_cite(ICMR_SOURCE, "pp. 30 to 32")]}
+        if lines:
+            sections.append({"id": "amounts", "title": SUPPLEMENT_TITLES["amounts"], "lines": lines,
+                             "sources": [_cite(ICMR_SOURCE, "pp. 30 to 32")]})
+
+    # The statements 5(12) asks for, found or not found, only on a complete read of both faces.
+    if vision:
+        checked = nutra.statements(vision, ocr_text)
+        if checked is None:
+            lines = ["We need clear photos of the whole front and back to check the statements FSSAI's rules ask "
+                     "for."]
+        else:
+            ask = {r["id"]: r["ask"] for r in nutra.RULES["statements"]}
+            found = [c for c in checked if c["found"]]
+            lines = [f"FSSAI's rules for health supplements ask the label for {ask[c['id']]}. We didn't find it on "
+                     f"the photos of this pack." for c in checked if not c["found"]]
+            if found:
+                lines.append("Found on the pack, as the rules ask: " +
+                             ", ".join(f"\"{c['printed']}\"" for c in found) + ".")
+        sections.append({"id": "statements", "title": SUPPLEMENT_TITLES["statements"], "lines": lines,
+                         "sources": [_cite(NUTRA_SOURCE, "5(12), Annexure 1 pp. 5 to 6")]})
+
+    # Additives against the list for this format; "not found" is never "not permitted".
+    adds = nutra.additives(ingredients, fmt)
+    if adds:
+        lines = []
+        listed = [x for x in adds if x["listed"]]
+        if listed:
+            where = _FORMAT_WORDS[listed[0]["where"]]
+            lines.append(f"In the additive lists FSSAI's supplement rules point to for {where}: "
+                         + ", ".join(dict.fromkeys(x["entry"] for x in listed)) + ".")
+        for x in adds:
+            if x["listed"] is None:
+                lines.append(f"\"{x['entry']}\": FSSAI's list for tablets and capsules allows \"Colors permitted "
+                             "under Rule 127 of Drugs & Cosmetics Rules including lake colours\", a list we haven't "
+                             "read, so this colour isn't checked.")
+            elif x["listed"] is False:
+                where = _FORMAT_WORDS[x["where"]]
+                tid = _tile_id("add", x["ins"] or x["entry"])[:48]
+                title, chip = x["name"] or x["entry"], "Not found in FSSAI's supplement lists"
+                text = (f"We didn't find it in the additive lists FSSAI's supplement rules point to for {where} "
+                        "(Annexure 3 and Appendix A's GMP table).")
+                lines.append(f"\"{x['entry']}\": {text}")
+                if tid not in details:
+                    tiles.append({"id": tid, "kind": "additive", "title": title, "chip": chip, "tone": "worth",
+                                  "source": {"kind": "nutra_additive", "ref": x["ins"] or x["entry"]}})
+                    details[tid] = {"title": title, "chip": chip, "kind": "additive", "what_it_is": None,
+                                    "what_research_found": [text, "Names on packs vary, so a person checks it too."],
+                                    "who_it_concerns": None, "on_the_label": x["entry"], "where": None, "note": None,
+                                    "sources": [_cite(NUTRA_SOURCE, "5(4)(a), p. 4; 6(1)(e), p. 8; Annexure 3, pp. 68 to 75")]}
+        sections.append({"id": "additives", "title": SUPPLEMENT_TITLES["additives"], "lines": lines,
+                         "sources": [_cite(NUTRA_SOURCE, "5(4)(a), p. 4; 6(1)(e), p. 8; Annexure 3, pp. 68 to 75")]})
+
+    # A protein powder: ICMR-NIN's own sentences, with the page (Sushil, D-139 choice 5).
+    if nutra.protein_powder(vision, fmt):
+        pp = nutra.RULES["protein_powder"]
+        sections.append({"id": "protein", "title": SUPPLEMENT_TITLES["protein"],
+                         "lines": ["ICMR-NIN's dietary guidelines say: \"" + pp["quotes"][0] + "\" and \""
+                                   + pp["quotes"][1] + "\""],
+                         "sources": [_cite(pp["source"], pp["source"]["page"])]})
+
+    # The sugar answer only for a supplement in a food format (gummies, powders, bars).
+    summary = None
+    if fmt == "food" and ingredients:
+        summary = [_summary(ingredients, kids.sugar_positions(ingredients), [], [], True)[0]]
+    return tiles, details, sections, summary
+
+
+def _kind_screen(kind, *, people, ingredients, reliability, nutra_input=None, profiles=()):
     """The result for a supplement, an infant food, a special medical food or a pack that isn't food."""
     code, parts = kind["code"], pack_kind.parts(kind["code"])
     printed = [e for e in kind["evidence"] if not e.get("supporting") and e.get("rule") != "catalogue_category"]
@@ -1261,4 +1432,12 @@ def _kind_screen(kind, *, people, ingredients, reliability):
         "more_title": MORE_TITLE,
         "checked": "We checked the ingredients against your avoid lists.",
     }
+    if code == "supplement":
+        tiles, details, sections, summary = _supplement_parts(
+            kind, ingredients=ingredients, vision=(nutra_input or {}).get("vision"),
+            ocr_text=(nutra_input or {}).get("ocr_text"), profiles=profiles,
+            product=(nutra_input or {}).get("product"))
+        out["tiles"], out["details"], out["sections"] = tiles, details, sections
+        if summary:
+            out["summary"] = summary
     return out

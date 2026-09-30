@@ -89,6 +89,10 @@ def test_a_supplement_keeps_its_kind_and_is_served_as_one_once_published(env):
     assert hit["catalogue"]["source"] == "catalogue"
     assert hit["pack_kind"]["code"] == "supplement" and hit["screen"]["kind"]["code"] == "supplement"
     assert "summary" not in hit["screen"]
+    # D-139 phase 2 from the catalogue: the reviewed list's additives, no amounts or statements (they need the
+    # photos), and no score.
+    ids = [x["id"] for x in hit["screen"]["sections"]]
+    assert ids == ["additives"] and hit["verdict"]["score"] is None and hit["display"] is None
 
 
 def test_a_pack_that_isnt_food_offers_d116s_reason(env):
