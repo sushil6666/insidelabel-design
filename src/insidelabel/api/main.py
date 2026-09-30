@@ -487,6 +487,24 @@ def compare_packs(req: CompareRequest):
             "error": "bad_age",
             "detail": f"age must be one of {', '.join(shelf.AGE_BANDS)}.",
         })
+    # D-140: the server itself never compares or ranks an infant food (nor, until
+    # phase 2, a supplement), whatever the client sends. Refused if any of: the kind
+    # the client reports, the kind the pack's printed statements give, or the kind
+    # stored for that scan says it can't be compared.
+    for p in req.packs:
+        kinds = {p.kind or "food", pack_kind.decide({"pack_statements": [
+            s for s in p.pack_statements if isinstance(s, dict) and isinstance(s.get("text"), str)]})["code"]}
+        stored = _persist(STORE.kind_of_scan, p.id) if STORE else None
+        if stored:
+            kinds.add(stored)
+        blocked = sorted(kinds - pack_kind.COMPARABLE)
+        if blocked:
+            raise HTTPException(status_code=422, detail={
+                "error": "not_comparable", "reason": "infant_food" if "infant" in blocked else blocked[0],
+                "pack": p.id,
+                "detail": ("We don't compare or rank foods for infants." if "infant" in blocked
+                           else "We compare ordinary foods only for now."),
+            })
     codes = parse_avoid(req.avoid)
     packs = [shelf.Product(p.id, p.name, p.ingredients, reliable=p.reliable,
                            allergen_statement=p.allergen_statement, confidence=p.confidence)
@@ -612,6 +630,21 @@ def _parse_screen_pack(raw):
     return {"ingredients": ings, "allergen_statement": stmt}
 
 
+def _withhold(kind, result):
+    """
+    D-140: a kind in shadow (infant foods) gets no result from the server, whatever the
+    client: no score, grade or band (verdict, display), no claim, nutrition or EU/US
+    result. The allergen lines, the kind and the ingredient list stay (the screen block).
+    The scan is still stored whole for reviewers (save_scan ran before this).
+    """
+    fields = pack_kind.WITHHOLD.get(kind["code"], ())
+    if fields:
+        for f in fields:
+            result[f] = None
+        result["withheld"] = {"fields": list(fields), "reason": f"{kind['code']}_in_shadow"}
+    return result
+
+
 def _catalogue_kind(hit):
     """D-139: the kind stored on the version, or, for one stored before it, the category's (else food)."""
     if hit.get("pack_kind"):
@@ -656,7 +689,7 @@ def _catalogue_result(hit, avoid_codes, who, compare_regulators, profiles=(), sc
         "allergen_statement": hit["allergen_statement"],
         "raw_text_sent_to_engine": raw,
     }
-    return {
+    return _withhold(kind, {
         # Reviewed data: read in full by a person, so the allergen gate is met.
         "allergens": allergen_block(avoid_codes, ingredients, hit["allergen_statement"], who=who),
         "screen": result_screen.build(
@@ -679,7 +712,7 @@ def _catalogue_result(hit, avoid_codes, who, compare_regulators, profiles=(), sc
         ] + rel.disclosures(reliability),
         "regulators": regulators.compare(verdict) if compare_regulators else None,
         "engine_version": ENGINE_VERSION,
-    }
+    })
 
 
 @app.get("/updates")
@@ -1492,7 +1525,9 @@ async def scan(
         "allergen_statement": vision.get("allergen_statement"),
         "raw_text_sent_to_engine": raw,
     }
-    return {
+    if vision.get("pack_statements"):
+        extracted["pack_statements"] = vision["pack_statements"]      # D-140: /compare re-decides the kind
+    return _withhold(kind, {
         "allergens": allergens,           # D-060: always the first thing a client reads
         # What the app renders, in order (D-060-D-066). Built from the fields below.
         "screen": result_screen.build(
@@ -1520,4 +1555,4 @@ async def scan(
         "disclosures": rel.disclosures(reliability),
         "regulators": regulators.compare(verdict) if compare_regulators else None,
         "engine_version": ENGINE_VERSION,
-    }
+    })

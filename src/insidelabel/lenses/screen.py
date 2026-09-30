@@ -1211,21 +1211,23 @@ KIND_TEXT = {
                    "a supplement, so we show the allergens and the ingredient list."),
     "special_medical": ("We show the allergens on the list and nothing else for a food for special dietary "
                         "or medical use."),
-    "infant": "We show the allergens on the list; our other checks for infant foods are not released yet.",
+    # D-140 (Sushil, 2026-09-30): until the lawyer answers, one sentence and nothing else about the food.
+    "infant": "Results for infant foods aren't shown yet. We show the allergens on the list and the ingredient list.",
     "not_food": ("Our checks follow FSSAI's food rules, and the Food Safety and Standards Act, 2006 leaves "
                  "\"drugs and medicinal products\" out of \"food\" (section 3(1)(j)). We show the allergens "
                  "on the list and nothing else."),
 }
-INFANT_HEADLINE = "This is a food for infants."
 NOT_FOOD_HEADLINE = "We didn't find an FSSAI licence number on the photos."
-# D-140 (Sushil's choice): the one line shown with the allergens while infant foods are in shadow.
-BREASTFEEDING = {
-    "text": ("ICMR-NIN's dietary guidelines say: \"Ensure exclusive breastfeeding for the first six months "
-             "and continue breastfeeding till two years and beyond\"."),
-    "sources": [{"title": "ICMR-NIN, Dietary Guidelines for Indians, 2024, guideline 3",
-                 "url": "https://nin.res.in/dietaryguidelines/pdfjs/locale/DGI_2024.pdf",
-                 "page": "p. 21 (PDF p. 38)", "cite": "ICMR-NIN, Dietary Guidelines for Indians, 2024, p. 21"}],
+# A kind known only from our catalogue's category, with no words printed to quote.
+CATEGORY_HEADLINE = {
+    "supplement": "Filed in our catalogue as a food supplement.",
+    "infant": "Filed in our catalogue as a food for infants.",
+    "special_medical": "Filed in our catalogue as a food for special dietary or medical use.",
 }
+# The printed words the headline quotes first: the product's own kind name before a notice.
+_HEADLINE_RULES = ("infant_names", "traditional", "supplement_words", "fsmp", "fsdu", "preterm",
+                   "hypoallergenic", "mono_grain", "medical_advice", "dietary_management", "six_months",
+                   "mothers_milk")
 FSS_ACT_SOURCE = {"title": "Food Safety and Standards Act, 2006, section 3(1)(j)",
                   "url": "https://fssai.gov.in/upload/uploadfiles/files/FOOD-ACT.pdf", "page": "PDF p. 2",
                   "cite": "Food Safety and Standards Act, 2006, section 3(1)(j)"}
@@ -1234,13 +1236,15 @@ FSS_ACT_SOURCE = {"title": "Food Safety and Standards Act, 2006, section 3(1)(j)
 def _kind_screen(kind, *, people, ingredients, reliability):
     """The result for a supplement, an infant food, a special medical food or a pack that isn't food."""
     code, parts = kind["code"], pack_kind.parts(kind["code"])
-    shown = next((e for e in kind["evidence"] if not e.get("supporting")), None)
-    if code == "infant":
-        headline = INFANT_HEADLINE
-    elif code == "not_food":
+    printed = [e for e in kind["evidence"] if not e.get("supporting") and e.get("rule") != "catalogue_category"]
+    shown = min(printed, key=lambda e: (_HEADLINE_RULES.index(e["rule"]) if e.get("rule") in _HEADLINE_RULES
+                                        else len(_HEADLINE_RULES)), default=None)
+    if code == "not_food":
         headline = NOT_FOOD_HEADLINE
+    elif shown:
+        headline = f"This pack says \"{shown['text']}\"."        # the kind in the pack's own words
     else:
-        headline = f"This pack says \"{shown['text']}\"."
+        headline = CATEGORY_HEADLINE[code]
     lines = [KIND_TEXT[code]]
     if code == "not_food":
         lines.insert(0, f"The pack prints \"{shown['text']}\".")
@@ -1257,6 +1261,4 @@ def _kind_screen(kind, *, people, ingredients, reliability):
         "more_title": MORE_TITLE,
         "checked": "We checked the ingredients against your avoid lists.",
     }
-    if "breastfeeding_line" in parts:
-        out["breastfeeding"] = BREASTFEEDING
     return out

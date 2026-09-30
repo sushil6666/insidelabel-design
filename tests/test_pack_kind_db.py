@@ -119,3 +119,32 @@ def test_a_version_from_before_d139_reads_as_its_categorys_kind(env):
     stored = main._catalogue_kind({"pack_kind": "infant", "category_code": "13.2",
                                    "pack_kind_evidence": {"evidence": [{"text": "Traditional Food for Infants"}]}})
     assert stored["code"] == "infant" and stored["evidence"][0]["text"] == "Traditional Food for Infants"
+
+
+def test_compare_refuses_a_stored_infant_scan_even_when_the_client_sends_nothing_about_it(env):
+    words = [st("MOTHER'S MILK IS BEST FOR YOUR BABY", "front"), st("Infant Formula", "front")]
+    j = post(gtin(), reading(["Milk solids", "Lactose", "Vegetable oils"], words))
+    assert j["pack_kind"]["code"] == "infant" and j["verdict"] is None
+    r = TestClient(main.app).post("/compare", json={"age": "kid", "packs": [
+        {"id": j["scan_id"], "name": "Formula", "ingredients": ["Milk solids", "Lactose"]},
+        {"id": "other", "name": "Rusk", "ingredients": ["Wheat flour", "Sugar"]}]})
+    assert r.status_code == 422 and r.json()["reason"] == "infant_food"
+    assert r.json()["pack"] == j["scan_id"]
+
+
+def test_a_published_infant_pack_is_served_without_any_result(env):
+    bc = gtin()
+    j = post(bc, reading(["Rice flour", "Milk solids"], [st("Processed Cereal Based Complementary Food", "front")]))
+    vid = j["catalogue"]["product_version_id"]
+    item_id, c, page = item_page(env, vid)
+    token = re.search(r'name="csrf" value="([0-9a-f]+)"', page).group(1)
+    c.post(f"/review/item/{item_id}/claim", data={"csrf": token})
+    r = c.post(f"/review/item/{item_id}/approve", follow_redirects=False, data={
+        "csrf": token, "name": "Rice Cereal", "brand": "Testco", "variant": "", "barcode": "",
+        "ingredients": "Rice flour\nMilk solids", "allergen_statement": "", "front_claims": "", "note": "",
+        "category": "13.2"})
+    assert r.status_code == 303 and "error=" not in r.headers["location"], r.headers["location"]
+    hit = TestClient(main.app).post("/scan", data={"barcode": bc}).json()
+    assert hit["catalogue"]["source"] == "catalogue" and hit["pack_kind"]["code"] == "infant"
+    assert hit["verdict"] is None and hit["display"] is None and hit["withheld"]["reason"] == "infant_in_shadow"
+    assert hit["screen"]["headline"]["text"] == 'This pack says "Processed Cereal Based Complementary Food".'

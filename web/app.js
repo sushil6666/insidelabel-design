@@ -833,6 +833,9 @@ function finish(body) {
       allergen_statement: body.extracted?.allergen_statement || null,
       confidence: rel.confidence?.ingredients ?? 1.0,
       reliable: rel.source === "catalogue" || (!!rel.verdict_safe_to_display && !!rel.ingredients_complete),
+      // D-140: the server re-checks the kind on /compare, from these too.
+      kind: body.pack_kind?.code || "food",
+      pack_statements: body.extracted?.pack_statements || [],
     } : null,
   });
   // D-130: the pack from the shop list has been scanned in the shop; it's done.
@@ -1036,9 +1039,7 @@ function kindView(s) {
     k.lines.map(t => el("p", {}, t)),
     k.evidence.length > 0 && el("p", { class: "muted small" }, "On the pack: ",
       k.evidence.map((e, i) => [i ? ", " : "", el("q", {}, e.text)])),
-    s.breastfeeding && el("p", { class: "breastfeeding" }, s.breastfeeding.text),
-    [...(k.sources || []), ...(s.breastfeeding?.sources || [])].length > 0 &&
-      sourceList([...(k.sources || []), ...(s.breastfeeding?.sources || [])]));
+    k.sources?.length > 0 && sourceList(k.sources));
 }
 
 // D-134: a tile. Its words (title, chip) are the server's; the icon is decoration.

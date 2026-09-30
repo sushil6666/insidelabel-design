@@ -33,6 +33,9 @@ with open(os.path.join(DATA_DIR, "pack_kinds.json"), encoding="utf-8") as _fh:
 
 KINDS = tuple(TABLE["kinds"])
 PARTS = {k: tuple(v["parts"]) for k, v in TABLE["kinds"].items()}
+# D-140: result fields the server never sends for a kind in shadow; kinds /compare accepts.
+WITHHOLD = {k: tuple(v.get("withhold", ())) for k, v in TABLE["kinds"].items()}
+COMPARABLE = frozenset(TABLE["comparable"])
 _LIC = TABLE["licences"]
 _FSSAI_NUMBER = re.compile(r"(?<!\d)\d{%d}(?!\d)" % _LIC["fssai_number_digits"])
 _ORDER = ("special_medical", "infant", "supplement")
