@@ -1983,6 +1983,41 @@ allergen line and headline, each opening a detail page; nothing else open by def
 screen fits a 390 x 844 phone for a pack with 2 warnings. To be built in phase 3 (branch
 `result-tiles`).
 
+**Built (2026-09-30, branch `result-tiles`, web-27).** Started after Sushil confirmed the phase 2 phone
+check ("Checked, start phase 3").
+- **Server (`lenses/screen.py`):** `screen.tiles`, each `{id, kind, title, chip, tone, source}`, kind
+  `not_permitted | additive | ingredient | nutrition`, in that order (hydrogenated fat first among the
+  notes, D-132), and `screen.details[tile id]`: `what_it_is`, `what_research_found[]`,
+  `who_it_concerns`, `on_the_label`, `where`, `note`, `sources[]`. **The tiles regroup what the
+  result already said; no new judgement and no new sentence about a pack.** Tiles are exactly the
+  D-111 additives badged "Not permitted in India" or "Worth knowing" (an unsure "not permitted" read
+  is `additive` with the chip "Check the number" and D-111's note), the D-132 ingredient tiles and
+  the D-133 trans fat row. Pages use the reviewed words: the D-125 research row (or the additive's
+  `why`), the ingredient note's sentences, the trans fat summary. `what_it_is` is the additive's
+  class from its row ("Potassium bromate is a flour treatment, INS 924a."), or for a note the sentence
+  that data/ingredient_notes.json marks with the new optional `what_it_is` index (maida only: palm
+  oil's FSSAI sentence defines palmolein, so it stays with the rest). `who_it_concerns` is always
+  null: no reviewed row says it apart from its research. `more_title` "More about this pack";
+  `glance.caption_short` (the caption's first sentence; the strip's ends say the second). Every older
+  field stays for app versions before web-27. `tests/test_result_tiles.py` (17 tests).
+- **App (`web/app.js`, web-27):** first screen = allergen lines, headline, tiles, the three answers as
+  chips (a tap opens one sentence under them; the sugar sources one tap further), then only what asks
+  for something now (a partial read's retake, "Add a photo of the nutrition table", the D-073
+  re-check), At a glance (smaller ring, one-sentence caption), Compare and Scan another (and "Add to
+  my shop list" on a screen result), Report a mistake; everything else in one closed "More about
+  this pack", in the old order. A tile opens `#/result/<id>/look/<tile id>` with a back link; the
+  trail records it as `sub`. "Compare" adds this pack and opens Compare (the D-123 "Holding another
+  pack?" card is gone; Compare's page offers the scan). Results kept on the phone from before web-27
+  show their old "Worth a look" rows in place of tiles.
+- **Measured** in headless Chromium at 390 x 844 from real `/scan` answers (replay), light and dark:
+  Britannia (2 tiles, one profile) ends at 787 px including Report a mistake; Maliban (3 tiles, two
+  profiles) at 984. No console errors. Found on the way: every `row wrap` also took the page's `.wrap`
+  padding (16px sides, 48px below), the "empty space under Remove" on the shop-list card seen in the
+  D-130 walk; fixed in app.css for all four rows.
+- **Choices for Sushil to confirm:** the front-photo ask (D-100) now sits inside "More"; over-threshold
+  nutrition rows (sugar, salt, energy) are not tiles (D-133 made only trans fat a tile); the shop list
+  stays for screen results only (its comparison says "your screenshot").
+
 ### D-135 · Hydrogenated and interesterified fats under the names Indian packs print them count as NOVA markers `LOCKED` (2026-09-29)
 Found while building D-132: the NOVA row "Hydrogenated / interesterified oil" misses the words Indian
 packs use. A rusk listing "Hydrogenated vegetable fat" scores 100, grade A, clean; Britannia's gold

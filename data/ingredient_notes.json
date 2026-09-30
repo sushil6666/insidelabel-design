@@ -44,6 +44,7 @@
         }
       ],
       "position_rule": "tile_if_top3 | tile | details | unnamed (the entry is only this name) | sugar_details (added to the sugar answer)",
+      "what_it_is": "optional: the index in summary of the sentence that says what the ingredient is (FSSAI's definition); its tile page (D-134) shows it under \"What it is\"",
       "children_only": "true: shown only when a child's profile is on the phone",
       "reviewed_by": "who reviewed it; null until then, and the row is not shown"
     },
@@ -85,6 +86,7 @@
         }
       ],
       "position_rule": "tile_if_top3",
+      "what_it_is": 0,
       "children_only": false,
       "reviewed_by": "sushil"
     },

@@ -724,10 +724,11 @@ def _nutrition(panel, parts_sent=1, catalogue=None):
     trans = panel["values"].get("trans_fat")
     if trans and trans["value"] > 0:
         tt = NUT["trans_fat_tile"]
-        tiles.append({"id": "trans_fat", "kind": "nutrition", "tone": "worth",
-                      "heading": "Worth a look: Trans fat",
-                      "more": f"{_amount_words(trans, 'g')} per 100 {panel['basis'].split(' ')[1]} on the "
-                              f"nutrition table. {NOTE_MORE}",
+        amount = f"{_amount_words(trans, 'g')} per 100 {panel['basis'].split(' ')[1]}"
+        tiles.append({"id": "trans_fat", "kind": "nutrition", "tone": "worth", "title": "Trans fat",
+                      "heading": "Worth a look: Trans fat", "amount": amount,
+                      "where": f"{amount} on the nutrition table.",
+                      "more": f"{amount} on the nutrition table. {NOTE_MORE}",
                       "body": list(tt["summary"]), "sources": _note_sources(tt),
                       "label_line": f"{trans['label']}: {trans['printed']}",
                       "source": {"kind": "nutrition", "ref": "trans_fat"}})
@@ -757,6 +758,8 @@ GLANCE_LABEL = {"worth": "Worth knowing", "sugar": "Sugar", "industrial": "Indus
                 "additive": "Additive", "other": "Other"}
 GLANCE_CAPTION = ("By number of ingredients, not weight: packs rarely print amounts. The strip is the "
                   "list in printed order, so what sits on the left there is most of.")
+# D-134: the first screen has room for the first sentence; the strip's own ends say the second.
+GLANCE_CAPTION_SHORT = "By number of ingredients, not weight: packs rarely print amounts."
 
 
 def _glance(ingredients, sugar_found):
@@ -779,7 +782,8 @@ def _glance(ingredients, sugar_found):
         entries.append({"n": n, "text": text, "type": t})
     counts = {t: sum(e["type"] == t for e in entries) for t in GLANCE_ORDER}
     return {"total": len(entries), "counts": {t: c for t, c in counts.items() if c},
-            "labels": GLANCE_LABEL, "entries": entries, "caption": GLANCE_CAPTION}
+            "labels": GLANCE_LABEL, "entries": entries, "caption": GLANCE_CAPTION,
+            "caption_short": GLANCE_CAPTION_SHORT}
 
 
 # D-127: what the words on a result mean, for the ones this result used. Each links
@@ -846,6 +850,93 @@ def _alerts(adds):
             "source": i["source"],
         })
     return out
+
+
+# D-134: one screen. Every "Worth a look" row of the result, from wherever it came
+# (an additive's badge, an ingredient note, the nutrition table), becomes one
+# compact tile; tapping it opens its own page, built from `details[tile id]`. The
+# tiles only regroup what the rows above already say: no new judgement, no new
+# sentence about a pack (D-004, D-091). The older fields (additive_alert, alerts,
+# ingredient_notes.tiles, nutrition.tiles) stay for app versions before web-27.
+MORE_TITLE = "More about this pack"
+TILE_KINDS = ("not_permitted", "additive", "ingredient", "nutrition")
+CHECK_CHIP = "Check the number"
+
+
+def _tile_id(kind, ref):
+    """A tile id that sits in a URL (#/result/<id>/look/<tile id>) as it is."""
+    return f"{kind}-" + "".join(ch for ch in str(ref).lower() if ch.isalnum() or ch == "_")
+
+
+def _cites(sources):
+    return [{"title": x["title"], "url": x["url"], "page": x.get("page") or None,
+             "cite": x.get("cite") or x["title"] + (f", {x['page']}" if x.get("page") else "")} for x in sources]
+
+
+def _misread(ins):
+    return f"We read \"INS {ins}\" on the label. Check the pack: if we misread it, tap Report a mistake."
+
+
+def _additive_tile(i):
+    """An additive with a "Not permitted" or "Worth knowing" badge (D-111, D-125)."""
+    row = engine._ADDITIVE_BY_INS.get(i["ins"]) or {}
+    klass = (row.get("class") or "additive").replace("_", " ")
+    badge = i["badge"]
+    blocked = badge["kind"] == "not_permitted"
+    res = RESEARCH.get(i["ins"])
+    kind = "not_permitted" if blocked else "additive"
+    tile = {"id": _tile_id("ins", i["ins"]), "kind": kind, "title": f"{i['name']} ({klass} {i['ins']})",
+            "chip": CHECK_CHIP if badge.get("note") else badge["text"], "tone": "alert" if blocked else "worth",
+            "source": i["source"]}
+    detail = {"title": tile["title"], "chip": tile["chip"], "kind": kind,
+              "what_it_is": f"{i['name']} is {_class_words(i['ins'])}, INS {i['ins']}.",
+              "what_research_found": list(res["summary"]) if res else [i["why"]],
+              "who_it_concerns": None,
+              "on_the_label": i.get("label_line") or i["label_text"], "where": None,
+              # The first thing on its page: FSSAI's list, or that the number itself may be a misread.
+              "note": (f"{ADDITIVE_ALERT} {_misread(i['ins'])}" if blocked else badge.get("note")),
+              "sources": _cites(res["sources"]) if res else []}
+    return tile, detail
+
+
+def _note_tile(n):
+    """D-132: an ingredient note the review marked as a tile (palm oil, maida in the first 3...)."""
+    row = NOTES[n["id"]]
+    body = list(row["summary"])
+    # `what_it_is` in the row: which of its reviewed sentences says what the ingredient
+    # is (FSSAI's definition). The words are the reviewed ones; only the place changes.
+    at = row.get("what_it_is")
+    what = body.pop(at) if at is not None else None
+    tile = {"id": _tile_id("note", n["id"]), "kind": "ingredient", "title": n["title"],
+            "chip": n["where"][len("Listed "):].rstrip("."), "tone": "worth", "source": n["source"]}
+    detail = {"title": n["title"], "chip": tile["chip"], "kind": "ingredient", "what_it_is": what,
+              "what_research_found": body, "who_it_concerns": None, "on_the_label": n["label_line"],
+              "where": n["where"], "note": None, "sources": n["sources"]}
+    return tile, detail
+
+
+def _nutrition_tile(t):
+    """D-133: trans fat above zero on the nutrition table."""
+    tile = {"id": _tile_id("nut", t["id"]), "kind": "nutrition", "title": t["title"],
+            "chip": t["amount"], "tone": "worth", "source": t["source"]}
+    detail = {"title": t["title"], "chip": t["amount"], "kind": "nutrition", "what_it_is": None,
+              "what_research_found": list(t["body"]), "who_it_concerns": None, "on_the_label": t["label_line"],
+              "where": t["where"], "note": None, "sources": t["sources"]}
+    return tile, detail
+
+
+def _tiles(adds, notes, nut):
+    """
+    D-134: (tiles, details). Order: an additive FSSAI doesn't permit, then the
+    additives worth knowing (as their cards), then the ingredient notes (hydrogenated
+    fat first, D-132), then the nutrition table.
+    """
+    made = [_additive_tile(i) for i in adds
+            if (i["badge"] or {}).get("kind") in ("not_permitted", "worth_knowing")]
+    made += [_note_tile(n) for n in (notes or {}).get("tiles") or []]
+    made += [_nutrition_tile(t) for t in (nut or {}).get("tiles") or []]
+    made.sort(key=lambda td: TILE_KINDS.index(td[0]["kind"]))
+    return [t for t, _ in made], {t["id"]: d for t, d in made}
 
 
 # D-123: what a result counts toward on "Your scans". The phone tallies these
@@ -1056,12 +1147,14 @@ def build(*, verdict, display, claim_check, extracted, reliability, profiles,
         out["band"] = {**out["band"], "code": "mixed", "label": BAND_LABEL["mixed"]}
     out["glance"] = _glance(ingredients, sugar_found)
     out["glossary"] = _glossary(summary, out["glance"], adds, people)
+    # D-134: the one-screen result. The allergen lines (people) stay first and apart.
+    out["tiles"], out["details"] = _tiles(adds, notes, nut)
+    out["more_title"] = MORE_TITLE
     alert = next((i for i in adds if (i["badge"] or {}).get("kind") == "not_permitted"), None)
     if alert:
         out["additive_alert"] = {
             "text": ADDITIVE_ALERT,
-            "detail": (f"We read \"INS {alert['ins']}\" on the label. Check the pack: if we "
-                       f"misread it, tap Report a mistake."),
+            "detail": _misread(alert["ins"]),
             "source": alert["source"],
         }
     if catalogue and catalogue.get("source") == "catalogue":

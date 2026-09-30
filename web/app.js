@@ -44,9 +44,10 @@ function go(path) {
 
 function route() {
   if (stopCamera) { stopCamera(); stopCamera = null; }
-  const [name, arg] = location.hash.replace(/^#\/?/, "").split("/");
-  // D-092: screens in the trail. `arg` is a scan id or a profile ref, never a name.
-  record("route", { to: name || "home", arg: arg || undefined });
+  const [name, arg, ...rest] = location.hash.replace(/^#\/?/, "").split("/");
+  // D-092: screens in the trail. `arg` is a scan id or a profile ref, never a name;
+  // `sub` a result's own page (D-134: "look/<tile id>").
+  record("route", { to: name || "home", arg: arg || undefined, sub: rest.join("/") || undefined });
   if (name !== "feedback") store.set("lastScreen", name || "home");     // where feedback was sent from
   // D-102: an invite-only server lets a phone in once it has joined with a code.
   // D-105: then "Before you start": the rules are agreed before anything else.
@@ -56,19 +57,19 @@ function route() {
       if (seq !== navSeq) return;
       if (!a.joined) return show(join());
       if (a.needAgree) return show(agree());
-      routeAfterJoin(name, arg);
+      routeAfterJoin(name, arg, rest);
     });
   }
-  routeAfterJoin(name, arg);
+  routeAfterJoin(name, arg, rest);
 }
 
-function routeAfterJoin(name, arg) {
+function routeAfterJoin(name, arg, rest = []) {
   if (!store.get("welcomed", false) && !["welcome", "who", "household", "person", "join", "agree", "data"].includes(name)) {
     return show(welcome());
   }
   const seq = ++navSeq;
   const view = routes[name] || home;
-  const out = view(arg && decodeURIComponent(arg));
+  const out = view(arg && decodeURIComponent(arg), ...rest.map(decodeURIComponent));
   Promise.resolve(out).then(node => { if (seq === navSeq) show(node); });
   updateNav();
 }
@@ -868,8 +869,8 @@ function table() {
 }
 
 // D-133: the nutrition table beside ICMR-NIN's thresholds. Every sentence is the server's.
-function nutritionView(n, h) {
-  const canAsk = n.ask_photo && pending.resultId === h.id && pending.back && pending.parts.length < 2;
+// `ask`: offer the table photo here; off when the first screen already offers it (D-134).
+function nutritionView(n, h, ask = true) {
   return el("div", { class: "card nutrition" },
     el("h2", {}, n.title),
     n.basis && el("p", { class: "muted small" }, n.basis),
@@ -878,21 +879,35 @@ function nutritionView(n, h) {
     n.adults && el("p", { class: "muted small" }, n.adults),
     n.also && el("p", { class: "muted small" }, n.also),
     n.text && el("p", {}, n.text),
-    canAsk && button(n.ask, () => go("table")),
+    ask && canAskTable(n, h) && button(n.ask, () => go("table")),
     n.checked && el("p", { class: "muted small" }, n.checked),
     n.sources?.length > 0 && el("details", { class: "more" }, el("summary", {}, "Sources"),
       el("ul", { class: "plain small" }, n.sources.map(x =>
         el("li", {}, el("a", { href: x.url, target: "_blank", rel: "noopener" }, x.cite))))));
 }
 
-// ------------------------------------------------------------------ result (D-060 to D-066)
-function result(id) {
+// The photos in hand belong to this result and one more part can still join them.
+function canAskTable(n, h) {
+  return !!(n.ask_photo && pending.resultId === h.id && pending.back && pending.parts.length < 2);
+}
+
+function sourceList(sources) {
+  return el("ul", { class: "plain small" }, sources.map(x =>
+    el("li", {}, el("a", { href: x.url, target: "_blank", rel: "noopener" }, x.cite || x.title))));
+}
+
+// ------------------------------------------------------------------ result (D-060 to D-066, D-134)
+// D-134: one screen. The allergen lines, the headline, the tiles, the three answers,
+// At a glance and the buttons; everything else sits in one closed "More about this
+// pack". A tile opens its own page, #/result/<id>/look/<tile id>.
+function result(id, sub, tileId) {
   const h = historyItem(id);
   if (!h || !h.screen) return errorView("We couldn't find that result on this phone.");
+  if (sub === "look") return lookView(h, tileId);
   const s = h.screen;
   const view = el("section", { class: "stack result" });
   // el() drops false/null children; the DOM's own append() would print "false".
-  const put = (...nodes) => view.append(...nodes.filter(x => x != null && x !== false));
+  const put = (...nodes) => view.append(...nodes.flat().filter(x => x != null && x !== false));
 
   put(el("p", { class: "product" }, productName(h.product)));
 
@@ -936,77 +951,28 @@ function result(id) {
     return view;
   }
 
-  // D-111: an additive FSSAI doesn't permit, read with confidence. Server text only.
-  if (s.additive_alert) put(el("div", { class: "add-alert", role: "note" },
-    el("span", { class: "add-icon", "aria-hidden": "true" }, "!"),
-    el("div", {}, el("strong", {}, s.additive_alert.text), el("p", {}, s.additive_alert.detail))));
-
-  // D-125: "Worth a look" rows, closed until tapped; the arrow nudges until then.
-  (s.alerts || []).forEach(a => put(el("details", { class: "look" },
-    el("summary", {},
-      el("span", { class: "add-icon look-icon", "aria-hidden": "true" }, "!"),
-      el("span", {}, el("strong", {}, a.title), el("span", { class: "look-more" }, a.more)),
-      el("span", { class: "look-arrow", "aria-hidden": "true" }, el("span", {}, "\u203a"))),
-    el("div", { class: "look-body" },
-      a.body.map(t => el("p", {}, t)),
-      el("p", { class: "muted small" }, "On the label: ", el("q", {}, a.label_line)),
-      a.sources.length > 0 && el("ul", { class: "plain small" }, a.sources.map(x =>
-        el("li", {}, el("a", { href: x.url, target: "_blank", rel: "noopener" }, x.title))))))));
-
-  // D-132: ingredients worth a look (palm oil, hydrogenated fat, maida near the
-  // start), the same closed rows as above. Server text only.
-  const notes = s.ingredient_notes;
-  const noteBody = n => [
-    n.body.map(t => el("p", {}, t)),
-    el("p", { class: "muted small" }, "On the label: ", el("q", {}, n.label_line)),
-    el("ul", { class: "plain small" }, n.sources.map(x =>
-      el("li", {}, el("a", { href: x.url, target: "_blank", rel: "noopener" }, x.cite))))];
-  (notes?.tiles || []).forEach(n => put(el("details", { class: "look" },
-    el("summary", {},
-      el("span", { class: "add-icon look-icon", "aria-hidden": "true" }, "!"),
-      el("span", {}, el("strong", {}, n.heading), el("span", { class: "look-more" }, n.more)),
-      el("span", { class: "look-arrow", "aria-hidden": "true" }, el("span", {}, "›"))),
-    el("div", { class: "look-body" }, noteBody(n)))));
-  // D-133: trans fat on the nutrition table, the same closed row.
-  (s.nutrition?.tiles || []).forEach(n => put(el("details", { class: "look" },
-    el("summary", {},
-      el("span", { class: "add-icon look-icon", "aria-hidden": "true" }, "!"),
-      el("span", {}, el("strong", {}, n.heading), el("span", { class: "look-more" }, n.more)),
-      el("span", { class: "look-arrow", "aria-hidden": "true" }, el("span", {}, "\u203a"))),
-    el("div", { class: "look-body" }, noteBody(n)))));
-
-  // 3. D-123: the same three answers on every pack. Older results kept on the
-  // phone have no summary; they keep the band (D-063) as before.
-  if (s.summary?.length) {
-    put(el("div", { class: "answers" }, s.summary.map(r => el("div", { class: "answer" },
-      el("span", { class: "q" }, r.label),
-      el("div", { class: "a" },
-        el("span", { class: `chip tone-${r.tone}` }, r.chip),
-        el("p", {}, r.text),
-        // D-132: what ICMR-NIN and WHO say, one tap away under the sugar answer.
-        r.more && el("details", { class: "more" }, el("summary", {}, r.more.title),
-          r.more.body.map(t => el("p", {}, t)),
-          el("ul", { class: "plain small" }, r.more.sources.map(x =>
-            el("li", {}, el("a", { href: x.url, target: "_blank", rel: "noopener" }, x.cite))))))))));
-    if (s.nutrition) put(nutritionView(s.nutrition, h));
-    if (notes?.lines?.length) put(el("details", { class: "item" }, el("summary", {}, notes.title),
-      el("div", { class: "items" }, notes.lines.map(n => el("div", { class: "note-line" },
-        el("strong", {}, n.title), " ", el("span", { class: "muted small" }, n.where), noteBody(n))))));
-    if (s.glance) put(glanceView(s.glance));
-    if (s.band.note) put(el("details", { class: "item" }, el("summary", {}, "What does \"industrial\" mean?"),
-      el("p", {}, s.band.note)));
+  // 3. D-134: one tile per thing worth a look, each opening its own page. Results
+  // kept on the phone from before web-27 have no tiles: their rows show as before.
+  if (s.tiles) {
+    if (s.tiles.length) put(el("ul", { class: "tiles" }, s.tiles.map(t => el("li", {}, tileLink(h, t)))));
   } else {
-    put(el("div", { class: `band band-${s.band.code}` },
-      el("strong", {}, s.band.label),
-      s.band.note && el("details", {}, el("summary", {}, "What does this mean?"), el("p", {}, s.band.note))));
-    put(el("p", { class: "muted" }, s.checked, " ", s.scope));
+    put(legacyLooks(s));
   }
-  if (s.catalogue_note) put(el("p", { class: "card note" }, s.catalogue_note));      // D-107
-  if (s.front_note) put(el("p", { class: "card note" }, s.front_note));              // D-108
 
+  // 4. D-123: the same three answers on every pack, as chips; a tap opens the sentence.
+  // Older results kept on the phone have no summary; they keep the band (D-063).
+  if (s.summary?.length) put(answersView(s.summary));
+  else put(el("div", { class: `band band-${s.band.code}` },
+    el("strong", {}, s.band.label),
+    s.band.note && el("details", {}, el("summary", {}, "What does this mean?"), el("p", {}, s.band.note))));
+
+  // A partial read, the table photo and the D-073 re-check ask for something now,
+  // with the pack in hand, so they stay on the first screen.
   if (s.retake) put(el("div", { class: "card warn" }, el("p", {}, s.retake),
     button("Retake the ingredients photo", () => { pending = { ...pending, back: null, barcode: h.barcode }; go("photo"); })));
-  if (s.last_verified) put(el("p", { class: "muted" }, s.last_verified));
+  const askTable = s.nutrition && canAskTable(s.nutrition, h);
+  if (askTable) put(el("div", { class: "card note" }, el("p", {}, s.nutrition.text),
+    button(s.nutrition.ask, () => go("table"))));
   if (s.recheck) put(el("div", { class: "card note" }, el("p", {}, s.recheck),
     button("Photograph the back", () => {
       resetPending();
@@ -1015,13 +981,137 @@ function result(id) {
       go("photo");
     })));
 
-  // 4. Claim check, once released (D-051).
+  if (s.glance) put(glanceView(s.glance, true));
+
+  // 5. Actions: compare (D-057), the shop list (D-130), report (D-076, on every result).
+  // D-130: a screen result goes on the shop list, to be scanned from the pack in the shop.
+  const onList = () => shopList().some(x => x.id === h.id);
+  if (s.shop_list && h.pack) put(button(onList() ? "On your shop list ✓" : "Add to my shop list", e => {
+    if (!onList()) {
+      store.set("shoplist", [{ id: h.id, product: h.product, barcode: h.barcode, at: h.at, pack: {
+        ingredients: h.pack.ingredients, allergen_statement: h.pack.allergen_statement } },
+        ...shopList()].slice(0, 30));
+    }
+    e.target.textContent = "On your shop list ✓";
+  }, "primary"));
+  // D-123: the next useful scan is the pack beside this one on the shelf (D-057).
+  // "Compare" adds this pack and opens Compare, which offers the scan for the next one.
+  const others = store.get("compare", []).filter(x => x !== h.id && historyItem(x)).length;
+  put(el("div", { class: "row wrap" },
+    h.pack && button(others ? `Compare (${others + 1})` : "Compare", () => {
+      if (!store.get("compare", []).includes(h.id)) toggleCompare(h.id);
+      updateNav();
+      go("compare");
+    }),
+    button("Scan another", () => { resetPending(); go("scan"); }, s.shop_list ? "" : "primary")),
+    reportLink(h));
+
+  // 6. Everything else, closed.
+  put(el("details", { class: "item more-pack" }, el("summary", {}, s.more_title || "More about this pack"),
+    el("div", { class: "stack more-body" }, moreAbout(h, !askTable))));
+  return view;
+}
+
+// D-134: a tile. Its words (title, chip) are the server's; the icon is decoration.
+function tileLink(h, t) {
+  return el("a", { class: `tile tile-${t.tone}`, href: `#/result/${encodeURIComponent(h.id)}/look/${encodeURIComponent(t.id)}` },
+    el("span", { class: "add-icon tile-icon", "aria-hidden": "true" }, t.kind === "not_permitted" ? "✕" : "!"),
+    el("span", { class: "tile-text" }, el("strong", {}, t.title), el("span", { class: "tile-chip" }, t.chip)),
+    el("span", { class: "tile-arrow", "aria-hidden": "true" }, "›"));
+}
+
+// D-134: a tile's own page, laid out from the server's `details[tile id]`.
+function lookView(h, tileId) {
+  const d = h.screen.details?.[tileId];
+  const back = el("a", { class: "back", href: `#/result/${encodeURIComponent(h.id)}` }, "‹ Back to the result");
+  if (!d) return el("section", { class: "stack look-page" }, back, el("p", {}, "We couldn't find that on this result."));
+  const part = (title, ...kids) => el("div", { class: "look-part" }, el("h2", {}, title), ...kids);
+  return el("section", { class: "stack look-page" },
+    back,
+    el("p", { class: "product" }, productName(h.product)),
+    el("h1", {}, d.title),
+    el("span", { class: `chip ${d.kind === "not_permitted" ? "tone-alert" : "tone-worth"}` }, d.chip),
+    d.note && el("p", { class: `card ${d.kind === "not_permitted" ? "stop" : "warn"}` }, d.note),
+    d.what_it_is && part("What it is", el("p", {}, d.what_it_is)),
+    d.what_research_found?.length > 0 && part("What the sources say", d.what_research_found.map(t => el("p", {}, t))),
+    d.who_it_concerns && part("Who it concerns", el("p", {}, d.who_it_concerns)),
+    part("On the label", el("p", {}, el("q", {}, d.on_the_label)), d.where && el("p", { class: "muted small" }, d.where)),
+    d.sources?.length > 0 && part("Sources", sourceList(d.sources)),
+    reportLink(h));
+}
+
+// D-123: the three answers as chips. One sentence open at a time, under the chips.
+function answersView(summary) {
+  const panel = el("div", { class: "answer-panel", id: "answer-panel", role: "region", hidden: true });
+  const chips = summary.map(r => el("button", {
+    // aria-expanded from a boolean: the wording lint reads every string literal in web/.
+    type: "button", class: "answer-chip", "aria-expanded": String(false), "aria-controls": "answer-panel",
+    onclick: e => {
+      const b = e.currentTarget;
+      const open = b.getAttribute("aria-expanded") === "true";
+      chips.forEach(c => c.setAttribute("aria-expanded", String(c === b && !open)));
+      if (open) { panel.hidden = true; return; }
+      // replaceChildren() would print "false": the children go through el().
+      panel.replaceChildren(el("div", {}, el("p", {}, el("strong", {}, r.label + ": "), r.text),
+        // D-132: what ICMR-NIN and WHO say, one tap away under the sugar answer.
+        r.more && el("details", { class: "more" }, el("summary", {}, r.more.title),
+          r.more.body.map(t => el("p", {}, t)), sourceList(r.more.sources))));
+      panel.hidden = false;
+    },
+  }, el("span", { class: "q" }, r.label), el("span", { class: `chip tone-${r.tone}` }, r.chip)));
+  return el("div", { class: "answers-compact" }, el("div", { class: "answer-chips" }, chips), panel);
+}
+
+// Results kept on the phone from before web-27 (no tiles): the D-111 alert and the
+// D-125/D-132/D-133 "Worth a look" rows, closed until tapped. Server text only.
+function legacyLooks(s) {
+  const look = (heading, more, body) => el("details", { class: "look" },
+    el("summary", {},
+      el("span", { class: "add-icon look-icon", "aria-hidden": "true" }, "!"),
+      el("span", {}, el("strong", {}, heading), el("span", { class: "look-more" }, more)),
+      el("span", { class: "look-arrow", "aria-hidden": "true" }, el("span", {}, "›"))),
+    el("div", { class: "look-body" }, body));
+  const noteBody = n => [n.body.map(t => el("p", {}, t)),
+    el("p", { class: "muted small" }, "On the label: ", el("q", {}, n.label_line)), sourceList(n.sources)];
+  return [
+    s.additive_alert && el("div", { class: "add-alert", role: "note" },
+      el("span", { class: "add-icon", "aria-hidden": "true" }, "!"),
+      el("div", {}, el("strong", {}, s.additive_alert.text), el("p", {}, s.additive_alert.detail))),
+    ...(s.alerts || []).map(a => look(a.title, a.more, [a.body.map(t => el("p", {}, t)),
+      el("p", { class: "muted small" }, "On the label: ", el("q", {}, a.label_line)),
+      a.sources.length > 0 && sourceList(a.sources)])),
+    ...(s.ingredient_notes?.tiles || []).map(n => look(n.heading, n.more, noteBody(n))),
+    ...(s.nutrition?.tiles || []).map(n => look(n.heading, n.more, noteBody(n))),
+  ];
+}
+
+// D-134: "More about this pack": what used to follow the answers, in the same order.
+function moreAbout(h, askTable) {
+  const s = h.screen;
+  const out = [];
+  const put = (...nodes) => out.push(...nodes.flat().filter(x => x != null && x !== false));
+  const notes = s.ingredient_notes;
+
+  if (s.nutrition) put(nutritionView(s.nutrition, h, askTable));
+  if (notes?.lines?.length) put(el("details", { class: "item" }, el("summary", {}, notes.title),
+    el("div", { class: "items" }, notes.lines.map(n => el("div", { class: "note-line" },
+      el("strong", {}, n.title), " ", el("span", { class: "muted small" }, n.where),
+      n.body.map(t => el("p", {}, t)),
+      el("p", { class: "muted small" }, "On the label: ", el("q", {}, n.label_line)),
+      sourceList(n.sources))))));
+  if (s.band.note && s.summary?.length) put(el("details", { class: "item" },
+    el("summary", {}, "What does \"industrial\" mean?"), el("p", {}, s.band.note)));
+  if (s.catalogue_note) put(el("p", { class: "card note" }, s.catalogue_note));      // D-107
+  if (s.front_note) put(el("p", { class: "card note" }, s.front_note));              // D-108
+  if (s.last_verified) put(el("p", { class: "muted" }, s.last_verified));
+
+  // Claim check, once released (D-051).
   if (s.claims?.length) {
     put(el("h2", {}, "The front of the pack"),
       el("ul", { class: "plain" }, s.claims.map(c => el("li", { class: c.contradicted ? "flag" : "" }, c.text))));
   }
 
-  // 5a. Every additive as a card with its badge (D-111). When the server sends
+  // Every additive as a card with its badge (D-111). When the server sends
   // these, the lists below leave additives out so none shows twice.
   const cards = s.additives?.items || [];
   if (cards.length) {
@@ -1035,7 +1125,7 @@ function result(id) {
   }
   const notCard = w => !(cards.length && w.source?.kind === "additive");
 
-  // 5b. Worth knowing, each with its why one tap away (D-056, D-066).
+  // Worth knowing, each with its why one tap away (D-056, D-066).
   const worth = (s.worth_knowing || []).filter(notCard);
   if (worth.length) {
     put(el("h2", {}, "Worth knowing"),
@@ -1046,7 +1136,7 @@ function result(id) {
         el("p", { class: "tech" }, w.technical)))));
   }
 
-  // 6. Ordinary ingredients, grouped (D-065), then the full list as read.
+  // Ordinary ingredients, grouped (D-065), then the full list as read.
   if (s.ordinary?.text && !s.summary?.length) {
     const plain = s.ordinary.additives.filter(notCard);
     put(el("details", { class: "item" },
@@ -1075,23 +1165,6 @@ function result(id) {
       button("Photograph the front", () => go("front/" + encodeURIComponent(h.id)))));
   }
 
-  if (s.summary?.length) put(el("p", { class: "muted small" }, s.checked, " ", s.scope));
-
-  // D-123: the next useful scan is the pack beside this one on the shelf (D-057).
-  if (h.pack) {
-    const waiting = store.get("compare", []).filter(x => x !== h.id && historyItem(x));
-    put(el("div", { class: "card note" },
-      el("h2", {}, waiting.length ? "Compare with the packs you added" : "Holding another pack?"),
-      el("p", {}, waiting.length
-        ? `See this one next to the ${waiting.length === 1 ? "other pack" : `other ${waiting.length} packs`} you added.`
-        : "Scan the one next to it on the shelf and see them side by side."),
-      button(waiting.length ? "Compare them" : "Scan another to compare", () => {
-        if (!store.get("compare", []).includes(h.id)) toggleCompare(h.id);
-        updateNav();
-        if (waiting.length) go("compare"); else { resetPending(); go("scan"); }
-      }, "primary")));
-  }
-
   // D-127: what the words on this result mean, each linked to "How we check".
   if (s.glossary?.length) {
     put(el("details", { class: "item" }, el("summary", {}, "What these words mean"),
@@ -1101,30 +1174,11 @@ function result(id) {
       ]).flat())));
   }
 
-  // 7. What this covers - stated, never silent (D-037).
+  // What this covers - stated, never silent (D-037).
   put(el("details", { class: "item" }, el("summary", {}, "What this check covers"),
     el("ul", { class: "plain small" }, (h.disclosures || []).map(d => el("li", {}, d)))));
-
-  // 8. Actions: compare (D-057), report (D-076, on every result).
-  const inCompare = store.get("compare", []).includes(h.id);
-  // D-130: a screen result goes on the shop list, to be scanned from the pack in the shop.
-  const onList = () => shopList().some(x => x.id === h.id);
-  if (s.shop_list && h.pack) put(button(onList() ? "On your shop list ✓" : "Add to my shop list", e => {
-    if (!onList()) {
-      store.set("shoplist", [{ id: h.id, product: h.product, barcode: h.barcode, at: h.at, pack: {
-        ingredients: h.pack.ingredients, allergen_statement: h.pack.allergen_statement } },
-        ...shopList()].slice(0, 30));
-    }
-    e.target.textContent = "On your shop list ✓";
-  }, "primary"));
-  put(el("div", { class: "row wrap" },
-    h.pack && button(inCompare ? "In compare ✓" : "Add to compare", e => {
-      toggleCompare(h.id); e.target.textContent = store.get("compare", []).includes(h.id)
-        ? "In compare ✓" : "Add to compare"; updateNav();
-    }),
-    button("Scan another", () => { resetPending(); go("scan"); }, "primary")),
-    reportLink(h));
-  return view;
+  put(el("p", { class: "muted small" }, s.checked, " ", s.scope));
+  return out;
 }
 
 // D-127: the ring and the strip. Everything drawn comes from the server's `glance`
@@ -1136,7 +1190,8 @@ function svgEl(tag, attrs, ...kids) {
   kids.forEach(k => n.append(k));
   return n;
 }
-function glanceView(g) {
+// `compact`: the result's first screen (D-134), with the one-sentence caption.
+function glanceView(g, compact = false) {
   const order = ["worth", "sugar", "industrial", "additive", "other"].filter(t => g.counts[t]);
   const r = 46, c = 2 * Math.PI * r;
   const ring = svgEl("svg", { viewBox: "0 0 124 124", role: "img",
@@ -1160,7 +1215,7 @@ function glanceView(g) {
       el("span", { class: `g-${e.type}${dark(e.type) ? " dark" : ""}`, title: `${e.n}. ${e.text}` },
         e.type === "worth" ? "!" : String(e.n)))),
       el("div", { class: "g-ends" }, el("span", {}, "First: most"), el("span", {}, "Last: least"))),
-    el("p", { class: "muted small" }, g.caption));
+    el("p", { class: "muted small" }, compact ? g.caption_short || g.caption : g.caption));
 }
 
 function personCard(p) {

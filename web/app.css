@@ -86,7 +86,8 @@ p { margin: 0; }
 .error:empty { display: none; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .row { display: flex; gap: 8px; align-items: center; }
-.row.wrap { flex-wrap: wrap; }
+/* "wrap" here means flex-wrap; the page's .wrap padding and width don't belong on a row of buttons. */
+.row.wrap { flex-wrap: wrap; padding: 0; max-width: none; }
 .row.wrap .btn { flex: 1 1 140px; }
 .row.between { justify-content: space-between; }
 .row input { flex: 1; min-width: 0; }
@@ -319,3 +320,58 @@ q { quotes: "“" "”"; }
 .g-additive { background: var(--g-additive); } .g-other { background: var(--g-other); }
 .words dt { font-weight: 700; margin-top: 10px; }
 .words dd { margin: 2px 0 0; color: var(--muted); }
+
+/* D-134: one screen. Tiles open their own page; the three answers are chips whose
+   sentence opens under them; the rest waits in "More about this pack". Colour
+   repeats the chip's words (the tile's reason is always written out). */
+.tiles { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+.tile { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; min-height: 52px;
+        padding: 8px 14px; border-radius: var(--radius); text-decoration: none; color: var(--ink);
+        background: var(--unsure-bg); border: 1px solid var(--unsure-line); border-left-width: 6px; }
+.tile strong { display: block; line-height: 1.25; }
+.tile-chip { display: block; font-size: .82rem; color: var(--unsure); font-weight: 600; }
+.tile-icon { background: var(--unsure-line); color: #3a1f06; width: 24px; height: 24px; }
+.tile-arrow { font-size: 1.5rem; font-weight: 800; line-height: 1; color: var(--unsure); }
+.tile-alert { background: var(--stop-bg); border-color: var(--stop); }
+.tile-alert .tile-chip, .tile-alert .tile-arrow { color: var(--stop); }
+.tile-alert .tile-icon { background: var(--stop); color: var(--surface); }
+.tile:active { transform: translateY(1px); }
+.answer-chips { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.answer-chip { display: grid; gap: 4px; justify-items: start; align-content: start; min-height: 56px; padding: 8px 10px;
+               border: 1px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--ink);
+               font: inherit; text-align: left; cursor: pointer; box-shadow: var(--shadow); }
+.answer-chip .q { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.answer-chip .chip { white-space: normal; }
+.answer-chip[aria-expanded="true"] { border-color: var(--ring); box-shadow: 0 0 0 2px var(--ring); }
+.answer-panel { margin-top: 8px; padding: 10px 14px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); }
+.answer-panel details.more summary { color: var(--muted); font-size: .85rem; }
+.answer-panel details.more > * + * { margin-top: 6px; }
+.chip.tone-alert { background: var(--stop-bg); color: var(--stop); }
+.card.stop { background: var(--stop-bg); border-color: var(--stop); color: var(--ink); border-left: 6px solid var(--stop); }
+.more-pack > summary { font-family: var(--display); font-weight: 800; font-size: 1.05rem; }
+.more-pack[open] > .more-body { padding: 4px 0 8px; }
+.look-page .back { display: inline-flex; align-items: center; min-height: 44px; font-weight: 700; color: var(--brand); text-decoration: none; }
+.look-page .chip { font-size: .85rem; padding: 2px 10px; }
+.look-part > * + * { margin-top: 6px; }
+.look-part h2 { font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-family: var(--font); }
+.look-part a { color: var(--brand); }
+/* The first screen of a 390 x 844 phone holds a pack with two tiles down to the
+   buttons: a smaller ring, the legend in two columns, less space between blocks. */
+.result.stack > * + * { margin-top: 10px; }
+.result .headline { font-size: 1.35rem; line-height: 1.15; }
+.result .glance { padding: 10px 12px; gap: 6px; }
+.result .glance h2 { margin: 0; }
+.result .answer-chip { min-height: 0; padding: 6px 10px; gap: 2px; }
+.result .glance-row { grid-template-columns: 56px 1fr; gap: 12px; }
+.result .glance svg { width: 56px; height: 56px; }
+.result .g-legend { grid-template-columns: 1fr 1fr; gap: 2px 14px; font-size: .88rem; }
+.result .g-strip { height: 22px; }
+.result .glance .muted.small { font-size: .82rem; }
+.result > .row.wrap .btn { min-height: 48px; font-size: 1rem; }
+.result > .row.wrap + p { margin-top: 4px; }
+.result > p > .report { display: inline-flex; align-items: center; min-height: 44px; }
+/* A short title and its chip share a line; a long one wraps the chip under it. */
+.tile { min-height: 48px; padding: 6px 14px; }
+.tile-text { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 10px; }
+.tile-text strong { display: inline; }
+.tile-chip { display: inline; }
