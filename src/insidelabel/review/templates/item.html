@@ -101,6 +101,29 @@
       </div>
     {% endif %}
 
+    {% set pk = (d.version or {}).get("pack_kind") %}
+    {% if pk and pk != "food" %}
+      {% set pke = (d.version or {}).get("pack_kind_evidence") or {} %}
+      <div class="panel" style="margin-bottom:12px">
+        <b>Kind of pack: {{ {"supplement": "health supplement", "infant": "food for infants",
+                              "special_medical": "food for special dietary or medical use",
+                              "not_food": "not food: a non-FSSAI licence and no FSSAI licence on the photos"}[pk] }}</b>
+        (D-139, D-140), decided from what the pack prints:
+        <ul style="margin:6px 0 0 18px;padding:0">
+          {% for e in pke.get("evidence") or [] %}<li><span class="mono">{{ e.text }}</span>
+            <span class="muted">{{ e.face or "" }}</span></li>{% endfor %}
+          {% for r in pke.get("review") or [] %}<li>{{ r }}</li>{% endfor %}
+        </ul>
+        {% if pk == "not_food" %}
+          <div style="margin-top:6px">D-116: look at the whole pack for the FSSAI logo and 14-digit licence number
+            first. If there is none, reject it with the reason below; the photos may miss a face.</div>
+        {% else %}
+          <div class="muted" style="margin-top:6px">Its own checks come with phase 2 (supplements) and phase 3
+            (infant foods, in shadow). Check the category matches the kind.</div>
+        {% endif %}
+      </div>
+    {% endif %}
+
     {% if correction %}
       <div class="panel" style="margin-bottom:12px">
         <b>Reported mistake</b> in <span class="mono">{{ correction.field }}</span>
@@ -212,7 +235,8 @@
       <form method="post" action="/review/item/{{ q.id }}/reject">
         <input type="hidden" name="csrf" value="{{ csrf }}">
         <label for="reason">Reject: why? (photo unusable, not food, duplicate…)</label>
-        <div style="display:flex;gap:8px"><input type="text" id="reason" name="reason" required>
+        <div style="display:flex;gap:8px"><input type="text" id="reason" name="reason" required
+          {% if pk == "not_food" %}value="Not food under the FSS Act: a drug licence, no FSSAI licence (D-116, D-139)"{% endif %}>
           <button class="danger" type="submit">Reject</button></div>
       </form>
       <form method="post" action="/review/item/{{ q.id }}/release" style="margin-top:10px">

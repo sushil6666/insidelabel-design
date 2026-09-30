@@ -25,6 +25,13 @@ os.environ.setdefault("INSIDELABEL_ALLOW_REPLAY", "on")
 # (2026-09-28). Tests get their databases from fresh_db only.
 os.environ.pop("INSIDELABEL_DB", None)
 
+# The same for the paid readers: a shell with GOOGLE_VISION_KEY set made every test
+# that posts a photo without cloud_vision.replaying() send its fake image to Google
+# ("Cloud Vision error: Bad image data", found 2026-09-30 with D-139). Tests that need
+# a key set a fake one and stand in for Google themselves (test_cloud_vision.py).
+os.environ.pop("GOOGLE_VISION_KEY", None)
+os.environ.pop("GEMINI_API_KEY", None)
+
 
 @pytest.fixture(autouse=True)
 def _fresh_rate_limits():

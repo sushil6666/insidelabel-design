@@ -29,7 +29,7 @@ Rules this module keeps:
 import json
 import os
 
-from insidelabel.core import engine
+from insidelabel.core import engine, pack_kind
 from insidelabel.core.tokenize import extract_ins, ins_numbers
 from insidelabel.lenses import allergens as allergen_checker
 from insidelabel.lenses import compare as kids
@@ -1019,7 +1019,7 @@ SINCE_UNREAD = "We couldn't read this pack clearly enough to compare it with the
 
 def build(*, verdict, display, claim_check, extracted, reliability, profiles,
           allergen_confidence, allergen_reliable, catalogue=None, has_barcode=True,
-          photos_sent=("back",), pack=None, screen_pack=None, nutrition=None, parts_sent=1):
+          photos_sent=("back",), pack=None, screen_pack=None, nutrition=None, parts_sent=1, kind=None):
     """
     The `screen` block of a /scan response. verdict=None means the scan was refused.
     pack: for a result read from a screen (D-130), our catalogue's version of the
@@ -1027,6 +1027,7 @@ def build(*, verdict, display, claim_check, extracted, reliability, profiles,
     nutrition: the checked table from lenses/nutrition.check() (D-133), or None.
     parts_sent: how many back photos this scan joined (D-119), so the app knows
     whether one more photo, of the table, can still be added.
+    kind: core/pack_kind.decide()'s answer (D-139, D-140), or None for ordinary food.
     """
     ingredients = (extracted or {}).get("ingredients") or []
     statement = (extracted or {}).get("allergen_statement")
@@ -1060,6 +1061,15 @@ def build(*, verdict, display, claim_check, extracted, reliability, profiles,
             # that isn't a pack can't, and neither can a pack without a barcode (D-107).
             "can_send": error not in NOT_A_PACK and error != "product_mismatch" and has_barcode,
         }
+
+    if kind and kind["code"] != "food":
+        out = _kind_screen(kind, people=people, ingredients=ingredients, reliability=reliability)
+        return _notes_for_every_result(out, catalogue=catalogue, profiles=profiles, screen_pack=screen_pack,
+                                       ingredients=ingredients, statement=statement,
+                                       allergen_confidence=allergen_confidence,
+                                       allergen_reliable=allergen_reliable, from_screen=from_screen, pack=pack,
+                                       has_barcode=has_barcode, reliability=reliability,
+                                       parts=pack_kind.parts(kind["code"]))
 
     band = display["display_binary"]
     sure = (bool(allergen_reliable) and reliability.get("ingredients_complete", True)
@@ -1157,6 +1167,17 @@ def build(*, verdict, display, claim_check, extracted, reliability, profiles,
             "detail": _misread(alert["ins"]),
             "source": alert["source"],
         }
+    return _notes_for_every_result(out, catalogue=catalogue, profiles=profiles, screen_pack=screen_pack,
+                                   ingredients=ingredients, statement=statement,
+                                   allergen_confidence=allergen_confidence, allergen_reliable=allergen_reliable,
+                                   from_screen=from_screen, pack=pack, has_barcode=has_barcode,
+                                   reliability=reliability, parts=pack_kind.PARTS["food"])
+
+
+def _notes_for_every_result(out, *, catalogue, profiles, screen_pack, ingredients, statement,
+                            allergen_confidence, allergen_reliable, from_screen, pack, has_barcode,
+                            reliability, parts):
+    """What any result says about where it came from, whatever the kind of pack."""
     if catalogue and catalogue.get("source") == "catalogue":
         out["last_verified"] = f"Label last verified on {catalogue['last_verified']}."
         # D-073: a barcode can outlive a recipe. Ask anyone with an avoid list for one back photo.
@@ -1172,10 +1193,70 @@ def build(*, verdict, display, claim_check, extracted, reliability, profiles,
         out["from_screen"] = {"title": SCREEN_TITLE, "text": SCREEN_TEXT,
                               "pack": (SCREEN_PACK.format(day=_day(pack["verified_on"])) if pack else None)}
         out["catalogue_note"] = SCREEN_NOTE
-        out["shop_list"] = True               # the app offers "Add to my shop list"
+        if "shop_list" in parts:
+            out["shop_list"] = True           # the app offers "Add to my shop list"
     elif not has_barcode:
         out["catalogue_note"] = UNLISTED_NOTE
     # D-108: a front that couldn't be tied to this back is not used; say so.
     if any(c.get("code") == "product_pairing_unverified" for c in reliability.get("caveats", [])):
         out["front_note"] = FRONT_NOT_USED
+    return out
+
+
+# D-139, D-140: a pack that isn't ordinary food gets a short result. Its words are
+# here, under the wording lint (D-091); which parts show is data/pack_kinds.json.
+# Allergen lines stay first for every kind (D-060).
+KIND_TEXT = {
+    "supplement": ("Our checks for foods, such as sugar, additives and how a food is made, don't apply to "
+                   "a supplement, so we show the allergens and the ingredient list."),
+    "special_medical": ("We show the allergens on the list and nothing else for a food for special dietary "
+                        "or medical use."),
+    "infant": "We show the allergens on the list; our other checks for infant foods are not released yet.",
+    "not_food": ("Our checks follow FSSAI's food rules, and the Food Safety and Standards Act, 2006 leaves "
+                 "\"drugs and medicinal products\" out of \"food\" (section 3(1)(j)). We show the allergens "
+                 "on the list and nothing else."),
+}
+INFANT_HEADLINE = "This is a food for infants."
+NOT_FOOD_HEADLINE = "We didn't find an FSSAI licence number on the photos."
+# D-140 (Sushil's choice): the one line shown with the allergens while infant foods are in shadow.
+BREASTFEEDING = {
+    "text": ("ICMR-NIN's dietary guidelines say: \"Ensure exclusive breastfeeding for the first six months "
+             "and continue breastfeeding till two years and beyond\"."),
+    "sources": [{"title": "ICMR-NIN, Dietary Guidelines for Indians, 2024, guideline 3",
+                 "url": "https://nin.res.in/dietaryguidelines/pdfjs/locale/DGI_2024.pdf",
+                 "page": "p. 21 (PDF p. 38)", "cite": "ICMR-NIN, Dietary Guidelines for Indians, 2024, p. 21"}],
+}
+FSS_ACT_SOURCE = {"title": "Food Safety and Standards Act, 2006, section 3(1)(j)",
+                  "url": "https://fssai.gov.in/upload/uploadfiles/files/FOOD-ACT.pdf", "page": "PDF p. 2",
+                  "cite": "Food Safety and Standards Act, 2006, section 3(1)(j)"}
+
+
+def _kind_screen(kind, *, people, ingredients, reliability):
+    """The result for a supplement, an infant food, a special medical food or a pack that isn't food."""
+    code, parts = kind["code"], pack_kind.parts(kind["code"])
+    shown = next((e for e in kind["evidence"] if not e.get("supporting")), None)
+    if code == "infant":
+        headline = INFANT_HEADLINE
+    elif code == "not_food":
+        headline = NOT_FOOD_HEADLINE
+    else:
+        headline = f"This pack says \"{shown['text']}\"."
+    lines = [KIND_TEXT[code]]
+    if code == "not_food":
+        lines.insert(0, f"The pack prints \"{shown['text']}\".")
+    out = {
+        "state": "result",
+        "people": people,                                     # D-060: first, for every kind
+        "headline": {"text": headline, "source": {"kind": "pack_kind", "ref": code}},
+        "kind": {"code": code, "lines": lines,
+                 "evidence": [{"text": e["text"], "face": e.get("face")} for e in kind["evidence"]],
+                 "sources": [FSS_ACT_SOURCE] if code == "not_food" else []},
+        "parts": list(parts),
+        "ingredients": ingredients,
+        "retake": None if reliability.get("ingredients_complete", True) else RETAKE_PARTIAL,
+        "more_title": MORE_TITLE,
+        "checked": "We checked the ingredients against your avoid lists.",
+    }
+    if "breastfeeding_line" in parts:
+        out["breastfeeding"] = BREASTFEEDING
     return out

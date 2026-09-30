@@ -48,7 +48,7 @@ from insidelabel import photo_check  # noqa: E402
 from insidelabel import photo_join  # noqa: E402
 from insidelabel import ratelimit  # noqa: E402
 from insidelabel import trace  # noqa: E402
-from insidelabel.core import engine  # noqa: E402
+from insidelabel.core import engine, pack_kind  # noqa: E402
 from insidelabel.claims import checker as claim_checker  # noqa: E402
 from insidelabel.lenses import allergens as allergen_checker  # noqa: E402
 from insidelabel.lenses import compare as shelf  # noqa: E402
@@ -612,6 +612,15 @@ def _parse_screen_pack(raw):
     return {"ingredients": ings, "allergen_statement": stmt}
 
 
+def _catalogue_kind(hit):
+    """D-139: the kind stored on the version, or, for one stored before it, the category's (else food)."""
+    if hit.get("pack_kind"):
+        stored = hit.get("pack_kind_evidence") or {}
+        return {"code": hit["pack_kind"], "evidence": stored.get("evidence") or [], "review": [],
+                "licences": {}, "category": hit.get("category_code")}
+    return pack_kind.decide({}, category=hit.get("category_code"))
+
+
 def _catalogue_result(hit, avoid_codes, who, compare_regulators, profiles=(), screen_pack=None):
     """
     A result built from a reviewed catalogue version. The engine re-runs on the
@@ -621,6 +630,7 @@ def _catalogue_result(hit, avoid_codes, who, compare_regulators, profiles=(), sc
     ingredients = hit["ingredients"]
     raw = ", ".join(ingredients)
     verdict = engine.analyze(raw)
+    kind = _catalogue_kind(hit)
     front_claims = hit["front_claims"] or []
     verified = hit["verified_at"].date().isoformat()
     reliability = {
@@ -653,7 +663,8 @@ def _catalogue_result(hit, avoid_codes, who, compare_regulators, profiles=(), sc
             verdict=verdict, display=display, claim_check=claim_check, extracted=extracted,
             reliability=reliability, profiles=profiles, allergen_confidence=1.0,
             allergen_reliable=True, catalogue=catalogue, screen_pack=screen_pack,
-            nutrition=hit.get("nutrition")),
+            nutrition=hit.get("nutrition"), kind=kind),
+        "pack_kind": {k: kind[k] for k in ("code", "evidence", "review")},
         "catalogue": catalogue,
         "product": {"brand": hit["brand"], "name": hit["name"], "variant": hit["variant"]},
         "nutrition": nutrition.public(hit.get("nutrition")),
@@ -1381,6 +1392,9 @@ async def scan(
                  front_key=keys.get("front"), back_key=keys.get("back"), trace=tr)
         raise
     verdict = engine.analyze(raw)
+    # D-139, D-140: what kind of pack the printed words and licences say this is.
+    # Food answers (and every answer recorded before prompt rule 11) come out as before.
+    kind = pack_kind.decide(vision)
 
     # D-118: a pack this scan would add to the catalogue, whose ingredient list
     # Cloud Vision can't confirm, gets one request for a clearer photo, before
@@ -1465,7 +1479,8 @@ async def scan(
             claims_trusted=claims_trusted, reliability=reliability, barcode=barcode,
             device_id=device_id, latency_ms=_ms(t0), model_name=vision.get("_model") or MODEL,
             prompt_version=PROMPT_VERSION, engine_version=ENGINE_VERSION,
-            front_key=keys.get("front"), back_key=keys.get("back"), trace=tr, nutrition=panel)
+            front_key=keys.get("front"), back_key=keys.get("back"), trace=tr, nutrition=panel,
+            pack_kind=kind)
 
     display = rel.apply_display_rule(verdict, reliability)
     user_claims = _user_claim_check(claim_check, vision.get("front_claims", []))
@@ -1485,7 +1500,8 @@ async def scan(
             reliability=reliability, profiles=people, allergen_confidence=allergen_confidence,
             allergen_reliable=allergen_reliable, has_barcode=barcode is not None, pack=pack,
             screen_pack=None if from_screen else screen_pack, nutrition=panel,
-            parts_sent=max(1, len(parts))),
+            parts_sent=max(1, len(parts)), kind=kind),
+        "pack_kind": {k: kind[k] for k in ("code", "evidence", "review")},
         "scan_id": saved["scan_id"] if saved else _str(unlisted_id),
         "catalogue": ({"source": "scan", "product_version_id": saved["product_version_id"],
                        "status": saved["version_status"], "queued_for_review": saved["queued"]}
