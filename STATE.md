@@ -1,6 +1,6 @@
 # STATE.md - where InsideLabel is, and how to pick it up
 
-**Last updated:** 2026-09-27 (**https://insidelabel.ai is live**, `main` = `45f9feb`, PR #18; branch `live`: notes from the deploy) · **Owner:** Sushil · **Tests:** 538 passing, 8 skipped, 1 expected failure · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 5.7 s on the live server (2026-09-27), Gemini + Cloud Vision, `verdict`
+**Last updated:** 2026-09-30 (**https://insidelabel.ai is live**, `main` = `ee2e45e`, PR #55, deployed; phase 3 of `docs/BUILD_PROMPT_D132-D134.md` next) · **Owner:** Sushil · **Tests:** 737 passing, 8 skipped, 1 expected failure · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 5.7 s on the live server (2026-09-27), Gemini + Cloud Vision, `verdict`
 
 This is the living status document. Read it first in any new session, then
 `DECISIONS.md` for the *why*. Update the "Last updated" line, the numbers and
@@ -648,7 +648,16 @@ to see where each gate stands. §11 has the full list. Done today: D-051/52/55 d
 food categories, PWA built, D-092 reproduction, D-093 Cloud Vision, scan speed,
 setup alarms.
 
-**NEXT SESSION STARTS HERE (2026-09-28).** Where things stand, newest first:
+**NEXT SESSION STARTS HERE (2026-09-30).** Where things stand, newest first:
+
+- **Deployed 2026-09-30: main `ee2e45e` (PRs #54 and #55, 737 tests) on the server**: phase 1
+  (D-132 ingredient notes, D-135 NOVA aliases) and phase 2 (D-133 nutrition table); migration 018
+  applied. Checked from outside 2026-09-30: `/health` build `ee2e45eb0937`, data `92c1d160ec6d`,
+  69 additives, 17 NOVA markers; `/app/lib.js` web-26, `/app/sw.js` `il-shell-26`. **Waiting on
+  Sushil:** the phone check (a pack with a nutrition table; "Add a photo of the nutrition table" on
+  one without); check the four gold tables Claude transcribed (gold/*.json "nutrition"); "run the
+  gold set" for the paid run (6 reads, about Rs 3); D-136 stays RECOMMENDED. **Then phase 3** (D-134
+  tiles, branch `result-tiles`), once the phone check is confirmed.
 
 - **D-133 built, phase 2 of `docs/BUILD_PROMPT_D132-D134.md`** (branch `nutrition-panel`, web-26,
   migration 018, ~745 tests). The nutrition table: prompt rule 10 + `nutrition` schema (new
