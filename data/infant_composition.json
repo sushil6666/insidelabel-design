@@ -1,0 +1,1634 @@
+{
+ "_meta": {
+  "table": "infant_composition",
+  "version": "0.1",
+  "purpose": "D-140 phase 3, part 4: the composition each infant food type's standard sets, for reviewers only (docs/BABY_FOOD.md 4.5, Sushil's choice 5: reviewer-only in the beta). lenses/infant.py composition() sets a number the pack prints per 100 g, and the second reading of the photo shows, beside the type's range. Facts side by side: never 'fails' or 'outside the law' (D-042).",
+  "source": {
+   "title": "FSS (Foods for Infant Nutrition) Regulations, 2020, compendium Version II (04.01.2024); FSSAI direction of 18 October 2022, Annexure-1 (revised selenium, manganese, iron and biotin)",
+   "urls": [
+    "https://fssai.gov.in/docs/food-law/regulations/Comp_IFR_VERSION-II_04_01_2024.pdf",
+    "https://fssai.gov.in/docs/food-law/advisory/63849fc9b42f2Direction_Infant_Nutrition_28_11_2022.pdf"
+   ],
+   "read_on": "2026-09-30",
+   "how": "Every row copied by hand from the page images, PDF page numbers."
+  },
+  "rules": [
+   "Units: g, mg, mcg (the regulation's µg). [low, high]; null is no bound (a 'Min' or 'Max' row).",
+   "Only rows a label can print are kept: moisture, ash, fibre, ratios, milk fat, amino acids and nutrients per 100 ml of the prepared feed are left out.",
+   "Folate is left out: the tables are in dietary folate equivalents (1 microgram DFE = 0.6 microgram folic acid, their footnote) and labels print folic acid.",
+   "Traditional foods (11) have no composition table: nothing is compared.",
+   "Only the per 100 g column is compared; a label's per 100 kcal or per 100 ml figure is not read here."
+  ]
+ },
+ "names": {
+  "vitamin_a": [
+   "vitamin a",
+   "retinol"
+  ],
+  "vitamin_d": [
+   "vitamin d",
+   "vitamin d3",
+   "cholecalciferol"
+  ],
+  "vitamin_e": [
+   "vitamin e"
+  ],
+  "vitamin_k": [
+   "vitamin k",
+   "vitamin k1"
+  ],
+  "vitamin_c": [
+   "vitamin c",
+   "ascorbic acid"
+  ],
+  "thiamine": [
+   "thiamine",
+   "thiamin",
+   "vitamin b1"
+  ],
+  "riboflavin": [
+   "riboflavin",
+   "vitamin b2"
+  ],
+  "niacin": [
+   "niacin",
+   "niacinamide",
+   "vitamin b3"
+  ],
+  "pyridoxine": [
+   "pyridoxine",
+   "vitamin b6"
+  ],
+  "pantothenic_acid": [
+   "pantothenic acid",
+   "vitamin b5"
+  ],
+  "vitamin_b12": [
+   "vitamin b12",
+   "cyanocobalamin"
+  ],
+  "biotin": [
+   "biotin"
+  ],
+  "choline": [
+   "choline"
+  ],
+  "inositol": [
+   "inositol"
+  ],
+  "taurine": [
+   "taurine"
+  ],
+  "potassium": [
+   "potassium"
+  ],
+  "chloride": [
+   "chloride"
+  ],
+  "calcium": [
+   "calcium"
+  ],
+  "phosphorus": [
+   "phosphorus",
+   "phosphorous"
+  ],
+  "magnesium": [
+   "magnesium"
+  ],
+  "iron": [
+   "iron"
+  ],
+  "iodine": [
+   "iodine"
+  ],
+  "copper": [
+   "copper"
+  ],
+  "zinc": [
+   "zinc"
+  ],
+  "manganese": [
+   "manganese"
+  ],
+  "selenium": [
+   "selenium"
+  ],
+  "linoleic_acid": [
+   "linoleic acid"
+  ],
+  "alpha_linolenic_acid": [
+   "alpha linolenic acid",
+   "a linolenic acid",
+   "linolenic acid"
+  ]
+ },
+ "names_note": "Protein, total fat, carbohydrate and sodium are read by the D-133 reader's own names (lenses/nutrition.nutrient_key). A row naming a ratio is never read.",
+ "types": {
+  "infant_formula": {
+   "basis": "7(1)(g), PDF pp. 8 to 9",
+   "rows": [
+    {
+     "nutrient": "protein",
+     "unit": "g",
+     "per_100_g": [
+      10.0,
+      16.0
+     ],
+     "per_100_kcal": [
+      2.1,
+      3.4
+     ],
+     "fssai_basis": "7(1)(g) item 2, PDF p. 8",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "total_fat",
+     "unit": "g",
+     "per_100_g": [
+      18.0,
+      25.0
+     ],
+     "per_100_kcal": [
+      3.8,
+      5.3
+     ],
+     "fssai_basis": "7(1)(g) item 3, PDF p. 8",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "linoleic_acid",
+     "unit": "mg",
+     "per_100_g": [
+      1500.0,
+      7000.0
+     ],
+     "per_100_kcal": [
+      300.0,
+      1500.0
+     ],
+     "fssai_basis": "7(1)(g) item 4(a), PDF p. 8",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "alpha_linolenic_acid",
+     "unit": "mg",
+     "per_100_g": [
+      250.0,
+      null
+     ],
+     "per_100_kcal": [
+      50.0,
+      null
+     ],
+     "fssai_basis": "7(1)(g) item 4(b), PDF p. 8",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "carbohydrate",
+     "unit": "g",
+     "per_100_g": [
+      45.0,
+      70.0
+     ],
+     "per_100_kcal": [
+      9.6,
+      14.9
+     ],
+     "fssai_basis": "7(1)(g) item 5, PDF p. 8",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "vitamin_a",
+     "unit": "mcg",
+     "per_100_g": [
+      350.0,
+      823.0
+     ],
+     "per_100_kcal": [
+      75.0,
+      175.0
+     ],
+     "fssai_basis": "7(1)(g) item 8, PDF p. 8",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "vitamin_d",
+     "unit": "mcg",
+     "per_100_g": [
+      5.0,
+      14.0
+     ],
+     "per_100_kcal": [
+      1.0,
+      3.0
+     ],
+     "fssai_basis": "7(1)(g) item 9, PDF p. 8",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "vitamin_e",
+     "unit": "mg",
+     "per_100_g": [
+      2.5,
+      6.0
+     ],
+     "per_100_kcal": [
+      0.5,
+      1.3
+     ],
+     "fssai_basis": "7(1)(g) item 10, PDF p. 8",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "vitamin_k",
+     "unit": "mcg",
+     "per_100_g": [
+      7.5,
+      19.0
+     ],
+     "per_100_kcal": [
+      1.6,
+      4.0
+     ],
+     "fssai_basis": "7(1)(g) item 11, PDF p. 8",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "vitamin_c",
+     "unit": "mg",
+     "per_100_g": [
+      25.0,
+      75.0
+     ],
+     "per_100_kcal": [
+      5.3,
+      16.0
+     ],
+     "fssai_basis": "7(1)(g) item 12, PDF p. 8",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "thiamine",
+     "unit": "mcg",
+     "per_100_g": [
+      200.0,
+      517.0
+     ],
+     "per_100_kcal": [
+      42.5,
+      110.0
+     ],
+     "fssai_basis": "7(1)(g) item 13, PDF p. 8",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "riboflavin",
+     "unit": "mcg",
+     "per_100_g": [
+      400.0,
+      2000.0
+     ],
+     "per_100_kcal": [
+      85.1,
+      425.5
+     ],
+     "fssai_basis": "7(1)(g) item 14, PDF p. 8",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "niacin",
+     "unit": "mg",
+     "per_100_g": [
+      3.8,
+      9.9
+     ],
+     "per_100_kcal": [
+      0.8,
+      2.1
+     ],
+     "fssai_basis": "7(1)(g) item 15, PDF p. 8",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "pyridoxine",
+     "unit": "mcg",
+     "per_100_g": [
+      100.0,
+      400.0
+     ],
+     "per_100_kcal": [
+      21.3,
+      85.1
+     ],
+     "fssai_basis": "7(1)(g) item 16, PDF p. 8",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "pantothenic_acid",
+     "unit": "mg",
+     "per_100_g": [
+      2.0,
+      10.0
+     ],
+     "per_100_kcal": [
+      0.42,
+      2.12
+     ],
+     "fssai_basis": "7(1)(g) item 18, PDF p. 9",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "vitamin_b12",
+     "unit": "mcg",
+     "per_100_g": [
+      0.25,
+      4.0
+     ],
+     "per_100_kcal": [
+      0.05,
+      0.9
+     ],
+     "fssai_basis": "7(1)(g) item 19, PDF p. 9",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "biotin",
+     "unit": "mcg",
+     "per_100_g": [
+      7.5,
+      50.0
+     ],
+     "per_100_kcal": [
+      1.6,
+      10.6
+     ],
+     "fssai_basis": "7(1)(g) item 20, PDF p. 9",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "choline",
+     "unit": "mg",
+     "per_100_g": [
+      32.0,
+      null
+     ],
+     "per_100_kcal": [
+      6.8,
+      null
+     ],
+     "fssai_basis": "7(1)(g) item 21, PDF p. 9",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "sodium",
+     "unit": "mg",
+     "per_100_g": [
+      90.0,
+      300.0
+     ],
+     "per_100_kcal": [
+      19.15,
+      63.8
+     ],
+     "fssai_basis": "7(1)(g) item 22, PDF p. 9",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "potassium",
+     "unit": "mg",
+     "per_100_g": [
+      300.0,
+      900.0
+     ],
+     "per_100_kcal": [
+      63.82,
+      191.48
+     ],
+     "fssai_basis": "7(1)(g) item 23, PDF p. 9",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "chloride",
+     "unit": "mg",
+     "per_100_g": [
+      250.0,
+      800.0
+     ],
+     "per_100_kcal": [
+      53.2,
+      170.2
+     ],
+     "fssai_basis": "7(1)(g) item 24, PDF p. 9",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "calcium",
+     "unit": "mg",
+     "per_100_g": [
+      250.0,
+      700.0
+     ],
+     "per_100_kcal": [
+      53.2,
+      148.9
+     ],
+     "fssai_basis": "7(1)(g) item 25, PDF p. 9",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "phosphorus",
+     "unit": "mg",
+     "per_100_g": [
+      125.0,
+      500.0
+     ],
+     "per_100_kcal": [
+      26.6,
+      106.4
+     ],
+     "fssai_basis": "7(1)(g) item 26, PDF p. 9",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "magnesium",
+     "unit": "mg",
+     "per_100_g": [
+      30.0,
+      75.2
+     ],
+     "per_100_kcal": [
+      6.4,
+      16.0
+     ],
+     "fssai_basis": "7(1)(g) item 28, PDF p. 9",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "iron",
+     "unit": "mg",
+     "per_100_g": [
+      3.0,
+      7.0
+     ],
+     "per_100_kcal": [
+      0.6,
+      1.5
+     ],
+     "fssai_basis": "7(1)(g) item 29, PDF p. 9",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "iodine",
+     "unit": "mcg",
+     "per_100_g": [
+      90.0,
+      225.6
+     ],
+     "per_100_kcal": [
+      19.15,
+      48.0
+     ],
+     "fssai_basis": "7(1)(g) item 30, PDF p. 9",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "copper",
+     "unit": "mcg",
+     "per_100_g": [
+      160.0,
+      470.0
+     ],
+     "per_100_kcal": [
+      34.0,
+      100.0
+     ],
+     "fssai_basis": "7(1)(g) item 31, PDF p. 9",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "zinc",
+     "unit": "mg",
+     "per_100_g": [
+      2.5,
+      5.9
+     ],
+     "per_100_kcal": [
+      0.5,
+      1.25
+     ],
+     "fssai_basis": "7(1)(g) item 32, PDF p. 9",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "manganese",
+     "unit": "mcg",
+     "per_100_g": [
+      5.0,
+      500.0
+     ],
+     "per_100_kcal": [
+      1.0,
+      106.4
+     ],
+     "fssai_basis": "7(1)(g) item 33, PDF p. 9",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "selenium",
+     "unit": "mcg",
+     "per_100_g": [
+      5.0,
+      40.0
+     ],
+     "per_100_kcal": [
+      1.0,
+      8.5
+     ],
+     "fssai_basis": "7(1)(g) item 34, PDF p. 9; revised by FSSAI direction of 18.10.2022, Annexure-1, direction PDF p. 3 (in force from 1 October 2022; the compendium's row is superseded)",
+     "verified_on": "2026-09-30",
+     "compendium": {
+      "per_100_g": [
+       5.0,
+       17.0
+      ],
+      "per_100_kcal": [
+       1.0,
+       3.6
+      ]
+     }
+    }
+   ]
+  },
+  "milk_cereal": {
+   "basis": "8(1)(d), PDF pp. 13 to 14; optional nutrients 8(1)(e), pp. 14 to 15",
+   "rows": [
+    {
+     "nutrient": "protein",
+     "unit": "g",
+     "per_100_g": [
+      15.0,
+      null
+     ],
+     "per_100_kcal": [
+      3.2,
+      null
+     ],
+     "fssai_basis": "8(1)(d) item 2, PDF p. 13",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "total_fat",
+     "unit": "g",
+     "per_100_g": [
+      7.5,
+      null
+     ],
+     "per_100_kcal": [
+      1.6,
+      null
+     ],
+     "fssai_basis": "8(1)(d) item 3, PDF p. 13",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "carbohydrate",
+     "unit": "g",
+     "per_100_g": [
+      55.0,
+      null
+     ],
+     "per_100_kcal": [
+      11.7,
+      null
+     ],
+     "fssai_basis": "8(1)(d) item 4, PDF p. 13",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "vitamin_a",
+     "unit": "mcg",
+     "per_100_g": [
+      350.0,
+      823.0
+     ],
+     "per_100_kcal": [
+      75.0,
+      175.0
+     ],
+     "fssai_basis": "8(1)(d) item 8, PDF p. 14",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "vitamin_d",
+     "unit": "mcg",
+     "per_100_g": [
+      5.0,
+      14.0
+     ],
+     "per_100_kcal": [
+      1.0,
+      3.0
+     ],
+     "fssai_basis": "8(1)(d) item 9, PDF p. 14",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "vitamin_c",
+     "unit": "mg",
+     "per_100_g": [
+      25.0,
+      75.0
+     ],
+     "per_100_kcal": [
+      5.3,
+      16.0
+     ],
+     "fssai_basis": "8(1)(d) item 10, PDF p. 14",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "thiamine",
+     "unit": "mg",
+     "per_100_g": [
+      0.2,
+      0.5
+     ],
+     "per_100_kcal": [
+      0.04,
+      0.1
+     ],
+     "fssai_basis": "8(1)(d) item 11, PDF p. 14",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "riboflavin",
+     "unit": "mg",
+     "per_100_g": [
+      0.4,
+      2.0
+     ],
+     "per_100_kcal": [
+      0.08,
+      0.4
+     ],
+     "fssai_basis": "8(1)(d) item 12, PDF p. 14",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "niacin",
+     "unit": "mg",
+     "per_100_g": [
+      3.8,
+      9.9
+     ],
+     "per_100_kcal": [
+      0.8,
+      2.1
+     ],
+     "fssai_basis": "8(1)(d) item 13, PDF p. 14",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "iron",
+     "unit": "mg",
+     "per_100_g": [
+      3.0,
+      7.0
+     ],
+     "per_100_kcal": [
+      0.6,
+      1.5
+     ],
+     "fssai_basis": "8(1)(d) item 15, PDF p. 14",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "zinc",
+     "unit": "mg",
+     "per_100_g": [
+      2.5,
+      5.9
+     ],
+     "per_100_kcal": [
+      0.5,
+      1.25
+     ],
+     "fssai_basis": "8(1)(d) item 16, PDF p. 14",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "pantothenic_acid",
+     "unit": "mg",
+     "per_100_g": [
+      2.0,
+      10.0
+     ],
+     "per_100_kcal": [
+      0.4,
+      2.1
+     ],
+     "fssai_basis": "8(1)(e) item 1, PDF p. 14",
+     "verified_on": "2026-09-30",
+     "optional": true
+    },
+    {
+     "nutrient": "vitamin_b12",
+     "unit": "mcg",
+     "per_100_g": [
+      0.25,
+      0.7
+     ],
+     "per_100_kcal": [
+      0.05,
+      0.15
+     ],
+     "fssai_basis": "8(1)(e) item 2, PDF p. 14",
+     "verified_on": "2026-09-30",
+     "optional": true
+    },
+    {
+     "nutrient": "vitamin_k",
+     "unit": "mcg",
+     "per_100_g": [
+      7.5,
+      19.0
+     ],
+     "per_100_kcal": [
+      1.6,
+      4.0
+     ],
+     "fssai_basis": "8(1)(e) item 3, PDF p. 14",
+     "verified_on": "2026-09-30",
+     "optional": true
+    },
+    {
+     "nutrient": "choline",
+     "unit": "mg",
+     "per_100_g": [
+      null,
+      32.0
+     ],
+     "per_100_kcal": [
+      null,
+      6.8
+     ],
+     "fssai_basis": "8(1)(e) item 4, PDF p. 14",
+     "verified_on": "2026-09-30",
+     "optional": true
+    },
+    {
+     "nutrient": "inositol",
+     "unit": "mg",
+     "per_100_g": [
+      20.0,
+      200.0
+     ],
+     "per_100_kcal": [
+      4.25,
+      42.55
+     ],
+     "fssai_basis": "8(1)(e) item 5, PDF p. 14",
+     "verified_on": "2026-09-30",
+     "optional": true
+    },
+    {
+     "nutrient": "calcium",
+     "unit": "mg",
+     "per_100_g": [
+      250.0,
+      700.0
+     ],
+     "per_100_kcal": [
+      53.2,
+      148.9
+     ],
+     "fssai_basis": "8(1)(e) item 6, PDF p. 14",
+     "verified_on": "2026-09-30",
+     "optional": true
+    },
+    {
+     "nutrient": "phosphorus",
+     "unit": "mg",
+     "per_100_g": [
+      125.0,
+      500.0
+     ],
+     "per_100_kcal": [
+      26.6,
+      106.4
+     ],
+     "fssai_basis": "8(1)(e) item 7, PDF p. 14",
+     "verified_on": "2026-09-30",
+     "optional": true
+    },
+    {
+     "nutrient": "chloride",
+     "unit": "mg",
+     "per_100_g": [
+      250.0,
+      800.0
+     ],
+     "per_100_kcal": [
+      53.2,
+      170.2
+     ],
+     "fssai_basis": "8(1)(e) item 8, PDF p. 14",
+     "verified_on": "2026-09-30",
+     "optional": true
+    },
+    {
+     "nutrient": "magnesium",
+     "unit": "mg",
+     "per_100_g": [
+      30.0,
+      75.2
+     ],
+     "per_100_kcal": [
+      6.4,
+      16.0
+     ],
+     "fssai_basis": "8(1)(e) item 9, PDF p. 14",
+     "verified_on": "2026-09-30",
+     "optional": true
+    },
+    {
+     "nutrient": "sodium",
+     "unit": "mg",
+     "per_100_g": [
+      90.0,
+      300.0
+     ],
+     "per_100_kcal": [
+      19.15,
+      63.8
+     ],
+     "fssai_basis": "8(1)(e) item 10, PDF p. 14",
+     "verified_on": "2026-09-30",
+     "optional": true
+    },
+    {
+     "nutrient": "selenium",
+     "unit": "mcg",
+     "per_100_g": [
+      5.0,
+      40.0
+     ],
+     "per_100_kcal": [
+      1.0,
+      8.5
+     ],
+     "fssai_basis": "8(1)(e) item 11, PDF p. 15; revised by FSSAI direction of 18.10.2022, Annexure-1, direction PDF p. 3 (in force from 1 October 2022; the compendium's row is superseded)",
+     "verified_on": "2026-09-30",
+     "optional": true,
+     "compendium": {
+      "per_100_g": [
+       5.0,
+       17.0
+      ],
+      "per_100_kcal": [
+       1.0,
+       3.6
+      ]
+     }
+    },
+    {
+     "nutrient": "taurine",
+     "unit": "mg",
+     "per_100_g": [
+      null,
+      60.0
+     ],
+     "per_100_kcal": [
+      null,
+      12.75
+     ],
+     "fssai_basis": "8(1)(e) item 12, PDF p. 15",
+     "verified_on": "2026-09-30",
+     "optional": true
+    },
+    {
+     "nutrient": "biotin",
+     "unit": "mcg",
+     "per_100_g": [
+      7.5,
+      50.0
+     ],
+     "per_100_kcal": [
+      1.6,
+      10.6
+     ],
+     "fssai_basis": "8(1)(e) item 15, PDF p. 15",
+     "verified_on": "2026-09-30",
+     "optional": true
+    },
+    {
+     "nutrient": "iodine",
+     "unit": "mcg",
+     "per_100_g": [
+      90.0,
+      225.6
+     ],
+     "per_100_kcal": [
+      19.15,
+      48.0
+     ],
+     "fssai_basis": "8(1)(e) item 16, PDF p. 15",
+     "verified_on": "2026-09-30",
+     "optional": true
+    },
+    {
+     "nutrient": "potassium",
+     "unit": "mg",
+     "per_100_g": [
+      300.0,
+      900.0
+     ],
+     "per_100_kcal": [
+      63.8,
+      191.5
+     ],
+     "fssai_basis": "8(1)(e) item 17, PDF p. 15",
+     "verified_on": "2026-09-30",
+     "optional": true
+    },
+    {
+     "nutrient": "pyridoxine",
+     "unit": "mcg",
+     "per_100_g": [
+      100.0,
+      400.0
+     ],
+     "per_100_kcal": [
+      21.3,
+      85.1
+     ],
+     "fssai_basis": "8(1)(e) item 18, PDF p. 15",
+     "verified_on": "2026-09-30",
+     "optional": true
+    }
+   ]
+  },
+  "processed_cereal": {
+   "basis": "9(1)(f), PDF pp. 19 to 20",
+   "rows": [
+    {
+     "nutrient": "protein",
+     "unit": "g",
+     "per_100_g": [
+      15.0,
+      null
+     ],
+     "per_100_kcal": [
+      3.2,
+      null
+     ],
+     "fssai_basis": "9(1)(f) item 2, PDF p. 19",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "total_fat",
+     "unit": "g",
+     "per_100_g": [
+      null,
+      7.5
+     ],
+     "per_100_kcal": [
+      null,
+      1.6
+     ],
+     "fssai_basis": "9(1)(f) item 3, PDF p. 19",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "carbohydrate",
+     "unit": "g",
+     "per_100_g": [
+      55.0,
+      null
+     ],
+     "per_100_kcal": [
+      11.7,
+      null
+     ],
+     "fssai_basis": "9(1)(f) item 4, PDF p. 19",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "vitamin_a",
+     "unit": "mcg",
+     "per_100_g": [
+      350.0,
+      823.0
+     ],
+     "per_100_kcal": [
+      75.0,
+      175.0
+     ],
+     "fssai_basis": "9(1)(f) item 8, PDF p. 19",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "vitamin_d",
+     "unit": "mcg",
+     "per_100_g": [
+      5.0,
+      14.0
+     ],
+     "per_100_kcal": [
+      1.0,
+      3.0
+     ],
+     "fssai_basis": "9(1)(f) item 9, PDF p. 19",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "vitamin_c",
+     "unit": "mg",
+     "per_100_g": [
+      25.0,
+      75.0
+     ],
+     "per_100_kcal": [
+      5.3,
+      16.0
+     ],
+     "fssai_basis": "9(1)(f) item 10, PDF p. 19",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "thiamine",
+     "unit": "mg",
+     "per_100_g": [
+      0.2,
+      0.5
+     ],
+     "per_100_kcal": [
+      0.04,
+      0.1
+     ],
+     "fssai_basis": "9(1)(f) item 11, PDF p. 20",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "riboflavin",
+     "unit": "mg",
+     "per_100_g": [
+      0.4,
+      2.0
+     ],
+     "per_100_kcal": [
+      0.08,
+      0.4
+     ],
+     "fssai_basis": "9(1)(f) item 12, PDF p. 20",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "niacin",
+     "unit": "mg",
+     "per_100_g": [
+      3.8,
+      9.9
+     ],
+     "per_100_kcal": [
+      0.8,
+      2.1
+     ],
+     "fssai_basis": "9(1)(f) item 13, PDF p. 20",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "iron",
+     "unit": "mg",
+     "per_100_g": [
+      2.0,
+      5.65
+     ],
+     "per_100_kcal": [
+      0.42,
+      1.2
+     ],
+     "fssai_basis": "9(1)(f) item 15, PDF p. 20; revised by FSSAI direction of 18.10.2022, Annexure-1, direction PDF p. 3 (in force from 1 October 2022; the compendium's row is superseded)",
+     "verified_on": "2026-09-30",
+     "compendium": {
+      "per_100_g": [
+       3.0,
+       5.65
+      ],
+      "per_100_kcal": [
+       0.6,
+       1.2
+      ]
+     }
+    },
+    {
+     "nutrient": "zinc",
+     "unit": "mg",
+     "per_100_g": [
+      2.5,
+      5.9
+     ],
+     "per_100_kcal": [
+      0.5,
+      1.25
+     ],
+     "fssai_basis": "9(1)(f) item 16, PDF p. 20",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "pantothenic_acid",
+     "unit": "mg",
+     "per_100_g": [
+      2.0,
+      10.0
+     ],
+     "per_100_kcal": [
+      0.4,
+      2.1
+     ],
+     "fssai_basis": "9(1)(f) item 17, PDF p. 20",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "pyridoxine",
+     "unit": "mcg",
+     "per_100_g": [
+      100.0,
+      400.0
+     ],
+     "per_100_kcal": [
+      21.3,
+      85.1
+     ],
+     "fssai_basis": "9(1)(f) item 18, PDF p. 20",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "vitamin_b12",
+     "unit": "mcg",
+     "per_100_g": [
+      0.25,
+      0.7
+     ],
+     "per_100_kcal": [
+      0.05,
+      0.15
+     ],
+     "fssai_basis": "9(1)(f) item 19, PDF p. 20",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "biotin",
+     "unit": "mcg",
+     "per_100_g": [
+      7.5,
+      50.0
+     ],
+     "per_100_kcal": [
+      1.6,
+      10.6
+     ],
+     "fssai_basis": "9(1)(f) item 20, PDF p. 20",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "choline",
+     "unit": "mg",
+     "per_100_g": [
+      32.0,
+      null
+     ],
+     "per_100_kcal": [
+      6.8,
+      null
+     ],
+     "fssai_basis": "9(1)(f) item 21, PDF p. 20",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "inositol",
+     "unit": "mg",
+     "per_100_g": [
+      20.0,
+      200.0
+     ],
+     "per_100_kcal": [
+      4.25,
+      42.55
+     ],
+     "fssai_basis": "9(1)(f) item 22, PDF p. 20",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "selenium",
+     "unit": "mcg",
+     "per_100_g": [
+      5.0,
+      40.0
+     ],
+     "per_100_kcal": [
+      1.0,
+      8.5
+     ],
+     "fssai_basis": "9(1)(f) item 23, PDF p. 20; revised by FSSAI direction of 18.10.2022, Annexure-1, direction PDF p. 4 (in force from 1 October 2022; the compendium's row is superseded)",
+     "verified_on": "2026-09-30",
+     "compendium": {
+      "per_100_g": [
+       5.0,
+       17.0
+      ],
+      "per_100_kcal": [
+       1.0,
+       3.6
+      ]
+     }
+    }
+   ]
+  },
+  "follow_up_formula": {
+   "basis": "10(1)(h), PDF p. 26",
+   "rows": [
+    {
+     "nutrient": "vitamin_a",
+     "unit": "mcg",
+     "per_100_g": [
+      350.0,
+      823.0
+     ],
+     "per_100_kcal": [
+      75.0,
+      175.0
+     ],
+     "fssai_basis": "10(1)(h) item 4, PDF p. 26",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "vitamin_d",
+     "unit": "mcg",
+     "per_100_g": [
+      5.0,
+      14.0
+     ],
+     "per_100_kcal": [
+      1.0,
+      3.0
+     ],
+     "fssai_basis": "10(1)(h) item 5, PDF p. 26",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "vitamin_e",
+     "unit": "mg",
+     "per_100_g": [
+      2.5,
+      6.0
+     ],
+     "per_100_kcal": [
+      0.5,
+      1.3
+     ],
+     "fssai_basis": "10(1)(h) item 6, PDF p. 26",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "vitamin_k",
+     "unit": "mcg",
+     "per_100_g": [
+      7.5,
+      19.0
+     ],
+     "per_100_kcal": [
+      1.6,
+      4.0
+     ],
+     "fssai_basis": "10(1)(h) item 7, PDF p. 26",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "vitamin_c",
+     "unit": "mg",
+     "per_100_g": [
+      25.0,
+      75.0
+     ],
+     "per_100_kcal": [
+      5.3,
+      16.0
+     ],
+     "fssai_basis": "10(1)(h) item 8, PDF p. 26",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "thiamine",
+     "unit": "mcg",
+     "per_100_g": [
+      200.0,
+      517.0
+     ],
+     "per_100_kcal": [
+      42.55,
+      110.0
+     ],
+     "fssai_basis": "10(1)(h) item 9, PDF p. 26",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "riboflavin",
+     "unit": "mcg",
+     "per_100_g": [
+      400.0,
+      2000.0
+     ],
+     "per_100_kcal": [
+      85.1,
+      425.5
+     ],
+     "fssai_basis": "10(1)(h) item 10, PDF p. 26",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "niacin",
+     "unit": "mg",
+     "per_100_g": [
+      3.8,
+      9.9
+     ],
+     "per_100_kcal": [
+      0.8,
+      2.1
+     ],
+     "fssai_basis": "10(1)(h) item 11, PDF p. 26",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "pyridoxine",
+     "unit": "mcg",
+     "per_100_g": [
+      100.0,
+      400.0
+     ],
+     "per_100_kcal": [
+      21.3,
+      85.1
+     ],
+     "fssai_basis": "10(1)(h) item 12, PDF p. 26",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "pantothenic_acid",
+     "unit": "mg",
+     "per_100_g": [
+      2.0,
+      10.0
+     ],
+     "per_100_kcal": [
+      0.4,
+      2.1
+     ],
+     "fssai_basis": "10(1)(h) item 14, PDF p. 26",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "vitamin_b12",
+     "unit": "mcg",
+     "per_100_g": [
+      0.25,
+      4.0
+     ],
+     "per_100_kcal": [
+      0.05,
+      0.9
+     ],
+     "fssai_basis": "10(1)(h) item 15, PDF p. 26",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "choline",
+     "unit": "mg",
+     "per_100_g": [
+      32.0,
+      null
+     ],
+     "per_100_kcal": [
+      6.8,
+      null
+     ],
+     "fssai_basis": "10(1)(h) item 16, PDF p. 26",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "biotin",
+     "unit": "mcg",
+     "per_100_g": [
+      7.5,
+      50.0
+     ],
+     "per_100_kcal": [
+      1.6,
+      10.6
+     ],
+     "fssai_basis": "10(1)(h) item 17, PDF p. 26; revised by FSSAI direction of 18.10.2022, Annexure-1, direction PDF p. 4 (in force from 1 October 2022; the compendium's row is superseded)",
+     "verified_on": "2026-09-30",
+     "compendium": {
+      "per_100_g": [
+       7.5,
+       19.0
+      ],
+      "per_100_kcal": [
+       1.6,
+       4.0
+      ]
+     }
+    },
+    {
+     "nutrient": "sodium",
+     "unit": "mg",
+     "per_100_g": [
+      90.0,
+      300.0
+     ],
+     "per_100_kcal": [
+      19.15,
+      63.8
+     ],
+     "fssai_basis": "10(1)(h) item 18, PDF p. 26",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "potassium",
+     "unit": "mg",
+     "per_100_g": [
+      300.0,
+      900.0
+     ],
+     "per_100_kcal": [
+      63.8,
+      191.5
+     ],
+     "fssai_basis": "10(1)(h) item 19, PDF p. 26",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "chloride",
+     "unit": "mg",
+     "per_100_g": [
+      250.0,
+      800.0
+     ],
+     "per_100_kcal": [
+      53.2,
+      170.2
+     ],
+     "fssai_basis": "10(1)(h) item 20, PDF p. 26",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "calcium",
+     "unit": "mg",
+     "per_100_g": [
+      405.0,
+      800.0
+     ],
+     "per_100_kcal": [
+      86.2,
+      170.2
+     ],
+     "fssai_basis": "10(1)(h) item 21, PDF p. 26",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "phosphorus",
+     "unit": "mg",
+     "per_100_g": [
+      270.0,
+      500.0
+     ],
+     "per_100_kcal": [
+      57.45,
+      106.4
+     ],
+     "fssai_basis": "10(1)(h) item 22, PDF p. 26",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "magnesium",
+     "unit": "mg",
+     "per_100_g": [
+      30.0,
+      75.2
+     ],
+     "per_100_kcal": [
+      6.4,
+      16.0
+     ],
+     "fssai_basis": "10(1)(h) item 23, PDF p. 26",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "iron",
+     "unit": "mg",
+     "per_100_g": [
+      3.0,
+      7.0
+     ],
+     "per_100_kcal": [
+      0.6,
+      1.5
+     ],
+     "fssai_basis": "10(1)(h) item 24, PDF p. 26",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "iodine",
+     "unit": "mcg",
+     "per_100_g": [
+      90.0,
+      225.6
+     ],
+     "per_100_kcal": [
+      19.15,
+      48.0
+     ],
+     "fssai_basis": "10(1)(h) item 25, PDF p. 26",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "copper",
+     "unit": "mcg",
+     "per_100_g": [
+      160.0,
+      470.0
+     ],
+     "per_100_kcal": [
+      34.0,
+      100.0
+     ],
+     "fssai_basis": "10(1)(h) item 26, PDF p. 26",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "zinc",
+     "unit": "mg",
+     "per_100_g": [
+      2.5,
+      5.9
+     ],
+     "per_100_kcal": [
+      0.5,
+      1.25
+     ],
+     "fssai_basis": "10(1)(h) item 27, PDF p. 26",
+     "verified_on": "2026-09-30"
+    },
+    {
+     "nutrient": "manganese",
+     "unit": "mcg",
+     "per_100_g": [
+      5.0,
+      500.0
+     ],
+     "per_100_kcal": [
+      1.0,
+      106.4
+     ],
+     "fssai_basis": "10(1)(h) item 28, PDF p. 26; revised by FSSAI direction of 18.10.2022, Annexure-1, direction PDF p. 4 (in force from 1 October 2022; the compendium's row is superseded)",
+     "verified_on": "2026-09-30",
+     "compendium": {
+      "per_100_g": [
+       5.0,
+       50.0
+      ],
+      "per_100_kcal": [
+       1.0,
+       10.6
+      ]
+     }
+    },
+    {
+     "nutrient": "selenium",
+     "unit": "mcg",
+     "per_100_g": [
+      5.0,
+      40.0
+     ],
+     "per_100_kcal": [
+      1.0,
+      8.5
+     ],
+     "fssai_basis": "10(1)(h) item 29, PDF p. 26; revised by FSSAI direction of 18.10.2022, Annexure-1, direction PDF p. 4 (in force from 1 October 2022; the compendium's row is superseded)",
+     "verified_on": "2026-09-30",
+     "compendium": {
+      "per_100_g": [
+       5.0,
+       17.0
+      ],
+      "per_100_kcal": [
+       1.0,
+       3.6
+      ]
+     }
+    }
+   ]
+  }
+ }
+}

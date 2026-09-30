@@ -205,3 +205,56 @@ def test_milk_on_the_list_or_a_doubt_says_nothing():
     low["confidence"]["ingredients"] = 0.9                                            # below D-072's gate
     assert infant.no_milk(low) is None
     assert infant.check(cereal(ingredients=RICE))["no_milk"]["found"] is False
+
+
+# ---------------------------------------------------------------- part 4: composition (reviewers only)
+
+COMP = json.load(open(os.path.join(HERE, "..", "data", "infant_composition.json"), encoding="utf-8"))
+
+
+def mc_reading(rows, basis="Per 100 g"):
+    v = reading(["Wheat flour", "Milk solids"], [st("Milk Cereal Based Complementary Food", "front")])
+    v["nutrition"] = {"status": "read", "per_100_basis": basis,
+                      "rows": [{"nutrient": n, "per_100": c, "unit": u} for n, c, u in rows]}
+    return v
+
+
+def test_every_composition_row_names_its_page():
+    counts = {t: len(v["rows"]) for t, v in COMP["types"].items()}
+    assert counts == {"infant_formula": 30, "milk_cereal": 27, "processed_cereal": 18, "follow_up_formula": 25}
+    for t, v in COMP["types"].items():
+        for r in v["rows"]:
+            assert "PDF p." in r["fssai_basis"] and r["verified_on"] == "2026-09-30" and r["unit"] in ("g", "mg", "mcg"), r
+    assert "traditional" not in COMP["types"] and "folate" not in json.dumps(COMP["types"])
+
+
+def test_the_18_october_2022_revisions_replace_the_compendium():
+    rows = {(t, r["nutrient"]): r for t, v in COMP["types"].items() for r in v["rows"]}
+    assert rows[("processed_cereal", "iron")]["per_100_g"] == [2.0, 5.65]
+    assert rows[("processed_cereal", "iron")]["compendium"]["per_100_g"] == [3.0, 5.65]
+    for t in ("infant_formula", "milk_cereal", "processed_cereal", "follow_up_formula"):
+        assert rows[(t, "selenium")]["per_100_g"] == [5.0, 40.0] and "direction of 18.10.2022" in rows[(t, "selenium")]["fssai_basis"]
+    assert rows[("follow_up_formula", "manganese")]["per_100_g"] == [5.0, 500.0]
+    assert rows[("follow_up_formula", "biotin")]["per_100_g"] == [7.5, 50.0]
+    assert rows[("infant_formula", "iron")]["per_100_g"] == [3.0, 7.0]               # not revised
+    assert rows[("processed_cereal", "total_fat")]["per_100_g"] == [None, 7.5]        # 9(1)(f) item 3: "Max"
+
+
+def test_composition_sets_printed_numbers_beside_the_range():
+    v = mc_reading([("Protein", "15.5 g", None), ("Iron", "8", "mg"), ("Selenium", "0.03 mg", None)])
+    got = {c["nutrient"]: c for c in infant.composition(v, "Protein 15.5 g Iron 8 mg Selenium 0.03 mg",
+                                                         infant.product_type(v))}
+    assert got["protein"]["where"] == "within" and got["protein"]["range"] == [15.0, None]
+    assert got["iron"]["where"] == "above" and got["iron"]["basis"] == "8(1)(d) item 15, PDF p. 14"
+    assert got["selenium"]["value"] == 30.0 and got["selenium"]["range_unit"] == "mcg" and got["selenium"]["optional"]
+
+
+def test_what_composition_never_reads():
+    v = mc_reading([("Vitamin D", "200 IU", None), ("Zinc", "3.1 mg", None), ("Calcium : Phosphorus ratio", "1.5", None)])
+    assert infant.composition(v, "Vitamin D 200 IU Calcium Phosphorus ratio 1.5", infant.product_type(v)) == []
+    assert infant.composition(mc_reading([("Iron", "8 mg", None)], "Per 100 ml"), "Iron 8 mg",
+                              infant.product_type(v)) is None                          # not per 100 g
+    assert infant.composition(mc_reading([("Iron", "8 mg", None)]), "", infant.product_type(v)) is None
+    assert infant.composition(mc_reading([("Iron", "8 mg", None)]), "Iron 8 mg", None) is None
+    trad = {"id": "traditional", "chapter": "infant_food"}
+    assert infant.composition(mc_reading([("Iron", "8 mg", None)]), "Iron 8 mg", trad) is None

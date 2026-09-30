@@ -2347,6 +2347,21 @@ Same request as D-139. Full proposal: `docs/BABY_FOOD.md`. **Nothing built until
   conspicuous manner." (PDF p. 6.) `lenses/infant.py no_milk()`: found or not found, only when both faces were
   read whole and the allergen check (lenses/allergens.py, D-072's 0.95 gate) says milk is not listed; contains,
   may contain, uncertain or cannot confirm say nothing. "Conspicuous" is not judged. Reviewers only.
+- **Phase 3, part 4 (branch `baby-food-composition`, 2026-09-30): composition, reviewers only** (Sushil's
+  choice 5). `data/infant_composition.json`, copied by hand from the page images: infant formula 7(1)(g), 30
+  rows, PDF pp. 8 to 9; milk cereal 8(1)(d), 11 rows, pp. 13 to 14, and its optional nutrients 8(1)(e), 16
+  rows, pp. 14 to 15; processed cereal 9(1)(f), 18 rows, pp. 19 to 20 (its total fat is a maximum, 7.50 g per
+  100 g, where milk cereal's is a minimum); follow-up formula 10(1)(h), 25 rows, p. 26. FSSAI's direction of
+  18 October 2022, Annexure-1 (direction PDF pp. 3 to 4, in force from 1 October 2022), replaces seven rows:
+  selenium 5 to 40 µg per 100 g in all four types, processed cereal iron 2 to 5.65 mg, follow-up biotin 7.50
+  to 50 µg and manganese 5 to 500 µg; each keeps the compendium's figures under `compendium`. Left out: rows a
+  label can't print (moisture, ash, fibre, ratios, milk fat, amino acids, per 100 ml of prepared feed), and
+  folate (the tables are in DFE, labels print folic acid). Traditional foods have no table.
+  `lenses/infant.py composition()`: for a known type and a table per 100 g, each nutrient whose per 100 g number
+  is also in the second reading of the photo (as D-133) is set beside the type's range, "within", "below" or
+  "above" (facts, never "fails"); IU, kJ and unit-less cells aren't compared, nor per 100 kcal columns. The
+  D-133 reader is unchanged (it still ignores vitamins and minerals for foods): the infant lens reads those rows
+  itself. On /review only.
 
 
 ### D-141 · A barcode read from a photo counts only when two reads agree, or the barcode is big enough `SUPERSEDED by D-144` (2026-09-30)

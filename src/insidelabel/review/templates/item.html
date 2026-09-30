@@ -170,6 +170,19 @@
         {% for f in infant.free_from %}<div>On the list: "{{ f.entry }}" ({{ f.why|join(", ") }}) <span class="muted">(5(1): "free from preservatives, added colours and flavours")</span></div>{% endfor %}
         {% for h in infant.hydrogenated %}<div>On the list: "{{ h.entry }}" <span class="muted">({{ h.basis }}: "{{ h.text }}")</span></div>{% endfor %}
         {% if infant.additives %}{% for a in infant.additives.not_found %}<div>Not found in this type's additive list: INS {{ a.ins }} in "{{ a.entry }}" <span class="muted">(5(2): "Only the food additives listed under these regulations shall be used"; carry-over additives are allowed; {{ infant.additives.basis.split(",")[0] }})</span></div>{% endfor %}{% endif %}
+        {% if infant.composition %}
+          <div style="margin-top:6px"><b>Composition, per 100 g</b> <span class="muted">(numbers the second reading of the photo also shows; reviewers only)</span></div>
+          <ul style="margin:4px 0 0 18px;padding:0">
+          {% for c in infant.composition %}
+            {% set u = "µg" if c.range_unit == "mcg" else c.range_unit %}
+            {% set lo, hi = c.range[0], c.range[1] %}
+            <li>The pack prints {{ c.printed }} {{ "µg" if c.unit == "mcg" else c.unit }} ("{{ c.label }}"). FSSAI's rules for
+              {{ infant.type.id|replace("_", " ") }} set {% if lo is not none and hi is not none %}{{ lo|round(2) }} to {{ hi|round(2) }}{% elif lo is not none %}at least {{ lo|round(2) }}{% else %}at most {{ hi|round(2) }}{% endif %} {{ u }}
+              {% if c.where != "within" %}<strong>({{ c.where }} that)</strong>{% endif %}
+              <span class="muted">({{ c.basis }}{% if c.optional %}; an optional nutrient, when added{% endif %})</span></li>
+          {% endfor %}
+          </ul>
+        {% endif %}
         <div style="margin-top:6px"><b>Your check:</b>
           {% for c in infant.reviewer_checks %}{{ c.text }} <span class="muted">({{ c.fssai_basis }})</span>{% endfor %}</div>
       </div>

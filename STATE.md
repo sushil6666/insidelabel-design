@@ -1,6 +1,6 @@
 # STATE.md - where InsideLabel is, and how to pick it up
 
-**Last updated:** 2026-09-30 (**https://insidelabel.ai is live**, `main` = `11d184e`, PR #74: D-142, D-143, D-144 LOCKED and deployed; D-140 phase 3 part 1 merged) · **Owner:** Sushil · **Tests:** 908 passing, 8 skipped, 1 expected failure (branch `d146-digit-check`) · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 5.7 s on the live server (2026-09-27), Gemini + Cloud Vision, `verdict`
+**Last updated:** 2026-09-30 (**https://insidelabel.ai is live**, `main` = `11d184e`, PR #74: D-142, D-143, D-144 LOCKED and deployed; D-140 phase 3 part 1 merged) · **Owner:** Sushil · **Tests:** 913 passing, 8 skipped, 1 expected failure (branch `baby-food-composition`) · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 5.7 s on the live server (2026-09-27), Gemini + Cloud Vision, `verdict`
 
 This is the living status document. Read it first in any new session, then
 `DECISIONS.md` for the *why*. Update the "Last updated" line, the numbers and
@@ -677,7 +677,8 @@ setup alarms.
   stored for reviewers (see D-140's notes). **Part 2 on `baby-food-additives`:** 5(2), each type's additive
   list (197 rows and 5 carriers from the page images; a follow-up misprint, INS 525 for sodium hydroxide, kept
   as printed), merged (#76). **Part 3 on `baby-food-no-milk`:** 4(3), the no-milk statement where milk isn't
-  listed, merged (#78). **Part 4 on `baby-food-composition`:** composition (reviewer-only). Then the `baby` band and the toddler
+  listed, merged (#78). **Part 4 on `baby-food-composition`:** composition, reviewers only (the type's ranges,
+  with FSSAI's 18 October 2022 revisions). Then the `baby` band and the toddler
   question. Branches from now on: one at a time from the current `main`,
   merged by Sushil before the next starts (Sushil, 2026-09-30). Next parts: 5(2)'s additive tables
   per type, 4(3), composition (reviewer-only), the `baby` band and the one-time toddler question.
