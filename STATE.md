@@ -1,6 +1,6 @@
 # STATE.md - where InsideLabel is, and how to pick it up
 
-**Last updated:** 2026-09-30 (**https://insidelabel.ai is live**, `main` = `11d184e`, PR #74: D-142, D-143, D-144 LOCKED and deployed; D-140 phase 3 part 1 merged) · **Owner:** Sushil · **Tests:** 900 passing, 8 skipped, 1 expected failure (branch `baby-food-no-milk`) · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 5.7 s on the live server (2026-09-27), Gemini + Cloud Vision, `verdict`
+**Last updated:** 2026-09-30 (**https://insidelabel.ai is live**, `main` = `11d184e`, PR #74: D-142, D-143, D-144 LOCKED and deployed; D-140 phase 3 part 1 merged) · **Owner:** Sushil · **Tests:** 908 passing, 8 skipped, 1 expected failure (branch `d146-digit-check`) · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 5.7 s on the live server (2026-09-27), Gemini + Cloud Vision, `verdict`
 
 This is the living status document. Read it first in any new session, then
 `DECISIONS.md` for the *why*. Update the "Last updated" line, the numbers and
@@ -667,11 +667,18 @@ setup alarms.
   in DECISIONS.md; nothing is built. `barcode-rescale-75` and the old stack branches
   (`barcode-correction`, `barcode-audit`, `camera-barcode-check`) are not to be merged; they can be deleted.
 
+- **D-146 RECOMMENDED, built on `d146-digit-check`** (Sushil's proposal, 2026-09-30): a scanned code for a
+  pack not in the catalogue is shown back (first 3 and last 4 digits large) with "Yes, they match" / "Scan
+  again" before the ingredients photo; a catalogue hit shows the name with "Not this pack? Scan again"; the
+  answer (confirmed, rescanned) is kept on the scan and shown on /review beside D-143's check. web-30. Walked
+  headless, light and dark. **Waiting on Sushil:** merge, phone check with the live camera; then phase 3 part 4.
+
 - **Phase 3 of D-140 (baby food, in shadow): part 1 merged** (#74, 2026-09-30): an infant food's own checks
   stored for reviewers (see D-140's notes). **Part 2 on `baby-food-additives`:** 5(2), each type's additive
   list (197 rows and 5 carriers from the page images; a follow-up misprint, INS 525 for sodium hydroxide, kept
   as printed), merged (#76). **Part 3 on `baby-food-no-milk`:** 4(3), the no-milk statement where milk isn't
-  listed. Next: composition (reviewer-only), then the `baby` band and the toddler question. Branches from now on: one at a time from the current `main`,
+  listed, merged (#78). Next, after D-146: composition (reviewer-only), then the `baby` band and the toddler
+  question. Branches from now on: one at a time from the current `main`,
   merged by Sushil before the next starts (Sushil, 2026-09-30). Next parts: 5(2)'s additive tables
   per type, 4(3), composition (reviewer-only), the `baby` band and the one-time toddler question.
 

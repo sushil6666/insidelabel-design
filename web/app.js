@@ -23,10 +23,12 @@ let navSeq = 0;               // async views check this so a late result can't r
 // frontWanted: offer the front photo (D-100); off for a re-check of a pack whose front is on file.
 // acceptUnconfirmed: "use this one anyway" after a request for a clearer photo (D-118).
 // parts: the ingredient list's 2nd and 3rd photos, when it doesn't fit one (D-119).
+// barcodeAnswer: "confirmed" or "rescanned", the answer to D-146's digit check; rescanned:
+// the user tapped "Scan again" on an earlier code for this pack.
 let pending = { barcode: null, barcodeSource: null, back: null, front: null, backSource: null,
                 frontSource: null, pairing: false, attempts: 0, refused: [], frontWanted: true,
                 acceptUnconfirmed: false, parts: [], partSources: [],
-                screenPack: null, shopItem: null };
+                screenPack: null, shopItem: null, barcodeAnswer: null, rescanned: false };
 
 // ------------------------------------------------------------------ navigation
 const routes = {
@@ -517,7 +519,18 @@ function resetPending() {
   pending = { barcode: null, barcodeSource: null, back: null, front: null, backSource: null,
               frontSource: null, pairing: false, attempts: 0, refused: [], frontWanted: true,
               acceptUnconfirmed: false, parts: [], partSources: [],
-              screenPack: null, shopItem: null };
+              screenPack: null, shopItem: null, barcodeAnswer: null, rescanned: false };
+}
+
+// D-146: back to the scanner after a code the user says isn't this pack's. The dropped
+// code isn't kept anywhere; the next code is sent as "rescanned".
+function scanAgain() {
+  pending.barcode = null;
+  pending.barcodeSource = null;
+  pending.barcodeAnswer = null;
+  pending.rescanned = true;
+  record("barcode_check", { answer: "scan_again" });
+  go("scan");
 }
 
 async function scan() {
@@ -586,13 +599,35 @@ async function lookUp(code, how) {
   pending.barcodeSource = how;
   show(working("Looking up this pack…", false));
   try {
-    const { body } = await scanRequest({ barcode: code, barcodeSource: how, screenPack: pending.screenPack });
-    finish(body);
+    const { body } = await scanRequest({ barcode: code, barcodeSource: how, screenPack: pending.screenPack,
+                                         barcodeAnswer: pending.rescanned ? "rescanned" : null });
+    finish(body, { lookedUp: true });
   } catch (e) {
-    // 404 not_in_catalogue: the normal first-time path, not an error (D-068).
-    if (e instanceof ApiError && e.status === 404 && e.body.error === "not_in_catalogue") return go("photo");
+    // 404 not_in_catalogue: the normal first-time path, not an error (D-068). D-146:
+    // the digits are checked against the pack first; an older server sends no check.
+    if (e instanceof ApiError && e.status === 404 && e.body.error === "not_in_catalogue") {
+      return e.body.barcode_check ? show(digitCheck(e.body.barcode_check)) : go("photo");
+    }
     show(apiErrorView(e, () => lookUp(code, how)));
   }
+}
+
+// D-146: a code for a pack we haven't checked, shown back before the ingredients photo,
+// its first 3 and last 4 digits large. Every word is the server's (lenses/screen.py, D-091).
+function digitCheck(c) {
+  return el("section", { class: "stack" },
+    el("h1", {}, c.title),
+    el("p", {}, c.text),
+    el("p", { class: "digits", "aria-label": c.code },
+      el("span", { class: "big" }, c.first), el("span", { class: "small" }, c.middle),
+      el("span", { class: "big" }, c.last)),
+    el("div", { class: "row wrap" },
+      button(c.yes, () => {
+        pending.barcodeAnswer = pending.rescanned ? "rescanned" : "confirmed";
+        record("barcode_check", { answer: pending.barcodeAnswer });
+        go("photo");
+      }, "primary"),
+      button(c.again, scanAgain)));
 }
 
 // ------------------------------------------------------------------ scan: the back photo (D-025, D-068)
@@ -816,11 +851,12 @@ function working(text, reading) {
     slow);
 }
 
-function finish(body) {
+function finish(body, { lookedUp = false } = {}) {
   const id = body.scan_id || "local-" + Date.now().toString(36);
   const rel = body.reliability || {};
   addHistory({
     id, at: new Date().toISOString(), barcode: pending.barcode,
+    looked_up: lookedUp,            // D-146: a catalogue hit from the scanner offers "Scan again"
     scan_id: body.scan_id || null,
     product: body.product || null,
     screen: body.screen,
@@ -914,6 +950,11 @@ function result(id, sub, tileId) {
   const put = (...nodes) => view.append(...nodes.flat().filter(x => x != null && x !== false));
 
   put(el("p", { class: "product" }, productName(h.product)));
+  // D-146: a catalogue hit names the product; if it isn't this pack, back to the scanner.
+  if (s.rescan && h.looked_up) {
+    put(el("p", { class: "rescan" }, s.rescan.text, " ",
+      button(s.rescan.button, () => { resetPending(); scanAgain(); }, "link")));
+  }
 
   // 1. People first (D-060, D-064).
   if (s.people?.length) put(el("div", { class: "people" }, s.people.map(personCard)));

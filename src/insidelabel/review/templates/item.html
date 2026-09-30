@@ -203,6 +203,10 @@
           <div><label for="variant">Variant</label><input type="text" id="variant" name="variant" value="{{ form.variant }}"></div>
           <div><label for="barcode">Barcode</label><input type="text" id="barcode" name="barcode" value="{{ form.barcode }}" inputmode="numeric"></div>
         </div>
+        {% if barcode_answer %}
+          <div class="muted" id="barcode-answer" style="margin:4px 0 8px">{{ barcode_answer }} Supporting evidence
+            only (D-146): a camera code the photos don't show still needs your check.</div>
+        {% endif %}
         {% if barcode_unsure %}
           <div class="notice" id="barcode-unsure">{{ barcode_unsure }}
             <label class="choice" style="margin-top:6px"><input type="checkbox" name="barcode_checked" value="1">

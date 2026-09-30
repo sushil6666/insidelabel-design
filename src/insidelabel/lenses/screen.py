@@ -975,6 +975,28 @@ UNLISTED_NOTE = ("This pack has no barcode, so it isn't added to our catalogue. 
 
 
 # D-130: a result read from a photo of a screen (a shop listing, a laptop).
+# D-146: a code the scanner or a barcode photo read for a pack not in the catalogue is
+# shown back, its first 3 and last 4 digits large, before the ingredients photo; a
+# catalogue hit shows the product's name with a way back to the scanner. No typing (D-104).
+BARCODE_CHECK_TITLE = "Check the barcode"
+BARCODE_CHECK_TEXT = "Check these match the numbers under the barcode"
+BARCODE_CHECK_YES = "Yes, they match"
+BARCODE_CHECK_AGAIN = "Scan again"
+RESCAN_TEXT = "Not this pack?"
+RESCAN_BUTTON = "Scan again"
+
+
+def barcode_check(code):
+    """
+    D-146: the digits to check against the pack, as printed under the bars: a UPC-A,
+    kept here as 13 digits with a leading 0 (D-104), is printed as its 12.
+    """
+    shown = code[1:] if len(code) == 13 and code.startswith("0") else code
+    return {"title": BARCODE_CHECK_TITLE, "text": BARCODE_CHECK_TEXT, "code": shown,
+            "first": shown[:3], "middle": shown[3:-4], "last": shown[-4:],
+            "yes": BARCODE_CHECK_YES, "again": BARCODE_CHECK_AGAIN}
+
+
 SCREEN_TITLE = "Read from a screen, not the pack."
 SCREEN_TEXT = ("Listings can be out of date or show another size or flavour. "
                "Check the pack in the shop before you buy.")
@@ -1182,6 +1204,8 @@ def _notes_for_every_result(out, *, catalogue, profiles, screen_pack, ingredient
     """What any result says about where it came from, whatever the kind of pack."""
     if catalogue and catalogue.get("source") == "catalogue":
         out["last_verified"] = f"Label last verified on {catalogue['last_verified']}."
+        # D-146: a catalogue hit shows the product's name; the app offers the way back to the scanner.
+        out["rescan"] = {"text": RESCAN_TEXT, "button": RESCAN_BUTTON}
         # D-073: a barcode can outlive a recipe. Ask anyone with an avoid list for one back photo.
         if any(p["avoid"] for p in profiles):
             out["recheck"] = "Packs change. Photograph the back of your pack to re-check the avoid list."

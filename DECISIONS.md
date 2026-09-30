@@ -2543,6 +2543,43 @@ the review queue instead.
   > reviewer should say whether this is enough, or whether the app should show the frame and let the
   > user remove it before sending.
 
+
+### D-146 · A scanned code for a new pack is checked against the digits on the pack before the photo `RECOMMENDED` (2026-09-30)
+Proposed by Sushil (2026-09-30), after two camera misreads were found in the catalogue (#42, #48; D-142 to
+D-145): "After the live camera scanner (or a barcode photo) finds a code for a pack NOT in the catalogue, the
+next screen ("photograph the ingredients") first shows the code with its first 3 and last 4 digits large:
+"Check these match the numbers under the barcode", with "Yes, they match" and "Scan again". "Scan again"
+returns to the scanner; nothing is stored for the dropped code. For a catalogue hit, no digit check: the result
+shows the product name with "Not this pack? Scan again". Store the answer on the scan (confirmed, rescanned)
+and show it on /review next to D-143's check, as supporting evidence only: a reviewer still checks a camera
+code the photos don't show. No typing of barcodes (D-104). All text from lenses/screen.py (D-091), wording
+test covers it."
+
+**Built by Claude (branch `d146-digit-check`, not merged):**
+1. **The check.** `/scan`'s 404 `not_in_catalogue` now carries `barcode_check` from `lenses/screen.py`
+   (`barcode_check()`): title "Check the barcode", "Check these match the numbers under the barcode", the code
+   split into its first 3, middle and last 4 digits, "Yes, they match", "Scan again". A UPC-A, kept as 13 digits
+   with a leading 0 (D-104), is shown as the 12 it prints. The app (`digitCheck()`) shows the first 3 and last 4
+   large; every word is the server's. An older server sends no check, and the app goes to the photo as before.
+2. **Nothing is stored for a dropped code:** the 404 lookup writes no row, and "Scan again" only returns to the
+   scanner.
+3. **The answer, on the scan it belongs to** (`scans.request.barcode_answer`, no migration): "confirmed" when
+   the user taps "Yes, they match" for the first code they scanned; "rescanned" when the code came after at least
+   one "Scan again" (for a new pack, the user then also tapped Yes; for a catalogue hit, it is the code the
+   rescan found). `/scan` refuses any other value (422 `bad_barcode_answer`); `repro.py` replays it.
+4. **A catalogue hit** carries `screen.rescan` ("Not this pack?", "Scan again"), shown under the product name
+   when the result came from the scanner or a barcode photo; it returns to the scanner, and the next code is
+   "rescanned".
+5. **/review** shows the answer beside D-143's check ("On the phone, the tester said the digits match the
+   numbers under the barcode."), marked "Supporting evidence only (D-146): a camera code the photos don't show
+   still needs your check." D-143's gate is unchanged.
+6. No typing (D-104): the check only confirms or drops a scanned code. `APP_VERSION` web-30 and the service
+   worker's `il-shell-30` together.
+Walked in headless Chromium (Playwright, 390 x 844, light and dark) against the real server on a scratch
+database: a barcode photo of a new pack's code gives the digit check; "Scan again" returns to the scanner; a
+catalogue hit after it shows the product's name with "Not this pack? Scan again" and is stored "rescanned";
+"Yes, they match" goes to the ingredients photo; the only console errors are the two expected 404 lookups.
+Not walked: the live camera (headless Chromium has no BarcodeDetector); it calls the same `lookUp()`.
 ---
 
 ## Open and pending
