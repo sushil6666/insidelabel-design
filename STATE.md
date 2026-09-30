@@ -1,6 +1,6 @@
 # STATE.md - where InsideLabel is, and how to pick it up
 
-**Last updated:** 2026-09-30 (**https://insidelabel.ai is live**, `main` = `ee2e45e`, PR #55, deployed; phase 3 (D-134) built on branch `result-tiles`) · **Owner:** Sushil · **Tests:** 754 passing, 8 skipped, 1 expected failure · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 5.7 s on the live server (2026-09-27), Gemini + Cloud Vision, `verdict`
+**Last updated:** 2026-09-30 (**https://insidelabel.ai is live**, `main` = `8045c0f`, PR #56 (phase 3, D-134), deployed and checked from outside) · **Owner:** Sushil · **Tests:** 754 passing, 8 skipped, 1 expected failure · **Release gate:** `python tools/release_check.py` - NOT READY (2 failing; 4 with `INSIDELABEL_DB` set) · **Latest real scan:** 5.7 s on the live server (2026-09-27), Gemini + Cloud Vision, `verdict`
 
 This is the living status document. Read it first in any new session, then
 `DECISIONS.md` for the *why*. Update the "Last updated" line, the numbers and
@@ -650,6 +650,17 @@ setup alarms.
 
 **NEXT SESSION STARTS HERE (2026-09-30).** Where things stand, newest first:
 
+- **Deployed 2026-09-30: main `8045c0f` (PR #56, phase 3 D-134, 754 tests) on the server.**
+  Checked from outside 2026-09-30: `/health` build `8045c0f3a14f`, data `63346c110198`, 69 additives,
+  17 NOVA markers; `/app/lib.js` web-27, `/app/sw.js` `il-shell-27`. Local suite on `8045c0f`: 754
+  passed, 8 skipped, 1 xfailed. **Waiting on Sushil:** the phone check of the tiles; confirm the
+  three choices in D-134 (front-photo ask inside "More", sugar/salt/energy over ICMR-NIN not tiles,
+  shop list for screens only). Still open from phase 2: the four gold tables to check, "run the
+  gold set" (about Rs 3), D-136. Phases 1 to 3 of `docs/BUILD_PROMPT_D132-D134.md` are all live;
+  its beta list (billing is the blocker) is what comes after. **Not sourced:** a tile page's
+  "who it concerns" is always empty: no approved row states it apart from its research sentence
+  (D-134). A row gets one only when Sushil names the sentence to use from its source.
+
 - **D-134 built, phase 3 of `docs/BUILD_PROMPT_D132-D134.md`** (branch `result-tiles`, web-27,
   754 tests). Sushil confirmed the phase 2 phone check first. `screen.tiles` + `screen.details`
   (lenses/screen.py), one-screen result with chips, tile pages at `#/result/<id>/look/<tile id>`,
@@ -657,7 +668,7 @@ setup alarms.
   rows. Walked in headless Chromium, light and dark, from real `/scan` answers and the real photo
   flow (Limca 1 L: "Add a photo of the nutrition table" on the first screen): no errors; a 2-tile pack
   ends at 787 of 844 px. Fixed on the way: `row wrap` rows took the page padding (the shop-list gap).
-  **Waiting on Sushil:** merge, `update.sh`, phone check; confirm three choices in D-134 (front-photo
+  **Merged (PR #56) and deployed 2026-09-30, see above.** Confirm three choices in D-134 (front-photo
   ask inside "More", sugar/salt/energy over ICMR-NIN not tiles, shop list for screens only).
   Still open from phase 2: the four gold tables to check, "run the gold set" (about Rs 3), D-136.
 
