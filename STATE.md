@@ -650,6 +650,20 @@ setup alarms.
 
 **NEXT SESSION STARTS HERE (2026-09-30).** Where things stand, newest first:
 
+- **Phase 0 of `docs/BUILD_PROMPT_SUPPLEMENTS_BABY_FOOD.md` done** (branch `categories-research`, docs
+  only, 755 tests unchanged): `docs/SUPPLEMENTS.md` (**D-139 RECOMMENDED**) and `docs/BABY_FOOD.md`
+  (**D-140 RECOMMENDED**), every line from sources read 2026-09-30. Found on the way: the 2022 Nutra
+  Regulations are **not notified**, run by FSSAI's direction of 18.10.2022; the infant regulations are
+  in force from 1.10.2022 with four nutrient limits from a direction; label statements are Nutra 5(12)
+  (the build prompt said "regulation 12"); the under-5/pregnant statement is FSDU's, not supplements';
+  hydrogenated vegetable oil is a permitted tablet lubricant; ICMR-NIN's RDA 2020 (revised 2024) was
+  read in the Drive viewer ICMR-NIN's page embeds (downloads off). **Waiting on Sushil:** the IMS Act
+  PDF from India Code (times out from WSL; nothing quotes it yet); "accepted" or edits for D-139 and
+  D-140 and their questions (a lawyer for the Nutra status, the one-RDA sentence and IMS
+  "promotion"); photos of 3 supplements and 3 baby foods for gold. **Then phase 1** (`pack-kind`).
+  Headless-Chromium tricks that worked for FSSAI's JavaScript site: render the page, type into the
+  table's search box and press Enter (`fill` alone doesn't filter).
+
 - **Next build, ready to paste: `docs/BUILD_PROMPT_SUPPLEMENTS_BABY_FOOD.md`** (2026-09-30, Sushil:
   "implement supplements and baby food part, part of beta"). Phase 0 reads the FSSAI Nutra
   Regulations 2022, the Infant Nutrition Regulations 2020 (Version II), the IMS Act 1992, WHO 2023
