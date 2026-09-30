@@ -23,6 +23,9 @@ What this module does:
 - words():        4(2)'s words the label shall not exhibit, where printed.
 - free_from():    5(1): preservatives and colours (by the additive's class) and flavours.
 - hydrogenated(): hydrogenated fat, for the types whose section says so.
+- composition():  part 4, reviewers only: a number the pack prints per 100 g, seen by the
+                  second reading too, beside the type's range (data/infant_composition.json,
+                  with FSSAI's 18 October 2022 revisions). Facts side by side.
 - additives():    5(2): an INS number on the list that the type's additive list (and
                   Schedule I(d)'s carriers, data/infant_additives.json) doesn't name,
                   "not found in the list", never "not permitted".
@@ -31,9 +34,10 @@ Pictures (4(2)) are a reviewer's check (reviewer_checks), never the app's.
 
 import json
 import os
+import re
 
 from insidelabel.core.pack_kind import _has, norm
-from insidelabel.lenses import allergens
+from insidelabel.lenses import allergens, nutrition
 from insidelabel.core.tokenize import ins_numbers
 from insidelabel.lenses.nutra import complete_read
 from insidelabel.trace import DATA_DIR
@@ -46,6 +50,7 @@ def _load(name):
 
 RULES = _load("infant_rules.json")
 ADDITIVES = _load("infant_additives.json")
+COMPOSITION = _load("infant_composition.json")
 _TYPES = {t["id"]: t for t in RULES["types"]}
 _CLASS = {r["ins"]: r["class"] for r in _load("additives.json")["additives"]}
 _HYDRO = next(r for r in _load("ingredient_notes.json")["rows"] if r["id"] == "hydrogenated_fat")
@@ -213,6 +218,78 @@ def additives(ingredients, ptype):
     return {"basis": basis, "not_found": out}
 
 
+# ---------------------------------------------------------------- composition (reviewers only)
+
+_MACROS = {"protein": "protein", "total_fat": "total_fat", "carbohydrate": "carbohydrate", "sodium": "sodium"}
+_SCALE = {("g", "mg"): 1000.0, ("mg", "g"): 0.001, ("mg", "mcg"): 1000.0, ("mcg", "mg"): 0.001,
+          ("g", "mcg"): 1e6, ("mcg", "g"): 1e-6}
+
+
+def _nutrient_of(label):
+    """The composition table's nutrient a printed row names, or None. A ratio is never a nutrient."""
+    n = norm(label)
+    if _has(n, "ratio"):
+        return None
+    key = nutrition.nutrient_key(label)
+    if key in _MACROS:
+        return _MACROS[key]
+    for nutrient, names in COMPOSITION["names"].items():
+        if any(_has(n, name) for name in names):
+            return nutrient
+    return None
+
+
+def _cell(cell, label, unit_col):
+    """(value, unit, printed) for a printed per 100 g cell; the unit from the cell, the unit column or the label."""
+    text = ("" if cell is None else str(cell)).strip()
+    m = re.search(r"(?<![\d.])" + nutrition._NUM, text)
+    if not m or nutrition._LT.search(text):
+        return None
+    unit = nutrition._unit_of(text[m.end():], unit_col, label)
+    return nutrition._f(m.group(1)), unit, m.group(1)
+
+
+def composition(vision, ocr_text, ptype):
+    """
+    Part 4, reviewers only: [{nutrient, label, printed, unit, value, range, where, basis}] for each
+    nutrient the pack prints per 100 g whose number the second reading of the photo (ocr_text) also
+    shows, beside the type's range (data/infant_composition.json). None without a type, a table
+    per 100 g or a second reading. `where` is "within", "below" or "above": facts, never "fails".
+    """
+    table = COMPOSITION["types"].get(ptype["id"]) if ptype else None
+    raw = vision.get("nutrition")
+    if table is None or not isinstance(raw, dict) or not (ocr_text or "").strip():
+        return None
+    if nutrition.form_of(raw.get("per_100_basis")) != "solid":
+        return None
+    seen = nutrition.ocr_numbers(ocr_text)
+    rows = {r["nutrient"]: r for r in table["rows"]}
+    out, done = [], set()
+    for r in raw.get("rows") or []:
+        if not isinstance(r, dict):
+            continue
+        nutrient = _nutrient_of(r.get("nutrient"))
+        if nutrient not in rows or nutrient in done:
+            continue
+        got = _cell(r.get("per_100"), r.get("nutrient"), r.get("unit"))
+        if got is None:
+            continue
+        value, unit, printed = got
+        row = rows[nutrient]
+        if unit is None or (unit != row["unit"] and (unit, row["unit"]) not in _SCALE):
+            continue                                  # IU, kJ, or no unit: not compared
+        if nutrition._f(printed) not in seen:
+            continue                                  # not in the second reading: not shown (D-133)
+        done.add(nutrient)
+        v = value if unit == row["unit"] else value * _SCALE[(unit, row["unit"])]
+        lo, hi = row["per_100_g"]
+        where = "below" if lo is not None and v < lo else "above" if hi is not None and v > hi else "within"
+        out.append({"nutrient": nutrient, "label": r.get("nutrient"), "printed": printed, "unit": unit,
+                    "value": round(v, 4), "range": [lo, hi], "range_unit": row["unit"], "where": where,
+                    "optional": bool(row.get("optional")), "basis": row["fssai_basis"]})
+    return out
+
+
 def check(vision, ingredients=None, ocr_text=None):
     """Every infant check for one reading, as stored with the scan for reviewers (D-140, in shadow)."""
     ingredients = vision.get("ingredients") if ingredients is None else ingredients
@@ -227,5 +304,6 @@ def check(vision, ingredients=None, ocr_text=None):
         "free_from": free_from(ingredients),
         "hydrogenated": hydrogenated(ingredients, ptype),
         "additives": additives(ingredients, ptype),
+        "composition": composition(vision, ocr_text, ptype),
         "reviewer_checks": RULES["reviewer_checks"],
     }

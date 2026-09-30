@@ -195,3 +195,25 @@ def test_a_milk_free_infant_cereal_without_the_4_3_statement_shows_on_review(env
     assert raw["_infant"]["no_milk"]["found"] is False
     _item, _c, page = item_page(env, vid)
     assert "Contains no milk or milk products or milk derivatives" in page and "(4(3), PDF p. 6;" in page
+
+
+def test_composition_is_shown_to_reviewers_beside_the_types_range(env):
+    """D-140 phase 3, part 4: reviewers only; nothing reaches the user."""
+    v = reading(["Wheat flour", "Milk solids"], [st("Milk Cereal Based Complementary Food", "front")])
+    v["nutrition"] = {"status": "read", "per_100_basis": "Per 100 g",
+                      "rows": [{"nutrient": "Iron", "per_100": "8 mg", "unit": None}]}
+    import insidelabel.api.main as m
+    mp = pytest.MonkeyPatch()
+    mp.setattr(m.ocr_check, "recover_entries",
+               lambda b, ings: (list(ings), {"available": True, "reader": "tesseract", "ocr_text": "IRON 8 mg",
+                                              "missing": []}, []))
+    try:
+        j = post(gtin(), v)
+    finally:
+        mp.undo()
+    assert "composition" not in json.dumps(j.get("screen")) and "_infant" not in json.dumps(j)
+    vid = j["catalogue"]["product_version_id"]
+    [(raw,)] = q(env, "SELECT raw_extraction FROM product_versions WHERE id = %s", vid)
+    assert raw["_infant"]["composition"][0]["where"] == "above"
+    _item, _c, page = item_page(env, vid)
+    assert "The pack prints 8 mg" in page and "set 3.0 to 7.0 mg" in page and "(above that)" in page
