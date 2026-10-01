@@ -2699,6 +2699,24 @@ photo scan is free ("about N hours") rather than "tomorrow", which a rolling win
 the install's daily rule gets the screen (`lenses/screen.py` `photo_limit()`, in the 429's `photo_limit`); an IP
 refusal keeps D-095's words. The 429 is logged with its request id and not stored (D-095). The app shows the screen
 in place of "That didn't work", with "Scan a barcode" back to the scanner. `tests/test_photo_limit.py`.
+
+### D-150 · The explainer film on the website home and the app home `RECOMMENDED` (2026-10-01)
+**Sushil, 2026-10-01: "website home page and android apps home page".** The 41 s film
+(`videos/insidelabel-how-it-reads/`, D-004's "AI reads, rules decide" shown on a phone) is served as static files
+from `web/film/`: H.264 and AAC, 1920 x 1080 for the website (2.9 MB) and 1080 x 1920 for the app (3.1 MB), each
+with a WebP poster (24 KB, 20 KB). Its words are on screen, so it works muted. The details, Claude's, waiting on
+Sushil's "accepted":
+- **Website (`/`):** the 16:9 film under the opening lines, before "How it works"; it plays muted once it is
+  scrolled into view and the page has loaded, and pauses when it leaves; never by itself with reduced motion,
+  with Save-Data, or without IntersectionObserver: then the poster and the player's play button wait for a tap.
+- **App (`/app/`):** a "How it works" card with the poster directly under "Scan a pack", which stays first, shown
+  to everyone. It never plays by itself; a tap opens the 9:16 film full screen with sound and a close button; the
+  phone's Back and Escape close it too. With reduced motion the tap opens it paused, on the poster.
+- **Loading:** `preload="none"` everywhere; the service worker never precaches it and leaves any `.mp4` alone
+  (fetched in byte ranges, which phones need); the poster may be cached after it is shown.
+- **The film's line "The first read of a pack takes about 8 to 15 seconds"** is the app's own waiting text
+  (`web/app.js`); if the scan-speed query (OPERATIONS.md section 5) says otherwise, both change together.
+`tests/test_film.py`.
 ---
 
 ## Open and pending

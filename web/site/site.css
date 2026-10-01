@@ -50,4 +50,8 @@ a { color: var(--brand); }
 a:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
 footer { margin: 48px auto 32px; color: var(--muted); font-size: 15px; }
 footer a { color: var(--muted); }
+.film { margin: 24px 0 8px; }
+.film video { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; border-radius: 16px;
+              background: var(--surface) center / cover no-repeat; box-shadow: var(--shadow); }
+.film figcaption { margin-top: 8px; color: var(--muted); font-size: 15px; }
 @media (prefers-reduced-motion: reduce) { .cta { transition: none; } }

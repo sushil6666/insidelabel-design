@@ -39,6 +39,33 @@ The vertical cut zooms to two measured points. If the result or the blurry-photo
 changes layout, re-measure: `MEASURE=1 ./make.sh vertical` (needs `playwright-core`; set
 `PLAYWRIGHT_CORE` and `CHROMIUM_PATH` if they aren't found).
 
+## On the homes (D-150)
+
+The website home (`/`) shows the 16:9 film and the app home (`/app/`) a "How it works" card
+that opens the 9:16 film. They are served from the InsideLabel repo's `web/film/`, made from
+the renders like this (H.264 High, AAC 96 kbps, fast start; 2 to 4 MB each, checked by
+`tests/test_film.py`):
+
+```bash
+for cut in 16x9 9x16; do
+  ffmpeg -y -i renders/insidelabel-$cut.mp4 -c:v libx264 -preset veryslow -tune animation -crf 24 \
+    -pix_fmt yuv420p -profile:v high -level 4.1 -movflags +faststart -c:a aac -b:a 96k -ac 2 \
+    ../../web/film/insidelabel-$cut.mp4
+done
+# posters: the "Your avoid list first." moment, clear of the player's controls
+ffmpeg -y -ss 23.5 -i ../../web/film/insidelabel-16x9.mp4 -frames:v 1 -vf scale=1280:720:flags=lanczos -c:v libwebp -quality 80 ../../web/film/insidelabel-16x9.webp
+ffmpeg -y -ss 20 -i ../../web/film/insidelabel-9x16.mp4 -frames:v 1 -vf scale=720:1280:flags=lanczos -c:v libwebp -quality 80 ../../web/film/insidelabel-9x16.webp
+```
+
+2026-10-01: 16:9 2,871,469 bytes, 9:16 3,076,433 bytes; posters 23,542 and 19,712 bytes.
+After a re-render, put `index.html` and `compositions/` back as committed (`git checkout --`
+them): they hold whichever cut was built last.
+
+The waiting screen in the film quotes the app's own line "The first read of a pack takes
+about 8 to 15 seconds" (`web/app.js`). If real scan times change (OPERATIONS.md section 5),
+change it in `web/app.js` and in `waiting()` in both `src/build_*.py`, then re-render and
+re-encode.
+
 ## Music
 
 `assets/music.m4a` is an original track made by `src/music.py` (plain Python, no samples, so
@@ -77,6 +104,7 @@ renders/                MP4s (not committed; publish them)
 | v2 | 2026-10-01 | Sushil: "more we are describing to user". Show, don't tell: the app plays on a phone, 2 to 4 words per beat, one decisive zoom per idea. 41 s. |
 | v3 | 2026-10-01 | Sushil: "it will mostly be watched on phones". The 9:16 cut becomes the main one; the phone fills 80 % of the frame. |
 | v4 | 2026-10-01 | An original soundtrack synced to the picture, in both cuts. Both cuts built from this one project. |
+| v4 on the homes | 2026-10-01 | Sushil: "website home page and android apps home page". Web encodes and posters in `web/film/` (D-150). |
 
 ## Rules that come from the InsideLabel product
 

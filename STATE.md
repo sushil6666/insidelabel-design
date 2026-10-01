@@ -662,6 +662,22 @@ setup alarms.
 
 **NEXT SESSION STARTS HERE (2026-10-01).** Where things stand, newest first:
 
+- **`film-on-home` (2026-10-01, web-34, no migration), from `main` 507c38e (#88).** Sushil: "website home page and
+  android apps home page". D-150 (RECOMMENDED): the explainer film is served from `web/film/` (H.264 + AAC, 16:9
+  2.9 MB, 9:16 3.1 MB, WebP posters 24 KB and 20 KB). Website home: the 16:9 film under the opening lines, muted,
+  plays once scrolled into view after load, pauses when it leaves; never by itself with reduced motion or
+  Save-Data. App home: a "How it works" card with the poster under "Scan a pack" (which stays first); a tap opens
+  the 9:16 film full screen with sound and a close button; Back and Escape close it. `preload="none"`; the service
+  worker skips every `.mp4` and precaches nothing new; the server registers `video/mp4` and `image/webp` and
+  serves byte ranges (206). Found and fixed on the walk: `app.js` has its own `history()` (the scan list), so the
+  player uses `window.history`. LCP, median of 7 cold loads at 390 x 844, Slow 4G and 4x CPU: website home 468 ms
+  to 608 ms (the poster is now the largest element; preloading it made it 664 ms, so no preload), app home
+  1688 ms to 1740 ms. Headless Chromium here has no H.264, so playback itself was not seen: the requests, the
+  player, Back, close, focus and the cache were. `tests/test_film.py` (5). **Waiting on Sushil:** before
+  deploying, the scan-speed query (OPERATIONS.md section 5) for the film's and the app's "about 8 to 15 seconds"
+  (recorded so far: real scans 5.7 s and 6.9 s, Gemini alone 7 to 28 s); merge; `update.sh`; play both on a phone;
+  "accepted" for D-150.
+
 - **`explainer-video` (2026-10-01, no code or migration), from `main` 550173e (#87).** Sushil tested the HyperFrames
   video skills ("help me to test this", then "re design ... more we are describing to user", "it will mostly be
   watched on phones", "add a free track"). `videos/insidelabel-how-it-reads/`: a 41 s product film written as code
@@ -671,7 +687,7 @@ setup alarms.
   `BRIEF.md`; the look and motion rules are in `MOTION.md` (from `docs/APP_DESIGN.md` section 8); `AUDIT.md`
   checks it against Apple's HIG motion rules; `README.md` says how to build (`./make.sh vertical render`). The MP4s
   are not committed (`renders/` is ignored): publish them. The folder is meant to move to its own repo later.
-  **Waiting on Sushil:** merge; post the 9:16 MP4.
+  Merged (#88). **Waiting on Sushil:** post the 9:16 MP4.
 
 - **`scan-speed` (2026-10-01, no migration), from `main` 21aa069 (#86).** Sushil: "scan-speed first". With Cloud
   Vision refusing (code 8), photo scans took 50 to 80 s and nobody was told (section 6, 2026-10-01). Now: one
