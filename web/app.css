@@ -520,8 +520,9 @@ main > [data-enter="right"] { animation-name: enter-right; }
 /* A new result: the people block is already there (D-060); the rest follows it. */
 .result > .reveal { animation: enter-up var(--d-reveal) var(--ease-enter) both;
                     animation-delay: calc(var(--i, 0) * var(--stagger)); }
-/* What a tap opens fades in where it opens. */
-details[open] > :not(summary), .answer-panel:not([hidden]) { animation: fade-in var(--d-fast) var(--ease-enter); }
+/* What a tap opens fades in where it opens; not "More about this pack", whose long body
+   would cost a frame to fade (INP measured 40 to 56 ms with it, back to 40 without). */
+details[open]:not(.more-pack) > :not(summary), .answer-panel:not([hidden]) { animation: fade-in var(--d-fast) var(--ease-enter); }
 
 /* Every summary says it opens: a chevron at its end that turns when open. Drawn
    as the app's own chevron (a CSS mask of an inline SVG; nothing loaded). */
