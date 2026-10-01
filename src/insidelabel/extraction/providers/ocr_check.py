@@ -44,9 +44,13 @@ WHICH READER (D-093)
     the old path, e.g. to compare the two.
 """
 
+import contextlib
 import io
 import os
 import re
+import threading
+import time
+from concurrent.futures import ThreadPoolExecutor
 
 try:
     import pytesseract
@@ -58,6 +62,10 @@ except ImportError:                                              # pragma: no co
 from insidelabel.core import engine
 from insidelabel.core.tokenize import INS_RE
 from insidelabel.extraction.providers import cloud_vision
+
+# scan-speed (2026-10-01): Tesseract passes run two at a time (the server has two
+# CPUs), so each process gets one OpenMP thread instead of fighting for both.
+os.environ.setdefault("OMP_THREAD_LIMIT", "1")
 
 _INS = INS_RE  # same pattern the engine uses, so the cross-check cannot disagree with it
 
@@ -275,21 +283,8 @@ def recover_entries(image_bytes, ingredients):
     and so a human reviewing a gold file can see exactly where it came from.
     """
     result = cross_check(image_bytes, ingredients)
-    if not result.get("available") or not result.get("missing"):
-        return list(ingredients or []), result, []
-
-    text = result["ocr_text"]
-    recovered = []
-    for ins in result["missing"]:
-        # Pull the surrounding printed fragment so the entry keeps label wording
-        # rather than being synthesised from the number alone.
-        m = re.search(
-            r"([A-Za-z][A-Za-z \-]{2,30}\([^)]*\b" + re.escape(ins) + r"\b[^)]*\))",
-            engine.prefix_bare_ins(text).replace("INS ", ""),
-        )
-        recovered.append(m.group(1).strip() if m else f"({ins})")
-
-    return list(ingredients or []) + recovered, result, recovered
+    fixed, recovered = recover_from(result, ingredients)
+    return fixed, result, recovered
 
 
 # ---------------------------------------------------------------------------
@@ -335,7 +330,10 @@ def corroborate(image_bytes, needle):
     return CORROBORATED if pin in hay else NOT_FOUND
 
 
-def check_identity_anchors(vision, front_bytes, back_bytes):
+_UNSET = object()
+
+
+def check_identity_anchors(vision, front_bytes, back_bytes, back_text=_UNSET):
     """
     Corroborate the identity fields that product_match rests on.
 
@@ -372,8 +370,210 @@ def check_identity_anchors(vision, front_bytes, back_bytes):
         if not value or not back_bytes:
             report[key] = {"brand": value, "field": field, "status": "not_applicable"}
             continue
-        status = corroborate(back_bytes, value)
+        # scan-speed: the scan's one read of the back photo when given (None: no read).
+        status = corroborate(back_bytes, value) if back_text is _UNSET else corroborate_text(back_text, value)
         report[key] = {"brand": value, "field": field, "status": status}
         if status == NOT_FOUND:
             downgrade = True
     return downgrade, report
+
+
+# ---------------------------------------------------------------------------
+# One independent read of the back photo per scan (scan-speed, 2026-10-01)
+# ---------------------------------------------------------------------------
+# Measured with Cloud Vision refusing every call (code 8, 2026-10-01): the
+# cross-check, then the two identity checks, each re-read the back photo after
+# Gemini had answered, nine Tesseract passes one after another; on the server
+# that made a 10 s scan take 50 to 80 s. Now the back photo is read once, starting
+# with Gemini: Cloud Vision when it works, else Tesseract's passes, two at a time.
+# Every check (INS recovery, identity, the nutrition table, barcode digits) uses
+# that one read. Cloud Vision is called at most once per scan, so a refusal is
+# never retried inside the same scan.
+#
+# The result never waits for it (Sushil, 2026-10-01). When Gemini answers, the
+# vote uses the passes finished by then, in order (passes 1 to k, so a replay
+# can repeat it exactly); with fewer than two, the cross-check is skipped
+# ("deadline") and the existing gate treats the scan as not cross-checked.
+
+TESS_WORKERS = 2
+# Cloud Vision answers in about a second; if it hasn't in this long (a hung
+# connection, up to its 12 s timeout), Tesseract starts too and whichever is
+# there first is used.
+VISION_HEDGE_S = 4.0
+
+
+class BackRead:
+    """The scan's one independent read of the back photo, running on worker threads."""
+
+    def __init__(self, image_bytes, max_passes=None):
+        self.image = image_bytes
+        self.max_passes = max_passes          # a replay repeats the original's k (D-092)
+        self.vision_text = None
+        self.fallback_from = None
+        self.pass_texts = {}                  # pass index -> text
+        self.total_passes = 0
+        self.done = threading.Event()
+        self._lock = threading.Lock()
+        self.t0 = time.monotonic()
+        self.ms = None
+        threading.Thread(target=self._run, daemon=True).start()
+
+    def _run(self):
+        try:
+            if self.max_passes == 0:          # the original scan skipped it: so does the replay
+                return
+            if _cloud():
+                got = {}
+                t = threading.Thread(target=lambda: got.setdefault("text", cloud_vision.read_text(self.image)),
+                                     daemon=True)
+                t.start()
+                t.join(VISION_HEDGE_S)
+                if not t.is_alive() and got.get("text") is not None:
+                    self.vision_text = got["text"]
+                    return
+                self.fallback_from = (f"cloud_vision {cloud_vision.LAST.get('status', 'failed')}"
+                                      if not t.is_alive() else "cloud_vision slow")
+                if t.is_alive():
+                    threading.Thread(target=self._late_vision, args=(t, got), daemon=True).start()
+            self._tesseract()
+        finally:
+            self.ms = int((time.monotonic() - self.t0) * 1000)
+            self.done.set()
+
+    def _late_vision(self, t, got):
+        t.join()
+        if got.get("text") is not None:
+            with self._lock:
+                self.vision_text = got["text"]
+
+    def _tesseract(self):
+        if not AVAILABLE or not self.image:
+            return
+        try:
+            im = Image.open(io.BytesIO(self.image))
+            if im.mode not in ("L", "RGB"):
+                im = im.convert("RGB")
+            variants = list(_prepared(im))
+        except Exception:                                        # noqa: BLE001
+            return
+        if self.max_passes is not None:
+            variants = variants[:self.max_passes]
+        self.total_passes = len(variants)
+
+        def one(i, v):
+            try:
+                text = pytesseract.image_to_string(v, config="--psm 6", timeout=OCR_TIMEOUT_S)
+            except Exception:                                    # noqa: BLE001
+                text = None                   # a timeout or a missing binary: this pass adds nothing
+            with self._lock:
+                self.pass_texts[i] = text
+
+        with ThreadPoolExecutor(TESS_WORKERS) as ex:
+            for i, v in enumerate(variants):
+                ex.submit(one, i, v)
+
+    def snapshot(self):
+        """What has been read so far: Cloud Vision's text, or the Tesseract passes 1 to k done in order."""
+        with self._lock:
+            if self.vision_text is not None:
+                return {"reader": "cloud_vision", "text": self.vision_text, "passes": 1}
+            texts = []
+            while len(texts) in self.pass_texts:
+                texts.append(self.pass_texts[len(texts)])
+        return {"reader": "tesseract", "pass_texts": texts, "fallback_from": self.fallback_from,
+                "total_passes": self.total_passes}
+
+
+def start_back_read(image_bytes):
+    """Start the scan's one independent read of the back photo (None without a photo)."""
+    if not image_bytes:
+        return None
+    return BackRead(image_bytes, max_passes=_REPLAY_PASSES.get(cloud_vision.digest(image_bytes))
+                    if _REPLAY_PASSES is not None else None)
+
+
+# D-092: a replay repeats how far the original's Tesseract vote got ({photo hash:
+# passes}; 0 = skipped at the deadline). Set only by repro.py and the tests.
+_REPLAY_PASSES = None
+
+
+@contextlib.contextmanager
+def replaying_passes(passes):
+    global _REPLAY_PASSES
+    old, _REPLAY_PASSES = _REPLAY_PASSES, dict(passes or {})
+    try:
+        yield
+    finally:
+        _REPLAY_PASSES = old
+
+
+def result_of(read, ingredients):
+    """
+    The cross-check from a BackRead's snapshot, in the shape cross_check() returns.
+    Not available (reason "deadline") when Tesseract had fewer than two passes done.
+    """
+    model_ins = _ins_numbers(", ".join(ingredients or []))
+    if read is None:
+        return {"available": False, "reason": "no back image"}
+    snap = read.snapshot()
+    if snap["reader"] == "cloud_vision":
+        found = _ins_numbers(snap["text"])
+        ocr_ins = {i for i in found if i in engine._ADDITIVE_BY_INS}
+        return {"available": True, "reader": "cloud_vision",
+                "ocr_ins": sorted(ocr_ins), "model_ins": sorted(model_ins),
+                "missing": sorted(ocr_ins - model_ins), "extra": sorted(model_ins - ocr_ins),
+                "vote_detail": {"voted": sorted(found), "rejected_unknown": sorted(found - ocr_ins)},
+                "passes": 1, "ms": cloud_vision.LAST.get("ms"), "ocr_text": snap["text"]}
+    texts = snap["pass_texts"]
+    good = [t for t in texts if t is not None]
+    if not AVAILABLE and not good:
+        return {"available": False, "reason": "pytesseract not installed", "fallback_from": snap["fallback_from"]}
+    if len(good) < 2:
+        if read.done.is_set() and snap["total_passes"] and not good:
+            return {"available": False, "reason": "OCR failed on this image", "fallback_from": snap["fallback_from"]}
+        return {"available": False, "reason": "deadline", "reader": "skipped",
+                "fallback_from": snap["fallback_from"], "passes": len(good)}
+    tally = {}
+    for t in good:
+        for ins in _ins_numbers(t):
+            tally[ins] = tally.get(ins, 0) + 1
+    threshold = max(2, int(len(good) * _MIN_PASS_FRACTION))
+    voted = {i for i, c in tally.items() if c >= threshold}
+    known = {i for i in voted if i in engine._ADDITIVE_BY_INS}
+    return {"available": True, "reader": "tesseract", "fallback_from": snap["fallback_from"],
+            "ocr_ins": sorted(known), "model_ins": sorted(model_ins),
+            "missing": sorted(known - model_ins), "extra": sorted(model_ins - known),
+            "vote_detail": {"voted": sorted(voted), "tally": tally, "rejected_unknown": sorted(voted - known)},
+            "passes": len(texts), "of_passes": snap["total_passes"],
+            # The first pass (2200 px, sharpened) is the text read the checks use.
+            "ocr_text": texts[0] or next((t for t in good), "")}
+
+
+def recover_from(result, ingredients):
+    """recover_entries() for a result already in hand: no read of its own."""
+    if not result.get("available") or not result.get("missing"):
+        return list(ingredients or []), []
+    text = result["ocr_text"]
+    recovered = []
+    for ins in result["missing"]:
+        # Pull the surrounding printed fragment so the entry keeps label wording
+        # rather than being synthesised from the number alone.
+        m = re.search(
+            r"([A-Za-z][A-Za-z \-]{2,30}\([^)]*\b" + re.escape(ins) + r"\b[^)]*\))",
+            engine.prefix_bare_ins(text).replace("INS ", ""),
+        )
+        recovered.append(m.group(1).strip() if m else f"({ins})")
+    return list(ingredients or []) + recovered, recovered
+
+
+def corroborate_text(text, needle):
+    """corroborate() against text already read (None: no read)."""
+    if not needle or text is None:
+        return OCR_UNUSABLE
+    if len(text.strip()) < _MIN_USABLE_CHARS:
+        return OCR_UNUSABLE
+    hay = re.sub(r"[^a-z0-9]", "", text.lower())
+    pin = re.sub(r"[^a-z0-9]", "", str(needle).lower())
+    if not pin:
+        return OCR_UNUSABLE
+    return CORROBORATED if pin in hay else NOT_FOUND

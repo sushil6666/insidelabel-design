@@ -27,7 +27,6 @@ ingredient tokens, rather than passing an empty list through and letting a
 false CLEAN out the door.
 """
 
-import asyncio  # noqa: E402
 import hashlib  # noqa: E402
 import json  # noqa: E402
 import logging  # noqa: E402
@@ -1305,14 +1304,13 @@ async def scan(
         })
 
     # The model call and the OCR are blocking; on worker threads they don't freeze
-    # every other request for 10-15 s. Cloud Vision doesn't need the model's
-    # answer to read the photo, so it starts now, alongside Gemini; the cross-check
-    # below then finds the text in its cache (D-093). If the model fails, that
-    # read (~13 paise) was spent for nothing: rare, and cheaper than the wait.
+    # every other request for 10-15 s. The independent read of the back photo
+    # doesn't need the model's answer, so it starts now, alongside Gemini: Cloud
+    # Vision, or Tesseract's passes when Vision refuses (scan-speed, 2026-10-01).
+    # Every check below uses this one read. If the model fails, a Vision read
+    # (~13 paise) was spent for nothing: rare, and cheaper than the wait.
     back_bytes = next((d for d, _m, r in images if r == "back"), None)
-    ocr_prefetch = None
-    if back_bytes and ocr_check.cloud_first():
-        ocr_prefetch = asyncio.ensure_future(run_in_threadpool(cloud_vision.read_text, back_bytes))
+    back_read = ocr_check.start_back_read(back_bytes)
     # D-092: how long we waited on retries, so a slow scan can be told apart as
     # "the model was busy" (retries) or "the model was slow" (none).
     retries = tr["timings"].setdefault("vision_retries", [])
@@ -1372,17 +1370,20 @@ async def scan(
     if front_caveat:
         corrections.append("front photo is not a food pack: " + front_caveat["detail"])
     t_ocr = time.monotonic()
-    if ocr_prefetch is not None:
-        await ocr_prefetch                       # usually done already; never raises
+    if back_read is not None:
         tr["timings"]["ocr_parallel"] = True
+        if replay is not None:
+            # A replay (repro, tests) waits for the read, so it repeats the original.
+            await run_in_threadpool(back_read.done.wait)
+        # A live scan never waits for it (Sushil, 2026-10-01): what is read by now counts.
 
     # Independent OCR cross-check on the back of pack. This is the only check
     # in the pipeline that is not the model grading itself, and it is the only
     # one that has ever caught a silent omission.
     ocr_result = {"available": False, "reason": "no back image"}
     if back_bytes and vision.get("ingredients"):
-        fixed, ocr_result, recovered = await run_in_threadpool(
-            ocr_check.recover_entries, back_bytes, vision["ingredients"])
+        ocr_result = ocr_check.result_of(back_read, vision["ingredients"])
+        fixed, recovered = ocr_check.recover_from(ocr_result, vision["ingredients"])
         if recovered:
             corrections.append(
                 "independent OCR found additive(s) the model omitted: "
@@ -1396,7 +1397,12 @@ async def scan(
     # the text well and found no such string was invented, and must not be
     # allowed to unlock the claim check.
     front_bytes = next((d for d, _m, r in images if r == "front"), None)
-    _dg, _idrep = await run_in_threadpool(ocr_check.check_identity_anchors, vision, front_bytes, back_bytes)
+    if ocr_result.get("available"):
+        back_text = ocr_result.get("ocr_text")
+    else:
+        # No ingredient list, or no cross-check by the deadline: whatever text was read, or none.
+        back_text = ocr_check.result_of(back_read, []).get("ocr_text") if back_read else None
+    _dg, _idrep = ocr_check.check_identity_anchors(vision, front_bytes, back_bytes, back_text=back_text)
     vision["_identity_corroboration"] = _idrep
     if _dg and (vision.get("product_match") or {}).get("status") == "match":
         bad = [f"{f}:{v['brand']!r}" for f, v in _idrep.items()
@@ -1418,20 +1424,27 @@ async def scan(
 
     tr["timings"]["ocr_ms"] = _ms(t_ocr)
     # D-092/D-093: what the independent reader saw, so a replay reads the same
-    # text instead of calling Google again (migration 007). Only the back is read.
+    # text instead of calling Google again (migration 007), and for Tesseract how
+    # many passes counted, so a replay votes on the same ones. Only the back is read.
     if back_bytes:
         text = cloud_vision.cached(back_bytes)
         reader = "cloud_vision" if text is not None else ocr_result.get("reader")
         if reader:
             tr["ocr"] = {"back": {"reader": reader, "text": text}}
+            if reader == "tesseract":
+                tr["ocr"]["back"]["passes"] = ocr_result.get("passes")
+            elif reader == "skipped":
+                tr["ocr"]["back"]["passes"] = 0
+                tr["timings"]["ocr"] = "skipped (deadline)"
+        if back_read is not None and back_read.ms is not None:
+            tr["timings"]["ocr_read_ms"] = back_read.ms
     # D-133: the nutrition table, kept only where the second reading of the same
     # photo and the table's own arithmetic agree (lenses/nutrition.py).
     panel = nutrition.check(vision.get("nutrition"), ocr_result.get("ocr_text"),
                             (vision.get("product") or {}).get("net_quantity"), reader=ocr_result.get("reader"))
     alarm = cloud_vision.take_alarm()
     if alarm:
-        _setup_alarm(f"ocr_config:{alarm}", "Cloud Vision refused the call; scans fall back to Tesseract "
-                     f"(~20 s slower) until fixed. Status: {alarm}. See the server log for Google's message.")
+        _setup_alarm(f"ocr_config:{alarm}", cloud_vision.alarm_text(alarm))
     vision["_pairing_attested_by_user"] = pairing_confirmed
     proceed, reliability = rel.assess(vision)
     reliability["client_corrections"] = corrections

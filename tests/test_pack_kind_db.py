@@ -204,9 +204,9 @@ def test_composition_is_shown_to_reviewers_beside_the_types_range(env):
                       "rows": [{"nutrient": "Iron", "per_100": "8 mg", "unit": None}]}
     import insidelabel.api.main as m
     mp = pytest.MonkeyPatch()
-    mp.setattr(m.ocr_check, "recover_entries",
-               lambda b, ings: (list(ings), {"available": True, "reader": "tesseract", "ocr_text": "IRON 8 mg",
-                                              "missing": []}, []))
+    mp.setattr(m.ocr_check, "result_of",
+               lambda read, ings: {"available": True, "reader": "tesseract", "ocr_text": "IRON 8 mg",
+                                   "missing": [], "passes": 6})
     try:
         j = post(gtin(), v)
     finally:
