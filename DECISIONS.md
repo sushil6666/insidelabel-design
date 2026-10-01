@@ -2384,6 +2384,11 @@ Same request as D-139. Full proposal: `docs/BABY_FOOD.md`. **Nothing built until
   from the editor counts as answered. Not sent after D-146's digit check in the same scan (`barcode_answer`), on a
   retake, or on an infant or special medical result. One profile per result. Lawyer's question (c), whether the
   baby lines make every result 7(1) material, stays open (`docs/BABY_FOOD.md` section 9).
+- **Sushil, 2026-10-01: show baby lines.** The section 6 baby lines (`docs/BABY_FOOD.md`) and the baby supplement
+  line go to users now, before the lawyer answers question 1(c) in `docs/BABY_FOOD.md` section 9. Claude had
+  recommended holding them behind a server switch until then; Sushil's choice stands. As merged in #81 they
+  already go to users (no switch was built), so nothing in the code changes. The three build choices above,
+  (a) to (c), are still RECOMMENDED.
 
 
 ### D-141 · A barcode read from a photo counts only when two reads agree, or the barcode is big enough `SUPERSEDED by D-144` (2026-09-30)
