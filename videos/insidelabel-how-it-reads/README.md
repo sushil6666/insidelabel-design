@@ -39,32 +39,36 @@ The vertical cut zooms to two measured points. If the result or the blurry-photo
 changes layout, re-measure: `MEASURE=1 ./make.sh vertical` (needs `playwright-core`; set
 `PLAYWRIGHT_CORE` and `CHROMIUM_PATH` if they aren't found).
 
-## On the homes (D-150)
+## On the website home (D-151)
 
-The website home (`/`) shows the 16:9 film and the app home (`/app/`) a "How it works" card
-that opens the 9:16 film. They are served from the InsideLabel repo's `web/film/`, made from
-the renders like this (H.264 High, AAC 96 kbps, fast start; 2 to 4 MB each, checked by
-`tests/test_film.py`):
+The film is the website home's hero (`/`); the app has no film (D-151 replaced D-150). Phones
+and portrait screens get the 9:16 cut, landscape screens the 16:9 cut: one file per visit,
+chosen in the page by `(max-width: 767px), (orientation: portrait)`. The hero copies are silent
+(the words are on screen) and live in the InsideLabel repo's `web/film/`. This is the one
+place the steps are written; `tests/test_film.py` checks the results (under 1.6 MB, no audio).
 
 ```bash
-for cut in 16x9 9x16; do
-  ffmpeg -y -i renders/insidelabel-$cut.mp4 -c:v libx264 -preset veryslow -tune animation -crf 24 \
-    -pix_fmt yuv420p -profile:v high -level 4.1 -movflags +faststart -c:a aac -b:a 96k -ac 2 \
-    ../../web/film/insidelabel-$cut.mp4
+./make.sh landscape render && ./make.sh vertical render
+git checkout -- index.html compositions        # they hold whichever cut was built last
+for v in 16x9:1280:720 9x16:720:1280; do
+  IFS=: read cut w h <<< "$v"
+  ffmpeg -y -i renders/insidelabel-$cut.mp4 -an -vf "scale=$w:$h:flags=lanczos" \
+    -c:v libx264 -preset veryslow -tune animation -crf 24 -pix_fmt yuv420p -profile:v high -level 4.0 \
+    -movflags +faststart ../../web/film/hero-$cut.mp4
 done
-# posters: the "Your avoid list first." moment, clear of the player's controls
-ffmpeg -y -ss 23.5 -i ../../web/film/insidelabel-16x9.mp4 -frames:v 1 -vf scale=1280:720:flags=lanczos -c:v libwebp -quality 80 ../../web/film/insidelabel-16x9.webp
-ffmpeg -y -ss 20 -i ../../web/film/insidelabel-9x16.mp4 -frames:v 1 -vf scale=720:1280:flags=lanczos -c:v libwebp -quality 80 ../../web/film/insidelabel-9x16.webp
+# stills: the "Your avoid list first." moment, as the first paint and the reduced-motion view
+ffmpeg -y -ss 23.5 -i ../../web/film/hero-16x9.mp4 -frames:v 1 -c:v libwebp -quality 80 ../../web/film/hero-16x9.webp
+ffmpeg -y -ss 20 -i ../../web/film/hero-9x16.mp4 -frames:v 1 -c:v libwebp -quality 80 ../../web/film/hero-9x16.webp
 ```
 
-2026-10-01: 16:9 2,871,469 bytes, 9:16 3,076,433 bytes; posters 23,542 and 19,712 bytes.
-After a re-render, put `index.html` and `compositions/` back as committed (`git checkout --`
-them): they hold whichever cut was built last.
+2026-10-01: `hero-16x9.mp4` 1,292,680 bytes, `hero-9x16.mp4` 1,440,735 bytes; stills 23,520
+and 19,354 bytes. Use new file names when the film changes (a browser may keep an old copy
+under the same name).
 
 The waiting screen in the film quotes the app's own line "The first read of a pack takes
 about 8 to 15 seconds" (`web/app.js`). If real scan times change (OPERATIONS.md section 5),
 change it in `web/app.js` and in `waiting()` in both `src/build_*.py`, then re-render and
-re-encode.
+re-encode as above.
 
 ## Music
 
@@ -105,6 +109,7 @@ renders/                MP4s (not committed; publish them)
 | v3 | 2026-10-01 | Sushil: "it will mostly be watched on phones". The 9:16 cut becomes the main one; the phone fills 80 % of the frame. |
 | v4 | 2026-10-01 | An original soundtrack synced to the picture, in both cuts. Both cuts built from this one project. |
 | v4 on the homes | 2026-10-01 | Sushil: "website home page and android apps home page". Web encodes and posters in `web/film/` (D-150). |
+| v4 on the website | 2026-10-01 | Sushil: "not liked it, keep only web page website on desktop and mobile version video". The website hero only, silent copies of both cuts, one per screen (D-151); the app has no film. |
 
 ## Rules that come from the InsideLabel product
 

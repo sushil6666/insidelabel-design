@@ -108,9 +108,8 @@ blank while the allergen list loads (a skeleton instead).
 stacks the shop list, "Your scans" and "Recent scans", each a card of a different shape.
 **Fixes:** "Recent scans" rows with a chevron and a press state; the progress bars animate from 0 only
 when motion is allowed; the scan button's icon becomes a drawn barcode-and-frame icon.
-**Added (D-150, 2026-10-01):** a "How it works" card with the film's poster directly under the scan button,
-which stays first; a tap opens the 9:16 film full screen with a close button. Nothing plays or loads before
-the tap.
+**D-150's "How it works" film card (2026-10-01) was removed by D-151 the same day:** home is the scan button
+first with nothing added; the film is on the website home only.
 
 ### 3.5 The live scanner (D-024, D-124)
 **Feel:** the camera is there at once, which is good; the frame doesn't invite placing the barcode,

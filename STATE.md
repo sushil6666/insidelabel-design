@@ -662,6 +662,24 @@ setup alarms.
 
 **NEXT SESSION STARTS HERE (2026-10-01).** Where things stand, newest first:
 
+- **`film-website-only` (2026-10-01, web-35, no migration), from `main` b96b322 (#89).** Sushil: "not liked it,
+  keep only web page website on desktop and mobile version video". D-151 (RECOMMENDED) supersedes D-150: the app has
+  no film (home is "Scan a pack" first, nothing added; `app.js`, `app.css`, `icons.js` are back to before D-150).
+  The website home's hero is the film: text and "Open the app" beside it on landscape screens, above it on phones;
+  phones and portrait screens get the 9:16 cut, landscape the 16:9 cut, one rule in the `<picture>` still, the CSS
+  and the script, so one file downloads, its src set after the load event; muted, looped, plays while half in view,
+  pauses out of view and resumes unless the visitor paused it; never by itself with reduced motion, Save-Data or no
+  IntersectionObserver (the still and a play button wait); a labelled 48 px play/pause button (WCAG 2.2.2). Silent
+  hero copies: `web/film/hero-16x9.mp4` 1280 x 720 1,292,680 bytes, `hero-9x16.mp4` 720 x 1280 1,440,735 bytes, WebP
+  stills 24 KB and 19 KB; D-150's files with sound deleted. The hero's three fonts are preloaded and the hero is
+  top-aligned so the font swap moves nothing. Website home on a phone (390 x 844, Fast 4G 9 Mbps / 60 ms, 4x CPU,
+  median of 5): LCP 404 ms to 316 ms, CLS 0 to 0, 78 KB to 76 KB by the load event; the film now loads only when
+  scrolled into view (1.44 MB) where before the 2.87 MB film started at once. Desktop (1440 x 900): LCP 400 to
+  336 ms, CLS 0.015 to 0. Headless Chromium here has no H.264: the requests, states, keyboard and shifts were seen,
+  not the picture moving. `tests/test_film.py` (7). **Waiting on Sushil:** the scan-speed query (OPERATIONS.md
+  section 5) for "about 8 to 15 seconds" before deploying; merge; `update.sh`; a look on a phone and a laptop;
+  "accepted" for D-151.
+
 - **`film-on-home` (2026-10-01, web-34, no migration), from `main` 507c38e (#88).** Sushil: "website home page and
   android apps home page". D-150 (RECOMMENDED): the explainer film is served from `web/film/` (H.264 + AAC, 16:9
   2.9 MB, 9:16 3.1 MB, WebP posters 24 KB and 20 KB). Website home: the 16:9 film under the opening lines, muted,
@@ -676,7 +694,7 @@ setup alarms.
   player, Back, close, focus and the cache were. `tests/test_film.py` (5). **Waiting on Sushil:** before
   deploying, the scan-speed query (OPERATIONS.md section 5) for the film's and the app's "about 8 to 15 seconds"
   (recorded so far: real scans 5.7 s and 6.9 s, Gemini alone 7 to 28 s); merge; `update.sh`; play both on a phone;
-  "accepted" for D-150.
+  "accepted" for D-150. Merged (#89), then superseded the same day by D-151 (`film-website-only`, above).
 
 - **`explainer-video` (2026-10-01, no code or migration), from `main` 550173e (#87).** Sushil tested the HyperFrames
   video skills ("help me to test this", then "re design ... more we are describing to user", "it will mostly be

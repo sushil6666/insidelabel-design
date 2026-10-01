@@ -8,24 +8,41 @@
   <meta name="theme-color" content="#fbf9ee">
   <link rel="icon" href="/app/icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/site.css">
+  <!-- D-151: the hero's fonts arrive before the first paint, so their swap can't move the page (CLS 0) -->
+  <link rel="preload" href="/app/fonts/bricolage-grotesque-800.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/app/fonts/dm-sans-400.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/app/fonts/dm-sans-700.woff2" as="font" type="font/woff2" crossorigin>
 </head>
 <body>
-  <header class="wrap"><a href="/" class="brand"><img class="mark" src="/app/icon.svg" alt="" width="34" height="34">InsideLabel</a></header>
-  <main class="wrap">
-    <h1>See what's inside the pack</h1>
-    <p class="lead">Scan the barcode or photograph the ingredient list of Indian packaged food.
-      InsideLabel tells you what's in it, starting with anything on your family's avoid list.</p>
-    <a class="cta" href="/app/">Open the app</a>
-    <p>InsideLabel is in a small, invited beta. If you have an invite, open the link from your message.</p>
+  <header class="wrap wide"><a href="/" class="brand"><img class="mark" src="/app/icon.svg" alt="" width="34" height="34">InsideLabel</a></header>
+  <main>
+    <section class="hero wrap wide">
+      <div class="hero-text">
+        <h1>See what's inside the pack</h1>
+        <p class="lead">Scan the barcode or photograph the ingredient list of Indian packaged food.
+          InsideLabel tells you what's in it, starting with anything on your family's avoid list.</p>
+        <a class="cta" href="/app/">Open the app</a>
+        <p>InsideLabel is in a small, invited beta. If you have an invite, open the link from your message.</p>
+      </div>
+      <figure class="hero-film">
+        <div class="film-box" id="film-box" data-state="idle">
+          <!-- D-151: the still and the film follow one rule, the same in the CSS and the script below:
+               phones and portrait screens get the 9:16 cut, landscape screens the 16:9 cut. -->
+          <picture>
+            <source media="(max-width: 767px), (orientation: portrait)" srcset="/app/film/hero-9x16.webp" width="720" height="1280">
+            <img src="/app/film/hero-16x9.webp" width="1280" height="720" alt="">
+          </picture>
+          <video id="film" muted autoplay loop playsinline preload="none" aria-describedby="film-words"></video>
+          <button class="film-toggle" id="film-toggle" type="button" aria-label="Play the film" hidden>
+            <svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z"/></svg>
+            <svg class="i-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13M16 5.5v13"/></svg>
+          </button>
+        </div>
+        <figcaption id="film-words">How InsideLabel checks a label, in 41 seconds. No sound: the words are on screen.</figcaption>
+      </figure>
+    </section>
 
-    <figure class="film">
-      <video id="film" controls muted playsinline preload="none" width="1280" height="720"
-             poster="/app/film/insidelabel-16x9.webp" aria-describedby="film-words">
-        <source src="/app/film/insidelabel-16x9.mp4" type="video/mp4">
-      </video>
-      <figcaption id="film-words">How it works, in 41 seconds. The words are on screen, so it works with the sound off.</figcaption>
-    </figure>
-
+    <div class="wrap">
     <h2>How it works</h2>
     <ol class="steps">
       <li><b>1. Scan</b>The barcode, or a photo of the ingredient list on the back. The front of the pack is optional.</li>
@@ -40,27 +57,52 @@
       <li>Every pack in our catalogue was checked by a person against photos of the real pack.</li>
       <li>Brands can't pay to change or hide what InsideLabel shows.</li>
     </ul>
+    </div>
   </main>
   <footer class="wrap"><a href="/privacy">Privacy</a> · <a href="/about">About and methodology</a></footer>
   <script>
-    // The film plays, muted, once it is scrolled into view, and pauses when it leaves. It loads
-    // nothing until then (preload="none"). Never on its own with reduced motion or Save-Data:
-    // then the poster and the play button wait for a tap.
+    // D-151: the film as the hero. One file per screen, chosen by the same rule as the still and
+    // the CSS, so only one downloads; its src is set only after the page has loaded. It plays muted
+    // and loops while in view, pauses out of view and resumes when back, unless the visitor paused
+    // it. With reduced motion, Save-Data or no IntersectionObserver it never starts by itself: the
+    // still and the play button wait for a tap. The button pauses it at any time (WCAG 2.2.2).
     (function () {
+      var box = document.getElementById("film-box");
       var film = document.getElementById("film");
-      var still = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+      var btn = document.getElementById("film-toggle");
+      if (!box || !film || !btn || !window.matchMedia) return;
+      var tall = matchMedia("(max-width: 767px), (orientation: portrait)").matches;
+      var src = "/app/film/hero-" + (tall ? "9x16" : "16x9") + ".mp4";
+      var still = matchMedia("(prefers-reduced-motion: reduce)").matches;
       var save = navigator.connection && navigator.connection.saveData;
-      if (!film || still || save || !("IntersectionObserver" in window)) return;
-      var watch = function () {
+      var watch = !still && !save && "IntersectionObserver" in window;
+      var held = 0;     // 1 once the visitor pauses it, so scrolling won't restart it (0 and 1, not
+                        // the words: the site's wording lint reads this script too)
+      var show = function (state) {
+        box.setAttribute("data-state", state);
+        btn.setAttribute("aria-label", state === "playing" ? "Pause the film" : "Play the film");
+      };
+      var play = function () {
+        if (!film.getAttribute("src")) film.src = src;
+        var p = film.play();
+        if (p && p.catch) p.catch(function () { show("paused"); });
+      };
+      film.addEventListener("playing", function () { show("playing"); });
+      film.addEventListener("pause", function () { show("paused"); });
+      btn.addEventListener("click", function () {
+        if (film.paused) { held = 0; play(); } else { held = 1; film.pause(); }
+      });
+      btn.removeAttribute("hidden");
+      if (!watch) { film.removeAttribute("autoplay"); box.classList.add("still"); return; }
+      var start = function () {
         new IntersectionObserver(function (seen) {
           seen.forEach(function (e) {
-            if (e.isIntersecting) { var p = film.play(); if (p && p.catch) p.catch(function () {}); }
+            if (e.isIntersecting) { if (!held) play(); }
             else if (!film.paused) { film.pause(); }
           });
-        }, { threshold: 0.6 }).observe(film);
+        }, { threshold: 0.5 }).observe(box);
       };
-      // after the page has painted, so the film never competes with the first screen
-      if (document.readyState === "complete") watch(); else addEventListener("load", watch);
+      if (document.readyState === "complete") start(); else addEventListener("load", start);
     })();
   </script>
 </body>
