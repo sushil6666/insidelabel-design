@@ -2135,6 +2135,11 @@ Built with it (no decision needed, the pages only describe what is already built
 "Not permitted in India" (D-111), ingredients worth knowing (D-132), the nutrition table (D-133) and
 tiles (D-134); `/about` lists where the facts come from. `tests/test_wording.py` now lints the site
 pages and the app shell too (all were already clean).
+- **Sushil's answers, 2026-10-01** (in `docs/COI_POLICY_DRAFT.md`): who pays, "my own money"; ties to the food
+  industry, "none"; who is behind it, "Sushil Behera, a photo and a few sentences" (the sentences are Claude's draft
+  for him to edit). The page follows D-148: "Looking up a pack stays free. Photo scans have a daily limit." and "No
+  ads." Still RECOMMENDED: nothing goes on `web/site/about.html` until Sushil says "D-138 approved" and sends the
+  photo and the contact address to show.
 
 ### D-139 · Health supplements and nutraceuticals: a kind of pack with its own checks `LOCKED` (2026-09-30)
 Sushil: "implement supplements and baby food part, part of beta" (2026-09-30), phase 0 of

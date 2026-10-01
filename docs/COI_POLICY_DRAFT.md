@@ -4,7 +4,8 @@ Not on the site yet. When Sushil says "approved" (or sends edits), the page text
 replaces the "[To complete: the full conflict-of-interest policy ...]" bracket on
 `web/site/about.html`, under "Money and brands". Every line is a commitment already
 recorded in `DECISIONS.md` or the blueprint; the right-hand column says which. Nothing
-new is promised here. Written 2026-09-30 by Claude.
+new is promised here. Written 2026-09-30 by Claude; updated 2026-10-01 with Sushil's answers
+(who pays, ties to the food industry, who is behind it) and D-148 (photo-scan limit, no ads).
 
 ## Page text (ready to paste)
 
@@ -22,14 +23,22 @@ new is promised here. Written 2026-09-30 by Claude.
 >   companies, it will be category totals only (for example, how often a kind of
 >   ingredient is looked up in biscuits), never a single product's result and never
 >   anything about a person.
-> - Scanning stays free.
+> - Looking up a pack stays free. Photo scans have a daily limit.
+> - No ads.
 >
-> Who pays for InsideLabel today: [To complete: Sushil, e.g. "it is self-funded by its
-> founder; there are no investors and no income yet"].
+> Who pays for InsideLabel today: InsideLabel is paid for by its founder, Sushil Behera,
+> from his own money. There are no investors and no income yet.
 >
-> Ties to the food industry: [To complete: Sushil, e.g. "none", or name them].
+> Ties to the food industry: None: no job, shares, advisory role or family business in
+> the food industry.
 >
 > If this policy ever changes, the change is dated on this page before it takes effect.
+
+**Who is behind it** (the About page's other bracket; draft for Sushil to edit, beside his photo):
+
+> I'm Sushil Behera. I've worked with data for years, and I built InsideLabel because
+> reading an Indian food label shouldn't need a magnifying glass and a law degree. I read
+> every reported mistake myself.
 
 ## Where each line comes from
 
@@ -41,17 +50,22 @@ new is promised here. Written 2026-09-30 by Claude.
 | Comparison and "better choice" never for sale | D-002 ("never monetizable in any form"); blueprint §10 ("any influence on alternatives or ranking") |
 | No affiliate links | "Explicitly not building" in `DECISIONS.md`: "affiliate revenue until a public methodology exists" |
 | Category totals only, never a product's result or a person | Blueprint §10 ("aggregate category intelligence only"; "may never buy ... their own product's verdict ... any individual user data") |
-| Scanning stays free | D-053 ("scans stay uncapped and free forever"). D-053 is still `OPEN` on price, so the page promises only this part |
+| Looking up a pack stays free. Photo scans have a daily limit. | D-148 points 3, 6 and 7 (barcode lookups free forever; 15 photo scans a day in the beta); replaces D-053's "scans stay uncapped and free forever", now superseded |
+| No ads | D-148 points 2, 5 and 7 (none in the beta; none after unless a new decision says otherwise) |
+| Who pays: the founder's own money, no investors, no income | Sushil, 2026-10-01: "my own money" |
+| Ties to the food industry: none | Sushil, 2026-10-01: "none" |
+| Who is behind it | Sushil, 2026-10-01: "Sushil Behera, a photo and a few sentences"; the sentences are Claude's draft for him to edit |
 | Changes dated before they take effect | New. Recommended so the promise can be checked; drop it if Sushil prefers |
 
 ## Only Sushil can fill
 
-1. **Who pays today**: funding, investors, any income.
-2. **Ties to the food industry**: current or past employment, shareholdings, family
-   business, advisory roles. "None" is an answer.
-3. **Who is behind it** (the other bracket on the About page, D-076 asks for a name and a
-   face): two or three sentences in the first person, a photo, and whether
-   connect@insidelabel.ai is the contact to show.
+1. **Who pays today**: answered 2026-10-01 ("my own money").
+2. **Ties to the food industry**: answered 2026-10-01 ("none").
+3. **Who is behind it**: name given (Sushil Behera); the sentences above are a draft for
+   him to edit. **Still needed before this goes on the site:** the photo, and the contact
+   address to show (connect@insidelabel.ai or another).
+
+Nothing goes on `web/site/about.html` until Sushil says "D-138 approved".
 
 ## Not in the policy on purpose
 
@@ -59,4 +73,5 @@ new is promised here. Written 2026-09-30 by Claude.
   methodology exists"). The page says "no affiliate links" without the condition,
   because D-002 already forbids monetising comparison in any form. If Sushil wants to
   keep affiliate income possible elsewhere later, that needs a new decision first.
-- Premium pricing (D-053, D-082) is still open, so the page says nothing about it.
+- Pro (D-148: Rs 51 a month through Play billing, after the beta) doesn't exist yet, so the page
+  says nothing about it; what Pro includes is still D-082's question.
