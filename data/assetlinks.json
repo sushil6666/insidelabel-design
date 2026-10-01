@@ -1,0 +1,16 @@
+{
+  "_meta": {
+    "table": "assetlinks",
+    "version": "0.1",
+    "purpose": "D-148: what https://insidelabel.ai/.well-known/assetlinks.json says (api/main.py builds the standard Digital Asset Links statement from this). Chrome opens the Play app (package ai.insidelabel.app.f, D-149) without an address bar only when the SHA-256 of the certificate that signed the installed build is listed here.",
+    "rules": [
+      "Two fingerprints, both kept: the upload key (Sushil's, from keytool on his laptop) and Google's app signing key (Play Console, Test and release > App integrity, after the first upload; D-012). An install from Play is signed with Google's key, so the address bar only goes once that one is here.",
+      "Each sha256 is 32 pairs of upper-case hex digits joined by colons, exactly as keytool and Play Console print it. tests/test_assetlinks.py fails on any other shape.",
+      "An empty list, a missing file or a malformed one serves a 404: no statement rather than a wrong one.",
+      "Fingerprints are public (anyone can read them from the served file); the keys and their passwords are never in this repo.",
+      "Steps: docs/PLAY_RELEASE.md section 3."
+    ]
+  },
+  "package_name": "ai.insidelabel.app.f",
+  "fingerprints": []
+}

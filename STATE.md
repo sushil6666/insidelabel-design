@@ -650,6 +650,24 @@ setup alarms.
 
 **NEXT SESSION STARTS HERE (2026-10-01).** Where things stand, newest first:
 
+- **D-148 `play-wrap` (2026-10-01, no migration): the Play app.** Branch from `main` d09f13a (#81).
+  `android/`: the Bubblewrap TWA of https://insidelabel.ai/app/, generated with `@bubblewrap/core` 1.25.0 from
+  the web manifest; package `ai.insidelabel.app.f` (**D-149 LOCKED**, Sushil "confirmed ai.insidelabel.app.f"),
+  versionCode 1, targetSdk 36 (Play's rule since 31 August 2026, read 2026-10-01), icons from `icon-512.png`
+  and `icon-maskable-512.png`, portrait, custom tabs fallback, no notifications, no permissions. Signing keys
+  and build output are git-ignored; `tests/test_android_project.py` (12) fails on a tracked key and pins the
+  fixed values. `GET /.well-known/assetlinks.json` from `data/assetlinks.json` (`tests/test_assetlinks.py`,
+  16): ships with no fingerprints (404) until Sushil adds the upload key, then Google's app signing key after
+  the first upload. `/privacy.html` now served (it was a 404; it is the URL given to Play). `docs/PLAY_RELEASE.md`:
+  laptop build commands, the key and its two backups, asset links steps, Play Console steps (internal
+  testing first), App content and Data safety answers traced to `docs/DPDP_DATA_MAP.md`, the en-GB listing
+  (linted by `tests/test_wording.py`), the phone checklist, 6 questions. **Not proved: the build** (this
+  cloud session's network refuses `dl.google.com`). D-140 part 5 now records "Sushil, 2026-10-01: show
+  baby lines". **Waiting on Sushil:** merge; upload key and first build on the laptop; the upload key's
+  fingerprint into `data/assetlinks.json`; internal testing upload; Google's fingerprint; the questions in
+  `docs/PLAY_RELEASE.md` section 8. D-147 and D-148 are not yet written in DECISIONS.md. **Next:**
+  `beta-limit`.
+
 - **Phase 3 of D-140, part 5 (the last), on `baby-food-under-2` (2026-10-01, web-31, no migration):** the
   `baby` band "Under 2 years" (`toddler` now "2 to 3 years"), the sourced lines for a baby on ordinary foods
   (`data/baby_lines.json`, every quote read first-hand on 2026-10-01: ICMR-NIN DGI 2024 pp. 21, 26, 28, 29; WHO
@@ -1174,8 +1192,10 @@ waiting on the DPDP review.
     `tools/retention.py --apply` (D-098 - not an R2 lifecycle rule, which can't see holds),
     backups tested by a restore; `GEMINI_API_KEY`, `GOOGLE_VISION_KEY`, `INSIDELABEL_BUILD` as
     secrets (without the Vision key the server quietly falls back to slow Tesseract).
-14. **Play closed testing** (D-011): PNG icons 192/512 ✅ (D-112, `web/icon-192.png`, `icon-512.png`),
-    check the current tester requirement in Play Console.
+14. **Play closed testing** (D-011, D-148): PNG icons 192/512 ✅ (D-112, `web/icon-192.png`, `icon-512.png`);
+    developer account verified ✅ (Sushil, 2026-10-01); app created with package `ai.insidelabel.app.f`
+    (D-149) ✅; TWA project, asset links route and the release guide on `play-wrap`
+    (`docs/PLAY_RELEASE.md`); the tester requirement is read in Play Console (that file, section 4).
 
 Later / not blocking the beta: share target (D-077, after W4); D-073 cheap Tesseract
 re-check; refresh EU rows from a current EUR-Lex text and check cyclamate's US status;
@@ -1251,7 +1271,7 @@ retention test. Public launch comes after the W4 number (D-083).
 - [ ] Privacy policy (DPDP; children's data; parental consent at profile creation)
 - [ ] COI policy, methodology, who is behind the app, "last verified" dates (D-076)
 - [ ] Deployed: HTTPS ✅ and backups tested by restoring one ✅ (2026-09-27); PostgreSQL **18** until 19 is released (D-114); R2 ⏳
-- [ ] Play Console: account verified, closed-testing requirement met, audience = adults
+- [ ] Play Console: account verified (done 2026-10-01, Sushil), closed-testing requirement met, audience = adults
 - [x] D-055 stop number written down before launch (continue ≥ 30 %, retest 20-30 %, stop < 20 %)
 
 ### Where the catalogue comes from (D-088, D-089 - locked)

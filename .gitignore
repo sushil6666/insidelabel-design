@@ -30,3 +30,21 @@ media/
 # Marketplace screenshots (D-089): private research evidence for leads only.
 # Never commit, publish or read into a catalogue record.
 research/
+
+# Android signing (D-012, play-wrap): the upload key lives outside the repo,
+# never here. tests/test_android_project.py fails if one is ever tracked.
+*.jks
+*.keystore
+*.p12
+*.pk8
+keystore.properties
+
+# Android build output (android/): built on Sushil's laptop, uploaded by hand
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/app/release/
+*.aab
+*.apk
+*.idsig

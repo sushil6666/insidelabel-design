@@ -199,3 +199,23 @@ def test_barcode_digit_check_words():
     check = screen.barcode_check("8901499008343")
     assert_clean([check["title"], check["text"], check["yes"], check["again"], screen.RESCAN_TEXT,
                   screen.RESCAN_BUTTON], "barcode digit check")
+
+
+def test_play_store_listing():
+    """D-148: the Play listing in docs/PLAY_RELEASE.md is consumer copy, under the same rules,
+    within Play's lengths, and names no brand (D-042) and no retailer (D-088)."""
+    path = os.path.join(ROOT, "docs", "PLAY_RELEASE.md")
+    with open(path, encoding="utf-8") as f:
+        doc = f.read()
+    block = doc.split("<!-- play-listing:start -->", 1)[1].split("<!-- play-listing:end -->", 1)[0]
+    name = re.search(r"\*\*App name:\*\* (.+)", block).group(1).strip()
+    short = re.search(r"\*\*Short description:\*\*\n(.+)", block).group(1).strip()
+    full = block.split("**Full description:**", 1)[1].strip()
+    assert name == "InsideLabel" and len(name) <= 30
+    assert 0 < len(short) <= 80, len(short)
+    assert 0 < len(full) <= 4000, len(full)
+    assert_clean([name, short, full], "Play store listing")
+    brands = ["britannia", "patanjali", "maliban", "limca", "ziggy", "nestle", "amul", "parle",
+              "amazon", "flipkart", "blinkit", "zepto", "swiggy", "safelabel", "truthin"]
+    named = [b for b in brands if re.search(rf"\b{b}\b", block, re.IGNORECASE)]
+    assert not named, f"the listing names {named}"
