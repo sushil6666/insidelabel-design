@@ -18,6 +18,14 @@
     <a class="cta" href="/app/">Open the app</a>
     <p>InsideLabel is in a small, invited beta. If you have an invite, open the link from your message.</p>
 
+    <figure class="film">
+      <video id="film" controls muted playsinline preload="none" width="1280" height="720"
+             poster="/app/film/insidelabel-16x9.webp" aria-describedby="film-words">
+        <source src="/app/film/insidelabel-16x9.mp4" type="video/mp4">
+      </video>
+      <figcaption id="film-words">How it works, in 41 seconds. The words are on screen, so it works with the sound off.</figcaption>
+    </figure>
+
     <h2>How it works</h2>
     <ol class="steps">
       <li><b>1. Scan</b>The barcode, or a photo of the ingredient list on the back. The front of the pack is optional.</li>
@@ -34,5 +42,26 @@
     </ul>
   </main>
   <footer class="wrap"><a href="/privacy">Privacy</a> · <a href="/about">About and methodology</a></footer>
+  <script>
+    // The film plays, muted, once it is scrolled into view, and pauses when it leaves. It loads
+    // nothing until then (preload="none"). Never on its own with reduced motion or Save-Data:
+    // then the poster and the play button wait for a tap.
+    (function () {
+      var film = document.getElementById("film");
+      var still = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+      var save = navigator.connection && navigator.connection.saveData;
+      if (!film || still || save || !("IntersectionObserver" in window)) return;
+      var watch = function () {
+        new IntersectionObserver(function (seen) {
+          seen.forEach(function (e) {
+            if (e.isIntersecting) { var p = film.play(); if (p && p.catch) p.catch(function () {}); }
+            else if (!film.paused) { film.pause(); }
+          });
+        }, { threshold: 0.6 }).observe(film);
+      };
+      // after the page has painted, so the film never competes with the first screen
+      if (document.readyState === "complete") watch(); else addEventListener("load", watch);
+    })();
+  </script>
 </body>
 </html>

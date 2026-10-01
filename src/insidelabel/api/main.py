@@ -283,6 +283,8 @@ WEB_DIR = os.environ.get("INSIDELABEL_WEB", os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "..", "..", "web")))
 mimetypes.add_type("application/manifest+json", ".webmanifest")
 mimetypes.add_type("text/javascript", ".js")        # module scripts refuse other types
+mimetypes.add_type("video/mp4", ".mp4")            # the film on home (web/film/); some systems lack these
+mimetypes.add_type("image/webp", ".webp")
 if os.path.isdir(WEB_DIR):
     app.mount("/app", StaticFiles(directory=WEB_DIR, html=True), name="app")
 

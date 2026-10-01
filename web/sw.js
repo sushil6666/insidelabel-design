@@ -1,7 +1,7 @@
 // sw.js - keeps the app shell available offline and loading fast on slow networks.
 // Only files under /app/ are cached. API calls (/scan, /compare, …) always go
 // to the network: a stale verdict must never be served from a cache here.
-const VERSION = "il-shell-33";   // bump with APP_VERSION in lib.js
+const VERSION = "il-shell-34";   // bump with APP_VERSION in lib.js
 const SHELL = ["./", "index.html", "app.css", "app.js", "lib.js", "camera.js", "icons.js",
                "manifest.webmanifest", "icon.svg", "icon-maskable.svg", "icon-192.png",
                "fonts/dm-sans-400.woff2", "fonts/dm-sans-600.woff2", "fonts/dm-sans-700.woff2",
@@ -21,6 +21,9 @@ self.addEventListener("activate", e => {
 self.addEventListener("fetch", e => {
   const url = new URL(e.request.url);
   if (e.request.method !== "GET" || url.origin !== location.origin || !url.pathname.startsWith("/app/")) return;
+  // The film (film/*.mp4) is never cached here and never precached: it is fetched only
+  // when someone plays it, in ranges the browser asks for itself. Its poster may be cached.
+  if (url.pathname.endsWith(".mp4")) return;
   e.respondWith(fetch(e.request).then(res => {
     if (res.ok) { const copy = res.clone(); caches.open(VERSION).then(c => c.put(e.request, copy)); }
     return res;
