@@ -169,7 +169,7 @@ function accessProblem(e) {
 }
 
 function agree() {
-  const view = el("section", { class: "stack" }, el("p", { class: "muted" }, "Loading…"));
+  const view = el("section", { class: "stack", "aria-busy": "true" }, el("p", { class: "muted" }, "Loading…"), skeleton(5));
   termsRequest().then(({ body: t }) => {
     const box = el("input", { type: "checkbox", id: "agree" });
     const err = el("p", { class: "error", role: "alert" });
@@ -722,12 +722,17 @@ function photo() {
   };
   drawParts();
 
+  // app-polish: the first thing to do looks like it. Until a photo is in, taking it is the
+  // filled button; after, "Check this pack" is (finding 8). No new tap.
+  let backPicker = null;
+  const markNext = () => { leadWith(backPicker, !pending.back); };
+
   return el("section", { class: "stack" },
     el("h1", {}, "Photograph the ingredients"),
     firstTime,
     el("figure", { class: "sample" }, sampleBack(),
       el("figcaption", { class: "muted" }, "Fill the frame with the ingredient list. Hold steady and avoid glare.")),
-    photoPicker("back", pending.back ? "Retake the ingredients photo" : "Take the ingredients photo", backPreview,
+    backPicker = photoPicker("back", pending.back ? "Retake the ingredients photo" : "Take the ingredients photo", backPreview,
                 (b, res, source) => {
                   // A red cross keeps "Check this pack" off; an unchecked photo (the
                   // check couldn't run) is let through, and /scan checks it again anyway.
@@ -737,8 +742,10 @@ function photo() {
                   pending.parts = []; pending.partSources = []; more = false;
                   drawParts();
                   go_.disabled = !pending.back;
+                  markNext();
                   if (res?.barcode && !pending.barcode) { pending.barcode = res.barcode; pending.barcodeSource = "photo"; }
                 }),
+    (markNext(), null),
     backPreview,
     parts,
     // D-100: asked for once per pack, not once per scan. A re-check of a pack
@@ -754,6 +761,12 @@ function photo() {
       }),
       frontPreview, pairRow),
     go_);
+}
+
+// app-polish: a picker's take-photo button carries the primary style while it is the next step.
+function leadWith(picker, lead) {
+  const take = picker && picker.querySelector("label.btn:not(.link)");
+  if (take) take.classList.toggle("primary", !!lead);
 }
 
 // D-102: take a photo now, or upload one already on the phone or computer
@@ -823,7 +836,7 @@ function front(id) {
   const h = historyItem(id);
   if (!h || !h.barcode) return errorView("We couldn't find that pack on this phone.");
   const preview = el("div", { class: "thumb" });
-  let blob = null, blobSource = null;
+  let blob = null, blobSource = null, picker = null;
   const send = el("button", { type: "button", class: "btn primary", disabled: true, onclick: async () => {
     resetPending();
     pending.barcode = h.barcode;
@@ -839,11 +852,12 @@ function front(id) {
     el("h1", {}, "Photograph the front"),
     el("p", { class: "product" }, productName(h.product)),
     el("p", { class: "lead" }, "Fill the frame with the front of the pack, including any words printed on it."),
-    photoPicker("front", "Take the front photo", preview, (b, res, source) => {
+    (picker = photoPicker("front", "Take the front photo", preview, (b, res, source) => {
       blob = res && !res.ok ? null : b;
       blobSource = source;
       send.disabled = !blob;
-    }),
+      leadWith(picker, !blob);
+    }), leadWith(picker, true), picker),
     preview,
     send,
     button("Not now", () => go("result/" + encodeURIComponent(id)), "link"));
@@ -944,15 +958,17 @@ function table() {
   const go_ = el("button", { type: "button", class: "btn primary", disabled: true, onclick: () => sendPhotos() },
                  "Read the pack again");
   const n = pending.parts.length + 2;
+  let picker = null;
   return el("section", { class: "stack" },
     el("h1", {}, "Photograph the nutrition table"),
     el("p", { class: "lead" }, "Fill the frame with the table. We'll read it together with your ingredient photo."),
-    photoPicker("back" + n, "Take the table photo", preview, (b, res, source) => {
+    (picker = photoPicker("back" + n, "Take the table photo", preview, (b, res, source) => {
       if (!b || (res && !res.ok)) return;
       pending.parts = [...pending.parts.slice(0, n - 2), b];
       pending.partSources = [...pending.partSources.slice(0, n - 2), source];
       go_.disabled = false;
-    }, "back"),
+      leadWith(picker, false);
+    }, "back"), leadWith(picker, true), picker),
     preview, go_);
 }
 
@@ -1471,7 +1487,7 @@ function compare() {
 
   const run = async () => {
     const who = whoRef ? profileByRef(whoRef) : null;
-    out.replaceChildren(el("p", { class: "muted" }, "Comparing…"));
+    out.replaceChildren(el("p", { class: "muted" }, "Comparing…"), skeleton(3));
     try {
       const { body } = await compareRequest({
         packs: packs.map(h => ({ id: h.id, name: productName(h.product), ...h.pack,
@@ -1533,6 +1549,12 @@ function compareResult(r, ref) {
         p.facts.filter(f => f.tier !== "info" || f.positive).map(f =>
           el("li", { class: f.tier === "strong" ? "flag" : "" }, f.text)),
         !p.fully_checked && el("li", { class: "muted" }, "Not fully checked, so it can't be the pick.")))));
+}
+
+// app-polish: grey lines where content is coming (the words beside them say what).
+function skeleton(lines) {
+  return el("div", { class: "skeleton", "aria-hidden": "true" },
+    Array.from({ length: lines }, (_x, i) => el("span", { style: `width:${[92, 76, 84, 58, 70][i % 5]}%` })));
 }
 
 // ------------------------------------------------------------------ errors
