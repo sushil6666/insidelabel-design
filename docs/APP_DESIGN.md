@@ -210,6 +210,12 @@ everywhere; with a sticky header a focused element can scroll under it (WCAG 2.2
   before it would sit over the honest wait screen and imply a layout before anything is read.
 - **Haptics on anything but the barcode catch.** A buzz on a result could read as "good" or "bad".
 - **Changing the palette.** The tokens are kept and refined (section 8.1), not replaced.
+- **A "caught" moment on the scanner.** The lookup replaces the camera at once; showing the catch
+  would mean holding the screen for it, which slows the scan. The 15 ms tap is the catch.
+- **A fade on "More about this pack".** Measured: it took the slowest tap from 40 ms to 56 to 64 ms
+  (its body is long), so that one panel opens without it. Smaller panels fade.
+- **A skeleton for the person editor.** Its allergen list is cached on the phone after the first
+  load, so the wait it would cover is a few milliseconds.
 
 ## 5. Sources (each read on 2026-10-01)
 
@@ -333,3 +339,66 @@ readable", never anything about the food.
 ### 8.8 Targets and focus
 Every target at least 48 x 48 CSS px (a small visual element gets a larger invisible hit area);
 focus ring 3 px `--ring`, offset 2 px; `scroll-padding-top` the header's height.
+
+---
+
+## 9. What was built (step 2, branch `app-polish`)
+
+| Commit | What changed |
+|---|---|
+| 1 | This file: the review, the sources, the design system, the baseline numbers. |
+| 2 | **The foundation.** Tokens on `:root` (type, spacing, shape, elevation, motion, `--surface-2`, `--field-line`); body text in rem; every target 48 px (the header keeps its look with 48 px hit areas; inline links get padding that moves no text); one link colour; labels 6 px over their field and 20 px under the group before; the rating as 48 px pills on one row; standalone buttons on their own row; one press state for everything tappable; `scroll-padding-top`; reduced motion turns every animation and press off. **CLS:** the footer waits for the first screen. |
+| 3 | **Motion and icons.** Screens after the first enter with a 200 ms rise; a tile's page slides in from the right, and its result doesn't move when returned to; on a new result the people block is there at once and the rest follows 40 ms apart; opened panels fade in. `web/icons.js`: the app's own icons in place of the font glyphs; chevrons on every summary; small drawings on the limit, error and empty Compare screens. |
+| 4 | **The scan wait.** For one photo, "Sending the photo…" until the upload finishes (XMLHttpRequest's upload event, for `/scan` only), then "Reading the ingredient list…"; a two-part track, no percentage. Checked against a real `/scan` that takes 3 s. |
+| 5 | **The live scanner.** Corner guides, a slow scan line, the surround dimmed; the catch is a 15 ms tap, none under reduced motion. |
+| 6 | **The photo step leads with its next action** (the take-photo button is filled until a photo is in, on the ingredients, front and table screens); chevrons on list rows; skeleton lines under "Loading…" and "Comparing…"; the home progress bars grow in. |
+| 7 | **200% text and zoom** (WCAG 1.4.4), found while checking: the header, the answer chips, the tiles and the glance legend ran off the edge at 200%, on main as well. Fixed; the header stops being sticky under 300 px wide. |
+| 8 | **No fade on "More about this pack"** (INP, section 10). |
+| 9 | **Inline links at 48 x 48** (padding offset by a negative margin, so no word moves). |
+| 10 | `APP_VERSION` web-33 and the service worker's `il-shell-33`, together (`icons.js` joined the offline shell in commit 3); this section, STATE.md. |
+
+No word in JS changed: a script compared every string literal in `web/*.js` before and after;
+the only removals are the glyphs ✓ ✗ ✕ › • and the "‹ " of "Back to the result", each replaced by
+an icon; every addition is a class name, an icon name or path data. The one sentence reused in a
+new place is "Sending the photo…", which the front photo already says.
+
+## 10. Checks (step 3)
+
+**Walks.** The whole flow in headless Chromium at 390 x 844 and 360 x 800, light and dark, with
+reduced motion off and on (8 runs, 48 screens each, no step failed): a one-photo scan, a
+three-part scan, a barcode hit ("Not this pack? Scan again"), the digit check, the limit screen, a
+baby profile's lines and the toddler question, a refused read, a partial read, a screen read, a
+supplement, busy and offline errors, Compare, the forms, "Your data". After the build:
+`docs/app-design/after-light-*.jpg` and `after-dark-*.jpg` (390 x 844).
+
+**D-060, checked frame by frame on a new result:** the people block and every ancestor are at
+opacity 1 with no animation from the first frame; only the blocks after it reveal.
+
+**Performance**, the same harness as section 6 (4x CPU, median of 9 runs; the 5-run medians before
+are in section 6):
+
+| Measure | Before | After |
+|---|---|---|
+| Home LCP | 196 ms | 188 ms |
+| Home CLS | 0.106 | 0.002 |
+| A result's LCP | 264 ms | 236 ms |
+| A result's CLS | 0.111 | 0.002 |
+| INP (slowest of 7 taps) | 40 ms | 40 ms |
+| "Check this pack" to the result (mean) | 195 ms | 201 ms (within the spread, 163 to 238) |
+| JS and CSS shipped, gzip | 38.8 KB | 45.7 KB (+6.9 KB: app.css +3.7, app.js +1.4, icons.js +1.3, lib.js +0.4, camera.js +0.1) |
+
+Google's "good" thresholds (section 5): LCP 2500 ms, INP 200 ms, CLS 0.1.
+
+**Accessibility.**
+- Contrast: every text pair as in section 7; field borders 3.35:1 (light) and 3.74:1 (dark); the
+  scan wait's finished segment 4.69:1 (light) and 6.18:1 (dark) against the page, 2.93:1 against the
+  empty segment beside it in dark mode, where the stage's words carry the meaning.
+- Targets: the audit (9 screens) finds nothing under 48 x 48 px except tick boxes inside 48 px rows
+  (the row is the target), labels of text fields (the field is the target) and the header's
+  visuals, whose hit areas are 48 px.
+- 200%: browser zoom 200% (a 195 px viewport) and a 32 px root font, 11 screens each: nothing
+  scrolls sideways.
+- Reduced motion: no animation, no press transform, no scan line sweep, no vibration.
+- Focus: the 3 px ring everywhere; `scroll-padding-top` keeps it clear of the header.
+
+**Offline:** the shell (with `icons.js`) loads from the service worker with the network off.
