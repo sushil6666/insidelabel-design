@@ -12,7 +12,7 @@
 //    beyond the headline the user was shown.
 
 // Bump together with VERSION in sw.js: a report then says which shell was cached.
-export const APP_VERSION = "web-30";
+export const APP_VERSION = "web-31";
 
 // ------------------------------------------------------------------ storage
 // localStorage can throw (private mode, blocked site data); the app must still work.
@@ -60,7 +60,8 @@ function fallbackUuid() {
 
 // ------------------------------------------------------------------ profiles (D-074)
 export const AGES = [
-  { id: "toddler", label: "Toddler", sub: "1 to 3 years" },
+  { id: "baby", label: "Baby", sub: "Under 2 years" },             // D-140
+  { id: "toddler", label: "Toddler", sub: "2 to 3 years" },
   { id: "kid", label: "Child", sub: "4 to 11 years" },
   { id: "young", label: "Older child or teen", sub: "12 and up" },
 ];
@@ -79,6 +80,17 @@ export function profilesForServer() {
 }
 
 export function profileByRef(ref) { return profiles().find(p => p.ref === ref); }
+
+// D-140: "toddler" was 1 to 3 years and is now 2 to 3. A toddler profile saved before
+// that is asked once, on a result, whether the child is under 2. `under2_asked` stays on
+// this phone (profilesForServer sends ref, age and avoid only, D-074).
+export function bandToAsk(refs) {
+  return (refs || []).find(r => { const p = profileByRef(r); return p && p.age === "toddler" && !p.under2_asked; });
+}
+export function answerBand(ref, under2) {
+  saveProfiles(profiles().map(p => p.ref !== ref ? p
+    : { ...p, age: under2 ? "baby" : p.age, under2_asked: true }));
+}
 
 // Swap the "{name}" placeholder for the nickname kept on this device.
 export function fill(text, ref) {

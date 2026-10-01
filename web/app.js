@@ -7,7 +7,8 @@
 // checks it (D-042). Text in this file is linted too (tests/test_web.py).
 
 import {
-  AGES, APP_VERSION, MAX_PROFILES, ApiError, addHistory, allergenList, clientInfo, compareRequest,
+  AGES, APP_VERSION, MAX_PROFILES, ApiError, addHistory, allergenList, answerBand, bandToAsk, clientInfo,
+  compareRequest,
   deviceId, el, fill, history, historyItem, lastIncident, prepareImage, problemRequest, profileByRef,
   profiles, record, reportRequest, saveProfiles, scanRequest, sendToUsRequest, store, trailSnapshot,
   accessRequest, agreeRequest, checkPhotoRequest, feedbackRequest, joinRequest, termsRequest,
@@ -499,6 +500,7 @@ async function person(ref) {
       if (!p.nickname) { err.textContent = "Add a nickname."; return; }
       if (!consent.checked) { err.textContent = "Tick the parent or guardian box to save."; return; }
       p.consent_at = p.consent_at || new Date().toISOString();
+      p.under2_asked = true;          // D-140: the age was chosen from the bands as they are now
     }
     const all = profiles();
     const i = all.findIndex(x => x.ref === p.ref);
@@ -958,6 +960,9 @@ function result(id, sub, tileId) {
 
   // 1. People first (D-060, D-064).
   if (s.people?.length) put(el("div", { class: "people" }, s.people.map(personCard)));
+  // D-140: an older toddler profile is asked once whether the child is under 2. The
+  // server leaves it out after D-146's digit check, so a scan never asks twice.
+  if (s.band_question && s.state === "result") put(bandQuestion(s.band_question));
 
   // D-130: read from a screen. Said before anything about the product.
   if (s.from_screen) put(el("div", { class: "card warn", role: "note" },
@@ -1298,12 +1303,32 @@ function glanceView(g, compact = false) {
 
 function personCard(p) {
   const who = profileByRef(p.ref);
-  const detail = [...p.allergens.slice(1).map(a => a.text), ...p.child_facts.map(f => f.text)];
+  // D-140: a baby line carries its source; the cite is the server's words.
+  const detail = [...p.allergens.slice(1).map(a => ({ text: a.text })), ...p.child_facts];
   return el("div", { class: `person status-${p.status}` },
     el("span", { class: "who" }, who ? who.nickname : "Someone in your household"),
     el("p", { class: "line" }, fill(p.line, p.ref)),
     detail.length > 0 && el("details", {}, el("summary", {}, "More"),
-      el("ul", { class: "plain small" }, detail.map(t => el("li", {}, fill(t, p.ref))))));
+      el("ul", { class: "plain small" }, detail.map(f => el("li", {}, fill(f.text, p.ref),
+        f.sources?.length > 0 && el("span", { class: "muted" }, " ",
+          f.sources.map(x => el("a", { href: x.url, target: "_blank", rel: "noopener" }, x.cite))))))));
+}
+
+// D-140: one question, for one profile, until it's answered; every word is the server's.
+function bandQuestion(q) {
+  const ref = bandToAsk(q.refs);
+  if (!ref) return null;
+  const box = el("div", { class: "card note", role: "group" });
+  const answer = under2 => {
+    answerBand(ref, under2);
+    record("band_question", { answer: under2 ? "under_2" : "two_or_older" });
+    box.replaceChildren(el("p", {}, fill(under2 ? q.done_yes : q.done_no, ref)));
+  };
+  box.append(
+    el("p", {}, el("strong", {}, fill(q.text, ref))),
+    el("p", { class: "muted small" }, q.why),
+    el("div", { class: "row wrap" }, button(q.yes, () => answer(true)), button(q.no, () => answer(false))));
+  return box;
 }
 
 // D-111: one additive, laid out from the server's item. The badge words and the
