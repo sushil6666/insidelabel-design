@@ -243,7 +243,7 @@ Console shows them in 2026; if one has moved, search for it in the console.
 
 | Item | Answer | Basis |
 |---|---|---|
-| Privacy policy | https://insidelabel.ai/privacy.html | Sushil's choice. Served since this branch (it was a 404 before; `/privacy` serves the same page). See question 1 |
+| Privacy policy | https://insidelabel.ai/privacy.html | Sushil's choice. Served since this branch (it was a 404 before; `/privacy` serves the same page). Decided by Sushil 2026-10-01 (section 8, 1) |
 | App access | **All or some functionality is restricted.** Instructions: "InsideLabel is an invite-only beta. On 'Welcome to the InsideLabel beta', type the invite code below, tap 'Join the beta', then read 'Before you start' and agree. Then scan the barcode of any packaged food, or photograph its ingredient list." Give one code made for Google, on the server: `il tools/beta.py invite 1 --label PLAY --devices 10` | D-102: the server runs invite-only (`deploy/settings.env.example`); D-105 for "Before you start". Reviewers may use several devices, hence 10. Leave code PLAY out of the W4 count (D-055) |
 | Ads | **No**, the app contains no ads | D-148 |
 | Content rating | section 5.3 | |
@@ -287,9 +287,9 @@ only ephemerally (all are stored). "Required" means the app can't work without i
 |---|---|---|---|---|
 | Photos and videos > Photos | Pack photos (front, back, a screenshot of a listing) | 4, 10 | App functionality | Required for a pack not in the catalogue (a catalogue hit by barcode needs none) |
 | Device or other IDs | The install id the browser makes | 1 | App functionality; Fraud prevention, security and compliance (rate limits, D-095); Analytics (days an install scanned, row 11a, D-055) | Required |
-| Personal info > User IDs | The invite code a tester joined with | 2 | App functionality (invite-only beta) | Required while the beta is invite-only. See question 3 |
-| Health and fitness > Health info | Each household member's avoid list (for example milk) sent with a scan | 6 | App functionality | Optional (profiles are optional). See question 4 |
-| Personal info > Other info | Each household member's age band (baby to older) sent with a scan | 6 | App functionality | Optional. See question 4 |
+| Personal info > User IDs | The invite code a tester joined with | 2 | App functionality (invite-only beta) | Required while the beta is invite-only. Decided by Sushil 2026-10-01 (section 8, 3) |
+| Health and fitness > Health info | Each household member's avoid list (for example milk) sent with a scan | 6 | App functionality | Optional (profiles are optional). Decided by Sushil 2026-10-01 (section 8, 4) |
+| Personal info > Other info | Each household member's age band (baby to older) sent with a scan | 6 | App functionality | Optional. Decided by Sushil 2026-10-01 (section 8, 4) |
 | App activity > App interactions | Scan records linked to the install id for 30 days; days an install scanned; the app's recent trail in a problem report | 5, 11a, 9 | App functionality; Analytics | Required (scans); optional (problem reports) |
 | App activity > Other user-generated content | Feedback text and rating; a problem report's comment | 8, 9 | App functionality (fixing problems); Developer communications | Optional |
 | App info and performance > Crash logs | The errors a problem report carries | 9 | App functionality | Optional (sent only when the user sends a report, and shown first) |
@@ -309,8 +309,8 @@ household details removed after 30 days (rows 5, 6, D-128); feedback and problem
 that became a catalogue record (point 6).
 
 **IP address** (row 11): held in memory only for the rate-limit windows (at most a day), never
-stored, never used for location. The form has no IP address type. Recommended: not declared as
-location. See question 5.
+stored, never used for location. The form has no IP address type. Not declared (Sushil, 2026-10-01,
+section 8, 5).
 
 ### 5.3 Content rating (IARC questionnaire)
 
@@ -420,17 +420,18 @@ date and the phone model next to each line.
 
 ## 8. Questions for Sushil
 
-1. **The privacy page says "DRAFT for the invited beta ... still needs a legal review".** Play only
-   needs a working URL, but the page is now the policy shown on the Play listing. Keep the draft line
-   until the review, or change it?
+Answered by Sushil, 2026-10-01:
+
+1. **The privacy page's "DRAFT" line.** Answered: replaced with "Beta version, last updated 1 October
+   2026. A lawyer will review it before the public launch." (branch `beta-limit`). Nothing else on the
+   page changed.
+3. **The invite code:** declare it as **Personal info > User IDs** (5.2).
+4. **Household profiles:** declare avoid lists as **Health and fitness > Health info** and age bands as
+   **Personal info > Other info** (5.2).
+5. **IP addresses:** **not declared**: processed briefly for rate limits, never stored (5.2, map row 11).
+
+Still open:
+
 2. **Health apps declaration:** confirm the exact option Play shows (5.1).
-3. **The invite code as "User IDs"** (5.2): the map calls it the code a tester joined with, kept with
-   the install id. Declaring it is the cautious answer; not declaring it would claim less than the map
-   says. Recommended: declare.
-4. **Avoid lists as "Health info", age bands as "Other info"** (5.2): the map doesn't say which form
-   type they are. An allergy avoid list can be read as health information. Recommended: declare both
-   (claiming less than we hold is the worse error).
-5. **IP addresses** (5.2, row 11): kept in memory for a day at most for rate limits, never stored.
-   Recommended: not declared. The DPDP reviewer may say otherwise.
 6. **Closed-testing numbers** (section 4, step 9): check the page and the Dashboard; this file only
    has a search summary.

@@ -204,11 +204,17 @@ def _rate_limit(request, bucket, device_id, text):
     seconds = max(1, int(wait + 0.999))
     minutes = max(1, round(seconds / 60))
     log.warning("rate limited: %s device=%s wait=%ss", bucket, device, seconds)
-    raise HTTPException(status_code=429, headers={"Retry-After": str(seconds)}, detail={
-        "error": "rate_limited",
-        "detail": text.format(minutes=minutes, s="" if minutes == 1 else "s"),
-        "retryable": True, "retry_after_s": seconds,
-    })
+    detail = {"error": "rate_limited",
+              "detail": text.format(minutes=minutes, s="" if minutes == 1 else "s"),
+              "retryable": True, "retry_after_s": seconds}
+    # D-148: this install's daily photo scans are used. The app shows this screen
+    # (lenses/screen.py) in place of an error; `detail` stays a sentence for older apps.
+    if bucket == "scan" and ("device", ratelimit.PHOTO_SCANS_A_DAY, ratelimit.DAY) in \
+            ratelimit.LIMITER.blocking("scan", device=device):
+        words = result_screen.photo_limit(seconds, ratelimit.PHOTO_SCANS_A_DAY)
+        detail["photo_limit"] = words
+        detail["detail"] = f"{words['title']}. {words['barcode']} {words['when']}"
+    raise HTTPException(status_code=429, headers={"Retry-After": str(seconds)}, detail=detail)
 
 
 def _persist(fn, *args, **kwargs):

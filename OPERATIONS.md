@@ -192,6 +192,10 @@ il tools/beta.py revoke <CODE>              # lock a tester out
 
 Invite codes are personal: send each privately, never post them anywhere public.
 
+**The daily photo-scan limit (D-148):** 15 per phone in any 24 hours. To change it, change
+`PHOTO_SCANS_A_DAY` in `src/insidelabel/ratelimit.py` on a branch, merge, then `update.sh`
+(the screen's words follow the number; a restart also forgets today's counts).
+
 ### Reviewers and the queue
 
 ```bash

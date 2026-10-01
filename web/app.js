@@ -1508,11 +1508,26 @@ function apiMessage(e) {
 function apiErrorView(e, retry) {
   const gate = accessProblem(e);             // D-102/D-105: not joined, or rules not agreed
   if (gate) return gate === "join" ? join() : agree();
+  if (e instanceof ApiError && e.status === 429 && e.body?.photo_limit) return photoLimit(e.body.photo_limit);
   return el("section", { class: "stack" },
     el("h1", {}, "That didn't work"),
     el("p", {}, apiMessage(e)),
     retry && button("Try again", retry, "primary"),
     problemLink(),
+    button("Home", () => go(""), "link"));
+}
+
+// D-148: this phone's photo scans for the last 24 hours are used. One screen in place of
+// an error, every word the server's (lenses/screen.py, D-091); the barcode scanner stays
+// open to it. No retry button: the server says when the next photo scan is free.
+function photoLimit(w) {
+  record("photo_limit", {});
+  return el("section", { class: "stack" },
+    el("h1", {}, w.title),
+    el("p", {}, w.text),
+    el("p", {}, w.barcode),
+    el("p", { class: "muted" }, w.when),
+    button(w.scan, () => { resetPending(); go("scan"); }, "primary"),
     button("Home", () => go(""), "link"));
 }
 

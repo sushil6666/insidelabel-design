@@ -50,7 +50,7 @@ over our data tables make every judgement** (D-004), and every judgement uses
 | Result-screen block (`screen` in `/scan`): people first, headline from a finding, D-063 names, grouped ordinary items, no score; `profiles` with names kept on the device | ✅ D-091 | `lenses/screen.py` |
 | Reproducing problems (D-092): request ids, a replayable trace on every scan row, "Report a problem" + automatic crash and server-error reports, `tools/repro.py` | ✅ proved end to end (app → server → report → replay "same as what the user saw") | `trace.py`, `repro.py`, migration 006, `tools/repro.py` |
 | Exact replays (D-094): Cloud Vision's text stored on every scan row; `repro.py` replays it and never calls Google | ✅ overnight | migration 007, `cloud_vision.replaying()` |
-| Rate limits on `/scan`, `/problem`, `/send-to-us` per install and per IP (D-095) | ✅ overnight; in memory, one process | `ratelimit.py` |
+| Rate limits on `/scan`, `/problem`, `/send-to-us` per install and per IP (D-095); the beta's 15 photo scans per install a day with its own screen (D-148) | ✅ overnight; in memory, one process; D-148 on `beta-limit` | `ratelimit.py` |
 | "Send it to us" after two refused scans (D-070, D-096) | ✅ overnight; walked in headless Chromium against a faked API, not on a phone | `POST /send-to-us`, migration 008, `web/app.js` |
 | One login per reviewer (D-097); shared token only until the first account | ✅ overnight | migration 009, `review/accounts.py`, `tools/reviewers.py` |
 | Photo retention job, 30 days, holds respected (D-080, D-098) | ✅ overnight; runs nowhere yet (cron at deploy) | migration 010, `retention.py`, `tools/retention.py` |
@@ -58,7 +58,7 @@ over our data tables make every judgement** (D-004), and every judgement uses
 | Hosting (D-114): Google Cloud VM `insidelabel-1`, Mumbai, `e2-medium`, Ubuntu 24.04; Caddy HTTPS, one uvicorn, PostgreSQL 18; nightly backup + photo cleanup; daily disk snapshot | ✅ **live 2026-09-27** at https://insidelabel.ai (IP `8.234.95.74`); restore test PASS 2026-09-27 | `DEPLOY.md`, `deploy/` |
 
 **Accuracy on the gold set (6 real labels, `tools/eval_vision.py`):** 0 verdict
-flips, INS F1 1.000 (0 missed, 0 hallucinated), ingredient F1 0.945, front-claim
+flips, INS F1 1.000 (0 missed, 0 hallucinated), ingredient F1 0.945 (98.0% expected with D-137's gold, re-score pending), front-claim
 F1 0.883. Gold scores: Britannia 48, Limca 80 (×2), Maliban 56, Patanjali 48,
 Ziggy 28. **The set is 6 labels; the RUNBOOK target is 20-30** - the accuracy
 question the README asks is not answered yet.
@@ -650,6 +650,23 @@ setup alarms.
 
 **NEXT SESSION STARTS HERE (2026-10-01).** Where things stand, newest first:
 
+- **`beta-limit` (2026-10-01, web-32, no migration), from `main` 5b19b2d (#82, `play-wrap` merged).**
+  (1) **D-137 LOCKED** (Sushil: "D-137 accepted now with above suggestions"): Britannia's last two gold entries
+  joined, Patanjali's flavours entry split, as printed; `ingredient_count` follows each list. **The ingredient
+  gate's re-score is pending:** `predictions/` is on the laptop, not in the cloud checkout; expected 98.0%
+  (Britannia 0.882, the other five 1.0), gate PASS. Point 2 waits for the D-147 gold run. (2) **D-148 LOCKED and
+  built:** 15 photo scans per install in a rolling 24 hours (`ratelimit.PHOTO_SCANS_A_DAY`); barcode lookups and
+  the IP rules unchanged; the limit screen from `lenses/screen.py` ("Photo scans used for now", "During the beta,
+  each phone can photograph 15 packs in any 24 hours.", "Scanning a barcode still works for packs we already
+  know.", "You can photograph another pack in about N hours.", "Scan a barcode"); `tests/test_photo_limit.py`;
+  walked in headless Chromium at 390 x 844, light and dark (limit lowered to 1 and a recorded reading on a scratch
+  server, no paid call). D-053 and D-102's "web first" marked superseded. (3) **D-138:** Sushil's answers in
+  `docs/COI_POLICY_DRAFT.md`; still RECOMMENDED; needs "D-138 approved", the photo and the contact address before
+  `about.html`. (4) **Privacy page:** "Beta version, last updated 1 October 2026. A lawyer will review it before
+  the public launch."; `docs/PLAY_RELEASE.md` section 8 answers 1, 3, 4, 5 recorded. **Waiting on Sushil:** the
+  re-score on the laptop, merge, `update.sh`. **Next:** the Chyawanprash not_food fix when its data arrives, then
+  `nutrition-capture` (D-147).
+
 - **D-148 `play-wrap` (2026-10-01, no migration): the Play app.** Branch from `main` d09f13a (#81).
   `android/`: the Bubblewrap TWA of https://insidelabel.ai/app/, generated with `@bubblewrap/core` 1.25.0 from
   the web manifest; package `ai.insidelabel.app.f` (**D-149 LOCKED**, Sushil "confirmed ai.insidelabel.app.f"),
@@ -1181,6 +1198,8 @@ waiting on the DPDP review.
 9a. ~~Gate the `replay` form field~~ ✅ D-101.
 10. **Lift ingredient match 0.945 → ≥ 0.95** once the gold set is bigger (Britannia is the
     weakest at 0.80).
+    D-137 LOCKED (2026-10-01): the gold now follows prompt rule 4; expected 98.0%, gate PASS, once
+    re-scored on the laptop against the saved predictions (pending).
 11. **Fallback-model comparison** (`gemini-3.5-flash` on the gold set, ~₹3) when Google is
     quieter, if the retry data shows "busy" is common.
 
