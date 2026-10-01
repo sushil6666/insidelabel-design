@@ -219,3 +219,10 @@ def test_play_store_listing():
               "amazon", "flipkart", "blinkit", "zepto", "swiggy", "safelabel", "truthin"]
     named = [b for b in brands if re.search(rf"\b{b}\b", block, re.IGNORECASE)]
     assert not named, f"the listing names {named}"
+
+
+def test_photo_limit_words():
+    """D-148: the daily photo-scan limit screen (lenses/screen.py), for minutes and hours."""
+    from insidelabel.lenses import screen
+    for seconds in (30, 3600, 86_400):
+        assert_clean(list(screen.photo_limit(seconds, 15).values()), "photo limit screen")

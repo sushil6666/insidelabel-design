@@ -35,13 +35,24 @@ import threading
 import time
 from collections import OrderedDict, deque
 
+# D-148: photo scans each install may make in any 24 hours during the beta
+# (Sushil's choice). The app shows lenses/screen.py's photo_limit() when this is
+# the rule that refuses. To change it: this number, then deploy (OPERATIONS.md).
+PHOTO_SCANS_A_DAY = 15
+DAY = 86_400
+
 # (limit, window in seconds). Starting values for the closed beta; the numbers
 # are D-095's and can be tuned from real traffic.
 RULES = {
-    # Photo scans: each is a paid model call. 20 in 10 minutes is a
-    # pantry-clearing session; 100 a day is far past any real household.
-    "scan": {"device": [(20, 600), (100, 86_400)],
-             "ip": [(60, 600), (400, 86_400)]},
+    # Photo scans: each is a paid model call (about Rs 0.6). D-148: 15 a day per
+    # install, a rolling 24 hours, so the wait the limiter computes is the time
+    # the screen states. The old 20-in-10-minutes rule could never bite under it.
+    # The IP rules stay as D-095 set them: 400 a day is about 26 installs at their
+    # full 15 behind one carrier address, so the per-install limit is the one a
+    # real household meets, and someone rotating install ids is still held to
+    # 400 a day (about Rs 240).
+    "scan": {"device": [(PHOTO_SCANS_A_DAY, DAY)],
+             "ip": [(60, 600), (400, DAY)]},
     # Barcode-only lookups: a catalogue read, no model call.
     "lookup": {"device": [(120, 600)], "ip": [(600, 600)]},
     # Problem reports: people report once; the app's crash reporter already
@@ -102,6 +113,21 @@ class Limiter:
             w = max([self._wait(self._hits.get((bucket, kind, value), ()), rules[kind], now)
                      for kind, value in keys.items() if value is not None and rules.get(kind)] or [0.0])
         return w if w > 0 else None
+
+    def blocking(self, bucket, **keys):
+        """The (kind, limit, window) rules that would refuse one more request now; counts nothing."""
+        rules = self.rules.get(bucket) or {}
+        now = self.clock()
+        out = []
+        with self._lock:
+            for kind, value in keys.items():
+                if value is None or not rules.get(kind):
+                    continue
+                times = self._hits.get((bucket, kind, value), ())
+                for limit, window in rules[kind]:
+                    if self._wait(times, [(limit, window)], now) > 0:
+                        out.append((kind, limit, window))
+        return out
 
     def hit(self, bucket, **keys):
         """

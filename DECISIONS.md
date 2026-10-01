@@ -837,6 +837,7 @@ the catalogue; it still fills the queue with junk at no cost to the sender.
   sets it explicitly.
 
 ### D-102 · The beta launches on the web first, invite-only, one code per tester `LOCKED` (2026-09-26)
+Its "on the web first" part superseded by D-148 (2026-10-01): the beta runs in the Play Store app; invite codes stay.
 Direction from Sushil ("launch the website first, then the Android app"; "I will ask
 50 people to test and ask feedback"); design by Claude; accepted by Sushil 2026-09-26.
 
@@ -2648,6 +2649,51 @@ app (name InsideLabel, default language English (United Kingdom) en-GB, App, Fre
 reviews or testers carried over. It is written in `android/twa-manifest.json`, `android/app/build.gradle` (the
 `applicationId` and `namespace`) and `data/assetlinks.json`; `tests/test_android_project.py` and
 `tests/test_assetlinks.py` fail if any of them moves.
+
+### D-148 · The beta runs in the Play Store app, free with a daily photo-scan limit; then Pro at Rs 51 a month through Play billing, with Google sign-in `LOCKED` (2026-10-01)
+Direction from Sushil (2026-10-01): "Beta will go with apps, free, with a daily limit on photo scans. Then: Pro at Rs 51
+through Play billing, with Google sign-in that also carries data across." Earlier the same day he proposed ads for
+free users; Claude advised against them (below). Plan and numbers by Claude.
+
+1. **The beta in the app.** Closed testing on Google Play, the Trusted Web Activity of insidelabel.ai that D-010 already
+   plans (Bubblewrap). This supersedes D-102's "on the web first" only: the invite codes, one per tester, stay. The
+   website stays live, as the content of the app and for testing. Play's current closed-testing requirement (number of
+   testers and days) is read in Play Console when the account is set up (D-011), not from memory.
+2. **Free, no ads, no payments** during the beta.
+3. **A daily limit on photo scans per install: 15** (Sushil's choice). It uses D-095's limiter (photo scans 100 a
+   day per install today; only the number changes). Barcode lookups keep their own budget and stay unlimited in
+   practice: they cost about Rs 0 and never use up photo scans. When the limit is reached, one screen with words from
+   lenses/screen.py: today's photo scans are used, barcode lookups still work, more tomorrow. No upsell in the beta.
+   Worst-case cost: 50 testers x 15 photo scans x about Rs 0.6 = about Rs 450 a day.
+4. **After the beta: Pro at Rs 51 a month** (a Rs 499 a year option to decide then) through Google Play billing (about
+   15% to Google on subscriptions; the current rate and India's alternative billing option are checked before
+   launch). **Google sign-in** comes with Pro: it restores a subscription on a new phone and carries profiles, shop
+   list and Compare across (it also covers moving from another browser). That is new personal data (an email):
+   docs/DPDP_DATA_MAP.md is updated before it ships. Free stays: unlimited barcode lookups and 5 photo scans a day;
+   Pro: 15 a day. What else Pro includes is D-082's question, answered from beta interviews.
+5. **Ads: none in the beta.** For after the beta Claude recommends none at all: a web ad in India earns a few paise
+   against a photo scan's 50 to 60 paise; food-brand ads beside food results break D-002's promise in spirit; the IMS
+   Act and baby food (docs/BABY_FOOD.md) and the DPDP Act's rules on children's data are risks with an ad network; an
+   ad before a scan is the friction Sushil asked to avoid. Ads stay out unless a new decision says otherwise.
+6. **D-053 changes:** "scans stay uncapped and free forever" becomes "barcode lookups stay free forever; photo scans
+   have a daily limit"; its price question is answered as Rs 51 a month.
+7. **The conflict-of-interest page (D-138)** follows: "Looking up a pack stays free. Photo scans have a daily limit."
+   in place of "Scanning stays free", and "no ads".
+
+- **Accepted by Sushil 2026-10-01:** "Choose the beta limit: 15 products ... D-148 accepted".
+
+Build order: the beta limit (small, on the `beta-limit` branch with D-137); the Play wrap and closed testing
+(Sushil's Play Console steps plus a Bubblewrap build); Pro, Play billing and
+Google sign-in only after the beta.
+
+**Built (2026-10-01, branch `beta-limit`, web-32, no migration).** `ratelimit.PHOTO_SCANS_A_DAY = 15` per install, a
+rolling 24 hours (the old 20-in-10-minutes rule could never bite under it and is gone); barcode lookups' budget and the
+IP rules unchanged (400 a day per address is about 26 installs at their full 15 behind one carrier address, and still
+holds someone rotating install ids to about Rs 240 a day). The window stays rolling, so the screen says when the next
+photo scan is free ("about N hours") rather than "tomorrow", which a rolling window can't promise. Only a refusal by
+the install's daily rule gets the screen (`lenses/screen.py` `photo_limit()`, in the 429's `photo_limit`); an IP
+refusal keeps D-095's words. The 429 is logged with its request id and not stored (D-095). The app shows the screen
+in place of "That didn't work", with "Scan a barcode" back to the scanner. `tests/test_photo_limit.py`.
 ---
 
 ## Open and pending
@@ -2697,7 +2743,7 @@ children**, not diabetic households for now.
 - Play listing, onboarding and the first screen talk to these two groups; the target
   audience in Play Console stays **adults** (parents), never children (D-074).
 
-### D-053 · Premium pricing `OPEN`
+### D-053 · Premium pricing `SUPERSEDED by D-148` (its "uncapped" line and its open price)
 Original thinking was ₹49-99/month. Recommendation is ₹399-499/**year** - Indian
 consumer utilities convert far better on annual, and matches a product used a few
 times a month rather than daily. Also: scans stay uncapped and free forever
