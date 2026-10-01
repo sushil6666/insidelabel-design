@@ -436,13 +436,13 @@ def test_a_tesseract_scan_replays_with_tesseract(db, monkeypatch):
     from insidelabel import repro
     from insidelabel.extraction.providers import ocr_check
     monkeypatch.setenv("INSIDELABEL_OCR", "tesseract")
-    monkeypatch.setattr(ocr_check, "vote_ins", lambda b: (set(), {}, 6))
     monkeypatch.setattr(ocr_check, "AVAILABLE", True)
-    monkeypatch.setattr(ocr_check, "read_text", lambda b: "")
+    monkeypatch.setattr(ocr_check.pytesseract, "image_to_string", lambda *a, **k: "")
     rid = str(uuid.uuid4())
     scan(rid, replay=vision())
     s = row(db, "SELECT * FROM scans WHERE request_id = %s", rid)
-    assert s["ocr"] == {"back": {"reader": "tesseract", "text": None}}
+    # scan-speed: the passes that counted are stored, so a replay votes on the same ones.
+    assert s["ocr"] == {"back": {"reader": "tesseract", "text": None, "passes": 6}}
     monkeypatch.delenv("INSIDELABEL_OCR")
     monkeypatch.setenv("GOOGLE_VISION_KEY", "test-key")
     _no_google(monkeypatch)

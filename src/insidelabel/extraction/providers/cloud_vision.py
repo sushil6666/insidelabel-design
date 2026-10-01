@@ -54,6 +54,13 @@ LAST = {}          # the last call's outcome, for diagnostics: {ms, status, cach
 # restricted, API disabled) won't fix itself in seconds; a timeout might.
 DOWN_CONFIG_S = 600
 DOWN_TRANSIENT_S = 60
+# scan-speed (2026-10-01): from 18:02 UTC every call answered HTTP 200 with a
+# per-image {"code": 8, "message": "Resource has been exhausted (e.g. check
+# quota)."}. That is an outage, not a blip: like an HTTP 429 it trips the breaker
+# for 10 minutes (it was 60 s, so one long scan called Google twice) and raises
+# the alarm once per trip, so it reaches the problem reports, not just slow scans.
+DOWN_OUTAGE_S = 600
+OUTAGE_CODES = {8}                  # google.rpc RESOURCE_EXHAUSTED
 _down_until = 0.0
 # A configuration failure (billing off, key restricted…) silently costs every
 # scan the slow Tesseract fallback. The API takes this alarm once per trip and
@@ -67,6 +74,14 @@ def _trip(seconds, status, config=False):
     LAST["status"] = status
     if config:
         _alarm = status
+
+
+def alarm_text(status):
+    """The problem report's words for a trip: what refused, and what scans do now."""
+    what = (f"code {status.split('_', 1)[1]}" if status.startswith("code_")
+            else f"HTTP {status.split('_', 1)[1]}" if status.startswith("http_") else status)
+    return (f"Cloud Vision refused ({what}): scans use the fallback reader (Tesseract) for the next "
+            f"{DOWN_OUTAGE_S // 60} minutes, then try Google again. See OPERATIONS.md section 6.")
 
 
 def take_alarm():
@@ -167,8 +182,11 @@ def read_text(image_bytes):
         # never the key itself.
         detail = e.read()[:300].decode(errors="replace")
         LAST.update(ms=int((time.monotonic() - t0) * 1000), cached=False, skipped=False)
-        transient = e.code == 429 or e.code >= 500
-        _trip(DOWN_TRANSIENT_S if transient else DOWN_CONFIG_S, f"http_{e.code}", config=not transient)
+        if e.code == 429:
+            _trip(DOWN_OUTAGE_S, "http_429", config=True)
+        else:
+            transient = e.code >= 500
+            _trip(DOWN_TRANSIENT_S if transient else DOWN_CONFIG_S, f"http_{e.code}", config=not transient)
         log.warning("Cloud Vision HTTP %s: %s", e.code, detail)
         return None
     except (urllib.error.URLError, TimeoutError, OSError, ValueError) as e:
@@ -180,8 +198,12 @@ def read_text(image_bytes):
     LAST.update(ms=int((time.monotonic() - t0) * 1000), cached=False, skipped=False)
     resp = (data.get("responses") or [{}])[0]
     if resp.get("error"):
-        _trip(DOWN_TRANSIENT_S, "api_error")
-        log.warning("Cloud Vision error: %s", resp["error"].get("message"))
+        code = resp["error"].get("code")
+        if code in OUTAGE_CODES:
+            _trip(DOWN_OUTAGE_S, f"code_{code}", config=True)
+        else:
+            _trip(DOWN_TRANSIENT_S, "api_error")
+        log.warning("Cloud Vision error (code %s): %s", code, resp["error"].get("message"))
         return None
     LAST["status"] = "ok"
     text = (resp.get("fullTextAnnotation") or {}).get("text") or ""

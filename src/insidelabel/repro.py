@@ -23,7 +23,7 @@ from fastapi.testclient import TestClient
 
 from insidelabel import ratelimit, trace
 from insidelabel.api import main
-from insidelabel.extraction.providers import cloud_vision
+from insidelabel.extraction.providers import cloud_vision, ocr_check
 
 # The 1x1 PNG the test suite uses: saved regressions carry no photos (photos can
 # hold the shop's location in EXIF, and they stay out of git).
@@ -85,9 +85,21 @@ def ocr_texts(ocr, files):
     return out
 
 
+def ocr_passes(ocr, files):
+    """{photo hash: passes} for ocr_check.replaying_passes(): how far the original's Tesseract
+    vote got by the deadline (scan-speed), 0 when it was skipped. Older rows: all passes."""
+    out = {}
+    for role, rec in (ocr or {}).items():
+        if role in files and (rec or {}).get("reader") in ("tesseract", "skipped") \
+                and rec.get("passes") is not None:
+            out[cloud_vision.digest(files[role][1])] = rec["passes"]
+    return out
+
+
 def post_scan(data, files, ocr=None):
     """Replay /scan. `ocr` is the scan row's stored OCR ({} or None: Tesseract, never Google)."""
-    with no_storage(), cloud_vision.replaying(ocr_texts(ocr, files or {})):
+    with no_storage(), cloud_vision.replaying(ocr_texts(ocr, files or {})), \
+            ocr_check.replaying_passes(ocr_passes(ocr, files or {})):
         r = TestClient(main.app).post("/scan", data=data, files=files or None)
     body = r.json()
     return {"status": r.status_code, "screen": body.get("screen"), "body": body}
