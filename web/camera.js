@@ -70,7 +70,9 @@ export async function startScanner(video, onCode) {
       if (raw) {
         if (seen.has(raw)) {
           stop();
-          navigator.vibrate?.(60);
+          // app-polish: a 15 ms tap that the code was caught; none under reduced motion.
+          // Chrome allows it after the person's first tap in the app (Chrome 60 and later).
+          if (!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) navigator.vibrate?.(15);
           onCode(hit.format === "upc_e" ? upcEtoA(raw) : raw);
           return;
         }

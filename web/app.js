@@ -15,6 +15,7 @@ import {
   updatesRequest, forgetRequest, clearTrail,
 } from "./lib.js";
 import { barcodeSupported, startScanner } from "./camera.js";
+import { icon, spot } from "./icons.js";
 
 const main = document.getElementById("main");
 let stopCamera = null;
@@ -45,9 +46,17 @@ function go(path) {
   else location.hash = hash;
 }
 
+// app-polish: which way the next screen enters. A tile's page comes in from the right
+// (deeper); its result, returned to, doesn't move; everything else rises a little.
+let enterFrom = "up";
+let lastSub = "";
+
 function route() {
   if (stopCamera) { stopCamera(); stopCamera = null; }
   const [name, arg, ...rest] = location.hash.replace(/^#\/?/, "").split("/");
+  const sub = rest.join("/");
+  enterFrom = sub.startsWith("look") ? "right" : lastSub.startsWith("look") && name === "result" ? "back" : "up";
+  lastSub = sub;
   // D-092: screens in the trail. `arg` is a scan id or a profile ref, never a name;
   // `sub` a result's own page (D-134: "look/<tile id>").
   record("route", { to: name || "home", arg: arg || undefined, sub: rest.join("/") || undefined });
@@ -77,12 +86,32 @@ function routeAfterJoin(name, arg, rest = []) {
   updateNav();
 }
 
+// app-polish (docs/APP_DESIGN.md 8.6): the first screen paints at once; later ones enter
+// with a 200 ms rise or slide (transform and opacity only, interactive from the first
+// frame, and the next screen simply replaces it). A result's people block never moves
+// (D-060): it is there at once and the blocks after it follow, 40 ms apart.
+let shownOnce = false;
 function show(node) {
   if (!node) return;
+  if (shownOnce && node instanceof Element) {
+    if (node.classList.contains("result")) { if (enterFrom !== "back") revealAfterPeople(node); }
+    else if (enterFrom !== "back") node.dataset.enter = enterFrom;
+  }
+  shownOnce = true;
   main.replaceChildren(node);
+  document.body.classList.add("ready");      // the footer shows once a screen is in place (CLS)
   window.scrollTo(0, 0);
   const h = main.querySelector("h1, h2");
   if (h) { h.setAttribute("tabindex", "-1"); h.focus({ preventScroll: true }); }
+}
+
+function revealAfterPeople(view) {
+  let i = 0;
+  for (const c of view.children) {
+    if (c.matches(".product, .rescan, .people")) continue;
+    c.classList.add("reveal");
+    c.style.setProperty("--i", String(Math.min(i++, 6)));
+  }
 }
 
 function updateNav() {
@@ -140,7 +169,7 @@ function accessProblem(e) {
 }
 
 function agree() {
-  const view = el("section", { class: "stack" }, el("p", { class: "muted" }, "Loading…"));
+  const view = el("section", { class: "stack", "aria-busy": "true" }, el("p", { class: "muted" }, "Loading…"), skeleton(5));
   termsRequest().then(({ body: t }) => {
     const box = el("input", { type: "checkbox", id: "agree" });
     const err = el("p", { class: "error", role: "alert" });
@@ -282,7 +311,7 @@ async function home() {
   return el("section", { class: "stack" },
     updates,
     el("button", { type: "button", class: "scan-cta", onclick: () => { resetPending(); go("scan"); } },
-      el("span", { class: "scan-cta-icon", "aria-hidden": "true" }, barcodeIcon()),
+      el("span", { class: "scan-cta-icon", "aria-hidden": "true" }, icon("barcode")),
       el("span", {}, "Scan a pack")),
     shopListCard(),
     done < 3 && el("div", { class: "card note" },
@@ -545,7 +574,9 @@ async function scan() {
   const next = el("div", {});
   const view = el("section", { class: "stack" },
     el("h1", {}, "Scan the barcode"),
-    el("div", { class: "viewfinder-wrap" }, video, el("div", { class: "frame", "aria-hidden": "true" })),
+    // app-polish: corner guides say where the barcode goes; a slow line says the camera is looking.
+    el("div", { class: "viewfinder-wrap" }, video, el("div", { class: "frame", "aria-hidden": "true" },
+      el("i", {}), el("i", {}), el("i", {}), el("i", {}), el("span", { class: "scanline" }))),
     status,
     // D-107: a pack without a barcode can still be checked from its ingredients
     // photo; it just isn't added to the catalogue. Kept near the top, where it's seen.
@@ -659,8 +690,7 @@ function photo() {
     parts.replaceChildren();
     if (!pending.back) return;
     pending.parts.forEach((_b, i) => parts.append(
-      el("p", { class: "check ok", role: "status" }, el("span", { "aria-hidden": "true" }, "✓ "),
-         `Part ${i + 2} of the list added.`)));
+      el("p", { class: "check ok", role: "status" }, icon("check"), `Part ${i + 2} of the list added.`)));
     if (pending.parts.length >= 2 || more === null) return;
     const n = pending.parts.length + 2;
     const ask = n === 2 ? "Is the whole ingredient list in this photo?" : "Is that the end of the list?";
@@ -692,12 +722,17 @@ function photo() {
   };
   drawParts();
 
+  // app-polish: the first thing to do looks like it. Until a photo is in, taking it is the
+  // filled button; after, "Check this pack" is (finding 8). No new tap.
+  let backPicker = null;
+  const markNext = () => { leadWith(backPicker, !pending.back); };
+
   return el("section", { class: "stack" },
     el("h1", {}, "Photograph the ingredients"),
     firstTime,
     el("figure", { class: "sample" }, sampleBack(),
       el("figcaption", { class: "muted" }, "Fill the frame with the ingredient list. Hold steady and avoid glare.")),
-    photoPicker("back", pending.back ? "Retake the ingredients photo" : "Take the ingredients photo", backPreview,
+    backPicker = photoPicker("back", pending.back ? "Retake the ingredients photo" : "Take the ingredients photo", backPreview,
                 (b, res, source) => {
                   // A red cross keeps "Check this pack" off; an unchecked photo (the
                   // check couldn't run) is let through, and /scan checks it again anyway.
@@ -707,8 +742,10 @@ function photo() {
                   pending.parts = []; pending.partSources = []; more = false;
                   drawParts();
                   go_.disabled = !pending.back;
+                  markNext();
                   if (res?.barcode && !pending.barcode) { pending.barcode = res.barcode; pending.barcodeSource = "photo"; }
                 }),
+    (markNext(), null),
     backPreview,
     parts,
     // D-100: asked for once per pack, not once per scan. A re-check of a pack
@@ -724,6 +761,12 @@ function photo() {
       }),
       frontPreview, pairRow),
     go_);
+}
+
+// app-polish: a picker's take-photo button carries the primary style while it is the next step.
+function leadWith(picker, lead) {
+  const take = picker && picker.querySelector("label.btn:not(.link)");
+  if (take) take.classList.toggle("primary", !!lead);
 }
 
 // D-102: take a photo now, or upload one already on the phone or computer
@@ -758,7 +801,7 @@ function photoPicker(role, label, preview, onPick, checkAs = role) {
           role === "barcode" ? "We couldn't check this photo just now. Try again in a moment."
                              : "We couldn't check this photo just now. It will be checked when you continue.")
       : el("p", { class: "check " + (res.ok ? "ok" : "bad"), role: "status" },
-          el("span", { "aria-hidden": "true" }, res.ok ? "✓ " : "✗ "), res.message);
+          icon(res.ok ? "check" : "cross"), res.message);
     preview.replaceChildren(img, line);
     onPick(blob, res, source);
   };
@@ -793,7 +836,7 @@ function front(id) {
   const h = historyItem(id);
   if (!h || !h.barcode) return errorView("We couldn't find that pack on this phone.");
   const preview = el("div", { class: "thumb" });
-  let blob = null, blobSource = null;
+  let blob = null, blobSource = null, picker = null;
   const send = el("button", { type: "button", class: "btn primary", disabled: true, onclick: async () => {
     resetPending();
     pending.barcode = h.barcode;
@@ -809,29 +852,36 @@ function front(id) {
     el("h1", {}, "Photograph the front"),
     el("p", { class: "product" }, productName(h.product)),
     el("p", { class: "lead" }, "Fill the frame with the front of the pack, including any words printed on it."),
-    photoPicker("front", "Take the front photo", preview, (b, res, source) => {
+    (picker = photoPicker("front", "Take the front photo", preview, (b, res, source) => {
       blob = res && !res.ok ? null : b;
       blobSource = source;
       send.disabled = !blob;
-    }),
+      leadWith(picker, !blob);
+    }), leadWith(picker, true), picker),
     preview,
     send,
     button("Not now", () => go("result/" + encodeURIComponent(id)), "link"));
 }
 
 async function sendPhotos() {
-  show(working("Reading the ingredient list…", true));
+  // app-polish: one photo has two stages the app really knows: going up, then being
+  // read. With more photos the wait keeps one stage ("the photo" would be untrue).
+  const one = !pending.front && !pending.parts.length;
+  const wait = working("Reading the ingredient list…", true,
+                       one ? ["Sending the photo…", "Reading the ingredient list…"] : null);
+  show(wait);
   try {
-    const { body } = await scanRequest(pending);
+    const { body } = await scanRequest(pending, one ? { onUploaded: () => wait.next() } : {});
     finish(body);
   } catch (e) {
     show(apiErrorView(e, sendPhotos));
   }
 }
 
-// D-068: honest about speed. The API has no progress events yet, so we show
-// time passing and what a first read usually takes, not invented steps.
-function working(text, reading) {
+// D-068: honest about speed. The API has no progress events, so we show time passing,
+// what a first read usually takes and, for one photo, the two stages the app knows
+// (app-polish): the photo going up, then the reading. No percentage, no invented steps.
+function working(text, reading, stages = null) {
   const secs = el("span", {}, "0");
   const slow = el("p", { class: "muted" });
   const t0 = Date.now();
@@ -844,13 +894,23 @@ function working(text, reading) {
       slow.textContent = "Taking longer than usual: the reader is busy right now. It is still working.";
     }
   }, 1000);
-  return el("section", { class: "stack center", "aria-busy": "true" },
-    el("div", { class: "pulse", "aria-hidden": "true" }),
-    el("h1", {}, text),
+  const title = el("h1", {}, stages ? stages[0] : text);
+  const parts = (stages || [text]).map((_s, i) => el("span", { class: i === 0 ? "now" : "" }));
+  const view = el("section", { class: "stack center wait", "aria-busy": "true" },
+    spot("pack"),
+    el("div", { class: "track", "aria-hidden": "true" }, parts),
+    title,
     reading && el("p", { class: "muted" },
       "The first read of a pack takes about 8 to 15 seconds. Once a pack is in our catalogue, its barcode gives the result at once."),
     el("p", { class: "muted", role: "timer" }, secs, " s"),
     slow);
+  // The photo is up: the first stage is done and the reading is the one running.
+  view.next = () => {
+    if (!stages || !view.isConnected || title.textContent === stages[1]) return;
+    parts[0].className = "done"; parts[1].className = "now";
+    title.textContent = stages[1];
+  };
+  return view;
 }
 
 function finish(body, { lookedUp = false } = {}) {
@@ -898,15 +958,17 @@ function table() {
   const go_ = el("button", { type: "button", class: "btn primary", disabled: true, onclick: () => sendPhotos() },
                  "Read the pack again");
   const n = pending.parts.length + 2;
+  let picker = null;
   return el("section", { class: "stack" },
     el("h1", {}, "Photograph the nutrition table"),
     el("p", { class: "lead" }, "Fill the frame with the table. We'll read it together with your ingredient photo."),
-    photoPicker("back" + n, "Take the table photo", preview, (b, res, source) => {
+    (picker = photoPicker("back" + n, "Take the table photo", preview, (b, res, source) => {
       if (!b || (res && !res.ok)) return;
       pending.parts = [...pending.parts.slice(0, n - 2), b];
       pending.partSources = [...pending.partSources.slice(0, n - 2), source];
       go_.disabled = false;
-    }, "back"),
+      leadWith(picker, false);
+    }, "back"), leadWith(picker, true), picker),
     preview, go_);
 }
 
@@ -1098,15 +1160,15 @@ function kindView(s) {
 // D-134: a tile. Its words (title, chip) are the server's; the icon is decoration.
 function tileLink(h, t) {
   return el("a", { class: `tile tile-${t.tone}`, href: `#/result/${encodeURIComponent(h.id)}/look/${encodeURIComponent(t.id)}` },
-    el("span", { class: "add-icon tile-icon", "aria-hidden": "true" }, t.kind === "not_permitted" ? "✕" : "!"),
+    el("span", { class: "add-icon tile-icon", "aria-hidden": "true" }, icon(t.kind === "not_permitted" ? "cross" : "alert")),
     el("span", { class: "tile-text" }, el("strong", {}, t.title), el("span", { class: "tile-chip" }, t.chip)),
-    el("span", { class: "tile-arrow", "aria-hidden": "true" }, "›"));
+    el("span", { class: "tile-arrow", "aria-hidden": "true" }, icon("chevron-right")));
 }
 
 // D-134: a tile's own page, laid out from the server's `details[tile id]`.
 function lookView(h, tileId) {
   const d = h.screen.details?.[tileId];
-  const back = el("a", { class: "back", href: `#/result/${encodeURIComponent(h.id)}` }, "‹ Back to the result");
+  const back = el("a", { class: "back", href: `#/result/${encodeURIComponent(h.id)}` }, icon("back"), "Back to the result");
   if (!d) return el("section", { class: "stack look-page" }, back, el("p", {}, "We couldn't find that on this result."));
   const part = (title, ...kids) => el("div", { class: "look-part" }, el("h2", {}, title), ...kids);
   return el("section", { class: "stack look-page" },
@@ -1150,15 +1212,15 @@ function answersView(summary) {
 function legacyLooks(s) {
   const look = (heading, more, body) => el("details", { class: "look" },
     el("summary", {},
-      el("span", { class: "add-icon look-icon", "aria-hidden": "true" }, "!"),
+      el("span", { class: "add-icon look-icon", "aria-hidden": "true" }, icon("alert")),
       el("span", {}, el("strong", {}, heading), el("span", { class: "look-more" }, more)),
-      el("span", { class: "look-arrow", "aria-hidden": "true" }, el("span", {}, "›"))),
+      el("span", { class: "look-arrow", "aria-hidden": "true" }, el("span", {}, icon("chevron-right")))),
     el("div", { class: "look-body" }, body));
   const noteBody = n => [n.body.map(t => el("p", {}, t)),
     el("p", { class: "muted small" }, "On the label: ", el("q", {}, n.label_line)), sourceList(n.sources)];
   return [
     s.additive_alert && el("div", { class: "add-alert", role: "note" },
-      el("span", { class: "add-icon", "aria-hidden": "true" }, "!"),
+      el("span", { class: "add-icon", "aria-hidden": "true" }, icon("alert")),
       el("div", {}, el("strong", {}, s.additive_alert.text), el("p", {}, s.additive_alert.detail))),
     ...(s.alerts || []).map(a => look(a.title, a.more, [a.body.map(t => el("p", {}, t)),
       el("p", { class: "muted small" }, "On the label: ", el("q", {}, a.label_line)),
@@ -1333,14 +1395,15 @@ function bandQuestion(q) {
 
 // D-111: one additive, laid out from the server's item. The badge words and the
 // kind come from lenses/screen.py; the icon is decoration (aria-hidden).
-const BADGE_ICON = { not_permitted: "✕", worth_knowing: "!", permitted: "•" };
+const BADGE_ICON = { not_permitted: "cross", worth_knowing: "alert", permitted: "dot" };
 function additiveCard(a) {
   const kind = a.badge?.kind || "none";
   return el("article", { class: `add add-${kind}` },
     el("div", { class: "add-top" },
       el("p", { class: "add-name" }, a.ins && el("small", {}, "INS " + a.ins), a.name),
       a.badge && el("span", { class: "badge" },
-        el("span", { class: "add-icon", "aria-hidden": "true" }, BADGE_ICON[kind] || ""), a.badge.text)),
+        el("span", { class: "add-icon", "aria-hidden": "true" }, BADGE_ICON[kind] ? icon(BADGE_ICON[kind]) : ""),
+        a.badge.text)),
     el("p", { class: "muted small" }, "On the label: ", el("q", {}, a.label_line || a.label_text)),
     el("p", { class: "small" }, a.why),
     a.badge?.note && el("p", { class: "small add-note" }, a.badge.note));
@@ -1424,7 +1487,7 @@ function compare() {
 
   const run = async () => {
     const who = whoRef ? profileByRef(whoRef) : null;
-    out.replaceChildren(el("p", { class: "muted" }, "Comparing…"));
+    out.replaceChildren(el("p", { class: "muted" }, "Comparing…"), skeleton(3));
     try {
       const { body } = await compareRequest({
         packs: packs.map(h => ({ id: h.id, name: productName(h.product), ...h.pack,
@@ -1446,7 +1509,7 @@ function compare() {
     packs.length
       ? el("ul", { class: "list" }, packs.map(h => el("li", { class: "row between" },
           el("span", {}, productName(h.product)), button("Remove", () => refresh(h.id), "link"))))
-      : el("p", {}, "Nothing added yet."),
+      : el("div", { class: "card empty" }, spot("compare"), el("p", {}, "Nothing added yet.")),
     others.length > 0 && packs.length < 4 && el("details", {},
       el("summary", {}, "Add from recent scans"),
       el("ul", { class: "list" }, others.map(h => el("li", { class: "row between" },
@@ -1488,6 +1551,12 @@ function compareResult(r, ref) {
         !p.fully_checked && el("li", { class: "muted" }, "Not fully checked, so it can't be the pick.")))));
 }
 
+// app-polish: grey lines where content is coming (the words beside them say what).
+function skeleton(lines) {
+  return el("div", { class: "skeleton", "aria-hidden": "true" },
+    Array.from({ length: lines }, (_x, i) => el("span", { style: `width:${[92, 76, 84, 58, 70][i % 5]}%` })));
+}
+
 // ------------------------------------------------------------------ errors
 function apiMessage(e) {
   if (!(e instanceof ApiError)) return "Something went wrong. Try again.";
@@ -1510,6 +1579,7 @@ function apiErrorView(e, retry) {
   if (gate) return gate === "join" ? join() : agree();
   if (e instanceof ApiError && e.status === 429 && e.body?.photo_limit) return photoLimit(e.body.photo_limit);
   return el("section", { class: "stack" },
+    spot(e instanceof ApiError && e.status === 0 ? "wifi" : "alert"),
     el("h1", {}, "That didn't work"),
     el("p", {}, apiMessage(e)),
     retry && button("Try again", retry, "primary"),
@@ -1523,6 +1593,7 @@ function apiErrorView(e, retry) {
 function photoLimit(w) {
   record("photo_limit", {});
   return el("section", { class: "stack" },
+    spot("pack", "clock"),
     el("h1", {}, w.title),
     el("p", {}, w.text),
     el("p", {}, w.barcode),
@@ -1532,7 +1603,7 @@ function photoLimit(w) {
 }
 
 function errorView(text) {
-  return el("section", { class: "stack" }, el("h1", {}, "Sorry"), el("p", {}, text),
+  return el("section", { class: "stack" }, spot("pack"), el("h1", {}, "Sorry"), el("p", {}, text),
     button("Home", () => go(""), "primary"), problemLink());
 }
 
@@ -1659,10 +1730,6 @@ function sampleBack() {
     "sample-svg", "Back of a pack with the ingredient list highlighted");
 }
 
-function barcodeIcon() {
-  return svg(`<path d="M20 15v50M30 15v50M36 15v50M48 15v50M56 15v50M62 15v50M74 15v50M84 15v50M90 15v50M100 15v50" class="s-bars"/>`,
-             "icon-svg");
-}
 
 // ------------------------------------------------------------------ start
 window.addEventListener("hashchange", route);

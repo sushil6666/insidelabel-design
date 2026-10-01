@@ -650,6 +650,22 @@ setup alarms.
 
 **NEXT SESSION STARTS HERE (2026-10-01).** Where things stand, newest first:
 
+- **`app-polish` (2026-10-01, web-33, no migration), from `main` 0893586 (#83, `beta-limit` merged).** Sushil: make
+  the app look and feel as good as the best-rated apps. `docs/APP_DESIGN.md`: every screen and state reviewed in
+  headless Chromium (390 x 844, light and dark, real server code with recorded readings, no paid scan), 14 findings
+  ranked, the design system (tokens for colour, type, spacing, shape, elevation, Material 3 motion, icons), every
+  number cited to a page read 2026-10-01; contact sheets before and after in `docs/app-design/`. Built: tokens on
+  `:root`; 48 px targets everywhere; text-field borders 3:1 (WCAG 1.4.11); one press state; screens enter with a
+  200 ms rise, a result's people block never moves (D-060) and the rest follows 40 ms apart; the app's own SVG
+  icons (`web/icons.js`) in place of font glyphs; an honest scan wait ("Sending the photo…" until the upload
+  finishes, then "Reading the ingredient list…", both existing sentences); corner guides and a 15 ms tap on the
+  live scanner; the photo step leads with its next action; skeletons; 200% text and zoom no longer scroll
+  sideways (also broken on main). No word in JS changed; D-146's digit check untouched; reduced motion turns all
+  motion off. At 4x CPU: CLS 0.106 and 0.111 to 0.002 (the footer jumped), LCP and INP unchanged (INP 40 ms);
+  +6.9 KB gzipped. Walked at 390 x 844 and 360 x 800, light and dark, reduced motion on and off: no step failed.
+  **Waiting on Sushil:** merge, `update.sh` (no new Play upload: the app loads the site), a look on the phone.
+  The D-137 re-score from `beta-limit` is still recorded as pending above; this branch doesn't touch it.
+
 - **`beta-limit` (2026-10-01, web-32, no migration), from `main` 5b19b2d (#82, `play-wrap` merged).**
   (1) **D-137 LOCKED** (Sushil: "D-137 accepted now with above suggestions"): Britannia's last two gold entries
   joined, Patanjali's flavours entry split, as printed; `ingredient_count` follows each list. **The ingredient
