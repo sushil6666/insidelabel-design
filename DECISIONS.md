@@ -2626,6 +2626,15 @@ Not walked: the live camera (headless Chromium has no BarcodeDetector); it calls
   ... Do not remove or change it." (He had asked the same day to remove the digit check under the principle
   "never make the user do the app's checking"; that message was cancelled before anything was changed. One quick
   check at the right moment is fine; no second prompt is to be added on top of it.)
+
+### D-149 · The Play app's package name is `ai.insidelabel.app.f` `LOCKED` (2026-10-01)
+**Sushil, 2026-10-01: "confirmed ai.insidelabel.app.f".** The Android package (application id) of the Play app,
+the Trusted Web Activity of https://insidelabel.ai/app/ (D-010, D-148). It is registered in Play Console with the
+app (name InsideLabel, default language English (United Kingdom) en-GB, App, Free, Play App Signing, D-012) and
+**can never change after the first upload**: a different package is a different app on Play, with no installs,
+reviews or testers carried over. It is written in `android/twa-manifest.json`, `android/app/build.gradle` (the
+`applicationId` and `namespace`) and `data/assetlinks.json`; `tests/test_android_project.py` and
+`tests/test_assetlinks.py` fail if any of them moves.
 ---
 
 ## Open and pending

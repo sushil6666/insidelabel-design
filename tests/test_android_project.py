@@ -6,6 +6,7 @@ host (D-114), the scope, Play's target API level, no notifications and no
 permissions, and above all that no signing key is ever in the repo (D-012:
 the upload key stays on Sushil's laptop).
 """
+import hashlib
 import json
 import os
 import re
@@ -68,7 +69,7 @@ def test_twa_manifest_holds_the_fixed_facts():
     assert m["iconUrl"] == "https://insidelabel.ai/app/icon-512.png"
     assert m["maskableIconUrl"] == "https://insidelabel.ai/app/icon-maskable-512.png"
     assert m["orientation"] == web["orientation"] == "portrait"
-    assert m["appVersionCode"] == 1
+    assert isinstance(m["appVersionCode"], int) and m["appVersionCode"] >= 1
     assert m["enableNotifications"] is False                   # no notifications (D-148)
     assert m["features"] == {}                                 # no location, no Play Billing
     assert m["fallbackType"] == "customtabs"
@@ -87,7 +88,8 @@ def test_gradle_build_matches_the_manifest_and_play():
     assert f'namespace "{PACKAGE}"' in gradle
     assert f"targetSdkVersion {PLAY_TARGET_SDK}" in gradle
     assert f"compileSdkVersion {PLAY_TARGET_SDK}" in gradle
-    assert "versionCode 1\n" in gradle
+    m = json.loads(_read("twa-manifest.json"))
+    assert f"versionCode {m['appVersionCode']}\n" in gradle
     assert "hostName: 'insidelabel.ai'" in gradle
     assert "launchUrl: '/app/'" in gradle
     assert "enableNotifications: false" in gradle
@@ -105,3 +107,12 @@ def test_android_manifest_asks_for_no_permission():
     assert 'android:pathPrefix="/app/"' in manifest
     statements = _read("app", "src", "main", "res", "values", "strings.xml")
     assert '\\"site\\": \\"https://insidelabel.ai\\"' in statements
+
+
+def test_the_project_was_generated_from_the_committed_twa_manifest():
+    # `bubblewrap build` compares this checksum with twa-manifest.json and offers
+    # to regenerate the project when they differ. Edit twa-manifest.json, then run
+    # `bubblewrap update --skipVersionUpgrade` in android/ and commit what it writes.
+    with open(os.path.join(ANDROID, "twa-manifest.json"), "rb") as fh:
+        current = hashlib.sha1(fh.read()).hexdigest()
+    assert _read("manifest-checksum.txt").strip() == current
