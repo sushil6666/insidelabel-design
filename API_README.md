@@ -61,7 +61,7 @@ There is no score in `screen` (D-064); `verdict.score` stays for admin use.
 
 Send profiles as the form field `profiles`, JSON:
 `[{"ref": "me", "age": "adult", "avoid": ["peanut"]}, {"ref": "p1", "age": "toddler", "avoid": ["milk"]}]`.
-At most 3; `age` is `adult`, `toddler`, `kid` or `young`; any other key (a name,
+At most 3; `age` is `adult`, `baby` (under 2, D-140), `toddler`, `kid` or `young`; any other key (a name,
 say) is refused with 422 `bad_profiles`. Profile text uses the placeholder
 `{name}`, which the device replaces with the nickname it keeps; `ref: "me"`
 reads "you/your". With `profiles` and no `avoid`, the top-level `allergens`

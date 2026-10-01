@@ -648,7 +648,24 @@ to see where each gate stands. §11 has the full list. Done today: D-051/52/55 d
 food categories, PWA built, D-092 reproduction, D-093 Cloud Vision, scan speed,
 setup alarms.
 
-**NEXT SESSION STARTS HERE (2026-09-30).** Where things stand, newest first:
+**NEXT SESSION STARTS HERE (2026-10-01).** Where things stand, newest first:
+
+- **Phase 3 of D-140, part 5 (the last), on `baby-food-under-2` (2026-10-01, web-31, no migration):** the
+  `baby` band "Under 2 years" (`toddler` now "2 to 3 years"), the sourced lines for a baby on ordinary foods
+  (`data/baby_lines.json`, every quote read first-hand on 2026-10-01: ICMR-NIN DGI 2024 pp. 21, 26, 28, 29; WHO
+  2023 complementary feeding 5c p. xii, with WHO's NSS guideline p. xi for which sweeteners count; Nutra 2(1)
+  for a supplement), and the one-time question for a phone's older toddler profiles ("Is {name} under 2?",
+  server's words, answer kept on the phone as `under2_asked`, never sent). Not sent after D-146's digit check in
+  the same scan, on a retake, or on an infant or special medical result; infant packs stay in shadow, no
+  breastfeeding line. `tests/test_baby_band.py` (16; suite 929 passed, 8 skipped, 1 xfailed). Walked in headless Chromium, light and dark, 390 x 844,
+  from real `/scan` answers: question, "Yes" (profile becomes `baby`, server still sees ref/age/avoid only), not
+  asked again, the baby lines with their sources, the editor's bands; no console errors. **Waiting on Sushil:**
+  merge, `update.sh`, phone check; "accepted" for the three build choices recorded under D-140 part 5 (WHO's NSS
+  definition leaves sugar alcohols out; the supplement line quotes 2(1); one profile asked per result, catalogue
+  hits included). The brief's `docs/LEGAL_QUESTIONS.md` doesn't exist; the lawyer's questions are
+  `docs/BABY_FOOD.md` section 9, and (c), whether the baby lines make every result 7(1) material, is still open.
+  **Next:** the Chyawanprash not_food fix, once Sushil sends the scan row or id (own branch from `main` after this
+  merges).
 
 - **Barcodes: D-142, D-143, D-144 on `main` and deployed (Sushil, 2026-09-30, PRs #68 and #72; #70 and #71
   merged the stack's branches into each other first).** D-144 measured on the server before the merge: 107

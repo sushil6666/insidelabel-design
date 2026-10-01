@@ -2362,6 +2362,28 @@ Same request as D-139. Full proposal: `docs/BABY_FOOD.md`. **Nothing built until
   "above" (facts, never "fails"); IU, kJ and unit-less cells aren't compared, nor per 100 kcal columns. The
   D-133 reader is unchanged (it still ignores vitamins and minerals for foods): the infant lens reads those rows
   itself. On /review only.
+- **Phase 3, part 5 (branch `baby-food-under-2`, 2026-10-01): the `baby` band and the one-time toddler question,
+  the last part of phase 3.** Bands (a value, not a field, D-074): `baby` "Under 2 years", `toddler` "2 to 3 years",
+  `kid`, `young`; the toddler lens's stricter tiers (sugar in the first 3, caffeine, additives flagged for infants)
+  apply to `baby` too. `data/baby_lines.json`, every quote read first-hand on 2026-10-01 (D-046) with page, basis
+  and verified_on: added sugar (ICMR-NIN DGI 2024 p. 29, PDF p. 46, under Figure 4.3), non-sugar sweeteners (WHO
+  2023 complementary feeding, recommendation 5c, p. xii, PDF p. 14), honey (DGI p. 21, PDF p. 38), salt (DGI p. 26,
+  PDF p. 43), HFSS (DGI p. 28, PDF p. 45) only when the D-133 table's checked salt or added sugar is over Table 15.1,
+  and the supplement line (Nutra 2(1), Annexure 1 p. 1, PDF p. 4). Shown as the baby profile's own `child_facts`
+  with their source, on an ordinary food (and the one line on a supplement); never on an infant, special medical
+  or not_food pack. Nothing else moves (score, band, headline, allergen lines, Compare). **Choices made in the
+  build, RECOMMENDED until Sushil says "accepted":** (a) which sweeteners count is WHO's own NSS guideline (2023,
+  p. xi, PDF p. 13): "Common NSS include acesulfame K, aspartame, advantame, cyclamates, neotame, saccharin,
+  sucralose, stevia and stevia derivatives"; sugar alcohols and low-calorie sugars "are not considered NSS", so
+  sorbitol, maltitol, xylitol and erythritol get no WHO line (D-132's sweetener row for children keeps them, as
+  before). (b) The supplement line quotes 2(1) ("FSSAI's rules for supplements say "These foods are intended for
+  population above the age of 2 years".") in place of `docs/BABY_FOOD.md`'s paraphrase. (c) The question: the
+  server sends `band_question` (its words, under the lint, D-091) on a result when a profile is `toddler`; the app
+  asks for the first toddler profile saved before this change ("Is {name} under 2?", "Yes, under 2" / "No, 2 or
+  older"), keeps `under2_asked` on the phone (never sent, D-074) and never asks that profile again; a profile saved
+  from the editor counts as answered. Not sent after D-146's digit check in the same scan (`barcode_answer`), on a
+  retake, or on an infant or special medical result. One profile per result. Lawyer's question (c), whether the
+  baby lines make every result 7(1) material, stays open (`docs/BABY_FOOD.md` section 9).
 
 
 ### D-141 · A barcode read from a photo counts only when two reads agree, or the barcode is big enough `SUPERSEDED by D-144` (2026-09-30)
