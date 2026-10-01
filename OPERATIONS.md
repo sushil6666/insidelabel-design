@@ -228,7 +228,29 @@ il tools/repro.py list                      # problem reports from testers (not 
 il tools/repro.py show <id>                 # a report's timeline and a replay (no Google call)
 ```
 
-`reader` should say `cloud_vision`. `tesseract` means the Vision key was refused (§6).
+`reader` should say `cloud_vision`. `tesseract` means the Vision key was refused (§6);
+`skipped` means the fallback reader wasn't done when Gemini answered (scan-speed, 2026-10-01).
+
+**Scan speed per day** (photo scans of the last 14 days, India time: the median, the slowest
+tenth and the slowest, in seconds, and how many were read by Cloud Vision, by Tesseract, or not
+cross-checked). Read-only:
+
+```bash
+# Scan speed per day
+sudo -u insidelabel psql -d insidelabel -c "SELECT (created_at AT TIME ZONE 'Asia/Kolkata')::date AS day,
+  count(*) AS photo_scans,
+  round((percentile_cont(0.5) WITHIN GROUP (ORDER BY latency_ms) / 1000)::numeric, 1) AS p50_s,
+  round((percentile_cont(0.9) WITHIN GROUP (ORDER BY latency_ms) / 1000)::numeric, 1) AS p90_s,
+  round(max(latency_ms) / 1000.0, 1) AS max_s,
+  count(*) FILTER (WHERE ocr->'back'->>'reader' = 'cloud_vision') AS vision,
+  count(*) FILTER (WHERE ocr->'back'->>'reader' = 'tesseract') AS tesseract,
+  count(*) FILTER (WHERE ocr->'back'->>'reader' = 'skipped') AS skipped,
+  count(*) FILTER (WHERE coalesce(ocr->'back'->>'reader', '') = '') AS no_reader
+  FROM scans WHERE created_at > now() - interval '14 days' AND NOT cache_hit
+  AND back_image_key IS NOT NULL GROUP BY 1 ORDER BY 1 DESC"
+```
+
+`no_reader` is a scan that ended before the cross-check (a refused photo, a model error).
 
 **D-118, "One clearer photo, please":** a new pack whose list Cloud Vision can't confirm is asked
 for one clearer photo before the result. How often, and how often people chose "Use this one
@@ -375,7 +397,11 @@ Usually the key's IP restriction doesn't match 8.234.95.74, or the Vision API is
 
 **Scans take about 50 s / Cloud Vision code 8** (learned 2026-10-01). Vision answers HTTP 200
 but each image carries `{"code": 8, "message": "Resource has been exhausted (e.g. check quota)."}`,
-and the server falls back to Tesseract. Check, in this order:
+and the server falls back to Tesseract. Since the `scan-speed` branch the fallback runs alongside
+Gemini, so scans stay at Gemini's time, and a code 8 or HTTP 429 files a `server` problem report
+("Cloud Vision refused (code 8): scans use the fallback reader...") once per 10-minute trip:
+`il tools/repro.py list` shows it. Check, in this order:
+0. **The server log:** `journalctl -u insidelabel --since "-1h" --no-pager | grep "Cloud Vision"`.
 1. **Billing > Budgets & caps**
    (https://console.cloud.google.com/billing/01560C-7253A6-D1191B/budgets). A budget with a spend
    cap pauses Vision when it trips; the cap counts the cost before credits, and costs arrive up to
@@ -389,6 +415,8 @@ curl -s -H "Content-Type: application/json" -H "X-Goog-Api-Key: $KEY" -d '{"requ
 ```
 
 Text back means Vision works; code 8 means a cap or a quota.
+4. The Vision API's **Metrics > Traffic by credential**: which key made the calls (on 2026-09-27
+   to 30, the laptop's key, from test runs).
 
 **A certificate error in the browser.** `journalctl -u caddy -n 50 --no-pager`. Caddy needs
 ports 80 and 443 open and the DNS pointing at 8.234.95.74 (Cloudflare record **grey cloud**;
@@ -454,7 +482,8 @@ Check the registry's own view any time: https://rdap.nixiregistry.in/rdap/domain
     50, 90 and 100%. Billing > Reports, grouped by SKU, shows the Vision cost; the Vision API's
     Metrics > "Traffic by credential" shows which key made the calls.
   - **Gemini:** Google AI Studio, Gemini API Billing: a prepay balance, auto-reload (off on
-    2026-10-01, with Rs 394.71 left). At Rs 0 every photo scan fails.
+    2026-10-01, with Rs 394.71 left). At Rs 0 every photo scan fails, so **turn auto-reload on**
+    before testers scan in numbers. Gemini cost about Rs 85 for the week of 25 September.
   - **The free trial credit** and its end date: Billing > Credits.
 - **Rough prices:** Vision about 13 paise a call after 1,000 free calls a month; one photo scan
   about 50 to 60 paise in all (Gemini and Vision together).

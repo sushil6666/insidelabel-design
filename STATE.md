@@ -435,6 +435,7 @@ Keep this list - it is the cheapest way to not repeat a mistake.
 | What happened | Lesson |
 |---|---|
 | **Photo scans took 53 s** (scan `ef4186a3`). From 18:02 UTC every Cloud Vision call returned HTTP 200 with a per-image error `{"code": 8, "message": "Resource has been exhausted (e.g. check quota)."}`, so scans fell back to Tesseract. The quotas were at 0.06% and the free trial credit had Rs 27,707 left. The real cause: a billing budget "cloud vision" of Rs 500 a month **with a spend cap**. The cap counts the cost before credits (September's Vision cost was Rs 501.75, all paid by credits, yet the cap tripped), and costs are recorded up to 24 hours late, so it paused Vision on 1 October. Sushil raised the cap to Rs 1,500 (2026-10-01). | On Vision code 8, check Billing > Budgets & caps first, then the quotas (OPERATIONS.md section 6). A Vision outage must alert Sushil (the scan-speed branch), not show up as slow scans. |
+| **Why the scans took 50 to 80 s, and the fix (branch `scan-speed`).** With Vision refusing, the cross-check and the two identity checks re-read the back photo with Tesseract **after** Gemini had answered: nine passes one after another (measured in the cloud checkout, Gemini mocked at 8 s: a 1-photo scan 17.0 s, 3 parts 16.1 s; on the server's two slower CPUs, 50 to 80 s: ef4186a3 took 54 s). A per-image code 8 tripped the breaker for only 60 s, so 44e92599 logged two Vision errors 79 s apart in one scan; no alarm was raised (a code 8 wasn't counted as a setup problem), and the app's 20-second line said "the reader is busy". The fix: one independent read of the back photo per scan, started alongside Gemini (Vision, or Tesseract's six passes two at a time); every check uses it; the result never waits for it (a fallback not done when Gemini answers counts the passes finished, or is skipped and recorded "ocr: skipped (deadline)"); a code 8 or HTTP 429 trips the breaker for 10 minutes and files a `server` problem report. Measured after: 1 photo 8.2 s, 3 parts 8.6 s (Gemini's 8 s), Vision called once per scan. | **Cloud Vision code 8 can arrive with HTTP 200 and no visible quota use.** Treat it as an outage, alarm on it, and never let the fallback sit on the critical path. |
 | **The Rs 501.75 was not users' scans.** Testers made 65 photo scans from 27 to 30 September: a few hundred Vision calls, inside the 1,000 free a month. The Vision API's Metrics, "Traffic by credential", showed two keys: `server-vision` (the server, tiny) and `insidelabel` (Sushil's laptop, exported in `~/.bashrc`), with bursts up to 0.4 calls a second from 27 to 30 September. Laptop `pytest` runs sent the tests' fake images to Google until `tests/conftest.py` started removing `GOOGLE_VISION_KEY` (commit 5bae400, 2026-09-30 07:13 UTC). Sushil removed the key from `~/.bashrc` on 2026-10-01. | A paid key is never in a shell profile; it is set for one approved command only. |
 | **Gemini is billed separately**, in Google AI Studio (Gemini API Billing), on prepay: Rs 394.71 left on 2026-10-01 with auto-reload off. Gemini cost about Rs 85 from 25 September to 2 October. | At Rs 0 every photo scan fails: watch the AI Studio balance as well as the Cloud bill (OPERATIONS.md section 7). |
 | **The cloud build session has limits.** No keys and no server. `dl.google.com` is blocked, so the Android SDK and the Gradle plugin can't download and the `.aab` is built on Sushil's laptop. `photos/` and `predictions/` are gitignored, so gold re-scores run on the laptop (the D-137 re-score passed there: ingredient set F1 0.980, gate PASS). The cloud baseline has 1 extra skip (the gold photos test). | Anything that needs a key, the server, the Android SDK or the gold photos is a command for Sushil's laptop or the server, with its cost. |
@@ -660,6 +661,20 @@ food categories, PWA built, D-092 reproduction, D-093 Cloud Vision, scan speed,
 setup alarms.
 
 **NEXT SESSION STARTS HERE (2026-10-01).** Where things stand, newest first:
+
+- **`scan-speed` (2026-10-01, no migration), from `main` 21aa069 (#86).** Sushil: "scan-speed first". With Cloud
+  Vision refusing (code 8), photo scans took 50 to 80 s and nobody was told (section 6, 2026-10-01). Now: one
+  independent read of the back photo per scan, started alongside Gemini (Vision, or Tesseract's six passes two at a
+  time with one thread each); the cross-check, the identity check, the nutrition table and the barcode digits all
+  use it; the result never waits for it (passes finished in order count; fewer than two: skipped, traced "ocr:
+  skipped (deadline)", and the existing gate then shows nothing as checked); a code 8 or HTTP 429 trips the breaker
+  for 10 minutes (was 60 s) and files a `server` problem report once per trip; Vision is called at most once per
+  scan (a long scan made 5 calls before). Measured in the cloud checkout with Vision answering code 8 and Gemini
+  mocked at 8 s: 1 photo 17.0 s to 8.2 s, 3 parts 16.1 s to 8.6 s. `repro.py` replays the same number of passes.
+  The scan-speed query is in OPERATIONS.md section 5. `tests/test_scan_speed.py` (13). **Waiting on Sushil:** merge,
+  `update.sh`, then the scan-speed query after a day; whether a skipped cross-check should keep saying "We couldn't
+  read the label clearly enough... Please retake" (the gate's existing words; true for a bad photo, not for a
+  skip), a short grace, or new words.
 
 - **`app-polish` (2026-10-01, web-33, no migration), from `main` 0893586 (#83, `beta-limit` merged).** Sushil: make
   the app look and feel as good as the best-rated apps. `docs/APP_DESIGN.md`: every screen and state reviewed in
