@@ -373,6 +373,23 @@ key or billing, then `sudo systemctl restart insidelabel`.
 server fell back to Tesseract: check the `reader` column (§5) and the log for `ocr_config`.
 Usually the key's IP restriction doesn't match 8.234.95.74, or the Vision API is off.
 
+**Scans take about 50 s / Cloud Vision code 8** (learned 2026-10-01). Vision answers HTTP 200
+but each image carries `{"code": 8, "message": "Resource has been exhausted (e.g. check quota)."}`,
+and the server falls back to Tesseract. Check, in this order:
+1. **Billing > Budgets & caps**
+   (https://console.cloud.google.com/billing/01560C-7253A6-D1191B/budgets). A budget with a spend
+   cap pauses Vision when it trips; the cap counts the cost before credits, and costs arrive up to
+   24 hours late. On 2026-10-01 the "cloud vision" cap (Rs 500) did exactly this; it is now Rs 1,500.
+2. The Vision API's **Quotas & System Limits** in the console.
+3. One call from the server (about 13 paise; the key is read from the file, never printed):
+
+```bash
+KEY=$(sudo grep -oP '^GOOGLE_VISION_KEY=\K.*' /etc/insidelabel/secrets.env)
+curl -s -H "Content-Type: application/json" -H "X-Goog-Api-Key: $KEY" -d '{"requests":[{"image":{"source":{"imageUri":"https://insidelabel.ai/app/icon-512.png"}},"features":[{"type":"TEXT_DETECTION"}]}]}' https://vision.googleapis.com/v1/images:annotate | head -c 300; echo; unset KEY
+```
+
+Text back means Vision works; code 8 means a cap or a quota.
+
 **A certificate error in the browser.** `journalctl -u caddy -n 50 --no-pager`. Caddy needs
 ports 80 and 443 open and the DNS pointing at 8.234.95.74 (Cloudflare record **grey cloud**;
 an orange cloud breaks it until the proxy step, D-114).
@@ -431,6 +448,16 @@ Check the registry's own view any time: https://rdap.nixiregistry.in/rdap/domain
   Billing, Credits shows what is left of the trial and when it ends.
 - **Budget alert:** Billing, Budgets and alerts: about ₹1,500 a month, emails at 50, 90 and 100 %.
   An alert only emails; it doesn't stop anything.
+- **Where each cost is seen** (2026-10-01):
+  - **Cloud Vision:** Google Cloud Billing. The budget "cloud vision" has a Rs 1,500 a month
+    **spend cap** (it pauses Vision when reached; it counts the cost before credits) and alerts at
+    50, 90 and 100%. Billing > Reports, grouped by SKU, shows the Vision cost; the Vision API's
+    Metrics > "Traffic by credential" shows which key made the calls.
+  - **Gemini:** Google AI Studio, Gemini API Billing: a prepay balance, auto-reload (off on
+    2026-10-01, with Rs 394.71 left). At Rs 0 every photo scan fails.
+  - **The free trial credit** and its end date: Billing > Credits.
+- **Rough prices:** Vision about 13 paise a call after 1,000 free calls a month; one photo scan
+  about 50 to 60 paise in all (Gemini and Vision together).
 - **Before any tester is invited, the account must be upgraded to paid with automatic payment.**
   Otherwise the trial's end stops the server and marks its disk for deletion. Upgrading keeps
   the remaining credit and spends it first.
@@ -450,7 +477,10 @@ Check the registry's own view any time: https://rdap.nixiregistry.in/rdap/domain
   restricted to the server's IP, which makes them useless elsewhere.)
 - **Every key is restricted:** to its one API, and to the server's IP 8.234.95.74.
 - **Keys for the laptop and keys for the server are different**, so one can be replaced without
-  touching the other.
+  touching the other. The two Cloud Vision keys (2026-10-01): **`server-vision`** lives on the
+  server in `/etc/insidelabel/secrets.env`; the **laptop key** (`insidelabel`) is in no shell
+  profile (`~/.bashrc` sent tests' images to Google until 2026-09-30) and is set for one approved
+  command only. In Credentials, each key is restricted to the Cloud Vision API.
 - **Invite codes and reviewer passwords are personal:** sent privately, kept in a password
   manager, never in the repo.
 - **The deploy key is read-only:** the server can pull the code, never change it.

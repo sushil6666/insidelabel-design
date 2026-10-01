@@ -429,6 +429,17 @@ Keep this list - it is the cheapest way to not repeat a mistake.
 | A refused scan crashed with a 500 only when OCR also found an additive; no test had combined the two | Found while testing something else (OCR text on refused scans). Combine outcomes in tests, not just features. |
 | A retention job run between "list" and "delete" could remove a photo a user had just re-sent (keys are content hashes) | Re-check each key right before deleting it; test the race with the check switched off. |
 
+
+### 2026-10-01 (Sushil and the advisor)
+
+| What happened | Lesson |
+|---|---|
+| **Photo scans took 53 s** (scan `ef4186a3`). From 18:02 UTC every Cloud Vision call returned HTTP 200 with a per-image error `{"code": 8, "message": "Resource has been exhausted (e.g. check quota)."}`, so scans fell back to Tesseract. The quotas were at 0.06% and the free trial credit had Rs 27,707 left. The real cause: a billing budget "cloud vision" of Rs 500 a month **with a spend cap**. The cap counts the cost before credits (September's Vision cost was Rs 501.75, all paid by credits, yet the cap tripped), and costs are recorded up to 24 hours late, so it paused Vision on 1 October. Sushil raised the cap to Rs 1,500 (2026-10-01). | On Vision code 8, check Billing > Budgets & caps first, then the quotas (OPERATIONS.md section 6). A Vision outage must alert Sushil (the scan-speed branch), not show up as slow scans. |
+| **The Rs 501.75 was not users' scans.** Testers made 65 photo scans from 27 to 30 September: a few hundred Vision calls, inside the 1,000 free a month. The Vision API's Metrics, "Traffic by credential", showed two keys: `server-vision` (the server, tiny) and `insidelabel` (Sushil's laptop, exported in `~/.bashrc`), with bursts up to 0.4 calls a second from 27 to 30 September. Laptop `pytest` runs sent the tests' fake images to Google until `tests/conftest.py` started removing `GOOGLE_VISION_KEY` (commit 5bae400, 2026-09-30 07:13 UTC). Sushil removed the key from `~/.bashrc` on 2026-10-01. | A paid key is never in a shell profile; it is set for one approved command only. |
+| **Gemini is billed separately**, in Google AI Studio (Gemini API Billing), on prepay: Rs 394.71 left on 2026-10-01 with auto-reload off. Gemini cost about Rs 85 from 25 September to 2 October. | At Rs 0 every photo scan fails: watch the AI Studio balance as well as the Cloud bill (OPERATIONS.md section 7). |
+| **The cloud build session has limits.** No keys and no server. `dl.google.com` is blocked, so the Android SDK and the Gradle plugin can't download and the `.aab` is built on Sushil's laptop. `photos/` and `predictions/` are gitignored, so gold re-scores run on the laptop (the D-137 re-score passed there: ingredient set F1 0.980, gate PASS). The cloud baseline has 1 extra skip (the gold photos test). | Anything that needs a key, the server, the Android SDK or the gold photos is a command for Sushil's laptop or the server, with its cost. |
+| **A command with a placeholder like `<id>` fails in bash** ("syntax error near unexpected token `newline'"): bash reads `<` and `>` as redirections. | The advisor gives commands with real values, ready to paste. |
+
 ---
 
 ## Web beta first (2026-09-26, branch `web-beta`, D-102 recommended)
