@@ -662,6 +662,17 @@ setup alarms.
 
 **NEXT SESSION STARTS HERE (2026-10-01).** Where things stand, newest first:
 
+- **`explainer-video` (2026-10-01, no code or migration), from `main` 550173e (#87).** Sushil tested the HyperFrames
+  video skills ("help me to test this", then "re design ... more we are describing to user", "it will mostly be
+  watched on phones", "add a free track"). `videos/insidelabel-how-it-reads/`: a 41 s product film written as code
+  and rendered locally (no account, no paid call), two cuts from one project: 9:16 (main) and 16:9. The app plays
+  on a phone (screens copied from the real app's screens and words), 2 to 4 words per beat, an original
+  soundtrack made by `src/music.py` (free, no licence), -16 LUFS. Every word on screen has a source row in its
+  `BRIEF.md`; the look and motion rules are in `MOTION.md` (from `docs/APP_DESIGN.md` section 8); `AUDIT.md`
+  checks it against Apple's HIG motion rules; `README.md` says how to build (`./make.sh vertical render`). The MP4s
+  are not committed (`renders/` is ignored): publish them. The folder is meant to move to its own repo later.
+  **Waiting on Sushil:** merge; post the 9:16 MP4.
+
 - **`scan-speed` (2026-10-01, no migration), from `main` 21aa069 (#86).** Sushil: "scan-speed first". With Cloud
   Vision refusing (code 8), photo scans took 50 to 80 s and nobody was told (section 6, 2026-10-01). Now: one
   independent read of the back photo per scan, started alongside Gemini (Vision, or Tesseract's six passes two at a
@@ -671,8 +682,8 @@ setup alarms.
   for 10 minutes (was 60 s) and files a `server` problem report once per trip; Vision is called at most once per
   scan (a long scan made 5 calls before). Measured in the cloud checkout with Vision answering code 8 and Gemini
   mocked at 8 s: 1 photo 17.0 s to 8.2 s, 3 parts 16.1 s to 8.6 s. `repro.py` replays the same number of passes.
-  The scan-speed query is in OPERATIONS.md section 5. `tests/test_scan_speed.py` (13). **Waiting on Sushil:** merge,
-  `update.sh`, then the scan-speed query after a day; whether a skipped cross-check should keep saying "We couldn't
+  The scan-speed query is in OPERATIONS.md section 5. `tests/test_scan_speed.py` (13). Merged (#87). **Waiting on
+  Sushil:** `update.sh`, then the scan-speed query after a day; whether a skipped cross-check should keep saying "We couldn't
   read the label clearly enough... Please retake" (the gate's existing words; true for a bad photo, not for a
   skip), a short grace, or new words.
 

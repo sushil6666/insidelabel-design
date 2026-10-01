@@ -1,0 +1,43 @@
+Topic: how InsideLabel checks a packaged-food label (India). Source text for the film; the story and the source of every word on screen are in BRIEF.md.
+
+Public page text (web/site/how.html, read 2026-10-01):
+    How we check a label
+    An AI reads the words printed on the pack. It never decides anything. Fixed rules then check each
+      ingredient against our tables, which are checked against FSSAI's regulations. This page explains the
+      words you see on a result.
+    Your avoid list
+    The foods you, or a child you shop for, need to avoid, such as peanut or milk. We check every pack for
+      them first and put the answer at the top of the result. We only report what the label prints: a pack
+      can leave out traces, so we only ever say what is or isn't listed. When the photo is hard to read, we
+      say we can't confirm, rather than guess.
+    Allergen line
+    The line on the pack that starts with "Contains" or "May contain". We read it together with the
+      ingredients. If the photo doesn't show one, we say so and ask you to check the pack.
+    Sugar
+    Every added sugar on the list, under any of its names: sugar, liquid glucose, invert syrup, dextrose,
+      candy sugar syrup and others. Ingredients are listed from most to least, so a sugar near the start is
+      one of the main ingredients. When sugar appears under several names, each name sits lower on
+      the list than their total would.
+    Industrial ingredients
+    Ingredients rarely used in home cooking, such as glucose syrup, maltodextrin, emulsifiers, modified
+      starch or added flavouring. Researchers use them to spot "ultra-processed" food (the NOVA
+      classification, group 4). It describes how a food is made. It is not advice about whether a food is
+      right for you.
+    Additive
+    A substance added to do a job, such as a colour, a preservative or a raising agent. Most have an INS
+      number, the international code printed on the pack, for example "Colour (129)". We check each one
+      against FSSAI's list of additives permitted in India.
+    Permitted in India
+    FSSAI's additive rules (Appendix A of its food additive regulations) allow it in food, either freely,
+      or up to a limit that depends on the kind of food. We record where in the rules it is allowed and the
+      date we checked.
+    Worth knowing
+    An additive with research, or a regulator's opinion, that a shopper may want to read. It is permitted
+      in India. Tap its tile to see what the research found, in plain words, and a link to the
+      source. We write these only from the study or the regulator's own document.
+    Not permitted in India
+    An additive number that FSSAI's additive rules (Appendix A) give no use in any food. It is the most
+      serious thing we say about a pack, so we show it only when the whole list was read clearly. We quote
+      what the label prints and ask you to check the pack: if we misread the number, tap "Report a
+      mistake". A pack with a barcode also goes to a person to check.
+    Ingredients worth knowing
