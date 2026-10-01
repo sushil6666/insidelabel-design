@@ -50,6 +50,6 @@ def test_low_confidence_with_avoid_list_is_unsure():
 
 def test_validation():
     assert post([CREAM]).status_code == 422
-    assert post([CREAM, ATTA], age="baby").json()["error"] == "bad_age"
+    assert post([CREAM, ATTA], age="infant").json()["error"] == "bad_age"   # "baby" is a band since D-140
     assert post([CREAM, {**ATTA, "id": "a"}]).json()["error"] == "duplicate_pack"
     assert post([CREAM, ATTA], avoid=["kryptonite"]).json()["error"] == "unknown_allergen"

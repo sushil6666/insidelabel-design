@@ -115,4 +115,4 @@ def test_app_and_service_worker_versions_move_together():
     sw = open(os.path.join(WEB, "sw.js"), encoding="utf-8").read()
     n_app = re.search(r'APP_VERSION = "web-(\d+)"', lib).group(1)
     n_sw = re.search(r'VERSION = "il-shell-(\d+)"', sw).group(1)
-    assert n_app == n_sw == "30"
+    assert n_app == n_sw and int(n_app) >= 30             # web-30 shipped D-146; later parts bump both

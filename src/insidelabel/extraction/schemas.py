@@ -66,7 +66,7 @@ class ComparePack(BaseModel):
 
 class CompareRequest(BaseModel):
     packs: List[ComparePack] = Field(..., min_length=2, max_length=4)
-    age: str = Field("kid", description='"toddler" | "kid" | "young"')
+    age: str = Field("kid", description='"baby" | "toddler" | "kid" | "young"')
     avoid: List[str] = Field(default_factory=list)
     who: Optional[str] = None
     strict_may_contain: bool = True

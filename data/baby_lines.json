@@ -1,0 +1,105 @@
+{
+  "_meta": {
+    "table": "baby_lines",
+    "version": "0.1",
+    "purpose": "D-140: what a baby profile (age band `baby`, under 2 years) gets on an ordinary food or a supplement, and nothing else. Each line quotes a primary source read first-hand (D-046), with its page. Information only: nothing here changes a score, a band, a headline, Compare or an allergen line (D-004). Never on an infant food, a food for special medical use or a pack that isn't food: an infant result gives no feeding advice at all until the lawyer answers (D-140, docs/BABY_FOOD.md section 9).",
+    "rules": [
+      "A line is shown only when its trigger is on this pack: a word in the ingredient list, an INS number read by core/tokenize.py, or a nutrition-table number already over ICMR-NIN's Table 15.1 in the D-133 block.",
+      "The sentence names its source and quotes it; it never says the pack is unsuitable, unsafe or anything about the brand (D-042, D-071). tests/test_baby_band.py runs the wording lint on every line.",
+      "WHO's recommendation 5a (\"Foods high in sugar, salt and trans fats should not be consumed\") is not a line: the guideline gives no threshold for \"high\" (D-140).",
+      "Printed page = PDF page minus 17 for the ICMR-NIN guidelines."
+    ],
+    "row_shape": {
+      "id": "stable key",
+      "trigger": "added_sugar (lenses/compare.py sugar_positions) | names (whole words in an entry, or `ins`) | hfss (a D-133 salt or added-sugar row over Table 15.1) | supplement (pack kind supplement)",
+      "names": ["whole words matched in an ingredient entry, lower case (trigger names)"],
+      "ins": ["INS numbers that count, read by core/tokenize.py (trigger names)"],
+      "text": "the line the user reads, under the wording lint",
+      "source": "a key of _meta.sources",
+      "page": "printed page (PDF page)",
+      "basis": "where on the page, and the words quoted",
+      "verified_on": "YYYY-MM-DD, the day the quote was read in the document"
+    },
+    "sources": {
+      "icmr_dgi": {
+        "title": "ICMR-NIN, Dietary Guidelines for Indians, 2024",
+        "url": "https://nin.res.in/dietaryguidelines/pdfjs/locale/DGI_2024.pdf"
+      },
+      "who_cf": {
+        "title": "WHO Guideline for complementary feeding of infants and young children 6 to 23 months of age, 2023",
+        "url": "https://iris.who.int/server/api/core/bitstreams/5abca011-4db2-4cf1-b959-45b756f7b600/content"
+      },
+      "who_nss": {
+        "title": "WHO, Use of non-sugar sweeteners: WHO guideline, 2023",
+        "url": "https://iris.who.int/server/api/core/bitstreams/e567a191-33a4-44ff-8b37-788a4e432764/content"
+      },
+      "nutra": {
+        "title": "FSS (Health Supplements, Nutraceuticals, Food for Special Dietary Use, Food for Special Medical Purpose and Prebiotic and Probiotic Food) Regulations, 2022, Annexure 1, as operationalised by FSSAI's direction of 18 October 2022",
+        "url": "https://fssai.gov.in/docs/food-law/regulations/Direction_New_compressed.pdf"
+      }
+    }
+  },
+  "lines": [
+    {
+      "id": "added_sugar",
+      "trigger": "added_sugar",
+      "text": "ICMR-NIN's dietary guidelines say \"Added sugar must be totally avoided for children below 2 years\".",
+      "source": "icmr_dgi",
+      "page": "p. 29 (PDF p. 46)",
+      "basis": "Under Figure 4.3, suggested complementary food menus for infants (6 to 12 months): \"Added sugar must be totally avoided for children below 2 years\"; also p. 26 (PDF p. 43), guideline 4's list of points: \"Avoid feeding foods and beverages with added sugar.\"",
+      "verified_on": "2026-10-01"
+    },
+    {
+      "id": "non_sugar_sweetener",
+      "trigger": "names",
+      "names": ["artificial sweetener", "non-nutritive sweetener", "non-sugar sweetener", "acesulfame", "acesulfame k", "acesulfame potassium", "aspartame", "advantame", "cyclamate", "sodium cyclamate", "neotame", "saccharin", "sodium saccharin", "sucralose", "stevia", "steviol glycosides", "steviol glycoside"],
+      "ins": ["950", "951", "952", "954", "955", "960", "961", "969"],
+      "text": "WHO's 2023 guideline for children 6 to 23 months says \"Non-sugar sweeteners should not be consumed\".",
+      "source": "who_cf",
+      "page": "p. xii (PDF p. 14)",
+      "basis": "Recommendation 5c: \"Non-sugar sweeteners should not be consumed (strong, very low certainty evidence).\" Which sweeteners count is WHO's own NSS guideline (2023), p. xi (PDF p. 13): \"Common NSS include acesulfame K, aspartame, advantame, cyclamates, neotame, saccharin, sucralose, stevia and stevia derivatives\"; \"low-calorie sugars and sugar alcohols (polyols) ... are not considered NSS\", so sorbitol, maltitol, xylitol, erythritol and the like are not names here. INS numbers are those of the same substances in data/additives.json (Codex CAC/GL 36).",
+      "verified_on": "2026-10-01"
+    },
+    {
+      "id": "honey",
+      "trigger": "names",
+      "names": ["honey"],
+      "ins": [],
+      "text": "ICMR-NIN's dietary guidelines say \"Avoid feeding honey, glucose, water, or dilute milk formula before initiation of breastfeeding and anytime during the first 6 months\".",
+      "source": "icmr_dgi",
+      "page": "p. 21 (PDF p. 38)",
+      "basis": "Guideline 3, \"When to start breastfeeding and how long to continue?\": \"Avoid feeding honey, glucose, water, or dilute milk formula before initiation of breastfeeding and anytime during the first 6 months.\"",
+      "verified_on": "2026-10-01"
+    },
+    {
+      "id": "salt",
+      "trigger": "names",
+      "names": ["salt", "iodised salt", "iodized salt", "edible salt", "common salt", "rock salt", "black salt", "sea salt"],
+      "exclude": ["salt substitute"],
+      "ins": [],
+      "text": "ICMR-NIN's dietary guidelines say \"Limit use of salt in complementary food preparations\".",
+      "source": "icmr_dgi",
+      "page": "p. 26 (PDF p. 43)",
+      "basis": "Guideline 4's list of points: \"Limit use of salt in complementary food preparations.\" Names as in data/ingredient_notes.json's salt row (D-132).",
+      "verified_on": "2026-10-01"
+    },
+    {
+      "id": "hfss",
+      "trigger": "hfss",
+      "text": "ICMR-NIN's dietary guidelines say \"Processed foods and foods that are high in fats, salt and sugar (HFSS) must be avoided (example: biscuits, chips)\" for children being fed complementary foods.",
+      "source": "icmr_dgi",
+      "page": "p. 28 (PDF p. 45)",
+      "basis": "Guideline 4, \"Home-made complementary foods are nutritious\": \"Processed foods and foods that are high in fats, salt and sugar (HFSS) must be avoided (example: biscuits, chips).\" Shown only when the checked nutrition table's salt or added sugar is over Table 15.1, p. 96 (PDF p. 113), as the D-133 rows already say; total fat isn't applied (data/nutrition_thresholds.json: packs print total fat, not added fat).",
+      "verified_on": "2026-10-01"
+    },
+    {
+      "id": "supplement",
+      "trigger": "supplement",
+      "text": "FSSAI's rules for supplements say \"These foods are intended for population above the age of 2 years\".",
+      "source": "nutra",
+      "page": "2(1), Annexure 1 p. 1 (PDF p. 4)",
+      "basis": "2(1): \"These foods are intended for population above the age of 2 years\"; note 1 (p. 2, PDF p. 5): \"Foods intended for infants up to the age of 2 years shall comply with FSS (Food for Infant Nutrition) Regulations, 2020.\"",
+      "verified_on": "2026-10-01"
+    }
+  ]
+}

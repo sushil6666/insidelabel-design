@@ -229,8 +229,8 @@ def _screen_person(profile, rows, pack):
     return status, line, [{"code": c, "state": st, "evidence": ev, "text": t} for c, st, ev, t in merged]
 
 
-def _person(profile, ingredients, statement, confidence, reliable, screen=False, pack=None):
-    """D-064: the glanceable signal for one person, allergens first."""
+def _person(profile, ingredients, statement, confidence, reliable, screen=False, pack=None, baby=()):
+    """D-064: the glanceable signal for one person, allergens first. baby: baby_lines()."""
     who, whose = _who(profile), _whose(profile)
     rows = []
     if profile["avoid"]:
@@ -240,9 +240,9 @@ def _person(profile, ingredients, statement, confidence, reliable, screen=False,
     if screen and rows:
         status, line, allergens = _screen_person(profile, rows, pack)
         return {"ref": profile["ref"], "status": status, "line": line, "allergens": allergens,
-                "child_facts": [f for f in _child_facts(profile, ingredients, reliable)]}
+                "child_facts": [f for f in _child_facts(profile, ingredients, reliable, baby)]}
 
-    child_facts = _child_facts(profile, ingredients, reliable)
+    child_facts = _child_facts(profile, ingredients, reliable, baby)
 
     if rows and rows[0].state != "not_listed":
         status, line = rows[0].state, rows[0].parent_text(who)
@@ -274,12 +274,93 @@ def _person(profile, ingredients, statement, confidence, reliable, screen=False,
     }
 
 
-def _child_facts(profile, ingredients, reliable):
-    if not (profile["age"] in kids.AGE_BANDS and reliable and ingredients):
+def _child_facts(profile, ingredients, reliable, baby=()):
+    out = []
+    if profile["age"] in kids.AGE_BANDS and reliable and ingredients:
+        p = kids.extract_facts(kids.Product("x", "x", ingredients), profile["age"])
+        out = [{"tier": f.tier, "text": f.parent_text, "technical": f.technical}
+               for f in p.facts if f.tier == "strong"]
+    return out + (list(baby) if profile["age"] == "baby" else [])
+
+
+# D-140: a baby profile (under 2) on an ordinary food or a supplement: only the lines
+# data/baby_lines.json quotes from its sources, each when its trigger is on this pack.
+# Never on an infant food, a special medical food or a pack that isn't food: an infant
+# result gives no feeding advice at all until the lawyer answers.
+with open(os.path.join(engine.DATA_DIR, "baby_lines.json"), encoding="utf-8") as _fh:
+    BABY = json.load(_fh)
+
+
+def _baby_cite(row):
+    src = BABY["_meta"]["sources"][row["source"]]
+    return {"title": src["title"], "url": src["url"], "page": row["page"],
+            "cite": f"{src['title']}, {row['page']}"}
+
+
+def _baby_hits(row, ingredients):
+    names, ins, exclude = row.get("names", []), set(row.get("ins", [])), row.get("exclude", [])
+    for entry in ingredients:
+        low = entry.lower()
+        if any(kids._word_in(x, low) for x in exclude):
+            continue
+        if any(kids._word_in(n, low) for n in names) or ins & set(ins_numbers(entry)):
+            return True
+    return False
+
+
+def _hfss(panel):
+    """A checked nutrition table whose salt or added sugar is over Table 15.1 (D-133's own rows)."""
+    if not panel or panel.get("status") not in nutrition.SHOWN or not panel.get("values"):
+        return False
+    rows, _ = _nutrition_rows(panel)
+    return any(r["over"] and r["key"] in ("salt", "added_sugars") for r in rows)
+
+
+def baby_lines(kind_code, ingredients, reliable, panel=None):
+    """The `child_facts` items a baby profile gets on this pack (D-140), in the table's order."""
+    if kind_code not in ("food", "supplement"):
         return []
-    p = kids.extract_facts(kids.Product("x", "x", ingredients), profile["age"])
-    return [{"tier": f.tier, "text": f.parent_text, "technical": f.technical}
-            for f in p.facts if f.tier == "strong"]
+    on = set()
+    for row in BABY["lines"]:
+        t = row["trigger"]
+        if t == "supplement":
+            hit = kind_code == "supplement"
+        elif kind_code != "food":
+            hit = False
+        elif t == "hfss":
+            hit = _hfss(panel)
+        elif not (reliable and ingredients):
+            hit = False
+        elif t == "added_sugar":
+            hit = bool(kids.sugar_positions(ingredients))
+        else:
+            hit = _baby_hits(row, ingredients)
+        if hit:
+            on.add(row["id"])
+    return [{"tier": "strong", "text": row["text"], "technical": _baby_cite(row)["cite"],
+             "sources": [_baby_cite(row)], "source": {"kind": "baby_line", "ref": row["id"]}}
+            for row in BABY["lines"] if row["id"] in on]
+
+
+# D-140: the `toddler` band was "1 to 3 years" and is now "2 to 3 years". A phone's
+# toddler profiles made before that are asked once, on a result, whether the child is
+# under 2; the app keeps the answer on the phone and never asks that profile again.
+# Never on a scan that already had D-146's digit check (at most one check per scan).
+BAND_QUESTION = {
+    "text": f"Is {NAME} under 2?",
+    "why": "We now show a few extra lines from ICMR-NIN and WHO for children under 2.",
+    "yes": "Yes, under 2",
+    "no": "No, 2 or older",
+    "done_yes": f"Thanks. {NAME} is now in the under 2 band. You'll see it from your next scan.",
+    "done_no": f"Thanks. {NAME} stays in the 2 to 3 years band.",
+}
+
+
+def _band_question(profiles, barcode_answer):
+    refs = [p["ref"] for p in profiles if p["age"] == "toddler"]
+    if not refs or barcode_answer:
+        return None
+    return {"refs": refs, **BAND_QUESTION}
 
 
 # ------------------------------------------------------------------ product
@@ -1042,7 +1123,7 @@ SINCE_UNREAD = "We couldn't read this pack clearly enough to compare it with the
 def build(*, verdict, display, claim_check, extracted, reliability, profiles,
           allergen_confidence, allergen_reliable, catalogue=None, has_barcode=True,
           photos_sent=("back",), pack=None, screen_pack=None, nutrition=None, parts_sent=1, kind=None,
-          nutra_input=None):
+          nutra_input=None, barcode_answer=None):
     """
     The `screen` block of a /scan response. verdict=None means the scan was refused.
     pack: for a result read from a screen (D-130), our catalogue's version of the
@@ -1051,12 +1132,16 @@ def build(*, verdict, display, claim_check, extracted, reliability, profiles,
     parts_sent: how many back photos this scan joined (D-119), so the app knows
     whether one more photo, of the table, can still be added.
     kind: core/pack_kind.decide()'s answer (D-139, D-140), or None for ordinary food.
+    barcode_answer: D-146's digit check answered in this scan ("confirmed", "rescanned"),
+    so no second question is asked on its result.
     """
     ingredients = (extracted or {}).get("ingredients") or []
     statement = (extracted or {}).get("allergen_statement")
     from_screen = bool(reliability.get("from_screen"))
+    baby = (baby_lines(kind["code"] if kind else "food", ingredients, allergen_reliable, nutrition)
+            if verdict is not None else [])
     people = [p for p in (_person(pr, ingredients, statement, allergen_confidence, allergen_reliable,
-                                  screen=from_screen and verdict is not None, pack=pack)
+                                  screen=from_screen and verdict is not None, pack=pack, baby=baby)
                           for pr in profiles) if p]
 
     if verdict is None and from_screen and reliability.get("error") not in ("product_mismatch", "not_a_food_pack"):
@@ -1093,7 +1178,7 @@ def build(*, verdict, display, claim_check, extracted, reliability, profiles,
                                        allergen_confidence=allergen_confidence,
                                        allergen_reliable=allergen_reliable, from_screen=from_screen, pack=pack,
                                        has_barcode=has_barcode, reliability=reliability,
-                                       parts=pack_kind.parts(kind["code"]))
+                                       parts=pack_kind.parts(kind["code"]), barcode_answer=barcode_answer)
 
     band = display["display_binary"]
     sure = (bool(allergen_reliable) and reliability.get("ingredients_complete", True)
@@ -1195,13 +1280,18 @@ def build(*, verdict, display, claim_check, extracted, reliability, profiles,
                                    ingredients=ingredients, statement=statement,
                                    allergen_confidence=allergen_confidence, allergen_reliable=allergen_reliable,
                                    from_screen=from_screen, pack=pack, has_barcode=has_barcode,
-                                   reliability=reliability, parts=pack_kind.PARTS["food"])
+                                   reliability=reliability, parts=pack_kind.PARTS["food"],
+                                   barcode_answer=barcode_answer)
 
 
 def _notes_for_every_result(out, *, catalogue, profiles, screen_pack, ingredients, statement,
                             allergen_confidence, allergen_reliable, from_screen, pack, has_barcode,
-                            reliability, parts):
+                            reliability, parts, barcode_answer=None):
     """What any result says about where it came from, whatever the kind of pack."""
+    # D-140: an infant or special medical result stays exactly as decided; the question waits.
+    question = _band_question(profiles, barcode_answer)
+    if question and (out.get("kind") or {}).get("code") not in ("infant", "special_medical"):
+        out["band_question"] = question
     if catalogue and catalogue.get("source") == "catalogue":
         out["last_verified"] = f"Label last verified on {catalogue['last_verified']}."
         # D-146: a catalogue hit shows the product's name; the app offers the way back to the scanner.
