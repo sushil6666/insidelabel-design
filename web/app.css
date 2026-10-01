@@ -222,9 +222,18 @@ legend { font-weight: 700; padding: 0 4px; }
 .s-dim { fill: var(--line); }
 .thumb img { max-width: 100%; max-height: 220px; border-radius: 12px; display: block; }
 
-/* Working */
-.pulse { width: 56px; height: 56px; margin: 24px auto 0; border-radius: 50%; background: var(--accent); animation: pulse 1.4s ease-in-out infinite; }
-@keyframes pulse { 0%, 100% { transform: scale(.7); opacity: .5; } 50% { transform: scale(1); opacity: 1; } }
+/* Working: the scan wait. A drawing, a track of the stages the app knows (the one
+   running moves; nothing is a percentage), the stage's words, time passing. */
+.wait { padding-top: var(--sp-6); }
+.wait .spot { margin: 0 auto; }
+.track { display: flex; gap: 6px; width: min(240px, 70%); margin: var(--sp-5) auto 0; }
+.track span { position: relative; flex: 1; height: 6px; border-radius: var(--r-pill); background: var(--line);
+              overflow: hidden; }
+.track span.now { background: var(--line); background: color-mix(in srgb, var(--brand) 30%, var(--line)); }
+.track span.done { background: var(--brand); }
+.track span.now::after { content: ""; position: absolute; inset: 0; width: 45%; border-radius: inherit;
+                         background: var(--brand); animation: track 1.3s var(--ease-standard) infinite; }
+@keyframes track { from { transform: translateX(-110%); } to { transform: translateX(230%); } }
 
 /* A 360-390 px phone: the name, the mark and two pills on one line. */
 @media (max-width: 400px) {
@@ -471,6 +480,8 @@ ul.plain > li > a, .look-part a { display: inline-flex; align-items: center; min
   }
   .btn:active, .scan-cta:active, .tile:active, .answer-chip:active, .list a:active, .top nav a:active,
   details > summary:active, label.btn:active { transform: none; }
+  /* The stage running is shown still, half filled, not swept. */
+  .track span.now::after { animation: none; transform: none; width: 50%; }
 }
 
 /* ---- app-polish motion (docs/APP_DESIGN.md 8.6). Transform and opacity only. */

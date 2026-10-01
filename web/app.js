@@ -848,18 +848,24 @@ function front(id) {
 }
 
 async function sendPhotos() {
-  show(working("Reading the ingredient list…", true));
+  // app-polish: one photo has two stages the app really knows: going up, then being
+  // read. With more photos the wait keeps one stage ("the photo" would be untrue).
+  const one = !pending.front && !pending.parts.length;
+  const wait = working("Reading the ingredient list…", true,
+                       one ? ["Sending the photo…", "Reading the ingredient list…"] : null);
+  show(wait);
   try {
-    const { body } = await scanRequest(pending);
+    const { body } = await scanRequest(pending, one ? { onUploaded: () => wait.next() } : {});
     finish(body);
   } catch (e) {
     show(apiErrorView(e, sendPhotos));
   }
 }
 
-// D-068: honest about speed. The API has no progress events yet, so we show
-// time passing and what a first read usually takes, not invented steps.
-function working(text, reading) {
+// D-068: honest about speed. The API has no progress events, so we show time passing,
+// what a first read usually takes and, for one photo, the two stages the app knows
+// (app-polish): the photo going up, then the reading. No percentage, no invented steps.
+function working(text, reading, stages = null) {
   const secs = el("span", {}, "0");
   const slow = el("p", { class: "muted" });
   const t0 = Date.now();
@@ -872,13 +878,23 @@ function working(text, reading) {
       slow.textContent = "Taking longer than usual: the reader is busy right now. It is still working.";
     }
   }, 1000);
-  return el("section", { class: "stack center", "aria-busy": "true" },
-    el("div", { class: "pulse", "aria-hidden": "true" }),
-    el("h1", {}, text),
+  const title = el("h1", {}, stages ? stages[0] : text);
+  const parts = (stages || [text]).map((_s, i) => el("span", { class: i === 0 ? "now" : "" }));
+  const view = el("section", { class: "stack center wait", "aria-busy": "true" },
+    spot("pack"),
+    el("div", { class: "track", "aria-hidden": "true" }, parts),
+    title,
     reading && el("p", { class: "muted" },
       "The first read of a pack takes about 8 to 15 seconds. Once a pack is in our catalogue, its barcode gives the result at once."),
     el("p", { class: "muted", role: "timer" }, secs, " s"),
     slow);
+  // The photo is up: the first stage is done and the reading is the one running.
+  view.next = () => {
+    if (!stages || !view.isConnected || title.textContent === stages[1]) return;
+    parts[0].className = "done"; parts[1].className = "now";
+    title.textContent = stages[1];
+  };
+  return view;
 }
 
 function finish(body, { lookedUp = false } = {}) {

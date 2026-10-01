@@ -173,7 +173,8 @@ async function call(path, opts = {}) {
   const entry = { method: opts.method || "GET", path: path.split("?")[0], request_id: rid };
   let res;
   try {
-    res = await fetch(path, { ...opts, headers: { ...(opts.headers || {}), "X-Request-ID": rid } });
+    const init = { ...opts, headers: { ...(opts.headers || {}), "X-Request-ID": rid } };
+    res = opts.onUploaded ? await sendWithUpload(path, init, opts.onUploaded) : await fetch(path, init);
   } catch (e) {
     record("api", { ...entry, status: 0, ms: Math.round(performance.now() - t0), error: String(e?.name || "network") });
     throw new ApiError(0, { error: "offline", detail: "No connection.", request_id: rid });
@@ -192,9 +193,31 @@ async function call(path, opts = {}) {
   return { status: res.status, body };
 }
 
+// app-polish: the one stage of a scan the app can really know is the photo finishing
+// its upload. fetch() can't say when that happens; XMLHttpRequest's upload event can.
+// Same request, same headers, same error as fetch for a lost connection.
+function sendWithUpload(path, init, onUploaded) {
+  return new Promise((resolve, reject) => {
+    const x = new XMLHttpRequest();
+    x.open(init.method || "GET", path);
+    for (const [k, v] of Object.entries(init.headers || {})) x.setRequestHeader(k, v);
+    x.upload.addEventListener("load", () => { try { onUploaded(); } catch { /* the view may be gone */ } });
+    x.onload = () => {
+      const headers = new Headers();
+      for (const line of x.getAllResponseHeaders().trim().split(/[\r\n]+/)) {
+        const i = line.indexOf(":");
+        if (i > 0) headers.append(line.slice(0, i).trim(), line.slice(i + 1).trim());
+      }
+      resolve(new Response(x.responseText, { status: x.status, headers }));
+    };
+    x.onerror = x.onabort = x.ontimeout = () => reject(new TypeError("network"));
+    x.send(init.body);
+  });
+}
+
 export async function scanRequest({ barcode, barcodeSource, back, front, pairing, backSource, frontSource,
                                      acceptUnconfirmed, parts = [], partSources = [], screenPack = null,
-                                     barcodeAnswer = null }) {
+                                     barcodeAnswer = null }, { onUploaded = null } = {}) {
   const fd = new FormData();
   fd.append("device_id", deviceId());
   fd.append("profiles", JSON.stringify(profilesForServer()));
@@ -216,7 +239,7 @@ export async function scanRequest({ barcode, barcodeSource, back, front, pairing
   if (acceptUnconfirmed) fd.append("accept_unconfirmed", "true");
   // D-130: scanned from the shop list; the server says what differs from the screenshot.
   if (screenPack) fd.append("screen_pack", JSON.stringify(screenPack));
-  return call("/scan", { method: "POST", body: fd });
+  return call("/scan", { method: "POST", body: fd, ...(onUploaded ? { onUploaded } : {}) });
 }
 
 export async function allergenList() {
