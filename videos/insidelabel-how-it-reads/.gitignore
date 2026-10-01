@@ -1,0 +1,7 @@
+# Renders and review images are rebuilt by ./make.sh; publish the MP4s, don't commit them.
+renders/
+snapshots/
+check/
+node_modules/
+.measure.html
+.hyperframes/
