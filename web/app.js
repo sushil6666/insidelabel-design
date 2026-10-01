@@ -80,6 +80,7 @@ function routeAfterJoin(name, arg, rest = []) {
 function show(node) {
   if (!node) return;
   main.replaceChildren(node);
+  document.body.classList.add("ready");      // the footer shows once a screen is in place (CLS)
   window.scrollTo(0, 0);
   const h = main.querySelector("h1, h2");
   if (h) { h.setAttribute("tabindex", "-1"); h.focus({ preventScroll: true }); }
