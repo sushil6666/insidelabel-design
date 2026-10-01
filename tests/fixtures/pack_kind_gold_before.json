@@ -63,11 +63,10 @@
     "EMULSIFIERS (471 & 475)",
     "IODISED SALT",
     "PRESERVATIVES (282 & 202)",
-    "NATURE IDENTICAL & ARTIFICIAL (CHOCOLATE & VANILLA) FLAVOURING SUBSTANCES",
-    "RAISING AGENTS [450(i) & 338]"
+    "NATURE IDENTICAL & ARTIFICIAL (CHOCOLATE & VANILLA) FLAVOURING SUBSTANCES AND RAISING AGENTS [450(i) & 338]"
    ],
    "ingredients_status": "read",
-   "raw_text_sent_to_engine": "REFINED WHEAT FLOUR (MAIDA), WATER, SUGAR, REFINED PALM OIL & INTERESTERIFIED VEGETABLE FAT, MARGARINE, LIQUID GLUCOSE, BAKERY IMPROVER MIX {EMULSIFIERS [481(i) & 471], ANTICAKING AGENT [170(i)], FLOUR TREATMENT AGENTS [1100(i) & 1101(i)] & ANTIOXIDANT (300)}, MILK SOLIDS, COCOA SOLIDS (1%), YEAST, VITAL GLUTEN, HUMECTANT [420(ii)], EMULSIFIERS (471 & 475), IODISED SALT, PRESERVATIVES (282 & 202), NATURE IDENTICAL & ARTIFICIAL (CHOCOLATE & VANILLA) FLAVOURING SUBSTANCES, RAISING AGENTS [450(i) & 338]"
+   "raw_text_sent_to_engine": "REFINED WHEAT FLOUR (MAIDA), WATER, SUGAR, REFINED PALM OIL & INTERESTERIFIED VEGETABLE FAT, MARGARINE, LIQUID GLUCOSE, BAKERY IMPROVER MIX {EMULSIFIERS [481(i) & 471], ANTICAKING AGENT [170(i)], FLOUR TREATMENT AGENTS [1100(i) & 1101(i)] & ANTIOXIDANT (300)}, MILK SOLIDS, COCOA SOLIDS (1%), YEAST, VITAL GLUTEN, HUMECTANT [420(ii)], EMULSIFIERS (471 & 475), IODISED SALT, PRESERVATIVES (282 & 202), NATURE IDENTICAL & ARTIFICIAL (CHOCOLATE & VANILLA) FLAVOURING SUBSTANCES AND RAISING AGENTS [450(i) & 338]"
   },
   "nutrition": {
    "dropped": [],
@@ -190,7 +189,7 @@
       },
       "concern": "low",
       "ins": "450",
-      "label_line": "RAISING AGENTS [450(i) & 338]",
+      "label_line": "NATURE IDENTICAL & ARTIFICIAL (CHOCOLATE & VANILLA) FLAVOURING SUBSTANCES AND RAISING AGENTS [450(i) & 338]",
       "label_text": "ins 450(i)",
       "name": "Diphosphates",
       "source": {
@@ -207,7 +206,7 @@
       },
       "concern": "low",
       "ins": "338",
-      "label_line": "RAISING AGENTS [450(i) & 338]",
+      "label_line": "NATURE IDENTICAL & ARTIFICIAL (CHOCOLATE & VANILLA) FLAVOURING SUBSTANCES AND RAISING AGENTS [450(i) & 338]",
       "label_text": "ins 338",
       "name": "Phosphoric acid",
       "source": {
@@ -300,7 +299,7 @@
    "claims": [],
    "details": {
     "note-maida": {
-     "chip": "1st of 19",
+     "chip": "1st of 18",
      "kind": "ingredient",
      "note": null,
      "on_the_label": "REFINED WHEAT FLOUR (MAIDA)",
@@ -324,11 +323,11 @@
       "ICMR-NIN says foods with sugar or refined carbohydrates have a high glycaemic index, so their glucose is absorbed quickly, and its guide to labels asks you to choose foods low in refined carbohydrates.",
       "It groups maida with polished rice and polished millets (its Group B foods)."
      ],
-     "where": "Listed 1st of 19.",
+     "where": "Listed 1st of 18.",
      "who_it_concerns": null
     },
     "note-palm_oil": {
-     "chip": "4th of 19",
+     "chip": "4th of 18",
      "kind": "ingredient",
      "note": null,
      "on_the_label": "REFINED PALM OIL & INTERESTERIFIED VEGETABLE FAT",
@@ -359,7 +358,7 @@
       "WHO advises that no more than 10% of daily energy come from saturated fat, for everyone aged 2 and over, and lists palm oil among its sources.",
       "Palmolein is the liquid fraction of palm oil, as FSSAI's standard defines it."
      ],
-     "where": "Listed 4th of 19.",
+     "where": "Listed 4th of 18.",
      "who_it_concerns": null
     }
    },
@@ -367,7 +366,7 @@
     "caption": "By number of ingredients, not weight: packs rarely print amounts. The strip is the list in printed order, so what sits on the left there is most of.",
     "caption_short": "By number of ingredients, not weight: packs rarely print amounts.",
     "counts": {
-     "additive": 3,
+     "additive": 2,
      "industrial": 6,
      "other": 8,
      "sugar": 2
@@ -460,13 +459,8 @@
      },
      {
       "n": 18,
-      "text": "NATURE IDENTICAL & ARTIFICIAL (CHOCOLATE & VANILLA) FLAVOURING SUBSTANCES",
+      "text": "NATURE IDENTICAL & ARTIFICIAL (CHOCOLATE & VANILLA) FLAVOURING SUBSTANCES AND RAISING AGENTS [450(i) & 338]",
       "type": "industrial"
-     },
-     {
-      "n": 19,
-      "text": "RAISING AGENTS [450(i) & 338]",
-      "type": "additive"
      }
     ],
     "labels": {
@@ -476,7 +470,7 @@
      "sugar": "Sugar",
      "worth": "Worth knowing"
     },
-    "total": 19
+    "total": 18
    },
    "glossary": [
     {
@@ -558,7 +552,7 @@
       "tile": false,
       "title": "Margarine or fat spread",
       "tone": "calm",
-      "where": "Listed 5th of 19."
+      "where": "Listed 5th of 18."
      },
      {
       "body": [
@@ -590,7 +584,7 @@
       "tile": false,
       "title": "Salt",
       "tone": "calm",
-      "where": "Listed 16th of 19."
+      "where": "Listed 16th of 18."
      }
     ],
     "tiles": [
@@ -604,7 +598,7 @@
       "heading": "Worth a look: Maida (refined wheat flour)",
       "id": "maida",
       "label_line": "REFINED WHEAT FLOUR (MAIDA)",
-      "more": "Listed 1st of 19. Tap to see what the sources say",
+      "more": "Listed 1st of 18. Tap to see what the sources say",
       "position": 1,
       "source": {
        "kind": "ingredient_note",
@@ -627,7 +621,7 @@
       "tile": true,
       "title": "Maida (refined wheat flour)",
       "tone": "worth",
-      "where": "Listed 1st of 19."
+      "where": "Listed 1st of 18."
      },
      {
       "body": [
@@ -639,7 +633,7 @@
       "heading": "Worth a look: Palm oil",
       "id": "palm_oil",
       "label_line": "REFINED PALM OIL & INTERESTERIFIED VEGETABLE FAT",
-      "more": "Listed 4th of 19. Tap to see what the sources say",
+      "more": "Listed 4th of 18. Tap to see what the sources say",
       "position": 4,
       "source": {
        "kind": "ingredient_note",
@@ -668,7 +662,7 @@
       "tile": true,
       "title": "Palm oil",
       "tone": "worth",
-      "where": "Listed 4th of 19."
+      "where": "Listed 4th of 18."
      }
     ],
     "title": "More about the ingredients"
@@ -691,8 +685,7 @@
     "EMULSIFIERS (471 & 475)",
     "IODISED SALT",
     "PRESERVATIVES (282 & 202)",
-    "NATURE IDENTICAL & ARTIFICIAL (CHOCOLATE & VANILLA) FLAVOURING SUBSTANCES",
-    "RAISING AGENTS [450(i) & 338]"
+    "NATURE IDENTICAL & ARTIFICIAL (CHOCOLATE & VANILLA) FLAVOURING SUBSTANCES AND RAISING AGENTS [450(i) & 338]"
    ],
    "more_title": "More about this pack",
    "nutrition": {
@@ -816,7 +809,7 @@
       },
       "concern": "low",
       "ins": "450",
-      "label_line": "RAISING AGENTS [450(i) & 338]",
+      "label_line": "NATURE IDENTICAL & ARTIFICIAL (CHOCOLATE & VANILLA) FLAVOURING SUBSTANCES AND RAISING AGENTS [450(i) & 338]",
       "label_text": "ins 450(i)",
       "name": "Diphosphates",
       "source": {
@@ -833,7 +826,7 @@
       },
       "concern": "low",
       "ins": "338",
-      "label_line": "RAISING AGENTS [450(i) & 338]",
+      "label_line": "NATURE IDENTICAL & ARTIFICIAL (CHOCOLATE & VANILLA) FLAVOURING SUBSTANCES AND RAISING AGENTS [450(i) & 338]",
       "label_text": "ins 338",
       "name": "Phosphoric acid",
       "source": {
@@ -912,8 +905,8 @@
       "why": "Vitamin C used as antioxidant. No concern."
      }
     ],
-    "count": 20,
-    "text": "20 other ingredients look ordinary."
+    "count": 19,
+    "text": "19 other ingredients look ordinary."
    },
    "people": [
     {
@@ -952,11 +945,11 @@
     }
    ],
    "retake": null,
-   "scope": "39 ingredients checked against 69 additives and 17 processing markers in our tables.",
+   "scope": "38 ingredients checked against 69 additives and 17 processing markers in our tables.",
    "state": "result",
    "summary": [
     {
-     "chip": "3rd of 19",
+     "chip": "3rd of 18",
      "key": "sugar",
      "label": "Sugar",
      "more": {
@@ -1041,7 +1034,7 @@
    ],
    "tiles": [
     {
-     "chip": "1st of 19",
+     "chip": "1st of 18",
      "id": "note-maida",
      "kind": "ingredient",
      "source": {
@@ -1052,7 +1045,7 @@
      "tone": "worth"
     },
     {
-     "chip": "4th of 19",
+     "chip": "4th of 18",
      "id": "note-palm_oil",
      "kind": "ingredient",
      "source": {
@@ -1066,7 +1059,7 @@
    "worth_knowing": [
     {
      "concern": "moderate",
-     "label_text": "interesterified vegetable fat, liquid glucose, emulsifiers, anticaking agent, humectant, artificial flavouring substances",
+     "label_text": "interesterified vegetable fat, liquid glucose, emulsifiers, anticaking agent, humectant, artificial flavouring substances and raising agents",
      "name": "Industrial ingredients",
      "source": {
       "kind": "nova",
@@ -1287,8 +1280,8 @@
       "nova_group4_marker",
       "cosmetic_additive"
      ],
-     "ingredient": "artificial flavouring substances",
-     "label_term": "artificial flavouring substances",
+     "ingredient": "artificial flavouring substances and raising agents",
+     "label_term": "artificial flavouring substances and raising agents",
      "matched_as": "NOVA marker: Added flavour (natural/artificial/nature-identical)",
      "nova_group4": true,
      "sources": [
@@ -1395,7 +1388,7 @@
     "liquid glucose",
     "sugar"
    ],
-   "ingredient_count_parsed": 39,
+   "ingredient_count_parsed": 38,
    "needs_verification": [],
    "nova_ultra_processed": true,
    "score": 36

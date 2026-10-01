@@ -2076,7 +2076,7 @@ count, `compare._marker_in`, the same), and D-132's hydrogenated-fat tile exclud
 "non-hydrogenated" (its approved wording is unchanged). An alias that itself starts with "non-"
 ("non-nutritive sweetener") still matches. No gold label contains "non-".
 
-### D-137 · Gold ingredient arrays split where the prompt says to split `RECOMMENDED` (2026-09-30)
+### D-137 · Gold ingredient arrays split where the prompt says to split `LOCKED` (2026-09-30)
 The ingredient match gate reads 94.5% (needs 95%). Diagnosed on the 6 gold labels against the saved
 predictions (read 2026-09-25) and the photos: **no ingredient word is misread.** Four labels match
 exactly; every difference on the other two is where the list was cut into entries:
@@ -2107,6 +2107,19 @@ model's two real mistakes stay counted or noted. Why not change the measure inst
 blueprint number, and passing it by redefining it is the wrong habit. Why it matters little either way: 6 labels is far too few for 94.5 against 95 to
 mean anything; the gold set size gate (20) is the real work. Nothing applied until Sushil decides; the
 gold files are not edited.
+- **Accepted by Sushil 2026-10-01:** "D-137 accepted now with above suggestions". **Point 1 applied** (branch
+  `beta-limit`): Britannia's last two gold entries are one, "NATURE IDENTICAL & ARTIFICIAL (CHOCOLATE & VANILLA)
+  FLAVOURING SUBSTANCES AND RAISING AGENTS [450(i) & 338]", as printed; Patanjali's flavours entry is two,
+  "Natural" and "Nature identical & Artificial Flavours (Milk & Vanilla)". No word changed. Each file's
+  `ingredient_count` follows its list (Britannia 17 to 16, Patanjali 11 to 12), since prompt rule 4 defines it as
+  the number of entries. The gate is unchanged: whole-entry F1 at 95%. The re-score (expected 98.0%: Britannia
+  0.882, the other five 1.0) runs on Sushil's laptop, where `predictions/` is, before the merge. **Point 2** (a
+  `{ }` and `[ ]` example in rule 4, "do not add brackets that are not printed") waits for the one gold run
+  Sushil approved (D-147), since it moves PROMPT_VERSION.
+  On the gold input, Britannia now reads as 18 entries, not 19, as a scan already does when the model follows rule 4:
+  score 36 D, band, headline and allergen lines unchanged; the strip, the "of 19" chips and the NOVA flavour
+  marker's label ("artificial flavouring substances and raising agents") follow the joined entry. Its capture in
+  `tests/fixtures/pack_kind_gold_before.json` is refreshed to match; the other five labels are untouched.
 
 ### D-138 · The conflict-of-interest policy, in the words already decided `RECOMMENDED` (2026-09-30)
 D-076 asks for the policy at beta launch; `web/site/about.html` still has a bracket where it goes.
