@@ -75,7 +75,13 @@ def test_the_six_gold_labels_come_out_exactly_as_before(name):
     j = table_scan(g["ingredients"], t, printed(t), g["product"].get("net_quantity"), profiles=FAM)
     assert j["pack_kind"] == {"code": "food", "evidence": [], "review": []}
     for key, before in BEFORE[name].items():
-        assert j[key] == before, f"{name}: {key} changed"
+        got = j[key]
+        if key == "screen":
+            # D-140 part 5: FAM's toddler profile is asked once whether the child is under 2.
+            # That question is the only addition; everything captured before is unchanged.
+            assert got["band_question"]["refs"] == ["p1"]
+            got = {k: v for k, v in got.items() if k != "band_question"}
+        assert got == before, f"{name}: {key} changed"
 
 
 def test_an_answer_from_before_rule_11_parses_and_is_food():

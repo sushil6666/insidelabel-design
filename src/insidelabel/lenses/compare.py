@@ -38,7 +38,9 @@ from insidelabel.lenses import allergens as allergen_check
 
 DATA_DIR = os.environ.get("INSIDELABEL_DATA", os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "data")))
 
-AGE_BANDS = ("toddler", "kid", "young")  # same bands as prototype.jsx
+AGE_BANDS = ("baby", "toddler", "kid", "young")  # D-140: `baby` is under 2, `toddler` 2 to 3
+# The two youngest bands share the stricter tiers the toddler lens always had.
+YOUNGEST = ("baby", "toddler")
 
 
 def _load(name):
@@ -177,7 +179,7 @@ def extract_facts(p: Product, age: str):
         elif a["concern"] == "high":
             facts.append(Fact(f"high:{ins}", "strong",
                 f"Has {name}, an additive with higher concern (restricted in some countries). Tap to see why.", tech))
-        elif "not_for_infants" in tags and age == "toddler":
+        elif "not_for_infants" in tags and age in YOUNGEST:
             facts.append(Fact(f"toddler:{ins}", "strong",
                 f"Has {name}, which is not advised for very young children.", tech))
         elif a["concern"] == "moderate" or ("child_sensitivity" in tags):
@@ -190,7 +192,7 @@ def extract_facts(p: Product, age: str):
     positions, names = [i for i, _ in found], [n for _, n in found]
     if positions:
         first = positions[0]
-        tier = "strong" if (first <= 2 or (age == "toddler" and first <= 3)) else "moderate"
+        tier = "strong" if (first <= 2 or (age in YOUNGEST and first <= 3)) else "moderate"
         text = f"Sugar is the {ORDINAL.get(first, f'{first}th')} ingredient (ingredients are listed from most to least)."
         if len(set(names)) > 1:
             text += f" It appears under {len(set(names))} names: {', '.join(dict.fromkeys(names))}."
@@ -208,7 +210,7 @@ def extract_facts(p: Product, age: str):
 
     # Caffeine.
     if any(_word_in(w, t.lower()) for t in p.ingredients for w in ("caffeine", "coffee")):
-        facts.append(Fact("caffeine", "strong" if age == "toddler" else "moderate",
+        facts.append(Fact("caffeine", "strong" if age in YOUNGEST else "moderate",
             "Contains caffeine.", "Ingredient keyword match: caffeine/coffee."))
 
     # Main ingredient. Only explicit whole wheat gets credit; bare "wheat flour
@@ -330,7 +332,7 @@ def compare(products, age="kid", avoid=(), who=None, strict_may_contain=True):
 
 # -------------------------------------------------------------- display
 
-AGE_LABEL = {"toddler": "your toddler", "kid": "your child", "young": "your teen"}
+AGE_LABEL = {"baby": "your baby", "toddler": "your toddler", "kid": "your child", "young": "your teen"}
 
 
 def render(result):
