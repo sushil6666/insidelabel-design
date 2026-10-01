@@ -14,6 +14,7 @@ Inside Label - API (v0.1)
     POST /send-to-us   two refused scans -> the review queue (D-070)
     GET  /access       invite-only? joined?   POST /join   a tester's code (D-102)
     POST /feedback     a tester's comment + optional rating (D-102)
+    GET  /.well-known/assetlinks.json   the Play app's link to this site (D-148)
 
 THE GUARD THAT MATTERS
 ----------------------
@@ -284,7 +285,8 @@ if os.path.isdir(WEB_DIR):
     # HTML in web/site/, linted with the app's wording rules (tests/test_web.py).
     SITE_DIR = os.path.join(WEB_DIR, "site")
     _SITE_PAGES = {"/": "index.html", "/privacy": "privacy.html", "/about": "about.html",
-                   "/how": "how.html", "/site.css": "site.css"}      # D-127: what result words mean
+                   "/how": "how.html", "/site.css": "site.css",      # D-127: what result words mean
+                   "/privacy.html": "privacy.html"}                  # the Play listing's privacy URL
 
     def _site_page(path):
         name = _SITE_PAGES[path]
@@ -296,6 +298,43 @@ if os.path.isdir(WEB_DIR):
     for _path in _SITE_PAGES:
         app.add_api_route(_path, (lambda p: (lambda: _site_page(p)))(_path), methods=["GET"],
                           include_in_schema=False)
+
+
+# D-148: the Play app is a Trusted Web Activity of /app/ (D-010). Chrome shows it
+# without an address bar only when this file names the app's package and the
+# SHA-256 of the certificate that signed the installed build: Google's app signing
+# key for an install from Play (D-012), the upload key for one installed by hand.
+# The fingerprints are data (data/assetlinks.json), read on each request so a
+# deploy that changes them needs no restart. A missing or malformed file is a 404,
+# never a 500 and never a partial statement: Android then just keeps the bar.
+ASSETLINKS_FILE = os.path.join(trace.DATA_DIR, "assetlinks.json")
+_SHA256_FINGERPRINT = re.compile(r"^[0-9A-F]{2}(:[0-9A-F]{2}){31}$")
+
+
+def assetlinks_statements(path):
+    """The Digital Asset Links statement list for `path`, or None if it isn't usable."""
+    try:
+        with open(path, encoding="utf-8") as fh:
+            data = json.load(fh)
+        package = data["package_name"]
+        prints = [row["sha256"] for row in data["fingerprints"]]
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+    if not isinstance(package, str) or not package or not prints:
+        return None
+    if not all(isinstance(p, str) and _SHA256_FINGERPRINT.match(p) for p in prints):
+        return None
+    return [{"relation": ["delegate_permission/common.handle_all_urls"],
+             "target": {"namespace": "android_app", "package_name": package,
+                        "sha256_cert_fingerprints": prints}}]
+
+
+@app.get("/.well-known/assetlinks.json", include_in_schema=False)
+def assetlinks():
+    statements = assetlinks_statements(ASSETLINKS_FILE)
+    if statements is None:
+        return JSONResponse(status_code=404, content={"error": "not_found"})
+    return JSONResponse(statements)
 
 
 # ---------------------------------------------------------------------------
