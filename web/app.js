@@ -313,7 +313,6 @@ async function home() {
     el("button", { type: "button", class: "scan-cta", onclick: () => { resetPending(); go("scan"); } },
       el("span", { class: "scan-cta-icon", "aria-hidden": "true" }, icon("barcode")),
       el("span", {}, "Scan a pack")),
-    filmCard(),
     shopListCard(),
     done < 3 && el("div", { class: "card note" },
       el("h2", {}, "Start at home"),
@@ -330,55 +329,6 @@ async function home() {
         h.screen?.summary?.length
           ? el("span", { class: "chips" }, h.screen.summary.map(r => el("span", { class: `chip tone-${r.tone}` }, r.chip)))
           : el("span", { class: "muted" }, peopleSummary(h.screen) || h.screen?.headline?.text || ""))))));
-}
-
-// "How it works" (Sushil, 2026-10-01): the 41 s film, 9:16, below the Scan button,
-// which stays first. It never plays on its own: a tap opens it full screen with a
-// close button (Back closes it too). The video loads only then (preload none) and
-// is kept out of the service worker's cache (sw.js); the poster may be cached.
-// With reduced motion the tap shows the poster and the player's play button.
-const FILM = { src: "film/insidelabel-9x16.mp4", poster: "film/insidelabel-9x16.webp" };
-
-function filmCard() {
-  return el("button", { type: "button", class: "film-card", onclick: e => playFilm(e.currentTarget) },
-    el("span", { class: "film-thumb" },
-      el("img", { src: FILM.poster, alt: "", width: "54", height: "96", decoding: "async" }),
-      el("span", { class: "film-play" }, icon("play"))),
-    el("span", { class: "film-text" },
-      el("strong", {}, "How it works"),
-      el("span", { class: "muted" }, "A 41 second film. The words are on screen, so it works with the sound off.")));
-}
-
-function playFilm(from) {
-  const still = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
-  const video = el("video", { src: FILM.src, poster: FILM.poster, controls: true, playsinline: true,
-                              preload: "none", "aria-label": "How InsideLabel checks a label" });
-  let done = false;
-  const onKey = e => { if (e.key === "Escape") close(); };
-  const finish = () => {
-    if (done) return;
-    done = true;
-    removeEventListener("popstate", finish);
-    document.removeEventListener("keydown", onKey);
-    video.pause();
-    video.removeAttribute("src");
-    video.load();                                     // stops the download too
-    layer.remove();
-    from?.focus();
-  };
-  const close = () => { finish(); window.history.back(); };   // drops the entry pushed below
-  const shut = el("button", { type: "button", class: "film-close", "aria-label": "Close the film", onclick: close },
-    icon("cross"));
-  const layer = el("div", { class: "film-layer", role: "dialog", "aria-modal": "true", "aria-label": "How it works" },
-    video, shut);
-  window.history.pushState({ film: true }, "");       // Android's Back closes the film, not the screen
-  // (window.history: this file's history() is the scan list)
-  addEventListener("popstate", finish);
-  document.addEventListener("keydown", onKey);
-  document.body.append(layer);
-  shut.focus();
-  record("film", { reduced: still || undefined });
-  if (!still) video.play().catch(() => {});
 }
 
 // D-130: packs planned from a screen, to scan from the pack in the shop. Kept

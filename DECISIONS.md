@@ -2700,7 +2700,7 @@ the install's daily rule gets the screen (`lenses/screen.py` `photo_limit()`, in
 refusal keeps D-095's words. The 429 is logged with its request id and not stored (D-095). The app shows the screen
 in place of "That didn't work", with "Scan a barcode" back to the scanner. `tests/test_photo_limit.py`.
 
-### D-150 · The explainer film on the website home and the app home `RECOMMENDED` (2026-10-01)
+### D-150 · The explainer film on the website home and the app home `SUPERSEDED by D-151` (2026-10-01)
 **Sushil, 2026-10-01: "website home page and android apps home page".** The 41 s film
 (`videos/insidelabel-how-it-reads/`, D-004's "AI reads, rules decide" shown on a phone) is served as static files
 from `web/film/`: H.264 and AAC, 1920 x 1080 for the website (2.9 MB) and 1080 x 1920 for the app (3.1 MB), each
@@ -2716,6 +2716,30 @@ Sushil's "accepted":
   (fetched in byte ranges, which phones need); the poster may be cached after it is shown.
 - **The film's line "The first read of a pack takes about 8 to 15 seconds"** is the app's own waiting text
   (`web/app.js`); if the scan-speed query (OPERATIONS.md section 5) says otherwise, both change together.
+`tests/test_film.py`.
+
+### D-151 · The explainer film is on the website home only, as the hero; the app has no film `RECOMMENDED` (2026-10-01)
+**Sushil, 2026-10-01: "not liked it, keep only web page website on desktop and mobile version video".** Supersedes
+D-150. The app (`/app/`) has no film: the "How it works" card and its player are gone and home is back to "Scan a
+pack" first with nothing added (web-35). The website home (`/`) shows the film as its hero. The details, Claude's,
+waiting on Sushil's "accepted":
+- **One cut per screen, one download:** phones and portrait screens (`(max-width: 767px), (orientation:
+  portrait)`) get the 9:16 cut, landscape screens the 16:9 cut. One rule, written three times that must agree
+  (`tests/test_film.py`): the still (`<picture>`), the CSS (the box's aspect ratio) and the inline script, which
+  sets the video's src after the page's load event. Rotating afterwards keeps the file already chosen.
+- **The files:** silent hero copies (the words are on screen), H.264 High, fast start: `web/film/hero-16x9.mp4`
+  1280 x 720 (1.29 MB) and `hero-9x16.mp4` 720 x 1280 (1.44 MB), WebP stills (24 KB, 19 KB). D-150's files with
+  sound are deleted. The render and encode steps live in one place, the film's README ("On the homes").
+- **Playing:** muted, looped, while at least half of it is in view; it pauses out of view and resumes when back,
+  unless the visitor paused it. Never by itself with reduced motion, with Save-Data or without
+  IntersectionObserver: the still waits with a play button in the middle.
+- **Pausable (WCAG 2.2.2):** a 48 px play/pause button on the film, a real button, labelled "Pause the film" or
+  "Play the film", reachable by keyboard.
+- **Layout:** the heading, the lead and "Open the app" sit beside the film on landscape screens and above it on
+  phones; the film never covers them. The box is sized before anything loads (CLS 0). Light and dark.
+- **Service worker:** it never caches an `.mp4` (the website isn't in its scope; the rule stays as a guard).
+- **The film's line "The first read of a pack takes about 8 to 15 seconds"** stays tied to the app's waiting text
+  (`web/app.js`) and the scan-speed query (OPERATIONS.md section 5), as in D-150.
 `tests/test_film.py`.
 ---
 
