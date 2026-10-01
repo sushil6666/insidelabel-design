@@ -15,6 +15,7 @@ import {
   updatesRequest, forgetRequest, clearTrail,
 } from "./lib.js";
 import { barcodeSupported, startScanner } from "./camera.js";
+import { icon, spot } from "./icons.js";
 
 const main = document.getElementById("main");
 let stopCamera = null;
@@ -45,9 +46,17 @@ function go(path) {
   else location.hash = hash;
 }
 
+// app-polish: which way the next screen enters. A tile's page comes in from the right
+// (deeper); its result, returned to, doesn't move; everything else rises a little.
+let enterFrom = "up";
+let lastSub = "";
+
 function route() {
   if (stopCamera) { stopCamera(); stopCamera = null; }
   const [name, arg, ...rest] = location.hash.replace(/^#\/?/, "").split("/");
+  const sub = rest.join("/");
+  enterFrom = sub.startsWith("look") ? "right" : lastSub.startsWith("look") && name === "result" ? "back" : "up";
+  lastSub = sub;
   // D-092: screens in the trail. `arg` is a scan id or a profile ref, never a name;
   // `sub` a result's own page (D-134: "look/<tile id>").
   record("route", { to: name || "home", arg: arg || undefined, sub: rest.join("/") || undefined });
@@ -77,13 +86,32 @@ function routeAfterJoin(name, arg, rest = []) {
   updateNav();
 }
 
+// app-polish (docs/APP_DESIGN.md 8.6): the first screen paints at once; later ones enter
+// with a 200 ms rise or slide (transform and opacity only, interactive from the first
+// frame, and the next screen simply replaces it). A result's people block never moves
+// (D-060): it is there at once and the blocks after it follow, 40 ms apart.
+let shownOnce = false;
 function show(node) {
   if (!node) return;
+  if (shownOnce && node instanceof Element) {
+    if (node.classList.contains("result")) { if (enterFrom !== "back") revealAfterPeople(node); }
+    else if (enterFrom !== "back") node.dataset.enter = enterFrom;
+  }
+  shownOnce = true;
   main.replaceChildren(node);
   document.body.classList.add("ready");      // the footer shows once a screen is in place (CLS)
   window.scrollTo(0, 0);
   const h = main.querySelector("h1, h2");
   if (h) { h.setAttribute("tabindex", "-1"); h.focus({ preventScroll: true }); }
+}
+
+function revealAfterPeople(view) {
+  let i = 0;
+  for (const c of view.children) {
+    if (c.matches(".product, .rescan, .people")) continue;
+    c.classList.add("reveal");
+    c.style.setProperty("--i", String(Math.min(i++, 6)));
+  }
 }
 
 function updateNav() {
@@ -283,7 +311,7 @@ async function home() {
   return el("section", { class: "stack" },
     updates,
     el("button", { type: "button", class: "scan-cta", onclick: () => { resetPending(); go("scan"); } },
-      el("span", { class: "scan-cta-icon", "aria-hidden": "true" }, barcodeIcon()),
+      el("span", { class: "scan-cta-icon", "aria-hidden": "true" }, icon("barcode")),
       el("span", {}, "Scan a pack")),
     shopListCard(),
     done < 3 && el("div", { class: "card note" },
@@ -660,8 +688,7 @@ function photo() {
     parts.replaceChildren();
     if (!pending.back) return;
     pending.parts.forEach((_b, i) => parts.append(
-      el("p", { class: "check ok", role: "status" }, el("span", { "aria-hidden": "true" }, "✓ "),
-         `Part ${i + 2} of the list added.`)));
+      el("p", { class: "check ok", role: "status" }, icon("check"), `Part ${i + 2} of the list added.`)));
     if (pending.parts.length >= 2 || more === null) return;
     const n = pending.parts.length + 2;
     const ask = n === 2 ? "Is the whole ingredient list in this photo?" : "Is that the end of the list?";
@@ -759,7 +786,7 @@ function photoPicker(role, label, preview, onPick, checkAs = role) {
           role === "barcode" ? "We couldn't check this photo just now. Try again in a moment."
                              : "We couldn't check this photo just now. It will be checked when you continue.")
       : el("p", { class: "check " + (res.ok ? "ok" : "bad"), role: "status" },
-          el("span", { "aria-hidden": "true" }, res.ok ? "✓ " : "✗ "), res.message);
+          icon(res.ok ? "check" : "cross"), res.message);
     preview.replaceChildren(img, line);
     onPick(blob, res, source);
   };
@@ -1099,15 +1126,15 @@ function kindView(s) {
 // D-134: a tile. Its words (title, chip) are the server's; the icon is decoration.
 function tileLink(h, t) {
   return el("a", { class: `tile tile-${t.tone}`, href: `#/result/${encodeURIComponent(h.id)}/look/${encodeURIComponent(t.id)}` },
-    el("span", { class: "add-icon tile-icon", "aria-hidden": "true" }, t.kind === "not_permitted" ? "✕" : "!"),
+    el("span", { class: "add-icon tile-icon", "aria-hidden": "true" }, icon(t.kind === "not_permitted" ? "cross" : "alert")),
     el("span", { class: "tile-text" }, el("strong", {}, t.title), el("span", { class: "tile-chip" }, t.chip)),
-    el("span", { class: "tile-arrow", "aria-hidden": "true" }, "›"));
+    el("span", { class: "tile-arrow", "aria-hidden": "true" }, icon("chevron-right")));
 }
 
 // D-134: a tile's own page, laid out from the server's `details[tile id]`.
 function lookView(h, tileId) {
   const d = h.screen.details?.[tileId];
-  const back = el("a", { class: "back", href: `#/result/${encodeURIComponent(h.id)}` }, "‹ Back to the result");
+  const back = el("a", { class: "back", href: `#/result/${encodeURIComponent(h.id)}` }, icon("back"), "Back to the result");
   if (!d) return el("section", { class: "stack look-page" }, back, el("p", {}, "We couldn't find that on this result."));
   const part = (title, ...kids) => el("div", { class: "look-part" }, el("h2", {}, title), ...kids);
   return el("section", { class: "stack look-page" },
@@ -1151,15 +1178,15 @@ function answersView(summary) {
 function legacyLooks(s) {
   const look = (heading, more, body) => el("details", { class: "look" },
     el("summary", {},
-      el("span", { class: "add-icon look-icon", "aria-hidden": "true" }, "!"),
+      el("span", { class: "add-icon look-icon", "aria-hidden": "true" }, icon("alert")),
       el("span", {}, el("strong", {}, heading), el("span", { class: "look-more" }, more)),
-      el("span", { class: "look-arrow", "aria-hidden": "true" }, el("span", {}, "›"))),
+      el("span", { class: "look-arrow", "aria-hidden": "true" }, el("span", {}, icon("chevron-right")))),
     el("div", { class: "look-body" }, body));
   const noteBody = n => [n.body.map(t => el("p", {}, t)),
     el("p", { class: "muted small" }, "On the label: ", el("q", {}, n.label_line)), sourceList(n.sources)];
   return [
     s.additive_alert && el("div", { class: "add-alert", role: "note" },
-      el("span", { class: "add-icon", "aria-hidden": "true" }, "!"),
+      el("span", { class: "add-icon", "aria-hidden": "true" }, icon("alert")),
       el("div", {}, el("strong", {}, s.additive_alert.text), el("p", {}, s.additive_alert.detail))),
     ...(s.alerts || []).map(a => look(a.title, a.more, [a.body.map(t => el("p", {}, t)),
       el("p", { class: "muted small" }, "On the label: ", el("q", {}, a.label_line)),
@@ -1334,14 +1361,15 @@ function bandQuestion(q) {
 
 // D-111: one additive, laid out from the server's item. The badge words and the
 // kind come from lenses/screen.py; the icon is decoration (aria-hidden).
-const BADGE_ICON = { not_permitted: "✕", worth_knowing: "!", permitted: "•" };
+const BADGE_ICON = { not_permitted: "cross", worth_knowing: "alert", permitted: "dot" };
 function additiveCard(a) {
   const kind = a.badge?.kind || "none";
   return el("article", { class: `add add-${kind}` },
     el("div", { class: "add-top" },
       el("p", { class: "add-name" }, a.ins && el("small", {}, "INS " + a.ins), a.name),
       a.badge && el("span", { class: "badge" },
-        el("span", { class: "add-icon", "aria-hidden": "true" }, BADGE_ICON[kind] || ""), a.badge.text)),
+        el("span", { class: "add-icon", "aria-hidden": "true" }, BADGE_ICON[kind] ? icon(BADGE_ICON[kind]) : ""),
+        a.badge.text)),
     el("p", { class: "muted small" }, "On the label: ", el("q", {}, a.label_line || a.label_text)),
     el("p", { class: "small" }, a.why),
     a.badge?.note && el("p", { class: "small add-note" }, a.badge.note));
@@ -1447,7 +1475,7 @@ function compare() {
     packs.length
       ? el("ul", { class: "list" }, packs.map(h => el("li", { class: "row between" },
           el("span", {}, productName(h.product)), button("Remove", () => refresh(h.id), "link"))))
-      : el("p", {}, "Nothing added yet."),
+      : el("div", { class: "card empty" }, spot("compare"), el("p", {}, "Nothing added yet.")),
     others.length > 0 && packs.length < 4 && el("details", {},
       el("summary", {}, "Add from recent scans"),
       el("ul", { class: "list" }, others.map(h => el("li", { class: "row between" },
@@ -1511,6 +1539,7 @@ function apiErrorView(e, retry) {
   if (gate) return gate === "join" ? join() : agree();
   if (e instanceof ApiError && e.status === 429 && e.body?.photo_limit) return photoLimit(e.body.photo_limit);
   return el("section", { class: "stack" },
+    spot(e instanceof ApiError && e.status === 0 ? "wifi" : "alert"),
     el("h1", {}, "That didn't work"),
     el("p", {}, apiMessage(e)),
     retry && button("Try again", retry, "primary"),
@@ -1524,6 +1553,7 @@ function apiErrorView(e, retry) {
 function photoLimit(w) {
   record("photo_limit", {});
   return el("section", { class: "stack" },
+    spot("pack", "clock"),
     el("h1", {}, w.title),
     el("p", {}, w.text),
     el("p", {}, w.barcode),
@@ -1533,7 +1563,7 @@ function photoLimit(w) {
 }
 
 function errorView(text) {
-  return el("section", { class: "stack" }, el("h1", {}, "Sorry"), el("p", {}, text),
+  return el("section", { class: "stack" }, spot("pack"), el("h1", {}, "Sorry"), el("p", {}, text),
     button("Home", () => go(""), "primary"), problemLink());
 }
 
@@ -1660,10 +1690,6 @@ function sampleBack() {
     "sample-svg", "Back of a pack with the ingredient list highlighted");
 }
 
-function barcodeIcon() {
-  return svg(`<path d="M20 15v50M30 15v50M36 15v50M48 15v50M56 15v50M62 15v50M74 15v50M84 15v50M90 15v50M100 15v50" class="s-bars"/>`,
-             "icon-svg");
-}
 
 // ------------------------------------------------------------------ start
 window.addEventListener("hashchange", route);

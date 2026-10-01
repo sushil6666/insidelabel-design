@@ -157,8 +157,16 @@ select:focus-visible, textarea:focus-visible { outline: 3px solid var(--ring); o
 }
 .btn:active:not(:disabled), .answer-chip:active, .top nav a:active, label.btn:active { transform: scale(.97); }
 .btn.primary:active:not(:disabled), .scan-cta:active, .tile:active, .list a:active, details > summary:active { transform: scale(.985); }
-.scan-cta-icon .icon-svg { width: 56px; height: 38px; }
-.s-bars { stroke: currentColor; stroke-width: 4; }
+/* The app's icons (web/icons.js): 24 px grid, 2 px round strokes, currentColor. */
+.icon { width: 24px; height: 24px; flex: none; fill: none; stroke: currentColor; stroke-width: 2;
+        stroke-linecap: round; stroke-linejoin: round; }
+.scan-cta-icon .icon { width: 44px; height: 44px; stroke-width: 1.8; }
+/* A small drawing above an empty or waiting screen's words: icons in a soft disc. */
+.spot { display: flex; align-items: center; justify-content: center; gap: 6px; width: 88px; height: 88px;
+        border-radius: 50%; background: var(--surface-2); color: var(--muted); }
+.spot .icon { width: 32px; height: 32px; stroke-width: 1.7; }
+.card.empty { display: grid; justify-items: center; text-align: center; padding: var(--sp-5); }
+.card.empty .spot { width: 72px; height: 72px; }
 
 .card {
   background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px;
@@ -186,7 +194,9 @@ input[type=text], input:not([type]), input[inputmode], select, textarea {
   width: 100%; min-height: var(--tap); padding: 10px 14px; border: 1px solid var(--field-line); border-radius: var(--r-md);
   background: var(--surface); color: var(--ink); font: inherit;
 }
-/* A label belongs to its field: 6 px to the field, 20 px from what came before. */
+/* A label belongs to its field: 6 px to the field, 20 px from what came before. A
+   label is inline by default, so its margins never applied before (finding 10). */
+.stack > label:not(.choice):not(.btn) { display: block; }
 .stack > * + label:not(.choice):not(.btn) { margin-top: var(--sp-5); }
 .stack > label:not(.choice) + input, .stack > label:not(.choice) + textarea, .stack > label:not(.choice) + select,
 .stack > label:not(.choice) + .row { margin-top: 6px; }
@@ -284,7 +294,8 @@ body.ready .foot { visibility: visible; }
 .rating .choice input { width: 18px; height: 18px; flex: none; }
 
 /* D-104: the tick or cross under each photo. */
-.check { margin: 6px 0 0; padding: 8px 12px; border-radius: 12px; font-weight: 600; }
+.check { display: flex; align-items: flex-start; gap: 6px; margin: 6px 0 0; padding: 8px 12px; border-radius: var(--r-md); font-weight: 600; }
+.check .icon { width: 20px; height: 20px; margin-top: 1px; stroke-width: 2.4; }
 .check.ok { background: var(--mint); color: var(--ink); }
 .check.bad { background: var(--stop-bg); color: var(--stop); }
 .check.unknown { background: var(--unsure-bg); color: var(--unsure); font-weight: 400; }
@@ -300,6 +311,7 @@ body.ready .foot { visibility: visible; }
 .add-alert > .add-icon { background: var(--stop); color: var(--surface); width: 26px; height: 26px; margin-top: 1px; }
 .add-icon { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 18px; height: 18px;
             border-radius: 50%; font-weight: 800; font-size: .72rem; line-height: 1; }
+.add-icon .icon { width: 70%; height: 70%; stroke-width: 3; }
 .add { background: var(--surface); border: 1px solid var(--line); border-left-width: 6px; border-radius: var(--radius);
        padding: 12px 14px; display: grid; gap: 6px; }
 .add-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
@@ -393,7 +405,8 @@ body.ready .foot { visibility: visible; }
 .tile strong { display: block; line-height: 1.25; }
 .tile-chip { display: block; font-size: .82rem; color: var(--unsure); font-weight: 600; }
 .tile-icon { background: var(--unsure-line); color: #3a1f06; width: 24px; height: 24px; }
-.tile-arrow { font-size: 1.5rem; font-weight: 800; line-height: 1; color: var(--unsure); }
+.tile-arrow { display: flex; color: var(--unsure); }
+.tile-arrow .icon, .look-arrow .icon { width: 20px; height: 20px; stroke-width: 2.4; }
 .tile-alert { background: var(--stop-bg); border-color: var(--stop); }
 .tile-alert .tile-chip, .tile-alert .tile-arrow { color: var(--stop); }
 .tile-alert .tile-icon { background: var(--stop); color: var(--surface); }
@@ -413,7 +426,8 @@ body.ready .foot { visibility: visible; }
 .more-pack > summary { font-family: var(--display); font-weight: 800; font-size: 1.05rem; }
 .more-pack[open] > .more-body { padding: 4px 0 8px; }
 .look-page .back { display: inline-flex; align-items: center; gap: 2px; min-height: var(--tap); padding-right: 8px;
-                   font-weight: 700; color: var(--brand); text-decoration: none; }
+                   margin-left: -6px; font-weight: 700; color: var(--brand); text-decoration: none; }
+.look-page .back .icon { width: 22px; height: 22px; }
 .look-page .chip { font-size: .85rem; padding: 2px 10px; }
 .look-part > * + * { margin-top: 6px; }
 .look-part h2 { font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-family: var(--font); }
@@ -458,3 +472,28 @@ ul.plain > li > a, .look-part a { display: inline-flex; align-items: center; min
   .btn:active, .scan-cta:active, .tile:active, .answer-chip:active, .list a:active, .top nav a:active,
   details > summary:active, label.btn:active { transform: none; }
 }
+
+/* ---- app-polish motion (docs/APP_DESIGN.md 8.6). Transform and opacity only. */
+@keyframes enter-up { from { opacity: 0; transform: translateY(12px); } }
+@keyframes enter-right { from { opacity: 0; transform: translateX(28px); } }
+@keyframes fade-in { from { opacity: 0; } }
+/* A screen after the first: a short rise; a tile's page slides in from the right. */
+main > [data-enter] { animation: enter-up var(--d-enter) var(--ease-enter) both; }
+main > [data-enter="right"] { animation-name: enter-right; }
+/* A new result: the people block is already there (D-060); the rest follows it. */
+.result > .reveal { animation: enter-up var(--d-reveal) var(--ease-enter) both;
+                    animation-delay: calc(var(--i, 0) * var(--stagger)); }
+/* What a tap opens fades in where it opens. */
+details[open] > :not(summary), .answer-panel:not([hidden]) { animation: fade-in var(--d-fast) var(--ease-enter); }
+
+/* Every summary says it opens: a chevron at its end that turns when open. Drawn
+   as the app's own chevron (a CSS mask of an inline SVG; nothing loaded). */
+details > summary { list-style: none; gap: var(--sp-2); }
+details > summary::-webkit-details-marker { display: none; }
+details:not(.look) > summary::after {
+  content: ""; flex: none; width: 20px; height: 20px; margin-left: auto; background: currentColor; opacity: .7;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5.5 9l6.5 6.5 6.5-6.5'/%3E%3C/svg%3E") center / contain no-repeat;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5.5 9l6.5 6.5 6.5-6.5'/%3E%3C/svg%3E") center / contain no-repeat;
+  transition: transform var(--d-fast) var(--ease-standard);
+}
+details[open]:not(.look) > summary::after { transform: rotate(180deg); }
