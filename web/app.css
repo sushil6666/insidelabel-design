@@ -476,7 +476,7 @@ body.ready .foot { visibility: visible; }
 .result .answer-chip { min-height: 0; padding: 6px 10px; gap: 2px; }
 .result .glance-row { grid-template-columns: 56px minmax(0, 1fr); gap: 12px; }
 .result .glance svg { width: 56px; height: 56px; }
-.result .g-legend { grid-template-columns: repeat(auto-fit, minmax(min(100%, 7.5rem), 1fr)); gap: 2px 14px; font-size: .88rem; }
+.result .g-legend { grid-template-columns: repeat(auto-fit, minmax(min(100%, 6.5rem), 1fr)); gap: 2px 14px; font-size: .88rem; }
 .result .g-strip { height: 22px; }
 .result .glance .muted.small { font-size: .82rem; }
 .result > .row.wrap .btn { min-height: 48px; font-size: 1rem; }
