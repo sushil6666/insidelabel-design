@@ -210,7 +210,19 @@ legend { font-weight: 700; padding: 0 4px; }
 /* Barcode camera */
 .viewfinder-wrap { position: relative; border-radius: var(--radius); overflow: hidden; background: #000; aspect-ratio: 4 / 3; }
 .viewfinder { width: 100%; height: 100%; object-fit: cover; display: block; }
-.frame { position: absolute; inset: 30% 12%; border: 3px solid var(--accent); border-radius: 10px; box-shadow: 0 0 0 2000px rgba(0,0,0,.35); }
+/* The live scanner's guide: four corners where the barcode goes, the rest dimmed, and
+   a slow line while the camera looks (still under reduced motion). White with a dark
+   edge, so the corners show on light packs and dark ones. */
+.frame { position: absolute; inset: 30% 12%; border-radius: var(--r-md); box-shadow: 0 0 0 2000px rgba(0, 0, 0, .38); }
+.frame i { position: absolute; width: 28px; height: 28px; border: 4px solid #fff; filter: drop-shadow(0 0 1px rgba(0, 0, 0, .6)); }
+.frame i:nth-child(1) { top: -4px; left: -4px; border-right: 0; border-bottom: 0; border-top-left-radius: var(--r-md); }
+.frame i:nth-child(2) { top: -4px; right: -4px; border-left: 0; border-bottom: 0; border-top-right-radius: var(--r-md); }
+.frame i:nth-child(3) { bottom: -4px; left: -4px; border-right: 0; border-top: 0; border-bottom-left-radius: var(--r-md); }
+.frame i:nth-child(4) { bottom: -4px; right: -4px; border-left: 0; border-top: 0; border-bottom-right-radius: var(--r-md); }
+.scanline { position: absolute; left: 10%; right: 10%; top: calc(50% - 1px); height: 2px; border-radius: 2px;
+            background: var(--accent); box-shadow: 0 0 10px var(--accent);
+            animation: scanline 1.8s var(--ease-standard) infinite alternate; }
+@keyframes scanline { from { transform: translateY(-36px); } to { transform: translateY(36px); } }
 
 /* Photo step */
 .sample { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; text-align: center; }

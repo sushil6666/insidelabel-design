@@ -574,7 +574,9 @@ async function scan() {
   const next = el("div", {});
   const view = el("section", { class: "stack" },
     el("h1", {}, "Scan the barcode"),
-    el("div", { class: "viewfinder-wrap" }, video, el("div", { class: "frame", "aria-hidden": "true" })),
+    // app-polish: corner guides say where the barcode goes; a slow line says the camera is looking.
+    el("div", { class: "viewfinder-wrap" }, video, el("div", { class: "frame", "aria-hidden": "true" },
+      el("i", {}), el("i", {}), el("i", {}), el("i", {}), el("span", { class: "scanline" }))),
     status,
     // D-107: a pack without a barcode can still be checked from its ingredients
     // photo; it just isn't added to the catalogue. Kept near the top, where it's seen.
