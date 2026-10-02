@@ -900,9 +900,10 @@ function working(text, reading, stages = null) {
     if (!secs.isConnected) return clearInterval(timer);
     const n = Math.round((Date.now() - t0) / 1000);
     secs.textContent = String(n);
-    // D-124: a slow read should not look like a hang.
+    // D-124: a slow read should not look like a hang. D-153: no cause is named, because the
+    // app can't see one (a slow scan is usually Gemini, or the fallback reader, not "busy").
     if (reading && n >= 20 && !slow.textContent) {
-      slow.textContent = "Taking longer than usual: the reader is busy right now. It is still working.";
+      slow.textContent = "Taking longer than usual. It is still working.";
     }
   }, 1000);
   const title = el("h1", {}, stages ? stages[0] : text);

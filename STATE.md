@@ -440,6 +440,7 @@ Keep this list - it is the cheapest way to not repeat a mistake.
 | **Gemini is billed separately**, in Google AI Studio (Gemini API Billing), on prepay: Rs 394.71 left on 2026-10-01 with auto-reload off. Gemini cost about Rs 85 from 25 September to 2 October. | At Rs 0 every photo scan fails: watch the AI Studio balance as well as the Cloud bill (OPERATIONS.md section 7). |
 | **The cloud build session has limits.** No keys and no server. `dl.google.com` is blocked, so the Android SDK and the Gradle plugin can't download and the `.aab` is built on Sushil's laptop. `photos/` and `predictions/` are gitignored, so gold re-scores run on the laptop (the D-137 re-score passed there: ingredient set F1 0.980, gate PASS). The cloud baseline has 1 extra skip (the gold photos test). | Anything that needs a key, the server, the Android SDK or the gold photos is a command for Sushil's laptop or the server, with its cost. |
 | **A command with a placeholder like `<id>` fails in bash** ("syntax error near unexpected token `newline'"): bash reads `<` and `>` as redirections. | The advisor gives commands with real values, ready to paste. |
+| **The cause, corrected (2026-10-02).** A later brief ("scan-speed", 2026-10-01) still said the budget was ruled out ("alerts only, Spend cap status: Not applicable") and guessed at an automatic project-level limit after the laptop's test bursts. Both are superseded by the first row above: the "cloud vision" budget had a Rs 500 spend cap, the cap counts the cost before credits, and it paused Vision on 1 October; Sushil raised it to Rs 1,500. The laptop's test runs (2026-09-27 to 30) are why that cost reached Rs 501.75, not a Google-side limit. | A cause written in a brief is checked against STATE.md before it is copied anywhere; the newest finding wins, and the old one is marked as replaced. |
 
 ---
 
@@ -661,6 +662,8 @@ food categories, PWA built, D-092 reproduction, D-093 Cloud Vision, scan speed,
 setup alarms.
 
 **NEXT SESSION STARTS HERE (2026-10-01).** Where things stand, newest first:
+
+- **`claude/gifted-faraday-v5s2db` (2026-10-02, web-37, no migration), from `main` 75aec72 (#93).** The last step of the scan-speed brief that #87 left open: after 20 s the wait screen said "Taking longer than usual: the reader is busy right now", which is untrue when the fallback reader is running; it now says "Taking longer than usual. It is still working." (D-153, amends D-124's line). `tests/test_web.py` blocks the old words. Section 6 gains the cause correction: the spend cap, not a Google-side limit, as a brief of 2026-10-01 still said. **Waiting on Sushil:** "accepted" for D-153; merge; `update.sh`.
 
 - **`d151-accepted` (2026-10-02, no code or migration), from `main` 77d0327 (#92).** Sushil: "accepted" for D-151
   (the film as the website home's hero), now **LOCKED**; and the caption under the film loses "No sound: the words

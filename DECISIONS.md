@@ -2775,6 +2775,13 @@ Claude's, waiting on Sushil's "accepted":
   The rules sit in the home page's own `<style media="(min-width: 1024px)">`, so phones never load them: below
   the header, every website page on a 390 or 360 px phone is pixel-identical to before.
 `tests/test_site_desktop.py`.
+
+### D-153 · The slow-scan line names no cause `RECOMMENDED` (2026-10-02)
+Amends one line of D-124. Recommended by Claude; Sushil asked for the fix (2026-10-02: "Yes, make the step 4 fix"), waiting on his "accepted". App only (web-37); no server or cost change.
+Why: D-124's line after 20 s was "Taking longer than usual: the reader is busy right now. It is still working." When Cloud Vision refuses (code 8, 2026-10-01) the scan uses the fallback reader; nothing is busy, and the app can't see the cause anyway. The scan-speed brief (step 4) asked that the waiting words stay true.
+- **After 20 s:** "Taking longer than usual. It is still working." The rest of D-124's wait screen is unchanged, and so is "The first read of a pack takes about 8 to 15 seconds" (D-150).
+- A Vision outage reaches Sushil as a `server` problem report (#87), never as words to the user.
+`tests/test_web.py::test_slow_scan_words_name_no_cause`.
 ---
 
 ## Open and pending
