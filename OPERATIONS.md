@@ -400,23 +400,30 @@ but each image carries `{"code": 8, "message": "Resource has been exhausted (e.g
 and the server falls back to Tesseract. Since the `scan-speed` branch the fallback runs alongside
 Gemini, so scans stay at Gemini's time, and a code 8 or HTTP 429 files a `server` problem report
 ("Cloud Vision refused (code 8): scans use the fallback reader...") once per 10-minute trip:
-`il tools/repro.py list` shows it. Check, in this order:
-0. **The server log:** `journalctl -u insidelabel --since "-1h" --no-pager | grep "Cloud Vision"`.
-1. **Billing > Budgets & caps**
-   (https://console.cloud.google.com/billing/01560C-7253A6-D1191B/budgets). A budget with a spend
-   cap pauses Vision when it trips; the cap counts the cost before credits, and costs arrive up to
-   24 hours late. On 2026-10-01 the "cloud vision" cap (Rs 500) did exactly this; it is now Rs 1,500.
-2. The Vision API's **Quotas & System Limits** in the console.
-3. One call from the server (about 13 paise; the key is read from the file, never printed):
+`il tools/repro.py list` shows it. The cause of the 2026-10-01 outage is still open (STATE.md section 6):
+not the budget (no cap), not the quotas, not the key. Corrected 2026-10-02: an earlier version
+blamed the budget's spend cap; the budget has no cap. Check, in this order:
+1. **The server log:** `journalctl -u insidelabel --since "-1h" --no-pager | grep "Cloud Vision"`.
+2. **One call from the server** (about 13 paise; the key is read from the file, never printed):
 
 ```bash
 KEY=$(sudo grep -oP '^GOOGLE_VISION_KEY=\K.*' /etc/insidelabel/secrets.env)
 curl -s -H "Content-Type: application/json" -H "X-Goog-Api-Key: $KEY" -d '{"requests":[{"image":{"source":{"imageUri":"https://insidelabel.ai/app/icon-512.png"}},"features":[{"type":"TEXT_DETECTION"}]}]}' https://vision.googleapis.com/v1/images:annotate | head -c 300; echo; unset KEY
 ```
 
-Text back means Vision works; code 8 means a cap or a quota.
-4. The Vision API's **Metrics > Traffic by credential**: which key made the calls (on 2026-09-27
+   Text back means Vision works; code 8 means Google is refusing the project.
+3. The Vision API's **Quotas & System Limits** in the console (on 2026-10-01: defaults, 1,800 a
+   minute, 0.04% used, no overrides, no per-day limits).
+4. **Billing > Budgets & caps**
+   (https://console.cloud.google.com/billing/01560C-7253A6-D1191B/budgets): read "Spend cap status"
+   on the budget "cloud vision". "Not applicable" means alerts only: the budget can't pause
+   anything (so it was on 2026-10-01).
+5. The Vision API's **Metrics > Traffic by credential**: which key made the calls (on 2026-09-27
    to 30, the laptop's key, from test runs).
+6. **A new key restricted to the Cloud Vision API**, as a test with the call in step 2. If it gets
+   code 8 too, the refusal is project-wide (so it was on 2026-10-01). Delete the test key after.
+7. **Ask Google:** the support plan is Basic (billing only, no free technical case), so post on
+   the Google Cloud Community and the Issue Tracker with the code 8 body and the times (UTC).
 
 **A certificate error in the browser.** `journalctl -u caddy -n 50 --no-pager`. Caddy needs
 ports 80 and 443 open and the DNS pointing at 8.234.95.74 (Cloudflare record **grey cloud**;
@@ -474,12 +481,12 @@ Check the registry's own view any time: https://rdap.nixiregistry.in/rdap/domain
   Vision call. Scans are the part that grows with testers.
 - **Where to look:** console, Billing, Reports (filter project `insidelabel`, group by service).
   Billing, Credits shows what is left of the trial and when it ends.
-- **Budget alert:** Billing, Budgets and alerts: about ₹1,500 a month, emails at 50, 90 and 100 %.
+- **Budget alert:** Billing, Budgets & caps: "cloud vision", Rs 3,000 a month, emails at 50, 90 and 100%.
   An alert only emails; it doesn't stop anything.
 - **Where each cost is seen** (2026-10-01):
-  - **Cloud Vision:** Google Cloud Billing. The budget "cloud vision" has a Rs 1,500 a month
-    **spend cap** (it pauses Vision when reached; it counts the cost before credits) and alerts at
-    50, 90 and 100%. Billing > Reports, grouped by SKU, shows the Vision cost; the Vision API's
+  - **Cloud Vision:** Google Cloud Billing. The budget "cloud vision" is Rs 3,000 a month,
+    alerts at 50, 90 and 100%, **no cap** ("Spend cap status: Not applicable"): it only emails.
+    Billing > Reports, grouped by SKU, shows the Vision cost; the Vision API's
     Metrics > "Traffic by credential" shows which key made the calls.
   - **Gemini:** Google AI Studio, Gemini API Billing: a prepay balance, auto-reload (off on
     2026-10-01, with Rs 394.71 left). At Rs 0 every photo scan fails, so **turn auto-reload on**
