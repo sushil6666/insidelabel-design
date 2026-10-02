@@ -371,8 +371,15 @@ hairline notes), `.ruled` (a methods-page list or `<dl>`), `.table-scroll` + `.s
 For / Source), `.pending` + `.pending-tag` (promised, not built), `.btn-big`. Measured while building:
 `--muted` on `--surface-2` is 4.27:1, so the table header is set in `--ink`. Fonts: three files,
 56 KB in all, OFL, self-hosted (`web/fonts/`); a browser fetches a face only when text uses it, so
-nothing changes for a screen until it adopts these classes. They join `sw.js`'s shell with the first
-screen that uses them.
+nothing changes for a screen until it adopts these classes. They are not precached in `sw.js`'s shell
+(tried in step 2: it competed with the first screen's fonts); the service worker caches them the first
+time a screen uses them.
+
+Step 2 (web-39) uses them on the photo ask and the result: `.deep.opener` is the panel that opens a
+screen, edge to edge on a phone and a rounded card from 592 px (not `.deep.top`: the header is `.top`).
+`.photo-ask` adds the pack-back drawing (`.pb`) and the hints; `.result-top`, `.worth` and `.notes`
+carry the result. Walked at 390 and 360 px, light and dark, on three gold packs with two example
+profiles: no page errors, no sideways scroll (the walk caught a 7 px overflow from the `.top` clash).
 
 ---
 

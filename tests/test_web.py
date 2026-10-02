@@ -77,7 +77,7 @@ def test_no_score_in_the_ui():                                      # D-064
 def test_no_html_from_strings():
     for name, src in JS.items():
         uses = re.findall(r"\.(?:innerHTML|outerHTML)\s*=|insertAdjacentHTML", _COMMENT.sub("", src))
-        assert len(uses) == (1 if name == "app.js" else 0), (name, uses)   # svg() only
+        assert not uses, (name, uses)   # D-153: svg() went with the old sample drawing; none left
 
 
 def test_only_ref_age_avoid_leave_the_device():                     # D-074
@@ -161,3 +161,41 @@ def test_how_we_check_page_has_a_section_for_every_word():          # D-127
     assert r.status_code == 200 and "text/html" in r.headers["content-type"]
     for key in list(screen.GLOSSARY) + ["avoid", "glance"]:
         assert f'id="{key}"' in r.text, key
+
+
+def test_photo_ask_names_the_panel_the_count_and_why():                # D-153
+    """A tester didn't know which panel "the back" was, how many photos, or why."""
+    app = JS["app.js"]
+    assert "Photograph the back" not in app
+    assert 'el("h1", {}, "Photograph the ingredients list")' in app
+    assert '"New pack · 1 photo"' in app and "We haven't checked this barcode yet" in app
+    assert "Not needed" in app and '"This one"' in app            # the drawing marks the one block
+    assert "Optional: the front of the pack" in app                 # D-100's front stays optional
+
+
+def test_result_puts_people_first_and_folds_the_rest():                # D-153
+    app = JS["app.js"]
+    body = app[app.index("function result(id, sub, tileId)"):app.index("function kindView(s)")]
+    # The panel comes first: the pack's name as the h1, then the person lines (D-060).
+    assert body.index('class: "deep opener result-top"') < body.index("headline")
+    assert 'el("h1", { class: "product" }' in body
+    # Red only for the avoid list and "may contain".
+    tone = app[app.index("const PERSON_TONE"):app.index("function personCard")]
+    assert re.findall(r'(\w+): "stop"', tone) == ["contains", "may_contain"]
+    # Everything else waits under "Worth knowing (n)", except a not-permitted additive (D-111).
+    assert "Worth knowing (${notes.length})" in body
+    assert 't.kind === "not_permitted"' in body and 'class: "worth"' in body
+    # The result ends on the next pack (D-057), and says what isn't built yet.
+    assert "Holding another pack? Scan it to compare" in body
+    assert body.count('class: "pending"') == 2
+
+
+def test_report_faces_are_cached_on_use_not_at_install():              # D-153
+    """Precached at install, the three report faces delayed the first screen's own fonts and its
+    footer moved (Lighthouse CLS 0 to 0.16, measured 2026-10-02). The fetch handler caches them
+    the first time a screen uses them."""
+    sw = open(os.path.join(WEB_DIR, "sw.js"), encoding="utf-8").read()
+    shell = sw[sw.index("const SHELL"):sw.index("];", sw.index("const SHELL"))]
+    for f in ("source-serif-4", "ibm-plex-mono"):
+        assert f not in shell
+    assert "caches.open(VERSION).then(c => c.put(e.request, copy))" in sw

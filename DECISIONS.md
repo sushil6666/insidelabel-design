@@ -2845,6 +2845,17 @@ Sushil before merge; Lighthouse against D-152's numbers; `APP_VERSION` and the `
 - **Built, step 1 of 3: the design system (2026-10-02, web-38).** Tokens, faces and components in one block shared
   by `web/app.css` and `web/site/site.css`, held together by `tests/test_design_system.py`; reference sheet
   `web/design.html`; written up in `docs/APP_DESIGN.md` 8.9. No screen uses it yet, so nothing a user sees changes.
+- **Built, step 2 of 3: the app's photo ask and result (2026-10-02, web-39).** Photo ask: a deep panel with "Photograph
+  the ingredients list", "New pack · 1 photo" (or "1 photo" without a barcode) and why; a drawing of a pack's back with
+  the ingredients block marked "This one" and the nutrition table and FSSAI licence "Not needed"; frame and light
+  hints; D-119's parts, D-104's checks and D-100's front unchanged, the front now headed "Optional". "Photograph the
+  back" is gone from every button. Result: a deep panel with the pack's name (now the h1, so focus starts there) and
+  the person lines (red only for "contains" and "may contain"); the headline in serif; then, closed, "Worth knowing
+  (n)": each tile a numbered note with its first source, opening its page (D-134), then the three answers (D-123) and
+  the ring (D-127). **One exception, Claude's call:** a tile for an additive not permitted in India stays open above
+  the fold, since D-111 makes it the most serious thing the app says. The result ends on "Holding another pack? Scan
+  it to compare" (adds the pack to Compare and opens the scanner, D-057), "Compare (n)" once two are waiting, and two
+  "In preparation" lines (alternatives, D-058/D-059; Ask, Pro, D-113). Server text is unchanged (D-091).
 
 ### D-154 · The slow-scan line names no cause `LOCKED` (2026-10-02)
 **Number:** first recorded as D-153 on `main` (#94). The merge of #95, which used D-153 for the redesign, kept that
