@@ -167,9 +167,11 @@ def test_photo_ask_names_the_panel_the_count_and_why():                # D-153
     """A tester didn't know which panel "the back" was, how many photos, or why."""
     app = JS["app.js"]
     assert "Photograph the back" not in app
-    assert 'el("h1", {}, "Photograph the ingredients list")' in app
-    assert '"New pack · 1 photo"' in app and "We haven't checked this barcode yet" in app
-    assert "Not needed" in app and '"This one"' in app            # the drawing marks the one block
+    # Sushil, 2026-10-03: for food, the ingredients and the nutrition table everywhere (D-133).
+    assert 'el("h1", {}, "Photograph the ingredients and the nutrition table")' in app
+    assert '"New pack · 1 or 2 photos"' in app and "We haven't checked this barcode yet" in app
+    assert '"Photograph these"' in app and '"NUTRITION"' in app     # the drawing marks both blocks
+    assert app.count('"Not needed"') == 1                           # only the licence
     assert "Optional: the front of the pack" in app                 # D-100's front stays optional
 
 
@@ -210,4 +212,20 @@ def test_the_footer_waits_for_a_loading_screen():                      # D-153 s
     assert 'document.body.classList.add("ready")' not in show
     agree = app[app.index("function agree()"):app.index("function join(")]
     assert agree.count("settled(view)") == 2                        # the terms, or the error in their place
+
+
+def test_every_script_parses_as_a_module(tmp_path):
+    """The app's files are ES modules (D-090). `node --check` on a .js file parses it as a script, which let a
+    stray ")" through on 2026-10-03; a .mjs copy is parsed as a module, like the browser does."""
+    import shutil
+    import subprocess
+    import pytest
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node isn't installed")
+    for name, src in JS.items():
+        copy = tmp_path / (name[:-3] + ".mjs")
+        copy.write_text(src, encoding="utf-8")
+        r = subprocess.run([node, "--check", str(copy)], capture_output=True, text=True)
+        assert r.returncode == 0, (name, r.stderr[-400:])
 

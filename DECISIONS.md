@@ -2868,6 +2868,12 @@ Sushil before merge; Lighthouse against D-152's numbers; `APP_VERSION` and the `
   sections use `content-visibility: auto`. **Measured** (Lighthouse mobile, median of 5, behind gzip as Caddy serves
   it): real throttling LCP 1619 to 1614 ms, CLS 0.039 to 0.011; simulated throttling LCP 1368 to 1532 ms (the
   simulation charges the bigger page's style and layout; a real slowed browser shows no difference). `tests/test_site_home.py`.
+- **The photo ask, changed by Sushil 2026-10-03:** "everywhere ingredients and Nutrition label we need for food
+  items". Step 2's ask had marked the nutrition table "Not needed"; D-133 reads it from the same back photos. The app
+  now asks "Photograph the ingredients and the nutrition table" ("1 or 2 photos": one if both fit, the table as a
+  second photo if not, through D-119's parts); the drawing marks both, only the licence "Not needed"; the food
+  result's re-check button, the photo check's tick (server) and the website's step 2 say the same. D-133's offer to
+  add the table afterwards stays, for when it was missed. web-41.
 - **The hero's headline, changed by Sushil 2026-10-03:** "Read the label for your family." in place of "...for your
   kids." ("it's not true for your kids part": the profiles are you and the people you shop for, not only children).
 

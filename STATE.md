@@ -662,6 +662,12 @@ setup alarms.
 
 **NEXT SESSION STARTS HERE (2026-10-01).** Where things stand, newest first:
 
+- **The photo ask wants the nutrition table too (2026-10-03, web-41), on `claude/trusting-einstein-kddhlb`.** Sushil:
+  "everywhere ingredients and Nutrition label we need for food items". "Photograph the ingredients and the nutrition
+  table", 1 or 2 photos; drawing, hints, the parts question, the food re-check button, the photo check's tick and the
+  website's step 2 follow (D-153 note). New test: every app script parses as a module (a stray ")" got past
+  `node --check` on .js). **Waiting on Sushil:** merge; `update.sh`.
+
 - **First-visit footer jump fixed; D-156 (2026-10-03, web-40, no migration), on `claude/trusting-einstein-kddhlb`.**
   A screen still loading its words (`aria-busy`, "Before you start") no longer reveals the footer; `settled()` does
   once the terms are in: 0 of 8 fresh visits shifted (was 3 to 5 of 6), Lighthouse CLS 0 in 5 of 5. D-156: InsideLabel

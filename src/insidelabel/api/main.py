@@ -875,7 +875,7 @@ CHECK_MESSAGES = {
                   "with the whole barcode and its numbers in the frame.",
     "several_barcodes": "This photo shows more than one barcode. Take it again with only the pack's "
                         "barcode in the frame.",
-    "back_ok": "Clear photo. We'll read the ingredient list when you tap Check this pack.",
+    "back_ok": "Clear photo. We'll read the ingredients and the nutrition table when you tap Check this pack.",
     "front_ok": "Clear photo of the front.",
     "barcode_too": " Barcode {code} found on it too.",
 }
