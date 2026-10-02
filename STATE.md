@@ -662,7 +662,14 @@ setup alarms.
 
 **NEXT SESSION STARTS HERE (2026-10-01).** Where things stand, newest first:
 
-- **`claude/gifted-faraday-v5s2db` (2026-10-02, web-37, no migration), from `main` 75aec72 (#93).** The last step of the scan-speed brief that #87 left open: after 20 s the wait screen said "Taking longer than usual: the reader is busy right now", which is untrue when the fallback reader is running; it now says "Taking longer than usual. It is still working." (D-153, amends D-124's line). `tests/test_web.py` blocks the old words. D-153 also covers the 503 words: "The label reader is busy right now" became "Something on our side isn't working right now. Try again in a minute." (every 503 means the database is unavailable). Section 6's cause corrected: the "cloud vision" budget has no spend cap ("Not applicable"); the code 8 cause is still open. D-153 accepted by Sushil (2026-10-02), now **LOCKED**. **Waiting on Sushil:** merge; `update.sh`.
+- **`claude/trusting-einstein-kddhlb` (2026-10-02, decision only, no code).** D-153 **LOCKED** (Sushil: "accepted"):
+  the redesign. One design system for the website and the app; the website home as row D ("Merged") of the canvas
+  https://claude.ai/artifact/2rmu9zKpTyATZwibpcK1fF; the app's photo ask ("Photograph the ingredients list", 1
+  photo, which panel and why) and result (per-person lines first, the rest under "Worth knowing" with sources,
+  ending in "Scan the next pack to compare") fixed where a tester got stuck. Sushil's founder note is in D-153 word
+  for word. **D-138 approved** the same day (photo and connect@insidelabel.ai): `/about` now has the policy, the
+  note and the photo (`web/people/`), and no DRAFT banner. **Waiting on Sushil:** merge; `update.sh`. **Next:** build the design system, then the photo ask and result,
+  then the website home.
 
 - **`d151-accepted` (2026-10-02, no code or migration), from `main` 77d0327 (#92).** Sushil: "accepted" for D-151
   (the film as the website home's hero), now **LOCKED**; and the caption under the film loses "No sound: the words

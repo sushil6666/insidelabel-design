@@ -51,6 +51,12 @@ h2 { font-size: 22px; margin: 36px 0 10px; }
 .steps li { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px;
             box-shadow: var(--shadow); }
 .steps b { display: block; margin-bottom: 4px; font-family: var(--display); font-weight: 800; font-size: 18px; }
+.founder { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; }
+.founder-photo { width: 140px; height: auto; aspect-ratio: 4 / 5; border-radius: 16px; object-fit: cover; flex: none; background: var(--surface); }
+.founder-text { flex: 1 1 280px; min-width: 0; }
+.founder-text p { margin: 0 0 12px; }
+.founder-sign { font-style: italic; font-weight: 700; }
+@media (min-width: 600px) { .founder-photo { width: 200px; } }
 .draft { background: var(--note-bg); color: var(--note); border-radius: 16px; padding: 12px 16px; font-weight: 600; }
 a { color: var(--brand); }
 a:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }

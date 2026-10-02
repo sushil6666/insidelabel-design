@@ -2122,7 +2122,8 @@ gold files are not edited.
   marker's label ("artificial flavouring substances and raising agents") follow the joined entry. Its capture in
   `tests/fixtures/pack_kind_gold_before.json` is refreshed to match; the other five labels are untouched.
 
-### D-138 · The conflict-of-interest policy, in the words already decided `RECOMMENDED` (2026-09-30)
+### D-138 · The conflict-of-interest policy, in the words already decided `LOCKED` (2026-09-30)
+**Approved by Sushil 2026-10-02 ("D-138 approved", with the photo and the contact address connect@insidelabel.ai).**
 D-076 asks for the policy at beta launch; `web/site/about.html` still has a bracket where it goes.
 Draft in `docs/COI_POLICY_DRAFT.md`: page-ready text, and for every line the decision it comes from
 (D-002; blueprint §2.5 and §10; "Explicitly not building"; D-053's "scans free forever" and nothing
@@ -2140,6 +2141,11 @@ pages and the app shell too (all were already clean).
   for him to edit). The page follows D-148: "Looking up a pack stays free. Photo scans have a daily limit." and "No
   ads." Still RECOMMENDED: nothing goes on `web/site/about.html` until Sushil says "D-138 approved" and sends the
   photo and the contact address to show.
+- **Approved 2026-10-02.** On `web/site/about.html`: "Money and brands" is the draft's page text unchanged; "Who is
+  behind it" is Sushil's own note (D-153) in place of Claude's draft sentences, his photo and connect@insidelabel.ai.
+  The page's "DRAFT" banner goes, since no bracket is left. The photo, at Sushil's request ("do some edit for clarity"),
+  only had its warm cast halved, light and contrast raised a little and a mild sharpen, then a 4:5 crop: nothing about
+  the face changed. `web/people/sushil-behera-240.webp` and `-480.webp`.
 
 ### D-139 · Health supplements and nutraceuticals: a kind of pack with its own checks `LOCKED` (2026-09-30)
 Sushil: "implement supplements and baby food part, part of beta" (2026-09-30), phase 0 of
@@ -2776,13 +2782,66 @@ Claude's, waiting on Sushil's "accepted":
   the header, every website page on a 390 or 360 px phone is pixel-identical to before.
 `tests/test_site_desktop.py`.
 
-### D-153 · The slow-scan line names no cause `LOCKED` (2026-10-02)
-Amends one line of D-124. Recommended by Claude; Sushil asked for the fix (2026-10-02: "Yes, make the step 4 fix"). **Accepted by Sushil 2026-10-02** ("D-153 accepted"). App only (web-37); no server or cost change.
-Why: D-124's line after 20 s was "Taking longer than usual: the reader is busy right now. It is still working." When Cloud Vision refuses (code 8, 2026-10-01) the scan uses the fallback reader; nothing is busy, and the app can't see the cause anyway. The scan-speed brief (step 4) asked that the waiting words stay true.
-- **After 20 s:** "Taking longer than usual. It is still working." The rest of D-124's wait screen is unchanged, and so is "The first read of a pack takes about 8 to 15 seconds" (D-150).
-- A Vision outage reaches Sushil as a `server` problem report (#87), never as words to the user.
-- **The 503 words** (same commit as the acceptance's follow-up, 2026-10-02): "The label reader is busy right now. Try again in a minute." became "Something on our side isn't working right now. Try again in a minute." Every 503 the server sends means the database is unavailable (`storage_unavailable`); the reader is never what failed.
-`tests/test_web.py::test_slow_scan_words_name_no_cause`.
+### D-153 · The redesign: one design system for the website and the app; the website home rebuilt as "Merged"; the app's photo ask and result fixed where a tester got stuck `LOCKED` (2026-10-02)
+**Accepted by Sushil 2026-10-02 ("accepted")**, after a five-round interview with Claude and four mockup directions
+on one canvas (https://claude.ai/artifact/2rmu9zKpTyATZwibpcK1fF; row D is the one accepted, rows A to C are kept for
+reference). Not built yet.
+
+**Why.** Sushil set InsideLabel next to Truthin's website (his screen recording, 2026-10-02) and ours looked
+unfinished. What Truthin does that we didn't: it *shows* the product (phone mockups of real screens, short headlines,
+numbered steps with a picture each) instead of describing it. Not taken from it: a single rating, "Good to go",
+"healthier", stock photos of families, its purple. Its proof section is download counts and press; we have neither
+yet, so ours is what we already keep: the source of every finding (D-046, D-086), shown next to the finding.
+
+**What a tester hit** (Sushil, 2026-10-02; seen, not guessed): after the barcode, "photograph the back" didn't say which
+panel (nutrition table, ingredients, FSSAI licence), how many photos, or why; a refused photo meant starting again.
+The result was too long, too many cards, nothing said what it meant for her child, and with only warnings and nothing
+to say "yes" to, she couldn't tell what to buy. The app today can ask for the ingredients, the front and the nutrition
+table, and some buttons say "Photograph the back" (`web/app.js`).
+
+- **Scope and order:** one design system (tokens, type, components) for the website and the app, built first; then
+  the app's photo ask and result; then the website home. English only. No deadline: right over fast.
+- **Look:** today's palette (D-110) kept. Big headlines, the hero, the CTA band and the app's per-person lines in
+  Bricolage Grotesque; section headings, the pack name and the founder note in a serif (Source Serif 4); text in
+  DM Sans; INS numbers and sources in a monospace (IBM Plex Mono). All OFL, self-hosted, only the weights used
+  (D-110); D-152's Lighthouse numbers are the bar. Dark mode keeps following the phone.
+- **Website home, top to bottom:** a deep-blue hero ("Read the label for your kids.", the D-151 film inside a phone
+  mockup, three cards that rise out of it, each with a citation number); How it works (three numbered steps); one
+  real pack from the gold set with the **brand hidden** and a Finding / For / Source table (a named brand's result as
+  marketing reads as judging that brand, D-042); Method (four statements, linking to `/how`); In preparation ("Ask
+  about this pack", Pro, D-113; other packs without the things on your avoid list, free, D-058/D-059); the founder
+  note; the CTA. Designed now, built later: public pages per additive and per product.
+- **App, photo ask:** one screen, "Photograph the ingredients list", "1 photo", why it's needed (the barcode isn't in
+  our checked list yet), a drawing of a pack's back with the ingredients block marked and the nutrition table and
+  licence marked "not needed", and frame and light hints. "Photograph the back" goes from every button. Refusals keep
+  `screen.py`'s specific reasons. Where another decision needs a second photo before the first answer, the build
+  says so and asks Sushil rather than dropping it.
+- **App, result:** the per-person lines first (D-060, D-064) and the only red on the screen; everything else folded
+  under "Worth knowing (n)", each line with its source (`fssai_basis` and `verified_on`, or where on the label it was
+  read); the screen ends with "Scan the next pack to compare" (D-057), then places kept for alternatives and "Ask
+  about this pack". The words stay in `lenses/screen.py` (D-091) and pass the wording lint.
+- **Motion:** CSS only, no library (D-090), off under `prefers-reduced-motion`. The motion-graphics toolkit Sushil
+  shared was a reference, not a dependency.
+- **The founder note**, Sushil's words, as given:
+  > I'm Sushil Behera, and I have a young son. When he visits the neighbours, someone always hands him a biscuit, a
+  > chocolate or a packet of chips. Kind people, kind gestures. But each time I turned the pack over, I couldn't tell
+  > what he was actually eating: the ingredient list was tiny, full of codes like INS 322 and 150d, and nothing on the
+  > pack explained them.
+  >
+  > I've worked with data for years, so I built the tool I wanted: scan the pack and see what's in it, in plain words,
+  > starting with anything on your family's avoid list.
+  >
+  > InsideLabel is paid for from my own money. No food company pays us, and none can change what we show. I read every
+  > reported mistake myself.
+
+  It states who pays and that no food company does, which is D-138's ground: it goes on the site together with
+  D-138's "approved", not before (approved 2026-10-02; it is on `/about` now, and moves to the home page with the
+  rebuild). "I read every reported mistake myself" is a promise: D-117 already keeps users' "Report a mistake" with
+  people, never the agents.
+
+**Checks when built:** `tests/test_web.py`, `tests/test_wording.py`, `tests/test_no_dashes.py`,
+`tests/test_site_desktop.py`; a headless-Chromium walk at 390, 360 and 1280 px in light and dark with screenshots for
+Sushil before merge; Lighthouse against D-152's numbers; `APP_VERSION` and the `sw.js` cache version bumped.
 ---
 
 ## Open and pending
