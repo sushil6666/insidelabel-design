@@ -2842,9 +2842,20 @@ table, and some buttons say "Photograph the back" (`web/app.js`).
 **Checks when built:** `tests/test_web.py`, `tests/test_wording.py`, `tests/test_no_dashes.py`,
 `tests/test_site_desktop.py`; a headless-Chromium walk at 390, 360 and 1280 px in light and dark with screenshots for
 Sushil before merge; Lighthouse against D-152's numbers; `APP_VERSION` and the `sw.js` cache version bumped.
-- **Built, step 1 of 3: the design system (2026-10-02, web-37).** Tokens, faces and components in one block shared
+- **Built, step 1 of 3: the design system (2026-10-02, web-38).** Tokens, faces and components in one block shared
   by `web/app.css` and `web/site/site.css`, held together by `tests/test_design_system.py`; reference sheet
   `web/design.html`; written up in `docs/APP_DESIGN.md` 8.9. No screen uses it yet, so nothing a user sees changes.
+
+### D-154 · The slow-scan line names no cause `LOCKED` (2026-10-02)
+**Number:** first recorded as D-153 on `main` (#94). The merge of #95, which used D-153 for the redesign, kept that
+entry and dropped this one; restored here word for word under the next free number (2026-10-02). Sushil's "D-153
+accepted" below refers to this entry; the code and tests that cited "D-153" for it now cite D-154.
+Amends one line of D-124. Recommended by Claude; Sushil asked for the fix (2026-10-02: "Yes, make the step 4 fix"). **Accepted by Sushil 2026-10-02** ("D-153 accepted"). App only (web-37); no server or cost change.
+Why: D-124's line after 20 s was "Taking longer than usual: the reader is busy right now. It is still working." When Cloud Vision refuses (code 8, 2026-10-01) the scan uses the fallback reader; nothing is busy, and the app can't see the cause anyway. The scan-speed brief (step 4) asked that the waiting words stay true.
+- **After 20 s:** "Taking longer than usual. It is still working." The rest of D-124's wait screen is unchanged, and so is "The first read of a pack takes about 8 to 15 seconds" (D-150).
+- A Vision outage reaches Sushil as a `server` problem report (#87), never as words to the user.
+- **The 503 words** (same commit as the acceptance's follow-up, 2026-10-02): "The label reader is busy right now. Try again in a minute." became "Something on our side isn't working right now. Try again in a minute." Every 503 the server sends means the database is unavailable (`storage_unavailable`); the reader is never what failed.
+`tests/test_web.py::test_slow_scan_words_name_no_cause`.
 ---
 
 ## Open and pending

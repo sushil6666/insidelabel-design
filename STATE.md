@@ -662,7 +662,7 @@ setup alarms.
 
 **NEXT SESSION STARTS HERE (2026-10-01).** Where things stand, newest first:
 
-- **D-153 step 1, the design system (2026-10-02, web-37, no migration), on `claude/trusting-einstein-kddhlb`.**
+- **D-153 step 1, the design system (2026-10-02, web-38, no migration), on `claude/trusting-einstein-kddhlb`.**
   One block of tokens and components, identical in `web/app.css` and `web/site/site.css` (deep-blue panel, person
   lines, serif headings, mono sources, numbered notes, ruled lists, the Finding / For / Source table, "in
   preparation" boxes, the 60 px button); Source Serif 4 (400, 600) and IBM Plex Mono (400) self-hosted with their

@@ -96,7 +96,7 @@ def test_app_and_shell_versions_move_together():
     assert app == sw, "bump APP_VERSION (lib.js) and VERSION (sw.js) together"
 
 
-def test_slow_scan_words_name_no_cause():                            # D-124, D-153
+def test_slow_scan_words_name_no_cause():                            # D-124, D-154
     # The app can't see why a read is slow: with Cloud Vision down the fallback reader runs,
     # and "the reader is busy" would be untrue. The 20 s line says only what the app knows.
     app_js = JS["app.js"]
@@ -104,7 +104,7 @@ def test_slow_scan_words_name_no_cause():                            # D-124, D-
     assert "reader is busy right now. It is still working" not in app_js
 
 
-def test_503_words_say_what_a_503_is():                              # D-153
+def test_503_words_say_what_a_503_is():                              # D-154
     # Every 503 the server sends is storage_unavailable: the reader is never what failed.
     app_js = JS["app.js"]
     assert "Something on our side isn't working right now. Try again in a minute." in app_js
