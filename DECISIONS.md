@@ -2915,6 +2915,9 @@ each new sector's primary documents (D-046).
   this direction, and is to be corrected if any tie exists.
 - **Left as Sushil wrote it:** his note says "No food company pays us" (D-153, on `/` and `/about`). It stays true; a
   wider "No company whose labels we read pays us" is his choice to make.
+- **Changed by Sushil, 2026-10-03:** "change note to No company whose labels we read pays us". His note on `/` and
+  `/about` now says "No company whose labels we read pays us, and none can change what we show." (D-153 quotes the
+  first wording.)
 
 ---
 
