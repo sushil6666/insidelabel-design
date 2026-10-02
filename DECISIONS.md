@@ -2913,6 +2913,7 @@ each new sector's primary documents (D-046).
   personal care." The page's own rule dates the change: a "Changes to this policy" list now holds this and D-155's.
 - **To confirm (Claude):** the "none" for skin care and personal care is Sushil's to state; the line was written from
   this direction, and is to be corrected if any tie exists.
+- **Confirmed by Sushil, 2026-10-03:** "no ties in skin care or personal care".
 - **Left as Sushil wrote it:** his note says "No food company pays us" (D-153, on `/` and `/about`). It stays true; a
   wider "No company whose labels we read pays us" is his choice to make.
 - **Changed by Sushil, 2026-10-03:** "change note to No company whose labels we read pays us". His note on `/` and
