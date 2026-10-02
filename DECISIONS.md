@@ -2742,7 +2742,8 @@ waiting on Sushil's "accepted":
   (`web/app.js`) and the scan-speed query (OPERATIONS.md section 5), as in D-150.
 `tests/test_film.py`.
 
-### D-152 · One centred italic wordmark everywhere; the app's links behind a profile menu; "Scan here" first; the website's desktop layout `RECOMMENDED` (2026-10-02)
+### D-152 · One centred italic wordmark everywhere; the app's links behind a profile menu; "Scan here" first; the website's desktop layout `LOCKED` (2026-10-02)
+**Accepted by Sushil 2026-10-02 ("accepted" for D-152)**, the details below included; built and merged in #91.
 **Sushil, 2026-10-02:** "italic name for brand name everywhere and logo and brand name each page in center"; "In
 the app's header, right corner we will keep user profile icon, once click that the links (Compare, Household
 etc)"; from a marked-up screenshot of another company's app, the logo in the centre and one wide bar on the home
