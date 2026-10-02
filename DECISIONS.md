@@ -2842,6 +2842,9 @@ table, and some buttons say "Photograph the back" (`web/app.js`).
 **Checks when built:** `tests/test_web.py`, `tests/test_wording.py`, `tests/test_no_dashes.py`,
 `tests/test_site_desktop.py`; a headless-Chromium walk at 390, 360 and 1280 px in light and dark with screenshots for
 Sushil before merge; Lighthouse against D-152's numbers; `APP_VERSION` and the `sw.js` cache version bumped.
+- **Built, step 1 of 3: the design system (2026-10-02, web-37).** Tokens, faces and components in one block shared
+  by `web/app.css` and `web/site/site.css`, held together by `tests/test_design_system.py`; reference sheet
+  `web/design.html`; written up in `docs/APP_DESIGN.md` 8.9. No screen uses it yet, so nothing a user sees changes.
 ---
 
 ## Open and pending

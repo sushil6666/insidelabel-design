@@ -4,6 +4,10 @@
 @font-face { font-family: "DM Sans"; font-weight: 600; font-style: normal; font-display: swap; src: url("/app/fonts/dm-sans-600.woff2") format("woff2"); }
 @font-face { font-family: "DM Sans"; font-weight: 700; font-style: normal; font-display: swap; src: url("/app/fonts/dm-sans-700.woff2") format("woff2"); }
 @font-face { font-family: "Bricolage Grotesque"; font-weight: 800; font-style: normal; font-display: swap; src: url("/app/fonts/bricolage-grotesque-800.woff2") format("woff2"); }
+/* D-153: the report faces; fetched only by a page whose text uses them. */
+@font-face { font-family: "Source Serif 4"; font-weight: 400; font-style: normal; font-display: swap; src: url("/app/fonts/source-serif-4-400.woff2") format("woff2"); }
+@font-face { font-family: "Source Serif 4"; font-weight: 600; font-style: normal; font-display: swap; src: url("/app/fonts/source-serif-4-600.woff2") format("woff2"); }
+@font-face { font-family: "IBM Plex Mono"; font-weight: 400; font-style: normal; font-display: swap; src: url("/app/fonts/ibm-plex-mono-400.woff2") format("woff2"); }
 
 :root {
   color-scheme: light dark;
@@ -95,3 +99,100 @@ footer a { color: var(--muted); }
   .hero-film figcaption { text-align: center; }
 }
 @media (prefers-reduced-motion: reduce) { .cta { transition: none; } }
+
+/* ==== D-153 design system: begin (identical in web/app.css and web/site/site.css; tests/test_design_system.py) ====
+   The redesign "Merged": C's deep-blue panel and big person lines, B's report body (serif section
+   headings, sources in a mono face, hairlines, numbered notes). One block for the app and the
+   website, so the two can't drift. The faces' @font-face rules sit above, outside this block, because
+   the two files reach fonts/ by different paths. Values that exist in app.css already are repeated
+   here unchanged, so the website gets them too. */
+:root {
+  --serif: "Source Serif 4", Georgia, "Noto Serif", serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --deep: #193b57; --on-deep: #f3fbf6; --on-deep-muted: #cfe6ee; --deep-action: #c4f6d4;
+  --mark: #048149;                         /* the hero's stroke: the light green, kept deep in dark mode too */
+  --stop: #c92324; --stop-bg: #ffe5e0; --unsure: #6c380d; --unsure-bg: #ffefcd;
+  --calm: #194860; --calm-bg: #d5f7f4; --surface-2: #f4f2e6;
+  --fs-xs: .75rem; --fs-sm: .875rem; --fs-md: 1rem; --fs-lg: 1.125rem; --fs-xl: 1.375rem;
+  --fs-2xl: 1.75rem; --fs-3xl: 2.25rem; --fs-4xl: 2.75rem;
+  --fs-display: clamp(2.75rem, 1.6rem + 4.6vw, 5.5rem);   /* the website hero: 44 px on a phone, 88 px on a laptop */
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 20px; --sp-6: 24px; --sp-8: 32px;
+  --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-xl: 24px; --r-2xl: 32px; --r-pill: 999px;
+  --tap-big: 60px;                         /* the one action a screen ends on */
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --deep: #0e2435;                       /* a step darker than the dark page, so the panel still reads */
+    --deep-action: #66c189;
+    --stop: #ffbdb5; --stop-bg: #6c3530; --unsure: #ffd791; --unsure-bg: #674420;
+    --calm: #d9f0f3; --calm-bg: #265368; --surface-2: #2b4b64;
+  }
+}
+
+/* The deep-blue panel: the top of the photo ask and the result in the app (rounded at the bottom,
+   the header grown down), and the hero and the last band on the website (.deep.band). */
+.deep { background: var(--deep); color: var(--on-deep); border-radius: 0 0 var(--r-2xl) var(--r-2xl); }
+.deep.band { border-radius: 0; }
+.deep .src, .deep .kicker, .deep .on-muted { color: var(--on-deep-muted); }
+.deep a:not(.btn-big) { color: var(--on-deep); }
+.deep :focus-visible { outline-color: var(--deep-action); }
+
+/* The website hero's headline; .mark is the green stroke under its last words. */
+.display { font: 800 var(--fs-display)/.96 var(--display); letter-spacing: -.04em; text-wrap: balance; margin: 0; }
+.mark { background: linear-gradient(transparent 62%, var(--mark) 62%); padding: 0 .1em; }
+
+/* One person's line (D-060, D-064): the largest words on a result. The colour only repeats what the
+   words say; red is kept for the avoid list and "may contain" alone. */
+.person-line { display: grid; gap: 2px; border-radius: var(--r-xl); padding: var(--sp-4) var(--sp-5);
+               background: var(--calm-bg); color: var(--calm); }
+.person-line > b { font: 800 var(--fs-xl)/1.1 var(--display); }
+.person-line.stop { background: var(--stop-bg); color: var(--stop); }
+.person-line.stop > b { font-size: 1.625rem; }
+.person-line.unsure { background: var(--unsure-bg); color: var(--unsure); }
+.person-line .src { color: inherit; }
+
+/* A source: where a line was read or which rule backs it (D-046, D-086). Small and quiet; the
+   words of the finding never depend on it. */
+.src { font: 400 var(--fs-xs)/1.45 var(--mono); color: var(--muted); overflow-wrap: anywhere; }
+.cite { font: 400 var(--fs-xs)/1 var(--mono); color: var(--muted); white-space: nowrap; }
+.kicker { font: 400 var(--fs-xs)/1.4 var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--muted); margin: 0; }
+.h-serif { font: 600 var(--fs-xl)/1.2 var(--serif); letter-spacing: 0; margin: 0; text-wrap: balance; }
+.h-serif.big { font-size: var(--fs-4xl); line-height: 1.12; }
+
+/* Numbered notes ("Worth knowing" opened): hairlines, not cards; the number lines up with the text. */
+.notes { list-style: none; margin: 0; padding: 0; }
+.notes > li { display: grid; grid-template-columns: 2rem minmax(0, 1fr); gap: var(--sp-1) var(--sp-2);
+              padding: var(--sp-3) 0; border-bottom: 1px solid var(--line); }
+.notes > li > .cite { padding-top: .2em; }
+.notes > li > :not(.cite) { grid-column: 2; min-width: 0; }
+
+/* Ruled rows: a list or a <dl> read like a methods page. */
+.ruled { list-style: none; margin: 0; padding: 0; }
+.ruled > * { border-top: 1px solid var(--line); padding: var(--sp-4) 0; margin: 0; }
+.ruled > :last-child { border-bottom: 1px solid var(--line); }
+.ruled dt, .ruled h3 { font: 600 var(--fs-lg)/1.3 var(--serif); margin: 0; }
+.ruled dd { margin: var(--sp-1) 0 0; color: var(--muted); }
+
+/* The report table (Finding / For / Source). It scrolls inside its own box on a narrow screen. */
+.table-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--r-md); }
+.sourced { width: 100%; min-width: 34rem; border-collapse: collapse; font-size: var(--fs-md); }
+.sourced th { font: 400 var(--fs-xs)/1.4 var(--mono); letter-spacing: .04em; text-transform: uppercase;
+              color: var(--ink); text-align: left; background: var(--surface-2); padding: var(--sp-3) var(--sp-4); }
+.sourced td { border-top: 1px solid var(--line); padding: var(--sp-3) var(--sp-4); vertical-align: top; }
+.sourced tr.stop td:first-child { color: var(--stop); font-weight: 700; }
+
+/* Promised, not built yet: dashed, its state written out ("In preparation"). */
+.pending { border: 2px dashed var(--line); border-radius: var(--r-lg); padding: var(--sp-3) var(--sp-4);
+           display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--sp-2) var(--sp-3); }
+.pending-tag { font: 400 var(--fs-xs)/1.4 var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+
+/* The one action a screen ends on: 60 px tall, full width. */
+.btn-big { display: flex; align-items: center; justify-content: center; gap: var(--sp-2); width: 100%;
+           min-height: var(--tap-big); padding: var(--sp-2) var(--sp-5); border: 0; border-radius: var(--r-xl);
+           background: var(--brand); color: var(--brand-ink); font: 800 var(--fs-lg)/1.2 var(--font);
+           text-align: center; text-decoration: none; cursor: pointer; transition: transform 100ms cubic-bezier(.2, 0, 0, 1); }
+.btn-big:active { transform: scale(.985); }
+.btn-big:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
+.deep .btn-big { background: var(--deep-action); color: var(--deep); }
+@media (prefers-reduced-motion: reduce) { .btn-big { transition: none; } .btn-big:active { transform: none; } }
+/* ==== D-153 design system: end ==== */

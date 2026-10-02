@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Design system · InsideLabel</title>
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="app.css">
+  <style>
+    /* This page only: the reference sheet's own layout. Everything it shows comes from app.css. */
+    .ref { max-width: 980px; margin: 0 auto; padding: 24px 16px 64px; display: grid; gap: 40px; }
+    .ref section { display: grid; gap: 16px; }
+    .ref .row { display: flex; flex-wrap: wrap; gap: 12px; }
+    .ref .cols { display: grid; gap: 24px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)); }
+    .swatch { width: 132px; border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; background: var(--surface); }
+    .swatch i { display: block; height: 56px; }
+    .swatch code { display: block; padding: 6px 8px; font: 400 var(--fs-xs) var(--mono); color: var(--ink); }
+    .phone { max-width: 390px; border: 1px solid var(--line); border-radius: 28px; overflow: hidden; background: var(--bg); }
+    .phone .body { padding: 16px 20px 20px; display: grid; gap: 12px; }
+  </style>
+</head>
+<body>
+  <main class="ref">
+    <header>
+      <p class="kicker">D-153 · reference sheet · not linked from the app</p>
+      <h1 class="h-serif big">InsideLabel design system</h1>
+      <p>Every token and component the redesign adds, drawn from <code>app.css</code>. The same block is in the
+        website's <code>site.css</code>. Switch the phone to dark mode to see the dark values.</p>
+    </header>
+
+    <section aria-labelledby="h-colour">
+      <h2 class="h-serif" id="h-colour">Colour</h2>
+      <div class="row">
+        <div class="swatch"><i style="background: var(--bg)"></i><code>--bg</code></div>
+        <div class="swatch"><i style="background: var(--surface)"></i><code>--surface</code></div>
+        <div class="swatch"><i style="background: var(--surface-2)"></i><code>--surface-2</code></div>
+        <div class="swatch"><i style="background: var(--ink)"></i><code>--ink</code></div>
+        <div class="swatch"><i style="background: var(--muted)"></i><code>--muted</code></div>
+        <div class="swatch"><i style="background: var(--line)"></i><code>--line</code></div>
+        <div class="swatch"><i style="background: var(--brand)"></i><code>--brand</code></div>
+        <div class="swatch"><i style="background: var(--deep)"></i><code>--deep</code></div>
+        <div class="swatch"><i style="background: var(--deep-action)"></i><code>--deep-action</code></div>
+        <div class="swatch"><i style="background: var(--stop-bg)"></i><code>--stop-bg</code></div>
+        <div class="swatch"><i style="background: var(--calm-bg)"></i><code>--calm-bg</code></div>
+        <div class="swatch"><i style="background: var(--unsure-bg)"></i><code>--unsure-bg</code></div>
+      </div>
+    </section>
+
+    <section aria-labelledby="h-type">
+      <h2 class="h-serif" id="h-type">Type</h2>
+      <div class="deep band" style="padding: 24px; border-radius: var(--r-xl)">
+        <p class="display">Read the label <span class="mark">for your kids.</span></p>
+      </div>
+      <p class="h-serif big">Section heading, serif 600</p>
+      <p class="h-serif">Smaller section heading, serif 600</p>
+      <p style="font: 400 var(--fs-lg)/1.6 var(--serif)">The founder note, serif 400: ingredient lists on Indian packs are long, small and full of INS numbers.</p>
+      <p>Body text, DM Sans 400. Bold for a finding: <b>Contains milk.</b></p>
+      <p class="kicker">Kicker, mono uppercase</p>
+      <p class="src">Source line, mono: FSSAI Appendix A, numeric limits per food category · checked 25 Sep 2026</p>
+    </section>
+
+    <section aria-labelledby="h-app">
+      <h2 class="h-serif" id="h-app">App components</h2>
+      <div class="cols">
+        <div class="phone">
+          <div class="deep" style="padding: 16px 20px 20px; display: grid; gap: 12px">
+            <p class="kicker">New pack · 1 photo needed</p>
+            <p style="margin: 0; font: 800 var(--fs-3xl)/1 var(--display)">Photo of the ingredients list.</p>
+            <div class="person-line stop"><b>Aarav: contains milk.</b><span>It's on Aarav's avoid list.</span><span class="src">source: milk solids, whey</span></div>
+            <div class="person-line"><b>Diya: peanut not listed.</b><span>Not in the ingredients or the allergen line.</span></div>
+            <div class="person-line unsure"><b>Kabir: can't confirm.</b><span>Part of the list was hard to read.</span></div>
+          </div>
+          <div class="body">
+            <details open>
+              <summary class="h-serif">Worth knowing <span class="cite">3 notes</span></summary>
+              <ol class="notes">
+                <li><span class="cite">[1]</span><span>Sugar is the 2nd ingredient.</span><span class="src">ingredient order on the pack</span></li>
+                <li><span class="cite">[2]</span><span>Colour INS 129, Allura Red AC.</span><span class="src">FSSAI App. A, limits per category · 25 Sep 2026</span></li>
+                <li><span class="cite">[3]</span><span>Made with industrial ingredients.</span><span class="src">maltodextrin, whey · NOVA group 4</span></li>
+              </ol>
+            </details>
+            <a class="btn-big" href="#h-app">Scan the next pack to compare</a>
+            <div class="pending"><span>Other wafers without milk</span><span class="pending-tag">In preparation</span></div>
+            <div class="pending"><span>Ask about this pack</span><span class="pending-tag">Pro · in preparation</span></div>
+          </div>
+        </div>
+        <div class="deep band" style="padding: 24px; border-radius: var(--r-xl); display: grid; gap: 16px; align-content: start">
+          <p class="kicker">On the deep panel</p>
+          <p style="margin: 0">Text on the panel, and <span class="on-muted">quieter text on the panel</span>.</p>
+          <a class="btn-big" href="#h-app">Take the photo</a>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="h-site">
+      <h2 class="h-serif" id="h-site">Website components</h2>
+      <dl class="ruled">
+        <div><dt>AI reads. Rules decide.</dt><dd>A model reads the photo. Fixed, tested rules make every finding.</dd></div>
+        <div><dt>FSSAI is the basis</dt><dd>Each additive with its Appendix A entry and the date checked.</dd></div>
+      </dl>
+      <div class="table-scroll">
+        <table class="sourced">
+          <thead><tr><th>Finding</th><th>For</th><th>Source</th></tr></thead>
+          <tbody>
+            <tr class="stop"><td>Contains milk</td><td>Aarav (avoid list)</td><td class="src">[1] Ingredients: milk solids, whey</td></tr>
+            <tr><td>INS 129, Allura Red AC</td><td>Everyone</td><td class="src">[2] FSSAI Appendix A, numeric limits per food category</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
