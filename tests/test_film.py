@@ -24,7 +24,7 @@ from insidelabel.api.main import WEB_DIR, app
 
 c = TestClient(app)
 FILM = os.path.join(WEB_DIR, "film")
-CUTS = ("hero-16x9", "hero-9x16")
+CUTS = ("hero2-16x9", "hero2-9x16")   # D-153: the film redone for the redesign, under new names
 RULE = "(max-width: 767px), (orientation: portrait)"
 SW = open(os.path.join(WEB_DIR, "sw.js"), encoding="utf-8").read()
 APP = open(os.path.join(WEB_DIR, "app.js"), encoding="utf-8").read()
@@ -81,13 +81,13 @@ def test_the_website_chooses_one_cut_per_screen_by_one_rule():
         assert attr in video, attr
     assert "src=" not in video and "<source" not in SITE[SITE.index("<video"):SITE.index("</video>")]
     # the still: <picture> with the same rule, sized so nothing shifts
-    assert f'<source media="{RULE}" srcset="/app/film/hero-9x16.webp" width="720" height="1280">' in SITE
-    assert '<img src="/app/film/hero-16x9.webp" width="1280" height="720"' in SITE
+    assert f'<source media="{RULE}" srcset="/app/film/hero2-9x16.webp" width="720" height="1280">' in SITE
+    assert '<img src="/app/film/hero2-16x9.webp" width="1280" height="720"' in SITE
     # the CSS: the same rule turns the box 9:16
     assert f"@media {RULE} {{" in SITE_CSS and "aspect-ratio: 9 / 16" in SITE_CSS
     script = SITE[SITE.index("<script>"):]
     assert f'matchMedia("{RULE}")' in script
-    assert '"/app/film/hero-" + (tall ? "9x16" : "16x9") + ".mp4"' in script
+    assert '"/app/film/hero2-" + (tall ? "9x16" : "16x9") + ".mp4"' in script
     assert script.count("film.src =") == 1                       # one file, set in one place
 
 

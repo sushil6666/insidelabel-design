@@ -96,7 +96,7 @@
     <section class="hero deep band">
       <div class="wrap wide hero-grid">
         <div class="hero-text">
-          <h1>Read the label <span class="mark">for your kids.</span></h1>
+          <h1>Read the label <span class="mark">for your family.</span></h1>
           <p class="lead">Scan the barcode, or photograph the ingredient list, of Indian packaged food. InsideLabel
             shows what matters for each person in your family first, and where every line comes from.</p>
           <a class="cta" href="/app/">Open the app</a>
@@ -108,8 +108,8 @@
               <!-- D-151: the still and the film follow one rule, the same in the CSS and the script below:
                    phones and portrait screens get the 9:16 cut, landscape screens the 16:9 cut. -->
               <picture>
-                <source media="(max-width: 767px), (orientation: portrait)" srcset="/app/film/hero-9x16.webp" width="720" height="1280">
-                <img src="/app/film/hero-16x9.webp" width="1280" height="720" alt="" fetchpriority="high">
+                <source media="(max-width: 767px), (orientation: portrait)" srcset="/app/film/hero2-9x16.webp" width="720" height="1280">
+                <img src="/app/film/hero2-16x9.webp" width="1280" height="720" alt="" fetchpriority="high">
               </picture>
               <video id="film" muted autoplay loop playsinline preload="none" aria-describedby="film-words"></video>
               <button class="film-toggle" id="film-toggle" type="button" aria-label="Play the film" hidden>
@@ -133,7 +133,7 @@
       <div class="section-head"><h2 class="h-serif big" id="how-title">How it works</h2></div>
       <ol class="ruled steps-ruled">
         <li><span class="n" aria-hidden="true">1</span><h3>Scan the barcode</h3><p>Packs we've already checked open at once.</p></li>
-        <li><span class="n" aria-hidden="true">2</span><h3>New pack? One photo of the ingredients list</h3><p>The block that starts with "Ingredients:". Not the nutrition table or the licence number. The front of the pack is optional.</p></li>
+        <li><span class="n" aria-hidden="true">2</span><h3>New pack? Photograph the ingredients and the nutrition table</h3><p>The list that starts with "Ingredients:" and the table of values. One photo if both fit, two if not. Not the licence number; the front of the pack is optional.</p></li>
         <li><span class="n" aria-hidden="true">3</span><h3>Each person's answer first</h3><p>Allergens and your family's avoid lists come first. The rest waits under "Worth knowing", each line with its source.</p></li>
       </ol>
     </section>
@@ -195,7 +195,7 @@
             150d, and nothing on the pack explained them.</p>
           <p>I've worked with data for years, so I built the tool I wanted: scan the pack and see what's in it, in plain
             words, starting with anything on your family's avoid list.</p>
-          <p>InsideLabel is paid for from my own money. No food company pays us, and none can change what we show.
+          <p>InsideLabel is paid for from my own money. No company whose labels we read pays us, and none can change what we show.
             I read every reported mistake myself.</p>
           <p class="founder-sign">Sushil Behera, founder · <a href="/about">About and methodology</a></p>
         </div>
@@ -223,7 +223,7 @@
       var btn = document.getElementById("film-toggle");
       if (!box || !film || !btn || !window.matchMedia) return;
       var tall = matchMedia("(max-width: 767px), (orientation: portrait)").matches;
-      var src = "/app/film/hero-" + (tall ? "9x16" : "16x9") + ".mp4";
+      var src = "/app/film/hero2-" + (tall ? "9x16" : "16x9") + ".mp4";
       var still = matchMedia("(prefers-reduced-motion: reduce)").matches;
       var save = navigator.connection && navigator.connection.saveData;
       var watch = !still && !save && "IntersectionObserver" in window;

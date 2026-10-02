@@ -27,13 +27,12 @@ new is promised here. Written 2026-09-30 by Claude; updated 2026-10-01 with Sush
 >   ingredient is looked up in biscuits), never a single product's result and never
 >   anything about a person.
 > - Looking up a pack stays free. Photo scans have a daily limit.
-> - No ads.
 >
 > Who pays for InsideLabel today: InsideLabel is paid for by its founder, Sushil Behera,
 > from his own money. There are no investors and no income yet.
 >
-> Ties to the food industry: None: no job, shares, advisory role or family business in
-> the food industry.
+> Ties to the industries whose labels we read: none. No job, shares, advisory role or family business in
+> food, skin care or personal care. (Widened 2026-10-03, D-156: InsideLabel will read those labels too.)
 >
 > If this policy ever changes, the change is dated on this page before it takes effect.
 
@@ -54,9 +53,9 @@ new is promised here. Written 2026-09-30 by Claude; updated 2026-10-01 with Sush
 | No affiliate links | "Explicitly not building" in `DECISIONS.md`: "affiliate revenue until a public methodology exists" |
 | Category totals only, never a product's result or a person | Blueprint §10 ("aggregate category intelligence only"; "may never buy ... their own product's verdict ... any individual user data") |
 | Looking up a pack stays free. Photo scans have a daily limit. | D-148 points 3, 6 and 7 (barcode lookups free forever; 15 photo scans a day in the beta); replaces D-053's "scans stay uncapped and free forever", now superseded |
-| No ads | D-148 points 2, 5 and 7 (none in the beta; none after unless a new decision says otherwise) |
+| ~~No ads~~ (removed 2026-10-03) | D-155: Sushil, "remove No ads. as we have plan for it"; the page dates the change |
 | Who pays: the founder's own money, no investors, no income | Sushil, 2026-10-01: "my own money" |
-| Ties to the food industry: none | Sushil, 2026-10-01: "none" |
+| Ties to the industries whose labels we read: none | Sushil, 2026-10-01: "none" (food); widened to skin care and personal care 2026-10-03, D-156 |
 | Who is behind it | Sushil, 2026-10-01: "Sushil Behera, a photo and a few sentences"; the sentences are Claude's draft for him to edit |
 | Changes dated before they take effect | New. Recommended so the promise can be checked; drop it if Sushil prefers |
 

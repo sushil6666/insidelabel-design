@@ -28,7 +28,7 @@ def sections():
 
 def test_the_sections_come_in_the_accepted_order():
     heads = [text(re.search(r"<h[12][^>]*>(.*?)</h[12]>", body, re.S).group(1)) for _attrs, body in sections()]
-    assert heads == ["Read the label for your kids.", "How it works", "One real pack, every line sourced",
+    assert heads == ["Read the label for your family.", "How it works", "One real pack, every line sourced",
                      "How we check", "In preparation", "Why I built InsideLabel", "Try it on your next shop."]
     assert 'class="hero deep band"' in sections()[0][0] and "deep band" in sections()[-1][0]
 

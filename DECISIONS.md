@@ -2868,6 +2868,23 @@ Sushil before merge; Lighthouse against D-152's numbers; `APP_VERSION` and the `
   sections use `content-visibility: auto`. **Measured** (Lighthouse mobile, median of 5, behind gzip as Caddy serves
   it): real throttling LCP 1619 to 1614 ms, CLS 0.039 to 0.011; simulated throttling LCP 1368 to 1532 ms (the
   simulation charges the bigger page's style and layout; a real slowed browser shows no difference). `tests/test_site_home.py`.
+- **The photo ask, changed by Sushil 2026-10-03:** "everywhere ingredients and Nutrition label we need for food
+  items". Step 2's ask had marked the nutrition table "Not needed"; D-133 reads it from the same back photos. The app
+  now asks "Photograph the ingredients and the nutrition table" ("1 or 2 photos": one if both fit, the table as a
+  second photo if not, through D-119's parts); the drawing marks both, only the licence "Not needed"; the food
+  result's re-check button, the photo check's tick (server) and the website's step 2 say the same. D-133's offer to
+  add the table afterwards stays, for when it was missed. web-41.
+- **The film, redone for the redesign (Sushil 2026-10-03: "what about the video on home page, need to change it as
+  well").** Same story, timings and music (D-151); its app screens now follow D-153: the header's wordmark and profile
+  icon (D-152), the photo of the ingredients and the nutrition table ("Ingredients and table." in place of "One
+  photo."), the deep result panel with the person line, the not-permitted tile, "Worth knowing (2)" and "Holding another
+  pack? Scan it to compare", the tile page's back button in the header, the partial read on the deep panel, and the
+  close "Read the label for your family.". Both cuts re-rendered (HyperFrames check: 0 errors, contrast 37/37); the
+  site's copies get new names, `web/film/hero2-16x9.mp4` (1.34 MB) and `hero2-9x16.mp4` (1.52 MB), so no browser keeps
+  the old film; the `hero-*` files are deleted. D-151's one-cut-per-screen rule is unchanged. The word sources are in
+  the film's BRIEF.md.
+- **The hero's headline, changed by Sushil 2026-10-03:** "Read the label for your family." in place of "...for your
+  kids." ("it's not true for your kids part": the profiles are you and the people you shop for, not only children).
 
 ### D-154 · The slow-scan line names no cause `LOCKED` (2026-10-02)
 **Number:** first recorded as D-153 on `main` (#94). The merge of #95, which used D-153 for the redesign, kept that
@@ -2879,6 +2896,45 @@ Why: D-124's line after 20 s was "Taking longer than usual: the reader is busy r
 - A Vision outage reaches Sushil as a `server` problem report (#87), never as words to the user.
 - **The 503 words** (same commit as the acceptance's follow-up, 2026-10-02): "The label reader is busy right now. Try again in a minute." became "Something on our side isn't working right now. Try again in a minute." Every 503 the server sends means the database is unavailable (`storage_unavailable`); the reader is never what failed.
 `tests/test_web.py::test_slow_scan_words_name_no_cause`.
+
+### D-155 · The site stops promising "No ads": ads may come after the beta `LOCKED` (2026-10-03)
+**Direction from Sushil, 2026-10-03:** "under Money and brands remove No ads. as we have plan for it". Supersedes D-148
+point 5's "Ads stay out unless a new decision says otherwise" and point 7's "no ads" on the conflict-of-interest page.
+D-148 point 2 stands: no ads during the beta (`docs/PLAY_RELEASE.md` still answers Play's ads question "No").
+**What "ads" means, Sushil 2026-10-03:** "in app we give different ads to get money if you are not a paid user": ads
+from an ad network for free users, none for Pro (D-148 point 4).
+- `/about`, "Money and brands": "No ads." is removed. The policy on that page promises that a change "is dated on this
+  page before it takes effect", so the page now says so: "Changed 3 October 2026: the line "No ads." is removed,
+  because ads may come later. Before any ad appears, this page will say where it goes and who may advertise, dated
+  before it takes effect."
+- **Not decided yet, needed before any ad ships (Claude):** who may advertise and where ads go. Also, with an ad
+  network: D-090 (no third-party JavaScript) and D-110 (no visitor IP sent to Google for a font) would both need a new
+  decision, since an ad network's script runs in the app; the privacy page, the DPDP data map and Play's ads and
+  Data safety answers change; and ads stay out of the result's people block and its findings (D-060, D-091). The same page still
+  says "No brand can pay us, and nothing a brand does changes what InsideLabel shows", the founder note says "No food
+  company pays us", and D-002 forbids paid influence on results: an ad from a food company would contradict all three.
+  D-148 point 5's other cautions stand as questions for that decision: what a web ad earns against a scan's cost, the
+  IMS Act and baby food (docs/BABY_FOOD.md), the DPDP Act's rules on children's data with an ad network, and an ad
+  before a scan.
+
+
+### D-156 · InsideLabel will read more than food labels; the conflict-of-interest "ties" line covers skin care and personal care `LOCKED` (2026-10-03)
+**Direction from Sushil, 2026-10-03:** "we are not focusing only food packet, will expand to other sector like skin
+care and personal care where is label we will reach." The product's scope will grow beyond packaged food. Nothing is
+built for it yet: the engine, the tables and every check stay food-only (FSSAI basis, D-086) until a decision on
+each new sector's primary documents (D-046).
+- `/about`, "Money and brands": "Ties to the food industry: none ... in the food industry." becomes "Ties to the
+  industries whose labels we read: none. No job, shares, advisory role or family business in food, skin care or
+  personal care." The page's own rule dates the change: a "Changes to this policy" list now holds this and D-155's.
+- **To confirm (Claude):** the "none" for skin care and personal care is Sushil's to state; the line was written from
+  this direction, and is to be corrected if any tie exists.
+- **Confirmed by Sushil, 2026-10-03:** "no ties in skin care or personal care".
+- **Left as Sushil wrote it:** his note says "No food company pays us" (D-153, on `/` and `/about`). It stays true; a
+  wider "No company whose labels we read pays us" is his choice to make.
+- **Changed by Sushil, 2026-10-03:** "change note to No company whose labels we read pays us". His note on `/` and
+  `/about` now says "No company whose labels we read pays us, and none can change what we show." (D-153 quotes the
+  first wording.)
+
 ---
 
 ## Open and pending

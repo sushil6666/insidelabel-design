@@ -662,6 +662,30 @@ setup alarms.
 
 **NEXT SESSION STARTS HERE (2026-10-01).** Where things stand, newest first:
 
+- **The home page's film redone for the redesign (2026-10-03, no app change), on `claude/trusting-einstein-kddhlb`.**
+  Both cuts re-rendered from `videos/insidelabel-how-it-reads/src/` with the redesign's screens, the ingredients and
+  nutrition table photo, and "Read the label for your family." at the close; served as `web/film/hero2-*` (old
+  `hero-*` deleted). D-153 note; film BRIEF.md and README updated. **Waiting on Sushil:** watch it; merge; `update.sh`.
+
+- **The photo ask wants the nutrition table too (2026-10-03, web-41), on `claude/trusting-einstein-kddhlb`.** Sushil:
+  "everywhere ingredients and Nutrition label we need for food items". "Photograph the ingredients and the nutrition
+  table", 1 or 2 photos; drawing, hints, the parts question, the food re-check button, the photo check's tick and the
+  website's step 2 follow (D-153 note). New test: every app script parses as a module (a stray ")" got past
+  `node --check` on .js). **Waiting on Sushil:** merge; `update.sh`.
+
+- **First-visit footer jump fixed; D-156 (2026-10-03, web-40, no migration), on `claude/trusting-einstein-kddhlb`.**
+  A screen still loading its words (`aria-busy`, "Before you start") no longer reveals the footer; `settled()` does
+  once the terms are in: 0 of 8 fresh visits shifted (was 3 to 5 of 6), Lighthouse CLS 0 in 5 of 5. D-156: InsideLabel
+  will read skin care and personal care labels too (not built); `/about`'s "ties" line now covers them and its
+  "Changes to this policy" list dates it. "None" for skin care and personal care confirmed by Sushil.
+  **Waiting on Sushil:** merge; `update.sh`.
+
+- **Two wording changes from Sushil (2026-10-03, no code), on `claude/trusting-einstein-kddhlb`.** The website hero
+  says "Read the label for your family." (was "for your kids": not true of a household's adults). D-155 (LOCKED):
+  `/about` no longer says "No ads." because ads may come after the beta; the page dates the change, as its own policy
+  requires. Before any ad ships, a decision on who may advertise and where (the same page still says no brand can pay
+  us). **Waiting on Sushil:** merge; `update.sh`.
+
 - **D-153 step 3, the website home (2026-10-03, no migration, no app change), on `claude/trusting-einstein-kddhlb`.**
   `/` rebuilt in the accepted order (hero, how it works, one sourced example with the brand hidden, how we check, in
   preparation, Sushil's note, closing band). The D-151 film rule and D-152's desktop size stay; the film sits in a

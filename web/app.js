@@ -100,7 +100,10 @@ function show(node) {
   shownOnce = true;
   setBack(node instanceof Element ? node.dataset.back : null, node instanceof Element ? node.dataset.backLabel : null);
   main.replaceChildren(node);
-  document.body.classList.add("ready");      // the footer shows once a screen is in place (CLS)
+  // The footer shows once a screen is in place (CLS). A screen still loading its words
+  // (aria-busy, e.g. "Before you start" on a first visit) calls settled() when they're in:
+  // shown under "Loading…", the footer jumped down when the terms arrived (D-153 step 2).
+  if (!(node instanceof Element && node.getAttribute("aria-busy") === "true")) settled();
   window.scrollTo(0, 0);
   const h = main.querySelector("h1, h2");
   if (h) { h.setAttribute("tabindex", "-1"); h.focus({ preventScroll: true }); }
@@ -108,6 +111,11 @@ function show(node) {
 
 // site-desktop: the header's left slot. A back button only on the screens that had one (a
 // result's own page, D-134); every other screen leaves it empty, so the name stays centred.
+function settled(view) {
+  if (view) view.removeAttribute("aria-busy");
+  document.body.classList.add("ready");
+}
+
 function setBack(href, label) {
   const slot = document.getElementById("top-left");
   if (!slot) return;
@@ -208,7 +216,8 @@ function agree() {
       el("ol", { class: "rules" }, t.points.map(p => el("li", {}, p))),
       el("label", { class: "choice", for: "agree" }, box, " " + t.agree_label),
       err, go_);
-  }).catch(e => view.replaceChildren(apiErrorView(e, () => show(agree()))));
+    settled(view);
+  }).catch(e => { view.replaceChildren(apiErrorView(e, () => show(agree()))); settled(view); });
   return view;
 }
 
@@ -679,14 +688,18 @@ function photo() {
   // D-153: a tester didn't know which panel "the back" meant (nutrition table, ingredients,
   // licence), how many photos, or why. So the ask names the panel, the count and the reason
   // first, and a drawing marks the one block to photograph.
+  // Sushil, 2026-10-03: for food, the ingredients and the nutrition table, everywhere (D-133
+  // reads the table from the same photos). One photo if both fit; the table as a second if not.
   const why = pending.barcode
     ? "We haven't checked this barcode yet, so we read the pack itself. Our team then checks it, " +
       "so the next scan of this barcode is instant, for everyone."
-    : "We read the ingredient list from your photo. It's usually on the back of the pack.";
+    : "We read the pack from your photo.";
   const ask = el("div", { class: "deep opener" },
-    el("p", { class: "kicker" }, pending.barcode ? "New pack · 1 photo" : "1 photo"),
-    el("h1", {}, "Photograph the ingredients list"),
-    el("p", { class: "on-muted" }, why));
+    el("p", { class: "kicker" }, pending.barcode ? "New pack · 1 or 2 photos" : "1 or 2 photos"),
+    el("h1", {}, "Photograph the ingredients and the nutrition table"),
+    el("p", { class: "on-muted" }, why),
+    el("p", { class: "on-muted" }, "Both are usually on the back. If they fit in one clear photo, one is enough; " +
+                                   "if not, take the table as a second photo."));
 
   const backPreview = el("div", { class: "thumb" });
   const frontPreview = el("div", { class: "thumb" });
@@ -706,28 +719,28 @@ function photo() {
     parts.replaceChildren();
     if (!pending.back) return;
     pending.parts.forEach((_b, i) => parts.append(
-      el("p", { class: "check ok", role: "status" }, icon("check"), `Part ${i + 2} of the list added.`)));
+      el("p", { class: "check ok", role: "status" }, icon("check"), `Photo ${i + 2} added.`)));
     if (pending.parts.length >= 2 || more === null) return;
     const n = pending.parts.length + 2;
-    const ask = n === 2 ? "Is the whole ingredient list in this photo?" : "Is that the end of the list?";
+    const ask = n === 2 ? "Are the whole ingredient list and the nutrition table in this photo?" : "Is everything in now?";
     if (!more) {
       parts.append(el("div", { class: "card" },
         el("h2", {}, ask),
         el("p", { class: "muted" }, n === 2
-          ? "On a big pack the list may not fit one clear photo. You can take it in parts instead."
-          : "You can add one more part if the list still goes on."),
+          ? "If not, take what's missing as a second photo: the rest of the list, or the nutrition table."
+          : "You can add one more photo if something is still missing."),
         el("div", { class: "row wrap" },
           el("button", { type: "button", class: "btn", onclick: () => { more = null; drawParts(); } },
-             n === 2 ? "Yes, one photo is enough" : "Yes, that's all"),
+             n === 2 ? "Yes, both are in" : "Yes, that's all"),
           el("button", { type: "button", class: "btn", onclick: () => { more = true; drawParts(); } },
-             `No, add part ${n}`))));
+             `No, add photo ${n}`))));
       return;
     }
     const prev = el("div", { class: "thumb" });
     parts.append(el("div", { class: "card" },
-      el("h2", {}, `Part ${n} of the list`),
-      el("p", { class: "muted" }, "Start where the last photo ended; a little overlap is fine."),
-      photoPicker("back" + n, `Take part ${n} of the list`, prev, (b, res, source) => {
+      el("h2", {}, `Photo ${n}`),
+      el("p", { class: "muted" }, "What the last photo missed: the rest of the list, or the nutrition table. A little overlap is fine."),
+      photoPicker("back" + n, `Take photo ${n}`, prev, (b, res, source) => {
         if (!b || (res && !res.ok)) return;
         pending.parts.push(b);
         pending.partSources.push(source);
@@ -746,11 +759,11 @@ function photo() {
   return el("section", { class: "stack photo-ask" },
     ask,
     el("figure", { class: "pack-back" }, packBack(),
-      el("figcaption", { class: "src" }, "The back of a pack. Photograph only the green block.")),
+      el("figcaption", { class: "src" }, "The back of a pack. Photograph the green blocks: in one photo if they fit, or two.")),
     el("dl", { class: "ruled hints" },
-      el("div", {}, el("dt", {}, "Frame"), el("dd", {}, "From \"Ingredients:\" to the last word.")),
+      el("div", {}, el("dt", {}, "Frame"), el("dd", {}, "The whole ingredient list, from \"Ingredients:\" to the last word, and the whole nutrition table.")),
       el("div", {}, el("dt", {}, "Light"), el("dd", {}, "Hold the pack flat and close, without glare."))),
-    backPicker = photoPicker("back", pending.back ? "Retake the ingredients photo" : "Take the ingredients photo", backPreview,
+    backPicker = photoPicker("back", pending.back ? "Retake the photo" : "Take the photo", backPreview,
                 (b, res, source) => {
                   // A red cross keeps "Check this pack" off; an unchecked photo (the
                   // check couldn't run) is let through, and /scan checks it again anyway.
@@ -1136,7 +1149,7 @@ function result(id, sub, tileId) {
   if (askTable) put(el("div", { class: "card note" }, el("p", {}, s.nutrition.text),
     button(s.nutrition.ask, () => go("table"))));
   if (s.recheck) put(el("div", { class: "card note" }, el("p", {}, s.recheck),
-    button("Photograph the ingredients list", () => {
+    button("Photograph the ingredients and nutrition table", () => {
       resetPending();
       pending.barcode = h.barcode;
       pending.frontWanted = !!h.catalogue?.front_wanted;           // D-100
@@ -1773,11 +1786,11 @@ window.addEventListener("unhandledrejection", e => {
 function packBack() {
   const lines = n => Array.from({ length: n }, () => el("span", { class: "pb-line" }));
   return el("div", { class: "pb", role: "img",
-                     "aria-label": "The back of a pack: the ingredients list is marked; the nutrition table and the licence number are not needed" },
+                     "aria-label": "The back of a pack: the ingredients list and the nutrition table are marked; the licence number is not needed" },
     el("div", { class: "pb-ing", "aria-hidden": "true" },
-      el("span", { class: "pb-tag" }, "This one"),
+      el("span", { class: "pb-tag" }, "Photograph these"),
       el("span", { class: "pb-title" }, "INGREDIENTS:"), ...lines(3)),
-    el("div", { class: "pb-skip", "aria-hidden": "true" }, el("span", {}, "Nutrition table"), ...lines(3), el("em", {}, "Not needed")),
+    el("div", { class: "pb-ing pb-half", "aria-hidden": "true" }, el("span", { class: "pb-title" }, "NUTRITION"), ...lines(3)),
     el("div", { class: "pb-skip", "aria-hidden": "true" }, el("span", {}, "FSSAI licence"), ...lines(2), el("em", {}, "Not needed")));
 }
 
