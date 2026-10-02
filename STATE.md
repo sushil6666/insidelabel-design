@@ -662,6 +662,12 @@ setup alarms.
 
 **NEXT SESSION STARTS HERE (2026-10-01).** Where things stand, newest first:
 
+- **Two wording changes from Sushil (2026-10-03, no code), on `claude/trusting-einstein-kddhlb`.** The website hero
+  says "Read the label for your family." (was "for your kids": not true of a household's adults). D-155 (LOCKED):
+  `/about` no longer says "No ads." because ads may come after the beta; the page dates the change, as its own policy
+  requires. Before any ad ships, a decision on who may advertise and where (the same page still says no brand can pay
+  us). **Waiting on Sushil:** merge; `update.sh`.
+
 - **D-153 step 3, the website home (2026-10-03, no migration, no app change), on `claude/trusting-einstein-kddhlb`.**
   `/` rebuilt in the accepted order (hero, how it works, one sourced example with the brand hidden, how we check, in
   preparation, Sushil's note, closing band). The D-151 film rule and D-152's desktop size stay; the film sits in a

@@ -2868,6 +2868,8 @@ Sushil before merge; Lighthouse against D-152's numbers; `APP_VERSION` and the `
   sections use `content-visibility: auto`. **Measured** (Lighthouse mobile, median of 5, behind gzip as Caddy serves
   it): real throttling LCP 1619 to 1614 ms, CLS 0.039 to 0.011; simulated throttling LCP 1368 to 1532 ms (the
   simulation charges the bigger page's style and layout; a real slowed browser shows no difference). `tests/test_site_home.py`.
+- **The hero's headline, changed by Sushil 2026-10-03:** "Read the label for your family." in place of "...for your
+  kids." ("it's not true for your kids part": the profiles are you and the people you shop for, not only children).
 
 ### D-154 · The slow-scan line names no cause `LOCKED` (2026-10-02)
 **Number:** first recorded as D-153 on `main` (#94). The merge of #95, which used D-153 for the redesign, kept that
@@ -2879,6 +2881,22 @@ Why: D-124's line after 20 s was "Taking longer than usual: the reader is busy r
 - A Vision outage reaches Sushil as a `server` problem report (#87), never as words to the user.
 - **The 503 words** (same commit as the acceptance's follow-up, 2026-10-02): "The label reader is busy right now. Try again in a minute." became "Something on our side isn't working right now. Try again in a minute." Every 503 the server sends means the database is unavailable (`storage_unavailable`); the reader is never what failed.
 `tests/test_web.py::test_slow_scan_words_name_no_cause`.
+
+### D-155 · The site stops promising "No ads": ads may come after the beta `LOCKED` (2026-10-03)
+**Direction from Sushil, 2026-10-03:** "under Money and brands remove No ads. as we have plan for it". Supersedes D-148
+point 5's "Ads stay out unless a new decision says otherwise" and point 7's "no ads" on the conflict-of-interest page.
+D-148 point 2 stands: no ads during the beta (`docs/PLAY_RELEASE.md` still answers Play's ads question "No").
+- `/about`, "Money and brands": "No ads." is removed. The policy on that page promises that a change "is dated on this
+  page before it takes effect", so the page now says so: "Changed 3 October 2026: the line "No ads." is removed,
+  because ads may come later. Before any ad appears, this page will say where it goes and who may advertise, dated
+  before it takes effect."
+- **Not decided yet, needed before any ad ships (Claude):** who may advertise and where ads go. The same page still
+  says "No brand can pay us, and nothing a brand does changes what InsideLabel shows", the founder note says "No food
+  company pays us", and D-002 forbids paid influence on results: an ad from a food company would contradict all three.
+  D-148 point 5's other cautions stand as questions for that decision: what a web ad earns against a scan's cost, the
+  IMS Act and baby food (docs/BABY_FOOD.md), the DPDP Act's rules on children's data with an ad network, and an ad
+  before a scan.
+
 ---
 
 ## Open and pending
