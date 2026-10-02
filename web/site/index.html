@@ -108,8 +108,8 @@
               <!-- D-151: the still and the film follow one rule, the same in the CSS and the script below:
                    phones and portrait screens get the 9:16 cut, landscape screens the 16:9 cut. -->
               <picture>
-                <source media="(max-width: 767px), (orientation: portrait)" srcset="/app/film/hero-9x16.webp" width="720" height="1280">
-                <img src="/app/film/hero-16x9.webp" width="1280" height="720" alt="" fetchpriority="high">
+                <source media="(max-width: 767px), (orientation: portrait)" srcset="/app/film/hero2-9x16.webp" width="720" height="1280">
+                <img src="/app/film/hero2-16x9.webp" width="1280" height="720" alt="" fetchpriority="high">
               </picture>
               <video id="film" muted autoplay loop playsinline preload="none" aria-describedby="film-words"></video>
               <button class="film-toggle" id="film-toggle" type="button" aria-label="Play the film" hidden>
@@ -223,7 +223,7 @@
       var btn = document.getElementById("film-toggle");
       if (!box || !film || !btn || !window.matchMedia) return;
       var tall = matchMedia("(max-width: 767px), (orientation: portrait)").matches;
-      var src = "/app/film/hero-" + (tall ? "9x16" : "16x9") + ".mp4";
+      var src = "/app/film/hero2-" + (tall ? "9x16" : "16x9") + ".mp4";
       var still = matchMedia("(prefers-reduced-motion: reduce)").matches;
       var save = navigator.connection && navigator.connection.saveData;
       var watch = !still && !save && "IntersectionObserver" in window;

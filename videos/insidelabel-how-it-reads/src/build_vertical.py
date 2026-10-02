@@ -16,14 +16,16 @@ FONTS = """
       @font-face { font-family: "Bricolage Grotesque"; font-weight: 800; src: url("assets/fonts/bricolage-grotesque-800.woff2") format("woff2"); }
       @font-face { font-family: "DM Sans"; font-weight: 400; src: url("assets/fonts/dm-sans-400.woff2") format("woff2"); }
       @font-face { font-family: "DM Sans"; font-weight: 600; src: url("assets/fonts/dm-sans-600.woff2") format("woff2"); }
-      @font-face { font-family: "DM Sans"; font-weight: 700; src: url("assets/fonts/dm-sans-700.woff2") format("woff2"); }"""
+      @font-face { font-family: "DM Sans"; font-weight: 700; src: url("assets/fonts/dm-sans-700.woff2") format("woff2"); }
+      @font-face { font-family: "Source Serif 4"; font-weight: 600; src: url("assets/fonts/source-serif-4-600.woff2") format("woff2"); }"""
 
 TOKENS = """
         --bg: #fbf9ee; --surface: #ffffff; --ink: #244b6b; --muted: #57768c; --line: #c9e3ec;
         --brand: #048149; --brand-ink: #fcfcf8; --ring: #008cba;
         --stop: #c92324; --stop-bg: #ffe5e0; --unsure: #6c380d; --unsure-bg: #ffefcd; --unsure-line: #f59e3b;
         --calm: #194860; --calm-bg: #d5f7f4;
-        --display: "Bricolage Grotesque", "DM Sans", sans-serif; --font: "DM Sans", sans-serif;"""
+        --display: "Bricolage Grotesque", "DM Sans", sans-serif; --font: "DM Sans", sans-serif;
+        --deep: #193b57; --on-deep: #f3fbf6; --on-deep-muted: #cfe6ee; --serif: "Source Serif 4", Georgia, serif;"""
 
 # Everything below is in canvas pixels except inside .app, which is the app's own CSS pixels
 # (390 wide) scaled 1.159 onto the phone's 452 px screen.
@@ -39,12 +41,27 @@ CSS = """
              background: radial-gradient(60% 40% at 10% 5%, rgba(196, 246, 212, .7), rgba(196, 246, 212, 0) 70%), var(--bg); }
       .layer { position: absolute; inset: 0; }
       .a-status { height: 40px; }
-      .a-head { display: flex; align-items: center; justify-content: space-between; padding: 4px 12px 10px; border-bottom: 1px solid var(--line); }
+      .a-head { display: grid; grid-template-columns: 40px 1fr 40px; align-items: center; padding: 2px 8px 8px; }
+      .a-wm { justify-self: center; display: block; width: 150px; height: 30px; }
+      .a-icon { width: 24px; height: 24px; display: block; justify-self: center; }
       .a-brand { display: flex; align-items: center; gap: 7px; font-weight: 700; font-size: 17px; }
       .a-mark { width: 26px; height: 26px; display: block; background: url("assets/icon.svg") center / contain no-repeat; }
-      .a-pills span { display: inline-block; border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 5px 10px;
-                      font-size: 12px; font-weight: 700; margin-left: 5px; }
       .a-body { padding: 14px 16px; }
+      .a-deep { background: var(--deep); color: var(--on-deep); border-radius: 0 0 28px 28px; padding: 6px 18px 18px; }
+      .a-prod { font-family: var(--serif); font-weight: 600; font-size: 18px; line-height: 1.3; margin-bottom: 10px; }
+      .a-pl { border-radius: 20px; padding: 13px 16px 14px; }
+      .a-pl .a-who { color: inherit; margin-bottom: 4px; }
+      .a-pl b { display: block; font-family: var(--display); font-weight: 800; }
+      .a-pl.stop { background: var(--stop-bg); color: var(--stop); } .a-pl.stop b { font-size: 22px; line-height: 1.12; }
+      .a-pl.unsure { background: var(--unsure-bg); color: var(--unsure); } .a-pl.unsure b { font-size: 17px; line-height: 1.22; }
+      .a-hs { font-family: var(--serif); font-weight: 600; font-size: 18px; line-height: 1.25; margin: 2px 0 12px; }
+      .a-fold { display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--line);
+                border-bottom: 1px solid var(--line); padding: 12px 2px; margin-top: 6px; font-family: var(--serif); font-weight: 600; font-size: 16px; }
+      .a-big { margin-top: 14px; background: var(--brand); color: #fff; border-radius: 20px; text-align: center; padding: 15px 12px;
+               font-weight: 700; font-size: 15px; }
+      .a-nut { margin-top: 12px; border-top: 2px solid #3b3a33; padding-top: 6px; font-size: 11.5px; line-height: 1.55; }
+      .a-nut span { display: flex; justify-content: space-between; border-bottom: 1px solid #d8d2bf; }
+      .a-nut i { font-style: normal; }
       .a-pack { font-size: 14px; font-weight: 700; color: var(--muted); margin-bottom: 10px; }
       .a-card { position: relative; border-radius: 14px; padding: 12px 14px 13px 19px; margin-bottom: 10px; overflow: hidden; }
       .a-card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--bar); }
@@ -67,7 +84,6 @@ CSS = """
       .a-note { border-radius: 14px; border: 1px solid var(--unsure-line); background: var(--unsure-bg); padding: 12px 14px; font-size: 14px; line-height: 1.45; color: var(--unsure); }
       .a-btn { display: inline-block; margin-top: 10px; background: #fff; border: 1px solid var(--muted); border-radius: 999px; padding: 9px 16px;
                font-size: 14px; font-weight: 700; color: var(--ink); }
-      .a-back { font-size: 15px; font-weight: 700; color: var(--brand); margin-bottom: 14px; }
       .a-title { font-family: var(--display); font-weight: 800; font-size: 25px; line-height: 1.15; margin: 4px 0 10px; }
       .a-pill { display: inline-block; border-radius: 999px; padding: 4px 10px; font-size: 13px; font-weight: 700; background: var(--stop-bg); color: var(--stop); }
       .a-notice { position: relative; margin: 12px 0 14px; border-radius: 14px; border: 1px solid var(--stop); background: var(--stop-bg);
@@ -81,10 +97,10 @@ CSS = """
       .qt { position: relative; }
       /* camera */
       .a-cam { position: absolute; inset: 0; background: #0f1c26; }
-      .a-photo { position: absolute; left: 36px; top: 170px; width: 318px; padding: 18px 18px 22px; border-radius: 10px; background: #fffaf0;
+      .a-photo { position: absolute; left: 36px; top: 164px; width: 318px; padding: 16px 18px 18px; border-radius: 10px; background: #fffaf0;
                  font-size: 13px; line-height: 1.5; color: #3b3a33; }
       .a-photo b { font-weight: 700; }
-      .a-frame { position: absolute; left: 22px; top: 156px; width: 346px; height: 230px; display: block; }
+      .a-frame { position: absolute; left: 22px; top: 150px; width: 346px; height: 400px; display: block; }
       .a-corner { position: absolute; width: 40px; height: 40px; border: 0 solid #6dc88f; display: block; }
       .k1 { left: 0; top: 0; border-top-width: 4px; border-left-width: 4px; border-top-left-radius: 14px; }
       .k2 { right: 0; top: 0; border-top-width: 4px; border-right-width: 4px; border-top-right-radius: 14px; }
@@ -121,8 +137,14 @@ LABEL_TEXT = ("Wheat flour (maida), Sugar, Edible vegetable oil (palm), Hydrogen
               "Flour treatment agent (924a), Emulsifier (322).")
 
 HEAD = """<div class="a-status"></div>
-            <div class="a-head"><div class="a-brand"><i class="a-mark"></i>InsideLabel</div>
-              <div class="a-pills"><span>Compare</span><span>Household</span></div></div>"""
+            <div class="a-head"><span></span><svg class="a-wm" width="170" height="34" viewBox="0 0 170 34"><style>.wm-ink{fill:#244b6b}</style><svg width="34" height="34" viewBox="0 0 512 512"><defs><linearGradient id="wm-t" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#07924f"/><stop offset="1" stop-color="#035c34"/></linearGradient><linearGradient id="wm-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffd166"/><stop offset="1" stop-color="#e9a91c"/></linearGradient></defs><rect width="512" height="512" rx="112" fill="url(#wm-t)"/><g fill="#fcfcf8"><rect x="96" y="150" width="14" height="190"/><rect x="124" y="150" width="7" height="190"/><rect x="144" y="150" width="20" height="190"/><rect x="178" y="150" width="7" height="190"/><rect x="198" y="150" width="14" height="190"/><rect x="226" y="150" width="7" height="190"/><rect x="246" y="150" width="20" height="190"/></g><circle cx="310" cy="240" r="92" fill="#035c34" stroke="url(#wm-g)" stroke-width="30"/><g fill="#ffd166"><rect x="266" y="206" width="88" height="14" rx="7"/><rect x="266" y="234" width="64" height="14" rx="7"/><rect x="266" y="262" width="76" height="14" rx="7"/></g><path d="M378 312 L432 366" stroke="url(#wm-g)" stroke-width="38" stroke-linecap="round"/></svg><path class="wm-ink" transform="scale(.25)" d="M170 99 181 37H193L182 99ZM194 99 202 54H213L213 61Q215 58 219 56Q224 53 229 53Q234 53 238 56Q241 58 242 63Q243 67 242 73L238 99H226L230 74Q231 69 229 67Q227 64 223 64Q220 64 217 65Q215 66 213 69Q211 71 211 75L207 99ZM268 100Q261 100 257 98Q253 96 251 92Q249 89 249 84H261Q261 86 262 88Q263 89 265 90Q266 91 269 91Q271 91 273 90Q274 89 275 88Q276 87 276 85Q277 84 276 83Q275 82 273 82Q271 81 269 81Q266 80 263 79Q260 78 258 76Q256 75 255 73Q253 71 254 68Q254 64 256 60Q259 57 264 55Q268 53 274 53Q282 53 286 57Q291 61 291 67H279Q279 65 277 64Q275 63 272 63Q269 63 268 64Q266 65 266 67Q266 68 267 69Q268 70 269 71Q271 71 274 72Q277 72 280 73Q283 74 285 76Q287 77 288 79Q289 81 289 84Q289 89 286 93Q283 96 278 98Q274 100 268 100ZM297 99 305 54H317L309 99ZM313 49Q310 49 308 47Q305 45 305 42Q306 39 308 37Q310 35 313 35Q316 35 319 37Q321 39 321 42Q321 45 318 47Q316 49 313 49ZM340 100Q335 100 331 97Q327 94 325 90Q323 85 323 79Q324 74 326 69Q328 64 331 61Q334 57 339 55Q343 53 348 53Q353 53 357 55Q360 57 362 60L366 35H378L367 99H356L356 93Q354 95 352 96Q350 98 347 99Q344 100 340 100ZM345 89Q349 89 352 87Q355 85 357 82Q359 79 359 75Q359 72 358 69Q357 67 355 65Q353 64 350 64Q346 64 343 66Q340 68 338 71Q336 74 336 78Q336 81 337 84Q338 86 340 88Q343 89 345 89ZM400 100Q394 100 389 97Q385 95 383 90Q381 86 381 80Q381 74 383 70Q385 65 389 61Q392 58 397 55Q402 53 408 53Q414 53 418 56Q423 58 425 63Q427 67 427 72Q427 74 426 76Q426 78 425 80H389L391 72H414Q415 69 414 67Q413 65 411 64Q409 63 406 63Q403 63 401 65Q398 66 396 69Q394 72 394 76L393 78Q392 82 393 84Q394 87 396 88Q398 90 402 90Q405 90 407 89Q409 87 411 85H423Q421 89 418 93Q414 96 410 98Q405 100 400 100ZM432 99 443 37H455L446 89H473L471 99ZM496 100Q491 100 488 98Q485 97 484 94Q482 91 482 88Q482 83 485 80Q488 77 492 75Q497 73 504 73H515Q515 70 515 68Q514 65 513 64Q511 63 508 63Q505 63 502 65Q500 66 499 69H487Q488 64 491 61Q495 57 499 55Q504 53 510 53Q516 53 520 56Q525 58 526 62Q528 66 527 71L522 99H512L512 92Q510 94 509 95Q507 97 505 98Q503 99 501 99Q499 100 496 100ZM501 90Q503 90 505 90Q507 89 509 87Q510 86 511 84Q512 82 513 80V80H504Q501 80 499 81Q498 82 497 83Q496 84 496 86Q495 88 497 89Q498 90 501 90ZM560 100Q557 100 554 99Q552 98 550 97Q548 95 547 93L545 99H534L545 35H557L553 60Q556 57 559 55Q563 53 568 53Q573 53 577 56Q582 59 584 63Q586 68 585 74Q585 79 583 84Q581 89 578 92Q574 96 570 98Q565 100 560 100ZM559 89Q563 89 566 87Q569 86 571 82Q573 79 573 75Q573 72 572 70Q571 67 568 66Q566 64 563 64Q559 64 556 66Q553 68 552 71Q550 74 550 78Q549 81 551 84Q552 86 554 88Q556 89 559 89ZM613 100Q607 100 602 97Q598 95 596 90Q593 86 594 80Q594 74 596 70Q598 65 602 61Q605 58 610 55Q615 53 621 53Q627 53 631 56Q636 58 638 63Q640 67 640 72Q640 74 639 76Q639 78 638 80H602L604 72H627Q628 69 627 67Q626 65 624 64Q622 63 619 63Q616 63 614 65Q611 66 609 69Q607 72 607 76L606 78Q605 82 606 84Q607 87 609 88Q611 90 615 90Q618 90 620 89Q622 87 624 85H636Q634 89 631 93Q627 96 623 98Q618 100 613 100ZM645 99 656 35H668L657 99Z"/></svg><svg class="a-icon" viewBox="0 0 24 24" fill="none" stroke="#244b6b" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4" /><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6" /></svg></div>"""
+# a result's own page has the back button in the header's left slot (D-152)
+HEAD_BACK = HEAD.replace("<span></span>", '<svg class="a-icon" viewBox="0 0 24 24" fill="none" stroke="#244b6b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6" /></svg>', 1)
+NUTRITION = ("<div class=\"a-nut\"><b>NUTRITION INFORMATION</b> (per 100 g)"
+             "<span><i>Energy (kcal)</i><i>489</i></span><span><i>Protein (g)</i><i>6.8</i></span>"
+             "<span><i>Carbohydrate (g)</i><i>68.2</i></span><span><i>Total sugars (g)</i><i>24.1</i></span>"
+             "<span><i>Total fat (g)</i><i>21.0</i></span><span><i>Sodium (mg)</i><i>310</i></span></div>")
+CHEV_DOWN = '<svg class="a-chev" viewBox="0 0 24 24" fill="none" stroke="#244b6b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6" /></svg>'
 
 CHEV = '<svg class="a-chev" viewBox="0 0 24 24" fill="none" stroke="#244b6b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6" /></svg>'
 PACK_ICON = ('<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#57768c" stroke-width="2" stroke-linecap="round" '
@@ -133,7 +155,7 @@ def camera(c, blurred=False):
     blur = ' style="filter: blur(2.6px)"' if blurred else ""
     photo_id = f' id="{c}-photo"'
     return f"""<div class="layer a-cam" id="{c}-cam-screen" data-layout-allow-overlap data-layout-allow-occlusion>
-            <div class="a-photo"{photo_id}{blur}><b>INGREDIENTS:</b> {LABEL_TEXT}</div>
+            <div class="a-photo"{photo_id}{blur}><b>INGREDIENTS:</b> {LABEL_TEXT}{NUTRITION}</div>
             <div class="a-frame" id="{c}-frame"><span class="a-corner k1"></span><span class="a-corner k2"></span><span class="a-corner k3"></span><span class="a-corner k4"></span></div>
             <div class="a-shutter" id="{c}-shutter"><i></i></div>
             <span class="a-flash" id="{c}-flash"></span>
@@ -155,23 +177,26 @@ def waiting(c, title_on, secs, first_on):
 
 
 def result(c, finger=False):
+    # D-153: the deep panel with the pack and the person line; a not-permitted additive stays open (D-111);
+    # the rest waits under "Worth knowing"; the screen ends on the next pack (D-057).
     f = f'<span class="finger" id="{c}-finger"></span>' if finger else ""
     return f"""<div class="layer" id="{c}-result" data-layout-allow-overlap data-layout-allow-occlusion>{HEAD}
+            <div class="a-deep">
+              <div class="a-prod {c}-r">Sample biscuits</div>
+              <div class="a-pl stop {c}-r" id="{c}-allergen"><div class="a-who">You</div><b>Contains milk. It's on your avoid list.</b></div>
+            </div>
             <div class="a-body">
-              <div class="a-pack {c}-r">Sample biscuits</div>
-              <div class="a-card a-stop {c}-r" id="{c}-allergen"><div class="a-who">You</div><p>Contains milk. It's on your avoid list.</p></div>
-              <div class="a-h {c}-r2">Has Potassium bromate, an additive with higher concern.</div>
+              <div class="a-hs {c}-r2">Has Potassium bromate, an additive with higher concern.</div>
               <div class="a-tile stop {c}-r2" id="{c}-tile1"><span class="a-disc">&#215;</span><div><div class="a-t">Potassium bromate (flour treatment 924a)</div><div class="a-c">Not permitted in India</div></div>{CHEV}{f}</div>
-              <div class="a-tile unsure {c}-r2"><span class="a-disc">!</span><div><div class="a-t">Tartrazine (colour 102)</div><div class="a-c">Worth knowing</div></div>{CHEV}</div>
-              <div class="a-tile unsure {c}-r2"><span class="a-disc">!</span><div><div class="a-t">Hydrogenated fat</div><div class="a-c">4th of 11</div></div>{CHEV}</div>
+              <div class="a-fold {c}-r2"><span>Worth knowing (2)</span>{CHEV_DOWN}</div>
+              <div class="a-big {c}-r2">Holding another pack? Scan it to compare</div>
             </div>
           </div>"""
 
 
 def tile_page(c):
-    return f"""<div class="layer" id="{c}-page" data-layout-allow-overlap data-layout-allow-occlusion>{HEAD}
+    return f"""<div class="layer" id="{c}-page" data-layout-allow-overlap data-layout-allow-occlusion>{HEAD_BACK}
             <div class="a-body">
-              <div class="a-back">&#8249; Back to the result</div>
               <div class="a-pack">Sample biscuits</div>
               <div class="a-title">Potassium bromate (flour treatment 924a)</div>
               <span class="a-pill">Not permitted in India</span>
@@ -185,10 +210,12 @@ def tile_page(c):
 
 def unsure(c):
     return f"""<div class="layer" id="{c}-unsure" data-layout-allow-overlap data-layout-allow-occlusion>{HEAD}
+            <div class="a-deep">
+              <div class="a-prod {c}-u">Sample biscuits</div>
+              <div class="a-pl unsure {c}-u" id="{c}-ucard"><div class="a-who">You</div><b>We couldn't read the label clearly enough to check for milk. Please retake the ingredients photo.</b></div>
+            </div>
             <div class="a-body">
-              <div class="a-pack {c}-u">Sample biscuits</div>
-              <div class="a-card a-unsure {c}-u" id="{c}-ucard"><div class="a-who">You</div><p>We couldn't read the label clearly enough to check for milk. Please retake the ingredients photo.</p></div>
-              <div class="a-h {c}-u">We could read only part of the ingredient list.</div>
+              <div class="a-hs {c}-u">We could read only part of the ingredient list.</div>
               <div class="a-note {c}-u">Part of the ingredient list was cut off or hard to read. Retake it to check the rest.<br /><span class="a-btn">Retake the ingredients photo</span></div>
             </div>
           </div>"""
@@ -272,7 +299,7 @@ macro_css = """
               font-family: var(--display); font-weight: 800; font-size: 92px; letter-spacing: -0.02em; }
       #c1-q .w { display: inline-block; margin: 0 .12em; }"""
 body = (phone(c, camera(c) + waiting(c, 0, range(1, 5), 0)) +
-        words(c, [w("One photo.")]) +
+        words(c, [w("Ingredients <em>and</em> table.")]) +
         f'<div id="c1-macro" data-layout-allow-overlap><p><b>INGREDIENTS:</b> {LABEL_TEXT}</p><p>Contains permitted synthetic food colour and added flavours (nature identical flavouring substances). Store in a cool and dry place. Best before 6 months from manufacture.</p><div id="c1-q">{w("Can you find the milk?")}</div></div>')
 script = """
       tl.fromTo("#c1-q", { opacity: 0, y: 40 }, { opacity: 1, y: 0, ...E }, 0.3);
@@ -404,7 +431,7 @@ end_css = """
       #c6-t { width: 920px; font-family: var(--display); font-weight: 800; font-size: 124px; letter-spacing: -0.02em; line-height: 1.05; }
       #c6-t .w { display: inline-block; margin: 0 .12em; }
       #c6-url { font-size: 54px; font-weight: 700; color: var(--brand); }"""
-tagline = w("See what's inside the pack")
+tagline = w("Read the label for your family.")
 body = f'<div class="cam" id="c6-camw"></div><div id="c6-end"><img id="c6-logo" src="assets/icon.svg" alt="" /><div id="c6-t">{tagline}</div><div id="c6-url">insidelabel.ai</div></div>'
 script = """
       tl.fromTo("#c6-logo", { opacity: 0, scale: 0.86 }, { opacity: 1, scale: 1, duration: 0.7, ease: "power3.out" }, 0.1);
@@ -439,8 +466,8 @@ GROUND = f"""<!doctype html>
 """
 
 import json, subprocess, sys
-# measured 2026-10-01; ./make.sh re-measures and passes fresh points
-POINTS = json.loads(sys.argv[1]) if len(sys.argv) > 1 else {"c3-allergen": [540, 720], "c5-ucard": [540, 762]}
+# measured 2026-10-03 (the redesign's screens, D-153); ./make.sh re-measures and passes fresh points
+POINTS = json.loads(sys.argv[1]) if len(sys.argv) > 1 else {"c3-allergen": [540, 734], "c5-ucard": [540, 746]}
 for key in ("c3-allergen", "c5-ucard"):
     x, y = POINTS.get(key, [540, 960])[:2]
     for i, sc in enumerate(scenes):

@@ -8,6 +8,10 @@ in `style-frames/`, which are real screens of the app.
 
 ## The five frames, and what each one teaches
 
+2026-10-03: these frames show the app before the redesign (D-153). The film's screens in `src/` now follow the
+redesign (the deep result panel, person lines, "Worth knowing", serif headings, the header's wordmark and profile
+icon); take the colour and type rules below from `web/app.css`'s D-153 block where they differ.
+
 | Frame | Take from it |
 |---|---|
 | `1-home.png` | The one big green action (`--brand`, radius 24, white text, a drawn icon at left). Cream page with soft mint and blue glows in the corners. |

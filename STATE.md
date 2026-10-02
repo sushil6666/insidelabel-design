@@ -662,6 +662,11 @@ setup alarms.
 
 **NEXT SESSION STARTS HERE (2026-10-01).** Where things stand, newest first:
 
+- **The home page's film redone for the redesign (2026-10-03, no app change), on `claude/trusting-einstein-kddhlb`.**
+  Both cuts re-rendered from `videos/insidelabel-how-it-reads/src/` with the redesign's screens, the ingredients and
+  nutrition table photo, and "Read the label for your family." at the close; served as `web/film/hero2-*` (old
+  `hero-*` deleted). D-153 note; film BRIEF.md and README updated. **Waiting on Sushil:** watch it; merge; `update.sh`.
+
 - **The photo ask wants the nutrition table too (2026-10-03, web-41), on `claude/trusting-einstein-kddhlb`.** Sushil:
   "everywhere ingredients and Nutrition label we need for food items". "Photograph the ingredients and the nutrition
   table", 1 or 2 photos; drawing, hints, the parts question, the food re-check button, the photo check's tick and the

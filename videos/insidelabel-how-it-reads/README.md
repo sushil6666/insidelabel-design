@@ -54,16 +54,21 @@ for v in 16x9:1280:720 9x16:720:1280; do
   IFS=: read cut w h <<< "$v"
   ffmpeg -y -i renders/insidelabel-$cut.mp4 -an -vf "scale=$w:$h:flags=lanczos" \
     -c:v libx264 -preset veryslow -tune animation -crf 24 -pix_fmt yuv420p -profile:v high -level 4.0 \
-    -movflags +faststart ../../web/film/hero-$cut.mp4
+    -movflags +faststart ../../web/film/hero2-$cut.mp4
 done
 # stills: the "Your avoid list first." moment, as the first paint and the reduced-motion view
-ffmpeg -y -ss 23.5 -i ../../web/film/hero-16x9.mp4 -frames:v 1 -c:v libwebp -quality 80 ../../web/film/hero-16x9.webp
-ffmpeg -y -ss 20 -i ../../web/film/hero-9x16.mp4 -frames:v 1 -c:v libwebp -quality 80 ../../web/film/hero-9x16.webp
+ffmpeg -y -ss 23.5 -i ../../web/film/hero2-16x9.mp4 -frames:v 1 -c:v libwebp -quality 80 ../../web/film/hero2-16x9.webp
+ffmpeg -y -ss 20 -i ../../web/film/hero2-9x16.mp4 -frames:v 1 -c:v libwebp -quality 80 ../../web/film/hero2-9x16.webp
 ```
 
 2026-10-01: `hero-16x9.mp4` 1,292,680 bytes, `hero-9x16.mp4` 1,440,735 bytes; stills 23,520
 and 19,354 bytes. Use new file names when the film changes (a browser may keep an old copy
 under the same name).
+
+2026-10-03 (D-153, the redesign): the app's screens in the film follow the redesign (the header's wordmark and
+profile icon, the deep result panel, "Worth knowing", the photo of the ingredients and the nutrition table) and the
+close says "Read the label for your family.". New names: `hero2-16x9.mp4` 1,344,949 bytes, `hero2-9x16.mp4`
+1,520,510 bytes; stills 23,850 and 21,896 bytes. The `hero-*` files are deleted.
 
 The waiting screen in the film quotes the app's own line "The first read of a pack takes
 about 8 to 15 seconds" (`web/app.js`). If real scan times change (OPERATIONS.md section 5),

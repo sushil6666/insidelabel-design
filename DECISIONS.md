@@ -2874,6 +2874,15 @@ Sushil before merge; Lighthouse against D-152's numbers; `APP_VERSION` and the `
   second photo if not, through D-119's parts); the drawing marks both, only the licence "Not needed"; the food
   result's re-check button, the photo check's tick (server) and the website's step 2 say the same. D-133's offer to
   add the table afterwards stays, for when it was missed. web-41.
+- **The film, redone for the redesign (Sushil 2026-10-03: "what about the video on home page, need to change it as
+  well").** Same story, timings and music (D-151); its app screens now follow D-153: the header's wordmark and profile
+  icon (D-152), the photo of the ingredients and the nutrition table ("Ingredients and table." in place of "One
+  photo."), the deep result panel with the person line, the not-permitted tile, "Worth knowing (2)" and "Holding another
+  pack? Scan it to compare", the tile page's back button in the header, the partial read on the deep panel, and the
+  close "Read the label for your family.". Both cuts re-rendered (HyperFrames check: 0 errors, contrast 37/37); the
+  site's copies get new names, `web/film/hero2-16x9.mp4` (1.34 MB) and `hero2-9x16.mp4` (1.52 MB), so no browser keeps
+  the old film; the `hero-*` files are deleted. D-151's one-cut-per-screen rule is unchanged. The word sources are in
+  the film's BRIEF.md.
 - **The hero's headline, changed by Sushil 2026-10-03:** "Read the label for your family." in place of "...for your
   kids." ("it's not true for your kids part": the profiles are you and the people you shop for, not only children).
 
