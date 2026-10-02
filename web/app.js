@@ -100,7 +100,10 @@ function show(node) {
   shownOnce = true;
   setBack(node instanceof Element ? node.dataset.back : null, node instanceof Element ? node.dataset.backLabel : null);
   main.replaceChildren(node);
-  document.body.classList.add("ready");      // the footer shows once a screen is in place (CLS)
+  // The footer shows once a screen is in place (CLS). A screen still loading its words
+  // (aria-busy, e.g. "Before you start" on a first visit) calls settled() when they're in:
+  // shown under "Loading…", the footer jumped down when the terms arrived (D-153 step 2).
+  if (!(node instanceof Element && node.getAttribute("aria-busy") === "true")) settled();
   window.scrollTo(0, 0);
   const h = main.querySelector("h1, h2");
   if (h) { h.setAttribute("tabindex", "-1"); h.focus({ preventScroll: true }); }
@@ -108,6 +111,11 @@ function show(node) {
 
 // site-desktop: the header's left slot. A back button only on the screens that had one (a
 // result's own page, D-134); every other screen leaves it empty, so the name stays centred.
+function settled(view) {
+  if (view) view.removeAttribute("aria-busy");
+  document.body.classList.add("ready");
+}
+
 function setBack(href, label) {
   const slot = document.getElementById("top-left");
   if (!slot) return;
@@ -208,7 +216,8 @@ function agree() {
       el("ol", { class: "rules" }, t.points.map(p => el("li", {}, p))),
       el("label", { class: "choice", for: "agree" }, box, " " + t.agree_label),
       err, go_);
-  }).catch(e => view.replaceChildren(apiErrorView(e, () => show(agree()))));
+    settled(view);
+  }).catch(e => { view.replaceChildren(apiErrorView(e, () => show(agree()))); settled(view); });
   return view;
 }
 

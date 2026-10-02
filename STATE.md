@@ -662,6 +662,13 @@ setup alarms.
 
 **NEXT SESSION STARTS HERE (2026-10-01).** Where things stand, newest first:
 
+- **First-visit footer jump fixed; D-156 (2026-10-03, web-40, no migration), on `claude/trusting-einstein-kddhlb`.**
+  A screen still loading its words (`aria-busy`, "Before you start") no longer reveals the footer; `settled()` does
+  once the terms are in: 0 of 8 fresh visits shifted (was 3 to 5 of 6), Lighthouse CLS 0 in 5 of 5. D-156: InsideLabel
+  will read skin care and personal care labels too (not built); `/about`'s "ties" line now covers them and its
+  "Changes to this policy" list dates it. **Waiting on Sushil:** confirm "none" for skin care and personal care;
+  merge; `update.sh`.
+
 - **Two wording changes from Sushil (2026-10-03, no code), on `claude/trusting-einstein-kddhlb`.** The website hero
   says "Read the label for your family." (was "for your kids": not true of a household's adults). D-155 (LOCKED):
   `/about` no longer says "No ads." because ads may come after the beta; the page dates the change, as its own policy

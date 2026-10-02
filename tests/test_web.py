@@ -199,3 +199,15 @@ def test_report_faces_are_cached_on_use_not_at_install():              # D-153
     for f in ("source-serif-4", "ibm-plex-mono"):
         assert f not in shell
     assert "caches.open(VERSION).then(c => c.put(e.request, copy))" in sw
+
+
+def test_the_footer_waits_for_a_loading_screen():                      # D-153 step 2, fixed 2026-10-03
+    """On a first visit the footer showed under "Loading…" and jumped when "Before you start" arrived
+    (Lighthouse CLS 0.16 in about half of fresh loads). A busy screen reveals it only once filled."""
+    app = JS["app.js"]
+    show = app[app.index("function show(node)"):app.index("function settled(")]
+    assert 'getAttribute("aria-busy") === "true"' in show and "settled()" in show
+    assert 'document.body.classList.add("ready")' not in show
+    agree = app[app.index("function agree()"):app.index("function join(")]
+    assert agree.count("settled(view)") == 2                        # the terms, or the error in their place
+

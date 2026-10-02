@@ -2902,6 +2902,20 @@ from an ad network for free users, none for Pro (D-148 point 4).
   IMS Act and baby food (docs/BABY_FOOD.md), the DPDP Act's rules on children's data with an ad network, and an ad
   before a scan.
 
+
+### D-156 · InsideLabel will read more than food labels; the conflict-of-interest "ties" line covers skin care and personal care `LOCKED` (2026-10-03)
+**Direction from Sushil, 2026-10-03:** "we are not focusing only food packet, will expand to other sector like skin
+care and personal care where is label we will reach." The product's scope will grow beyond packaged food. Nothing is
+built for it yet: the engine, the tables and every check stay food-only (FSSAI basis, D-086) until a decision on
+each new sector's primary documents (D-046).
+- `/about`, "Money and brands": "Ties to the food industry: none ... in the food industry." becomes "Ties to the
+  industries whose labels we read: none. No job, shares, advisory role or family business in food, skin care or
+  personal care." The page's own rule dates the change: a "Changes to this policy" list now holds this and D-155's.
+- **To confirm (Claude):** the "none" for skin care and personal care is Sushil's to state; the line was written from
+  this direction, and is to be corrected if any tie exists.
+- **Left as Sushil wrote it:** his note says "No food company pays us" (D-153, on `/` and `/about`). It stays true; a
+  wider "No company whose labels we read pays us" is his choice to make.
+
 ---
 
 ## Open and pending
