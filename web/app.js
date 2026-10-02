@@ -117,7 +117,7 @@ function setBack(href, label) {
 function revealAfterPeople(view) {
   let i = 0;
   for (const c of view.children) {
-    if (c.matches(".product, .rescan, .people")) continue;
+    if (c.matches(".product, .rescan, .people, .result-top")) continue;
     c.classList.add("reveal");
     c.style.setProperty("--i", String(Math.min(i++, 6)));
   }
@@ -676,12 +676,17 @@ function digitCheck(c) {
 
 // ------------------------------------------------------------------ scan: the back photo (D-025, D-068)
 function photo() {
-  const firstTime = pending.barcode
-    ? el("div", { class: "card note" },
-        el("h2", {}, "First time we've seen this pack"),
-        el("p", {}, "Photograph the ingredient list and we'll read it now. Our team then checks it, " +
-                    "so the next scan of this barcode is instant, for everyone."))
-    : el("p", { class: "lead" }, "Photograph the ingredient list, usually on the back of the pack.");
+  // D-153: a tester didn't know which panel "the back" meant (nutrition table, ingredients,
+  // licence), how many photos, or why. So the ask names the panel, the count and the reason
+  // first, and a drawing marks the one block to photograph.
+  const why = pending.barcode
+    ? "We haven't checked this barcode yet, so we read the pack itself. Our team then checks it, " +
+      "so the next scan of this barcode is instant, for everyone."
+    : "We read the ingredient list from your photo. It's usually on the back of the pack.";
+  const ask = el("div", { class: "deep opener" },
+    el("p", { class: "kicker" }, pending.barcode ? "New pack · 1 photo" : "1 photo"),
+    el("h1", {}, "Photograph the ingredients list"),
+    el("p", { class: "on-muted" }, why));
 
   const backPreview = el("div", { class: "thumb" });
   const frontPreview = el("div", { class: "thumb" });
@@ -738,11 +743,13 @@ function photo() {
   let backPicker = null;
   const markNext = () => { leadWith(backPicker, !pending.back); };
 
-  return el("section", { class: "stack" },
-    el("h1", {}, "Photograph the ingredients"),
-    firstTime,
-    el("figure", { class: "sample" }, sampleBack(),
-      el("figcaption", { class: "muted" }, "Fill the frame with the ingredient list. Hold steady and avoid glare.")),
+  return el("section", { class: "stack photo-ask" },
+    ask,
+    el("figure", { class: "pack-back" }, packBack(),
+      el("figcaption", { class: "src" }, "The back of a pack. Photograph only the green block.")),
+    el("dl", { class: "ruled hints" },
+      el("div", {}, el("dt", {}, "Frame"), el("dd", {}, "From \"Ingredients:\" to the last word.")),
+      el("div", {}, el("dt", {}, "Light"), el("dd", {}, "Hold the pack flat and close, without glare."))),
     backPicker = photoPicker("back", pending.back ? "Retake the ingredients photo" : "Take the ingredients photo", backPreview,
                 (b, res, source) => {
                   // A red cross keeps "Check this pack" off; an unchecked photo (the
@@ -762,9 +769,9 @@ function photo() {
     // D-100: asked for once per pack, not once per scan. A re-check of a pack
     // whose front is already on file doesn't ask again.
     pending.frontWanted && el("div", { class: "card" },
-      el("h2", {}, "The front of the pack"),
-      el("p", { class: "muted" }, "Optional. The front shows the pack's name and what it promises. " +
-                                  "Our team records it once for each pack."),
+      el("h2", {}, "Optional: the front of the pack"),
+      el("p", { class: "muted" }, "Not needed for your result. The front shows the pack's name and what it promises; " +
+                                  "our team records it once for each pack."),
       photoPicker("front", "Take the front photo", frontPreview, (b, res, source) => {
         pending.front = res && !res.ok ? null : b;
         pending.frontSource = source;
@@ -1025,15 +1032,15 @@ function result(id, sub, tileId) {
   // el() drops false/null children; the DOM's own append() would print "false".
   const put = (...nodes) => view.append(...nodes.flat().filter(x => x != null && x !== false));
 
-  put(el("p", { class: "product" }, productName(h.product)));
-  // D-146: a catalogue hit names the product; if it isn't this pack, back to the scanner.
-  if (s.rescan && h.looked_up) {
-    put(el("p", { class: "rescan" }, s.rescan.text, " ",
-      button(s.rescan.button, () => { resetPending(); scanAgain(); }, "link")));
-  }
-
-  // 1. People first (D-060, D-064).
-  if (s.people?.length) put(el("div", { class: "people" }, s.people.map(personCard)));
+  // 1. D-153: the deep panel opens the result: the pack's name, then each person's line, the
+  // largest words on the screen (D-060, D-064). The name is the h1, so focus and a screen
+  // reader start here, above the people.
+  put(el("div", { class: "deep opener result-top" },
+    el("h1", { class: "product" }, productName(h.product)),
+    // D-146: a catalogue hit names the product; if it isn't this pack, back to the scanner.
+    s.rescan && h.looked_up && el("p", { class: "rescan" }, s.rescan.text, " ",
+      button(s.rescan.button, () => { resetPending(); scanAgain(); }, "link")),
+    s.people?.length > 0 && el("div", { class: "people" }, s.people.map(personCard))));
   // D-140: an older toddler profile is asked once whether the child is under 2. The
   // server leaves it out after D-146's digit check, so a scan never asks twice.
   if (s.band_question && s.state === "result") put(bandQuestion(s.band_question));
@@ -1043,8 +1050,8 @@ function result(id, sub, tileId) {
     el("strong", {}, s.from_screen.title), el("p", {}, s.from_screen.text),
     s.from_screen.pack && el("p", {}, s.from_screen.pack)));
 
-  // 2. The headline finding (D-061).
-  put(el("h1", { class: "headline" }, s.headline.text));
+  // 2. The headline finding (D-061), in the report voice: a heading, not an alarm.
+  put(el("h2", { class: "headline h-serif" }, s.headline.text));
 
   // D-130: this pack, scanned from the shop list, against the screenshot.
   if (s.since_screen) put(el("div", { class: `card ${s.since_screen.differs ? "warn" : "note"}`, role: "note" },
@@ -1090,7 +1097,7 @@ function result(id, sub, tileId) {
     if (s.retake) put(el("div", { class: "card warn" }, el("p", {}, s.retake),
       button("Retake the ingredients photo", () => { pending = { ...pending, back: null, barcode: h.barcode }; go("photo"); })));
     if (s.recheck) put(el("div", { class: "card note" }, el("p", {}, s.recheck),
-      button("Photograph the back", () => { resetPending(); pending.barcode = h.barcode; go("photo"); })));
+      button("Photograph the ingredients list", () => { resetPending(); pending.barcode = h.barcode; go("photo"); })));
     put(el("div", { class: "row wrap" }, button("Scan another", () => { resetPending(); go("scan"); }, "primary")),
       reportLink(h));
     put(el("details", { class: "item more-pack" }, el("summary", {}, s.more_title || "More about this pack"),
@@ -1098,20 +1105,28 @@ function result(id, sub, tileId) {
     return view;
   }
 
-  // 3. D-134: one tile per thing worth a look, each opening its own page. Results
-  // kept on the phone from before web-27 have no tiles: their rows show as before.
-  if (s.tiles) {
-    if (s.tiles.length) put(el("ul", { class: "tiles" }, s.tiles.map(t => el("li", {}, tileLink(h, t)))));
-  } else {
-    put(legacyLooks(s));
-  }
-
-  // 4. D-123: the same three answers on every pack, as chips; a tap opens the sentence.
-  // Older results kept on the phone have no summary; they keep the band (D-063).
-  if (s.summary?.length) put(answersView(s.summary));
-  else put(el("div", { class: `band band-${s.band.code}` },
-    el("strong", {}, s.band.label),
-    s.band.note && el("details", {}, el("summary", {}, "What does this mean?"), el("p", {}, s.band.note))));
+  // 3. D-153: a tester found the result too long. What isn't about a person waits, closed,
+  // under "Worth knowing (n)": each tile a numbered note with its source, opening its own
+  // page (D-134); then the three answers (D-123) and the ring (D-127). One exception stays
+  // open: an additive not permitted in India, the most serious thing the app says (D-111).
+  // Results kept on the phone from before web-27 have no tiles: their rows show as before.
+  const tiles = s.tiles || [];
+  const serious = tiles.filter(t => t.kind === "not_permitted");
+  const notes = tiles.filter(t => t.kind !== "not_permitted");
+  if (serious.length) put(el("ul", { class: "tiles" }, serious.map(t => el("li", {}, tileLink(h, t)))));
+  const answers = s.summary?.length
+    ? answersView(s.summary)
+    // Older results kept on the phone have no summary; they keep the band (D-063).
+    : el("div", { class: `band band-${s.band.code}` },
+        el("strong", {}, s.band.label),
+        s.band.note && el("details", {}, el("summary", {}, "What does this mean?"), el("p", {}, s.band.note)));
+  put(el("details", { class: "worth" },
+    el("summary", {}, notes.length ? `Worth knowing (${notes.length})` : "The three answers"),
+    el("div", { class: "stack worth-body" },
+      notes.length > 0 && el("ol", { class: "notes" }, notes.map((t, i) => noteItem(h, t, i + 1))),
+      !s.tiles && legacyLooks(s),
+      answers,
+      s.glance && glanceView(s.glance, true))));
 
   // A partial read, the table photo and the D-073 re-check ask for something now,
   // with the pack in hand, so they stay on the first screen.
@@ -1121,14 +1136,13 @@ function result(id, sub, tileId) {
   if (askTable) put(el("div", { class: "card note" }, el("p", {}, s.nutrition.text),
     button(s.nutrition.ask, () => go("table"))));
   if (s.recheck) put(el("div", { class: "card note" }, el("p", {}, s.recheck),
-    button("Photograph the back", () => {
+    button("Photograph the ingredients list", () => {
       resetPending();
       pending.barcode = h.barcode;
       pending.frontWanted = !!h.catalogue?.front_wanted;           // D-100
       go("photo");
     })));
 
-  if (s.glance) put(glanceView(s.glance, true));
 
   // 5. Actions: compare (D-057), the shop list (D-130), report (D-076, on every result).
   // D-130: a screen result goes on the shop list, to be scanned from the pack in the shop.
@@ -1141,17 +1155,33 @@ function result(id, sub, tileId) {
     }
     e.target.textContent = "On your shop list ✓";
   }, "primary"));
-  // D-123: the next useful scan is the pack beside this one on the shelf (D-057).
-  // "Compare" adds this pack and opens Compare, which offers the scan for the next one.
+  // D-123, D-153: the next useful scan is the pack beside this one on the shelf (D-057), so the
+  // result ends on it: this pack joins Compare and the scanner opens for the next one.
+  // "Compare (n)" opens Compare once there are two or more.
   const others = store.get("compare", []).filter(x => x !== h.id && historyItem(x)).length;
-  put(el("div", { class: "row wrap" },
-    h.pack && button(others ? `Compare (${others + 1})` : "Compare", () => {
-      if (!store.get("compare", []).includes(h.id)) toggleCompare(h.id);
-      updateNav();
-      go("compare");
-    }),
-    button("Scan another", () => { resetPending(); go("scan"); }, s.shop_list ? "" : "primary")),
+  const next = () => { resetPending(); go("scan"); };
+  put(el("div", { class: "result-next" },
+    h.pack && !s.shop_list
+      ? el("button", { type: "button", class: "btn-big", onclick: () => {
+          if (!store.get("compare", []).includes(h.id)) toggleCompare(h.id);
+          updateNav();
+          next();
+        } }, "Holding another pack? Scan it to compare")
+      : el("button", { type: "button", class: "btn-big", onclick: next }, "Scan another pack"),
+    el("div", { class: "row wrap" },
+      h.pack && others > 0 && button(`Compare (${others + 1})`, () => {
+        if (!store.get("compare", []).includes(h.id)) toggleCompare(h.id);
+        updateNav();
+        go("compare");
+      }),
+      h.pack && !s.shop_list && button("Scan another", next, "link"))),
     reportLink(h));
+
+  // D-153: what's promised and not built yet, said plainly (D-058/D-059 alternatives, D-113 Ask).
+  put(el("div", { class: "pending" }, el("span", {}, "Other packs without what's on your avoid list"),
+      el("span", { class: "pending-tag" }, "In preparation")),
+    el("div", { class: "pending" }, el("span", {}, "Ask about this pack"),
+      el("span", { class: "pending-tag" }, "Pro · in preparation")));
 
   // 6. Everything else, closed.
   put(el("details", { class: "item more-pack" }, el("summary", {}, s.more_title || "More about this pack"),
@@ -1375,17 +1405,36 @@ function glanceView(g, compact = false) {
     el("p", { class: "muted small" }, compact ? g.caption_short || g.caption : g.caption));
 }
 
+// D-153: one person's line in the deep panel. Red only for the avoid list and "may contain";
+// amber for what couldn't be confirmed; calm otherwise. The words carry it all (D-060).
+const PERSON_TONE = { contains: "stop", may_contain: "stop",
+                      cannot_confirm: "unsure", uncertain: "unsure", worth_knowing: "unsure" };
 function personCard(p) {
   const who = profileByRef(p.ref);
   // D-140: a baby line carries its source; the cite is the server's words.
   const detail = [...p.allergens.slice(1).map(a => ({ text: a.text })), ...p.child_facts];
-  return el("div", { class: `person status-${p.status}` },
+  return el("div", { class: `person-line ${PERSON_TONE[p.status] || "calm"}`, "data-status": p.status },
     el("span", { class: "who" }, who ? who.nickname : "Someone in your household"),
-    el("p", { class: "line" }, fill(p.line, p.ref)),
+    el("b", { class: "line" }, fill(p.line, p.ref)),
     detail.length > 0 && el("details", {}, el("summary", {}, "More"),
       el("ul", { class: "plain small" }, detail.map(f => el("li", {}, fill(f.text, p.ref),
-        f.sources?.length > 0 && el("span", { class: "muted" }, " ",
+        f.sources?.length > 0 && el("span", { class: "src" }, " ",
           f.sources.map(x => el("a", { href: x.url, target: "_blank", rel: "noopener" }, x.cite))))))));
+}
+
+// D-153: a tile as a numbered note: the server's title and chip, its first source by name,
+// and the way to the tile's page (D-134).
+function noteItem(h, t, n) {
+  const d = h.screen.details?.[t.id];
+  const cites = (d?.sources || []).map(x => x.cite).filter(Boolean);
+  // The first source by name; the note's page lists every one in full.
+  const src = cites.length > 1 ? `${cites[0]} · and ${cites.length - 1} more` : cites[0];
+  return el("li", {},
+    el("span", { class: "cite" }, `[${n}]`),
+    el("a", { class: "note-link", href: `#/result/${encodeURIComponent(h.id)}/look/${encodeURIComponent(t.id)}` },
+      el("span", {}, el("strong", {}, t.title), " ", el("span", { class: "muted" }, t.chip)),
+      el("span", { class: "tile-arrow", "aria-hidden": "true" }, icon("chevron-right"))),
+    src && el("span", { class: "src" }, src));
 }
 
 // D-140: one question, for one profile, until it's answered; every word is the server's.
@@ -1718,29 +1767,18 @@ window.addEventListener("unhandledrejection", e => {
 });
 
 // ------------------------------------------------------------------ pictures
-const SVG = "http://www.w3.org/2000/svg";
-function svg(markup, cls, label) {
-  const tmp = document.createElementNS(SVG, "svg");
-  tmp.setAttribute("viewBox", "0 0 120 80");
-  tmp.setAttribute("class", cls);
-  if (label) { tmp.setAttribute("role", "img"); tmp.setAttribute("aria-label", label); }
-  else tmp.setAttribute("aria-hidden", "true");
-  tmp.innerHTML = markup;              // our own constant markup, never server text
-  return tmp;
-}
 
-// D-068: a sample of which side to shoot.
-function sampleBack() {
-  return svg(
-    `<rect x="18" y="4" width="84" height="72" rx="6" class="s-pack"/>
-     <rect x="26" y="12" width="68" height="34" rx="3" class="s-hi"/>
-     <text x="30" y="21" class="s-t">INGREDIENTS:</text>
-     <rect x="30" y="25" width="58" height="3" class="s-line"/>
-     <rect x="30" y="31" width="52" height="3" class="s-line"/>
-     <rect x="30" y="37" width="56" height="3" class="s-line"/>
-     <rect x="26" y="52" width="40" height="18" class="s-dim"/>
-     <rect x="72" y="54" width="22" height="14" class="s-dim"/>`,
-    "sample-svg", "Back of a pack with the ingredient list highlighted");
+// D-068: a sample of which side to shoot. D-153: the back of a pack as panels, so "which part?"
+// has an answer. Built from elements (no markup strings); the words are the app's own.
+function packBack() {
+  const lines = n => Array.from({ length: n }, () => el("span", { class: "pb-line" }));
+  return el("div", { class: "pb", role: "img",
+                     "aria-label": "The back of a pack: the ingredients list is marked; the nutrition table and the licence number are not needed" },
+    el("div", { class: "pb-ing", "aria-hidden": "true" },
+      el("span", { class: "pb-tag" }, "This one"),
+      el("span", { class: "pb-title" }, "INGREDIENTS:"), ...lines(3)),
+    el("div", { class: "pb-skip", "aria-hidden": "true" }, el("span", {}, "Nutrition table"), ...lines(3), el("em", {}, "Not needed")),
+    el("div", { class: "pb-skip", "aria-hidden": "true" }, el("span", {}, "FSSAI licence"), ...lines(2), el("em", {}, "Not needed")));
 }
 
 

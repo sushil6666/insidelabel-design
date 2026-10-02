@@ -305,13 +305,6 @@ legend { font-weight: 700; padding: 0 4px; }
 .rescan { display: flex; flex-wrap: wrap; align-items: center; column-gap: 4px; }
 .rescan .btn { padding: 0 4px; min-height: var(--tap); }      /* the catalogue hit's "Scan again" */
 .people > * + * { margin-top: 8px; }
-.person { border-radius: var(--radius); padding: 12px 14px; border-left: 6px solid var(--calm); background: var(--calm-bg); color: var(--calm); }
-.person .who { font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
-.person .line { font-size: 1.08rem; font-weight: 600; margin-top: 2px; }
-.status-contains, .status-may_contain { border-color: var(--stop); background: var(--stop-bg); color: var(--ink); }
-.status-contains .who, .status-may_contain .who { color: var(--stop); }
-.status-cannot_confirm, .status-uncertain, .status-worth_knowing { border-color: var(--unsure-line); background: var(--unsure-bg); color: var(--ink); }
-.status-cannot_confirm .who, .status-uncertain .who, .status-worth_knowing .who { color: var(--unsure); }
 .headline { font-size: 1.45rem; }
 .band { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 14px; box-shadow: var(--shadow); }
 .band details { margin-top: 6px; }
@@ -612,9 +605,9 @@ details[open]:not(.look) > summary::after { transform: rotate(180deg); }
    words say; red is kept for the avoid list and "may contain" alone. */
 .person-line { display: grid; gap: 2px; border-radius: var(--r-xl); padding: var(--sp-4) var(--sp-5);
                background: var(--calm-bg); color: var(--calm); }
-.person-line > b { font: 800 var(--fs-xl)/1.1 var(--display); }
+.person-line > b { font: 800 var(--fs-lg)/1.2 var(--display); }   /* calm and amber lines: loud enough, not alarming */
 .person-line.stop { background: var(--stop-bg); color: var(--stop); }
-.person-line.stop > b { font-size: 1.625rem; }
+.person-line.stop > b { font-size: 1.625rem; line-height: 1.1; }   /* the avoid list: the largest words on the screen */
 .person-line.unsure { background: var(--unsure-bg); color: var(--unsure); }
 .person-line .src { color: inherit; }
 
@@ -663,3 +656,51 @@ details[open]:not(.look) > summary::after { transform: rotate(180deg); }
 .deep .btn-big { background: var(--deep-action); color: var(--deep); }
 @media (prefers-reduced-motion: reduce) { .btn-big { transition: none; } .btn-big:active { transform: none; } }
 /* ==== D-153 design system: end ==== */
+
+/* ---- D-153 step 2: the app's photo ask and result, built on the design system block below. ---- */
+/* The deep panel opens a screen: edge to edge on a phone (it takes back the page's 16 px gutter and
+   the main's top padding), a rounded card where the page is wider than the panel's column. */
+.deep.opener { margin: -16px -16px 0; padding: var(--sp-2) var(--sp-5) var(--sp-6); display: grid; gap: var(--sp-3); }
+/* 36 px where it fits; on a 360 to 390 px phone "ingredients" alone is wider than the column at 36 px,
+   so the size follows the width (measured in the D-153 walk), and a long word may still break. */
+.deep.opener h1 { color: var(--on-deep); font-size: clamp(1.625rem, 7.4vw, var(--fs-3xl)); line-height: 1.02;
+               letter-spacing: -.03em; overflow-wrap: break-word; }
+@media (min-width: 592px) { .deep.opener { margin: 0; border-radius: var(--r-2xl); } }
+
+/* The photo ask's drawing: the ingredients block marked, the other panels greyed and labelled. */
+.pack-back { margin: 0; display: grid; gap: var(--sp-2); }
+/* .pack-back and .ruled zero their own margins; between this screen's blocks the stack's gap wins. */
+.photo-ask.stack > * + * { margin-top: var(--sp-5); }
+.pb { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 14px; background: var(--surface);
+      border: 1px solid var(--line); border-radius: var(--r-md); }
+.pb-ing { grid-column: 1 / 3; position: relative; display: grid; gap: 5px; padding: 14px 12px 12px;
+          border: 2.5px solid var(--brand); border-radius: var(--r-sm); background: var(--calm-bg); }
+.pb-tag { position: absolute; top: -11px; right: 10px; background: var(--brand); color: var(--brand-ink);
+          font: 700 var(--fs-xs)/1 var(--font); padding: 4px 9px; border-radius: var(--r-pill); }
+.pb-title { font: 400 var(--fs-xs) var(--mono); font-weight: 400; color: var(--ink); letter-spacing: .04em; }
+.pb-line { display: block; height: 5px; border-radius: 3px; background: var(--field-line); opacity: .45; }
+.pb-line:nth-child(odd) { width: 86%; }
+.pb-skip { display: grid; gap: 5px; align-content: start; padding: 10px; border: 1px dashed var(--line);
+           border-radius: var(--r-sm); color: var(--muted); font-size: var(--fs-xs); font-weight: 600; }
+.pb-skip .pb-line { opacity: .25; }
+.pb-skip em { font-style: normal; font-weight: 700; }
+.hints dt { font: 400 var(--fs-xs)/1.4 var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.hints dd { color: var(--ink); }
+
+/* The result's panel: the pack's name (the h1), then the person lines. */
+.result-top .product { color: var(--on-deep); font: 600 var(--fs-lg)/1.3 var(--serif); letter-spacing: 0; text-transform: none; }
+.result-top .rescan { color: var(--on-deep-muted); }
+.result-top .rescan .btn.link { color: var(--on-deep); }
+.person-line .who { font-size: var(--fs-xs); font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+.person-line details summary { min-height: var(--tap); color: inherit; }
+.person-line .src a { color: inherit; }
+.result .headline { font: 600 var(--fs-xl)/1.2 var(--serif); letter-spacing: 0; }
+
+/* "Worth knowing (n)": closed until tapped; the summary reads as a serif heading with the app's chevron. */
+.worth { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.worth > summary { font: 600 var(--fs-lg)/1.3 var(--serif); color: var(--ink); }
+.worth-body { padding-bottom: var(--sp-4); }
+.notes .note-link { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2);
+                    min-height: var(--tap); color: var(--ink); text-decoration: none; padding: 0; margin: 0; }
+.notes .note-link .tile-arrow { color: var(--muted); }
+.result-next { display: grid; gap: var(--sp-2); justify-items: center; }

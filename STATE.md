@@ -662,6 +662,15 @@ setup alarms.
 
 **NEXT SESSION STARTS HERE (2026-10-01).** Where things stand, newest first:
 
+- **D-153 step 2, the app's photo ask and result (2026-10-02, web-39, no migration), on
+  `claude/trusting-einstein-kddhlb`.** The photo ask names the panel, the count and why, with a drawing; the result
+  opens on a deep panel with the pack's name and the person lines, folds the rest under "Worth knowing (n)" with
+  sources (a not-permitted additive stays open, D-111), and ends on "Holding another pack? Scan it to compare".
+  Details in D-153. Walked at 390/360 px light and dark on three gold packs; `tests/test_web.py` (+3). Found, not
+  fixed (it predates this): on a first visit the footer can show under "Loading…" and jump when "Before you start"
+  appears (Lighthouse CLS 0.16 in about half of fresh loads, with and without this change). **Waiting on Sushil:**
+  merge; `update.sh`; try a scan on the phone. **Next:** step 3, the website home.
+
 - **D-153 step 1, the design system (2026-10-02, web-38, no migration), on `claude/trusting-einstein-kddhlb`.**
   One block of tokens and components, identical in `web/app.css` and `web/site/site.css` (deep-blue panel, person
   lines, serif headings, mono sources, numbered notes, ruled lists, the Finding / For / Source table, "in
