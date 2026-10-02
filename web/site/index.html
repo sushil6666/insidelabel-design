@@ -8,27 +8,81 @@
   <meta name="theme-color" content="#fbf9ee">
   <link rel="icon" href="/app/icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/site.css">
+  <!-- D-153 (the redesign, "Merged"): this page's own layout at every width, before the desktop block
+       below so the desktop rules win. The tokens and components
+       (.deep, .display, .mark, .ruled, .sourced, .pending, .h-serif) are the shared block in site.css. -->
+  <style>
+    .home main > section { padding-top: 56px; padding-bottom: 8px; }
+    .home main > section.hero { padding: 0; }
+    /* Below the first screen, laid out only as it nears the viewport: the full page's style and layout
+       work on a slow phone delayed the first paint (Lighthouse, measured 2026-10-02). */
+    .home main > section:not(.hero):not(.band-end) { content-visibility: auto; contain-intrinsic-size: auto 600px; }
+    .home .hero { display: block; }               /* site.css's .hero grid now lives on .hero-grid inside the band */
+    .home .muted-note { color: var(--muted); margin: 16px 0 0; }
+    .home .hero { margin-top: 12px; }
+    .home .hero-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 28px; padding-top: 40px; padding-bottom: 48px; }
+    .home .hero h1 { font: 800 clamp(44px, 11vw, 64px)/.96 var(--display); letter-spacing: -.04em; margin: 0 0 16px; text-wrap: balance; }
+    .home .hero .lead { color: var(--on-deep-muted); max-width: 34ch; }
+    .home .hero .cta { background: var(--deep-action); color: var(--deep); margin: 8px 0 12px; }
+    .home .hero p { color: var(--on-deep-muted); }
+    .home .hero-text { min-width: 0; }
+    .home .film-frame { position: relative; }
+    /* the film in a device: a phone on phones and portrait screens, a screen on landscape ones (the D-151 rule) */
+    .home .film-box { border: 10px solid #0b1d2c; border-radius: 30px; box-shadow: 0 40px 80px -30px rgba(0, 0, 0, .55); }
+    .home .hero-film figcaption { color: var(--on-deep-muted); }
+    .home .hero-cards { list-style: none; padding: 0; margin: 16px 0 0; display: grid; gap: 10px; }
+    .home .hero-cards li { background: var(--surface); color: var(--ink); border-radius: 18px; padding: 12px 14px;
+                           box-shadow: 0 18px 36px -18px rgba(0, 0, 0, .5); display: grid; gap: 2px; font-size: 15px; }
+    .home .hero-cards li.stop { background: var(--stop-bg); color: var(--stop); }
+    .home .hero-cards li.calm { background: var(--calm-bg); color: var(--calm); }
+    .home .hero-cards b { font: 800 17px/1.2 var(--display); }
+    .home .hero-cards .src { color: inherit; font: 400 13px/1.4 var(--font); }   /* in view at first paint: no report face */
+    .home .steps-ruled li { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 4px 16px; }
+    .home .steps-ruled .n { font: 800 40px/1 var(--display); color: var(--brand); grid-row: span 2; }
+    .home .steps-ruled h3 { font: 600 20px/1.3 var(--serif); margin: 0; }
+    .home .steps-ruled p { margin: 0; color: var(--muted); }
+    .home .two-col { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
+    .home .section-head { display: grid; gap: 10px; align-content: start; }
+    .home .section-head p { margin: 0; color: var(--muted); }
+    .home .pending-cards { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+    .home .pending-cards .pending { display: grid; gap: 8px; align-items: start; padding: 20px; }
+    .home .pending-cards h3 { font: 600 22px/1.25 var(--serif); margin: 0; }
+    .home .pending-cards p { margin: 0; color: var(--muted); }
+    .home .note-text p { font: 400 19px/1.65 var(--serif); }
+    .home .band-end { margin-top: 56px; }
+    .home .band-end .wrap { padding-top: 48px; padding-bottom: 48px; display: grid; gap: 12px; justify-items: start; }
+    .home .band-end h2 { font: 800 clamp(32px, 6vw, 52px)/1 var(--display); letter-spacing: -.03em; margin: 0; color: var(--on-deep); }
+    .home .band-end .cta { background: var(--deep-action); color: var(--deep); }
+    @media (prefers-reduced-motion: no-preference) and (min-width: 1024px) {
+      .home .hero-cards li { animation: rise .7s cubic-bezier(.1, .7, .1, 1) both; }
+      .home .hero-cards li:nth-child(2) { animation-delay: .25s; }
+      .home .hero-cards li:nth-child(3) { animation-delay: .5s; }
+      @keyframes rise { from { opacity: 0; transform: translateY(14px); } }
+    }
+  </style>
   <!-- site-desktop (Sushil, 2026-10-02: "lots of space right, left side of the webpage desktop version
        please adjust"; "mobile version is perfect"). The home page on desktops only: one container for
        every section, about 1200 px (1280 px from 1440 px), on the same edges. Here, not in site.css,
-       because phones would download and parse it before the first paint (measured: slower LCP). -->
+       because phones would download and parse it before the first paint (measured: slower LCP).
+       D-153: the same container now holds the redesign's sections ("Merged"). -->
   <style media="(min-width: 1024px)">
     .home .wrap { max-width: 1200px; padding-left: 32px; padding-right: 32px; }
-    /* the text about 5/12, the film about 7/12 (4.5 and 7.5: the film is larger than before at every width) */
-    .home .hero { grid-template-columns: minmax(0, 4.5fr) minmax(0, 7.5fr); gap: 48px; align-items: center;
-    padding-top: 28px; padding-bottom: 12px; }
-    .home .hero-text h1 { margin-top: 0; font-size: clamp(44px, 4.2vw, 56px); }
+    /* the text about 4.5/12, the film about 7.5/12 (D-152: the film larger than before at every width) */
+    .home .hero-grid { grid-template-columns: minmax(0, 4.5fr) minmax(0, 7.5fr); gap: 56px; align-items: center;
+                       padding-top: 64px; padding-bottom: 72px; }
+    .home .hero h1 { font-size: clamp(56px, 5.6vw, 88px); }
     .home .hero-film { margin: 0; }
-    .home h2 { font-size: 26px; margin-top: 56px; }
-    .home .steps { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }      /* one row, equal height */
-    .home .steps li { padding: 22px; }
-    .home .points { columns: 2; column-gap: 56px; padding-left: 20px; }                /* two columns: 4 short points */
-    .home .points li { break-inside: avoid; margin-bottom: 10px; }
+    /* the example cards rise over the frame's bottom edge, in a row, never over the film's own words */
+    .home .hero-cards { position: relative; z-index: 1; grid-template-columns: repeat(3, minmax(0, 1fr));
+                        gap: 12px; margin: -8px 16px 0; align-items: start; }
+    .home .two-col { grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: 48px; }
+    .home .pending-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .home .two-col > .muted-note { grid-column: 2; }
     .home footer.wrap { margin-top: 56px; margin-bottom: 40px; }
     @media (min-width: 1280px) { .home .wrap { padding-left: 40px; padding-right: 40px; } }
     @media (min-width: 1440px) {
       .home .wrap { max-width: 1280px; padding-left: 48px; padding-right: 48px; }
-      .home .hero { gap: 56px; }
+      .home .hero-grid { gap: 64px; }
     }
   </style>
   <!-- D-151: the hero's fonts arrive before the first paint, so their swap can't move the page (CLS 0) -->
@@ -39,48 +93,122 @@
 <body class="home">
   <header class="wrap wide site-top"><a href="/" class="wordmark"><!--wordmark--><svg class="wordmark-svg" role="img" aria-label="InsideLabel" width="170" height="34" viewBox="0 0 170 34"><style>.wm-ink{fill:#244b6b}@media (prefers-color-scheme:dark){.wm-ink{fill:#e0f2f6}}</style><svg width="34" height="34" viewBox="0 0 512 512"><defs><linearGradient id="wm-t" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#07924f"/><stop offset="1" stop-color="#035c34"/></linearGradient><linearGradient id="wm-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffd166"/><stop offset="1" stop-color="#e9a91c"/></linearGradient></defs><rect width="512" height="512" rx="112" fill="url(#wm-t)"/><g fill="#fcfcf8"><rect x="96" y="150" width="14" height="190"/><rect x="124" y="150" width="7" height="190"/><rect x="144" y="150" width="20" height="190"/><rect x="178" y="150" width="7" height="190"/><rect x="198" y="150" width="14" height="190"/><rect x="226" y="150" width="7" height="190"/><rect x="246" y="150" width="20" height="190"/></g><circle cx="310" cy="240" r="92" fill="#035c34" stroke="url(#wm-g)" stroke-width="30"/><g fill="#ffd166"><rect x="266" y="206" width="88" height="14" rx="7"/><rect x="266" y="234" width="64" height="14" rx="7"/><rect x="266" y="262" width="76" height="14" rx="7"/></g><path d="M378 312 L432 366" stroke="url(#wm-g)" stroke-width="38" stroke-linecap="round"/></svg><path class="wm-ink" transform="scale(.25)" d="M170 99 181 37H193L182 99ZM194 99 202 54H213L213 61Q215 58 219 56Q224 53 229 53Q234 53 238 56Q241 58 242 63Q243 67 242 73L238 99H226L230 74Q231 69 229 67Q227 64 223 64Q220 64 217 65Q215 66 213 69Q211 71 211 75L207 99ZM268 100Q261 100 257 98Q253 96 251 92Q249 89 249 84H261Q261 86 262 88Q263 89 265 90Q266 91 269 91Q271 91 273 90Q274 89 275 88Q276 87 276 85Q277 84 276 83Q275 82 273 82Q271 81 269 81Q266 80 263 79Q260 78 258 76Q256 75 255 73Q253 71 254 68Q254 64 256 60Q259 57 264 55Q268 53 274 53Q282 53 286 57Q291 61 291 67H279Q279 65 277 64Q275 63 272 63Q269 63 268 64Q266 65 266 67Q266 68 267 69Q268 70 269 71Q271 71 274 72Q277 72 280 73Q283 74 285 76Q287 77 288 79Q289 81 289 84Q289 89 286 93Q283 96 278 98Q274 100 268 100ZM297 99 305 54H317L309 99ZM313 49Q310 49 308 47Q305 45 305 42Q306 39 308 37Q310 35 313 35Q316 35 319 37Q321 39 321 42Q321 45 318 47Q316 49 313 49ZM340 100Q335 100 331 97Q327 94 325 90Q323 85 323 79Q324 74 326 69Q328 64 331 61Q334 57 339 55Q343 53 348 53Q353 53 357 55Q360 57 362 60L366 35H378L367 99H356L356 93Q354 95 352 96Q350 98 347 99Q344 100 340 100ZM345 89Q349 89 352 87Q355 85 357 82Q359 79 359 75Q359 72 358 69Q357 67 355 65Q353 64 350 64Q346 64 343 66Q340 68 338 71Q336 74 336 78Q336 81 337 84Q338 86 340 88Q343 89 345 89ZM400 100Q394 100 389 97Q385 95 383 90Q381 86 381 80Q381 74 383 70Q385 65 389 61Q392 58 397 55Q402 53 408 53Q414 53 418 56Q423 58 425 63Q427 67 427 72Q427 74 426 76Q426 78 425 80H389L391 72H414Q415 69 414 67Q413 65 411 64Q409 63 406 63Q403 63 401 65Q398 66 396 69Q394 72 394 76L393 78Q392 82 393 84Q394 87 396 88Q398 90 402 90Q405 90 407 89Q409 87 411 85H423Q421 89 418 93Q414 96 410 98Q405 100 400 100ZM432 99 443 37H455L446 89H473L471 99ZM496 100Q491 100 488 98Q485 97 484 94Q482 91 482 88Q482 83 485 80Q488 77 492 75Q497 73 504 73H515Q515 70 515 68Q514 65 513 64Q511 63 508 63Q505 63 502 65Q500 66 499 69H487Q488 64 491 61Q495 57 499 55Q504 53 510 53Q516 53 520 56Q525 58 526 62Q528 66 527 71L522 99H512L512 92Q510 94 509 95Q507 97 505 98Q503 99 501 99Q499 100 496 100ZM501 90Q503 90 505 90Q507 89 509 87Q510 86 511 84Q512 82 513 80V80H504Q501 80 499 81Q498 82 497 83Q496 84 496 86Q495 88 497 89Q498 90 501 90ZM560 100Q557 100 554 99Q552 98 550 97Q548 95 547 93L545 99H534L545 35H557L553 60Q556 57 559 55Q563 53 568 53Q573 53 577 56Q582 59 584 63Q586 68 585 74Q585 79 583 84Q581 89 578 92Q574 96 570 98Q565 100 560 100ZM559 89Q563 89 566 87Q569 86 571 82Q573 79 573 75Q573 72 572 70Q571 67 568 66Q566 64 563 64Q559 64 556 66Q553 68 552 71Q550 74 550 78Q549 81 551 84Q552 86 554 88Q556 89 559 89ZM613 100Q607 100 602 97Q598 95 596 90Q593 86 594 80Q594 74 596 70Q598 65 602 61Q605 58 610 55Q615 53 621 53Q627 53 631 56Q636 58 638 63Q640 67 640 72Q640 74 639 76Q639 78 638 80H602L604 72H627Q628 69 627 67Q626 65 624 64Q622 63 619 63Q616 63 614 65Q611 66 609 69Q607 72 607 76L606 78Q605 82 606 84Q607 87 609 88Q611 90 615 90Q618 90 620 89Q622 87 624 85H636Q634 89 631 93Q627 96 623 98Q618 100 613 100ZM645 99 656 35H668L657 99Z"/></svg><!--/wordmark--></a></header>
   <main>
-    <section class="hero wrap wide">
-      <div class="hero-text">
-        <h1>See what's inside the pack</h1>
-        <p class="lead">Scan the barcode or photograph the ingredient list of Indian packaged food.
-          InsideLabel tells you what's in it, starting with anything on your family's avoid list.</p>
-        <a class="cta" href="/app/">Open the app</a>
-        <p>InsideLabel is in a small, invited beta. If you have an invite, open the link from your message.</p>
-      </div>
-      <figure class="hero-film">
-        <div class="film-box" id="film-box" data-state="idle">
-          <!-- D-151: the still and the film follow one rule, the same in the CSS and the script below:
-               phones and portrait screens get the 9:16 cut, landscape screens the 16:9 cut. -->
-          <picture>
-            <source media="(max-width: 767px), (orientation: portrait)" srcset="/app/film/hero-9x16.webp" width="720" height="1280">
-            <img src="/app/film/hero-16x9.webp" width="1280" height="720" alt="" fetchpriority="high">
-          </picture>
-          <video id="film" muted autoplay loop playsinline preload="none" aria-describedby="film-words"></video>
-          <button class="film-toggle" id="film-toggle" type="button" aria-label="Play the film" hidden>
-            <svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z"/></svg>
-            <svg class="i-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13M16 5.5v13"/></svg>
-          </button>
+    <section class="hero deep band">
+      <div class="wrap wide hero-grid">
+        <div class="hero-text">
+          <h1>Read the label <span class="mark">for your kids.</span></h1>
+          <p class="lead">Scan the barcode, or photograph the ingredient list, of Indian packaged food. InsideLabel
+            shows what matters for each person in your family first, and where every line comes from.</p>
+          <a class="cta" href="/app/">Open the app</a>
+          <p>InsideLabel is in a small, invited beta. If you have an invite, open the link from your message.</p>
         </div>
-        <figcaption id="film-words">How InsideLabel checks a label, in 41 seconds.</figcaption>
-      </figure>
+        <figure class="hero-film">
+          <div class="film-frame">
+            <div class="film-box" id="film-box" data-state="idle">
+              <!-- D-151: the still and the film follow one rule, the same in the CSS and the script below:
+                   phones and portrait screens get the 9:16 cut, landscape screens the 16:9 cut. -->
+              <picture>
+                <source media="(max-width: 767px), (orientation: portrait)" srcset="/app/film/hero-9x16.webp" width="720" height="1280">
+                <img src="/app/film/hero-16x9.webp" width="1280" height="720" alt="" fetchpriority="high">
+              </picture>
+              <video id="film" muted autoplay loop playsinline preload="none" aria-describedby="film-words"></video>
+              <button class="film-toggle" id="film-toggle" type="button" aria-label="Play the film" hidden>
+                <svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z"/></svg>
+                <svg class="i-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13M16 5.5v13"/></svg>
+              </button>
+            </div>
+            <!-- D-153: three lines from the example below, with the number of their source in its table -->
+            <ul class="hero-cards" aria-label="Three lines from the example result below">
+              <li class="stop"><b>Aarav: contains milk.</b><span>It's on Aarav's avoid list.</span><span class="src">[1] milk solids, whey</span></li>
+              <li><b>INS 129, Allura Red AC</b><span class="src">[3] FSSAI Appendix A, limits per food category</span></li>
+              <li class="calm"><b>Diya: peanut not in the ingredients.</b><span class="src">[2] check the pack for a "may contain" line</span></li>
+            </ul>
+          </div>
+          <figcaption id="film-words">How InsideLabel checks a label, in 41 seconds.</figcaption>
+        </figure>
+      </div>
     </section>
 
-    <div class="wrap">
-    <h2>How it works</h2>
-    <ol class="steps">
-      <li><b>1. Scan</b>The barcode, or a photo of the ingredient list on the back. The front of the pack is optional.</li>
-      <li><b>2. Read</b>An AI reads the words on the label. It doesn't judge anything.</li>
-      <li><b>3. Check</b>Fixed rules, based on FSSAI regulations, check each ingredient and your family's avoid list.</li>
-    </ol>
+    <section class="wrap two-col" aria-labelledby="how-title">
+      <div class="section-head"><h2 class="h-serif big" id="how-title">How it works</h2></div>
+      <ol class="ruled steps-ruled">
+        <li><span class="n" aria-hidden="true">1</span><h3>Scan the barcode</h3><p>Packs we've already checked open at once.</p></li>
+        <li><span class="n" aria-hidden="true">2</span><h3>New pack? One photo of the ingredients list</h3><p>The block that starts with "Ingredients:". Not the nutrition table or the licence number. The front of the pack is optional.</p></li>
+        <li><span class="n" aria-hidden="true">3</span><h3>Each person's answer first</h3><p>Allergens and your family's avoid lists come first. The rest waits under "Worth knowing", each line with its source.</p></li>
+      </ol>
+    </section>
 
-    <h2>What it is, and isn't</h2>
-    <ul class="points">
-      <li>It states ingredient facts, quoting the label. It isn't medical advice: for a health condition, ask your doctor.</li>
-      <li>Allergens come first. When a photo is hard to read, it says it couldn't confirm, and asks for a clearer one.</li>
-      <li>Every pack in our catalogue was checked by a person against photos of the real pack.</li>
-      <li>Brands can't pay to change or hide what InsideLabel shows.</li>
-    </ul>
-    </div>
+    <section class="wrap" aria-labelledby="example-title">
+      <div class="section-head">
+        <p class="kicker">Example · cheese cream wafer · brand hidden</p>
+        <h2 class="h-serif big" id="example-title">One real pack, every line sourced</h2>
+        <p>A pack from our test set, as the app read it. We hide the brand: this shows how we read a label, not a
+          review of a company. Aarav and Diya are example profiles; the names you give stay on your phone.</p>
+      </div>
+      <div class="table-scroll" style="margin-top: 20px">
+        <table class="sourced">
+          <thead><tr><th scope="col">Finding</th><th scope="col">For</th><th scope="col">Source</th></tr></thead>
+          <tbody>
+            <tr class="stop"><td>Contains milk</td><td>Aarav (avoid list)</td><td class="src">[1] Ingredients: milk solids, whey</td></tr>
+            <tr><td>Peanut: not in the ingredients</td><td>Diya (avoid list)</td><td class="src">[2] Ingredients; no "may contain" line in the photo, so check the pack</td></tr>
+            <tr><td>Colour INS 129, Allura Red AC</td><td>Everyone</td><td class="src">[3] FSSAI Appendix A, numeric limits per food category · checked 25 Sep 2026</td></tr>
+            <tr><td>Maida (refined wheat flour), 1st of 12</td><td>Everyone</td><td class="src">[4] FSS Regulations 2011, 2.4.2 · ICMR-NIN, Dietary Guidelines for Indians, 2024</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="wrap two-col" aria-labelledby="method-title">
+      <div class="section-head">
+        <h2 class="h-serif big" id="method-title">How we check</h2>
+        <p>Four things you can hold us to. <a href="/how">How we check a label</a> explains every word on a result.</p>
+      </div>
+      <dl class="ruled">
+        <div><dt>AI reads. Rules decide.</dt><dd>An AI reads the words on the label. It doesn't judge anything. Fixed rules, based on FSSAI regulations, check each ingredient and your family's avoid list.</dd></div>
+        <div><dt>FSSAI is the basis</dt><dd>69 additives, each with its FSSAI Appendix A entry and the date we checked it. Rules in other countries are shown only as extra information.</dd></div>
+        <div><dt>Read from the real pack</dt><dd>Every pack in our catalogue was reviewed against photos of the real pack before it joined.</dd></div>
+        <div><dt>Unclear means "couldn't confirm"</dt><dd>When a photo is hard to read, the allergen line says it couldn't confirm, and the app asks for a clearer one.</dd></div>
+      </dl>
+      <p class="muted-note">It isn't medical advice: for a health condition, ask your doctor. Brands can't pay to change or hide what InsideLabel shows.</p>
+    </section>
+
+    <section class="wrap" aria-labelledby="next-title">
+      <h2 class="h-serif big" id="next-title">In preparation</h2>
+      <div class="pending-cards" style="margin-top: 20px">
+        <div class="pending"><span class="pending-tag">Pro · not yet available</span><h3>Ask about this pack</h3>
+          <p>Questions answered only from what we've checked, with the same sources.</p></div>
+        <div class="pending"><span class="pending-tag">Free · shelf by shelf</span><h3>Other packs without what's on your avoid list</h3>
+          <p>Once we've checked enough packs on a shelf, we'll show the ones without the things on your family's avoid lists.</p></div>
+      </div>
+    </section>
+
+    <section class="wrap" aria-labelledby="note-title">
+      <h2 class="h-serif big" id="note-title">Why I built InsideLabel</h2>
+      <div class="founder" style="margin-top: 20px">
+        <img class="founder-photo" src="/app/people/sushil-behera-240.webp"
+          srcset="/app/people/sushil-behera-240.webp 240w, /app/people/sushil-behera-480.webp 480w"
+          sizes="(min-width: 600px) 200px, 140px" width="200" height="250" alt="Sushil Behera" loading="lazy" decoding="async">
+        <div class="founder-text note-text">
+          <p>I'm Sushil Behera, and I have a young son. When he visits the neighbours, someone always hands him a
+            biscuit, a chocolate or a packet of chips. Kind people, kind gestures. But each time I turned the pack over,
+            I couldn't tell what he was actually eating: the ingredient list was tiny, full of codes like INS 322 and
+            150d, and nothing on the pack explained them.</p>
+          <p>I've worked with data for years, so I built the tool I wanted: scan the pack and see what's in it, in plain
+            words, starting with anything on your family's avoid list.</p>
+          <p>InsideLabel is paid for from my own money. No food company pays us, and none can change what we show.
+            I read every reported mistake myself.</p>
+          <p class="founder-sign">Sushil Behera, founder · <a href="/about">About and methodology</a></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="deep band band-end" aria-labelledby="end-title">
+      <div class="wrap wide">
+        <h2 id="end-title">Try it on your next shop.</h2>
+        <a class="cta" href="/app/">Open the app</a>
+        <p class="on-muted">In a small, invited beta. If you have an invite, open the link from your message.</p>
+      </div>
+    </section>
   </main>
   <footer class="wrap"><a href="/privacy">Privacy</a> · <a href="/about">About and methodology</a></footer>
   <script>

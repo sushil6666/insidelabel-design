@@ -662,6 +662,14 @@ setup alarms.
 
 **NEXT SESSION STARTS HERE (2026-10-01).** Where things stand, newest first:
 
+- **D-153 step 3, the website home (2026-10-03, no migration, no app change), on `claude/trusting-einstein-kddhlb`.**
+  `/` rebuilt in the accepted order (hero, how it works, one sourced example with the brand hidden, how we check, in
+  preparation, Sushil's note, closing band). The D-151 film rule and D-152's desktop size stay; the film sits in a
+  device frame, the example cards rise over it on desktops. Walked at 390/360 px and 1280/1440 px, light and dark: no
+  page errors, no sideways scroll. Lighthouse (gzip, real throttling): LCP 1619 to 1614 ms, CLS 0.039 to 0.011.
+  `tests/test_site_home.py` (6). The redesign's three steps are done. **Waiting on Sushil:** merge; `update.sh`; a
+  look on a phone and a laptop. **Still open:** the first-visit footer jump in the app (step 2 entry below).
+
 - **D-153 step 2, the app's photo ask and result (2026-10-02, web-39, no migration), on
   `claude/trusting-einstein-kddhlb`.** The photo ask names the panel, the count and why, with a drawing; the result
   opens on a deep panel with the pack's name and the person lines, folds the rest under "Worth knowing (n)" with

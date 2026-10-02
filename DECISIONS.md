@@ -2856,6 +2856,18 @@ Sushil before merge; Lighthouse against D-152's numbers; `APP_VERSION` and the `
   the fold, since D-111 makes it the most serious thing the app says. The result ends on "Holding another pack? Scan
   it to compare" (adds the pack to Compare and opens the scanner, D-057), "Compare (n)" once two are waiting, and two
   "In preparation" lines (alternatives, D-058/D-059; Ask, Pro, D-113). Server text is unchanged (D-091).
+- **Built, step 3 of 3: the website home (2026-10-03).** `/` in row D's order: a deep-blue hero ("Read the label for
+  your kids.", "Open the app", the invite line), How it works (three ruled steps), one real pack with the brand hidden
+  and a Finding / For / Source table, How we check (four statements, "69 additives" tied to `data/additives.json` by a
+  test), In preparation (Ask, Pro; alternatives, free), Sushil's note and photo (the same words as `/about`, by test),
+  and a deep closing band. **The film, Claude's call:** D-151's rule stays (9:16 on phones and portrait screens, 16:9
+  on landscape ones) and so does D-152's larger desktop film, so the film sits in a phone-like frame on phones and a
+  screen-like frame on laptops, rather than in a phone at every width as in the mockup (a phone frame would have
+  needed the 9:16 cut on desktops, a smaller film and D-151 reversed). The three example cards rise over the frame's
+  bottom edge on desktops and sit under it on phones; they never cover the film's own words. Below the first screen,
+  sections use `content-visibility: auto`. **Measured** (Lighthouse mobile, median of 5, behind gzip as Caddy serves
+  it): real throttling LCP 1619 to 1614 ms, CLS 0.039 to 0.011; simulated throttling LCP 1368 to 1532 ms (the
+  simulation charges the bigger page's style and layout; a real slowed browser shows no difference). `tests/test_site_home.py`.
 
 ### D-154 · The slow-scan line names no cause `LOCKED` (2026-10-02)
 **Number:** first recorded as D-153 on `main` (#94). The merge of #95, which used D-153 for the redesign, kept that
