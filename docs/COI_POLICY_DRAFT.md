@@ -1,4 +1,7 @@
-# Conflict-of-interest policy: draft for Sushil (D-076, D-138 RECOMMENDED)
+# Conflict-of-interest policy: draft for Sushil (D-076, D-138)
+
+**Approved 2026-10-02 and on `web/site/about.html`.** Kept as the record of where each line comes from. "Who is
+behind it" on the page is Sushil's own note (D-153), not the draft sentences below.
 
 Not on the site yet. When Sushil says "approved" (or sends edits), the page text below
 replaces the "[To complete: the full conflict-of-interest policy ...]" bracket on

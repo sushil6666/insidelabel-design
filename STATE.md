@@ -667,7 +667,8 @@ setup alarms.
   https://claude.ai/artifact/2rmu9zKpTyATZwibpcK1fF; the app's photo ask ("Photograph the ingredients list", 1
   photo, which panel and why) and result (per-person lines first, the rest under "Worth knowing" with sources,
   ending in "Scan the next pack to compare") fixed where a tester got stuck. Sushil's founder note is in D-153 word
-  for word; it goes up with D-138's "approved". **Next:** build the design system, then the photo ask and result,
+  for word. **D-138 approved** the same day (photo and connect@insidelabel.ai): `/about` now has the policy, the
+  note and the photo (`web/people/`), and no DRAFT banner. **Waiting on Sushil:** merge; `update.sh`. **Next:** build the design system, then the photo ask and result,
   then the website home.
 
 - **`d151-accepted` (2026-10-02, no code or migration), from `main` 77d0327 (#92).** Sushil: "accepted" for D-151

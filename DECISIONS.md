@@ -2122,7 +2122,8 @@ gold files are not edited.
   marker's label ("artificial flavouring substances and raising agents") follow the joined entry. Its capture in
   `tests/fixtures/pack_kind_gold_before.json` is refreshed to match; the other five labels are untouched.
 
-### D-138 · The conflict-of-interest policy, in the words already decided `RECOMMENDED` (2026-09-30)
+### D-138 · The conflict-of-interest policy, in the words already decided `LOCKED` (2026-09-30)
+**Approved by Sushil 2026-10-02 ("D-138 approved", with the photo and the contact address connect@insidelabel.ai).**
 D-076 asks for the policy at beta launch; `web/site/about.html` still has a bracket where it goes.
 Draft in `docs/COI_POLICY_DRAFT.md`: page-ready text, and for every line the decision it comes from
 (D-002; blueprint §2.5 and §10; "Explicitly not building"; D-053's "scans free forever" and nothing
@@ -2140,6 +2141,11 @@ pages and the app shell too (all were already clean).
   for him to edit). The page follows D-148: "Looking up a pack stays free. Photo scans have a daily limit." and "No
   ads." Still RECOMMENDED: nothing goes on `web/site/about.html` until Sushil says "D-138 approved" and sends the
   photo and the contact address to show.
+- **Approved 2026-10-02.** On `web/site/about.html`: "Money and brands" is the draft's page text unchanged; "Who is
+  behind it" is Sushil's own note (D-153) in place of Claude's draft sentences, his photo and connect@insidelabel.ai.
+  The page's "DRAFT" banner goes, since no bracket is left. The photo, at Sushil's request ("do some edit for clarity"),
+  only had its warm cast halved, light and contrast raised a little and a mild sharpen, then a 4:5 crop: nothing about
+  the face changed. `web/people/sushil-behera-240.webp` and `-480.webp`.
 
 ### D-139 · Health supplements and nutraceuticals: a kind of pack with its own checks `LOCKED` (2026-09-30)
 Sushil: "implement supplements and baby food part, part of beta" (2026-09-30), phase 0 of
@@ -2829,8 +2835,9 @@ table, and some buttons say "Photograph the back" (`web/app.js`).
   > reported mistake myself.
 
   It states who pays and that no food company does, which is D-138's ground: it goes on the site together with
-  D-138's "approved", not before. "I read every reported mistake myself" is a promise: the build checks that
-  every problem report (`POST /report`, D-092) reaches Sushil before the note goes up.
+  D-138's "approved", not before (approved 2026-10-02; it is on `/about` now, and moves to the home page with the
+  rebuild). "I read every reported mistake myself" is a promise: D-117 already keeps users' "Report a mistake" with
+  people, never the agents.
 
 **Checks when built:** `tests/test_web.py`, `tests/test_wording.py`, `tests/test_no_dashes.py`,
 `tests/test_site_desktop.py`; a headless-Chromium walk at 390, 360 and 1280 px in light and dark with screenshots for
