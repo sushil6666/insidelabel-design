@@ -662,6 +662,11 @@ setup alarms.
 
 **NEXT SESSION STARTS HERE (2026-10-01).** Where things stand, newest first:
 
+- **`d151-accepted` (2026-10-02, no code or migration), from `main` 77d0327 (#92).** Sushil: "accepted" for D-151
+  (the film as the website home's hero), now **LOCKED**; and the caption under the film loses "No sound: the words
+  are on screen.", leaving "How InsideLabel checks a label, in 41 seconds." (the caption keeps its two-line height,
+  so nothing below it moves). **Waiting on Sushil:** merge; `update.sh`.
+
 - **`site-desktop` (2026-10-02, web-36, no migration), from `main` 0dc965b (#90).** Sushil's header, menu, "Scan
   here" and desktop asks; D-152 (RECOMMENDED). One wordmark, the logo and "InsideLabel" in DM Sans ExtraBold Italic
   (Bricolage has no italic), drawn as one inline SVG of 4.4 KB by `tools/make_wordmark.py` and written into the
@@ -695,9 +700,9 @@ setup alarms.
   median of 5): LCP 404 ms to 316 ms, CLS 0 to 0, 78 KB to 76 KB by the load event; the film now loads only when
   scrolled into view (1.44 MB) where before the 2.87 MB film started at once. Desktop (1440 x 900): LCP 400 to
   336 ms, CLS 0.015 to 0. Headless Chromium here has no H.264: the requests, states, keyboard and shifts were seen,
-  not the picture moving. `tests/test_film.py` (7). **Waiting on Sushil:** the scan-speed query (OPERATIONS.md
-  section 5) for "about 8 to 15 seconds" before deploying; merge; `update.sh`; a look on a phone and a laptop;
-  "accepted" for D-151.
+  not the picture moving. `tests/test_film.py` (7). Merged (#90); D-151 accepted 2026-10-02 (`d151-accepted`,
+  above). **Waiting on Sushil:** the scan-speed query (OPERATIONS.md section 5) for "about 8 to 15 seconds";
+  `update.sh`; a look on a phone and a laptop.
 
 - **`film-on-home` (2026-10-01, web-34, no migration), from `main` 507c38e (#88).** Sushil: "website home page and
   android apps home page". D-150 (RECOMMENDED): the explainer film is served from `web/film/` (H.264 + AAC, 16:9
