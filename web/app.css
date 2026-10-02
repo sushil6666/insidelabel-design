@@ -82,28 +82,55 @@ body {
 }
 .wrap { max-width: 560px; margin: 0 auto; padding: 16px 16px 48px; }
 
+/* site-desktop (Sushil, 2026-10-02): the wordmark centred (tools/make_wordmark.py), a back button on the
+   left only where a screen had one, the menu on the right. Three columns, so the name is centred on
+   the screen whatever the sides hold; the same on phones and desktop. */
 .top {
-  position: sticky; top: 0; z-index: 2; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
-  gap: 8px 12px; padding: 10px 16px; color: var(--ink);       /* wraps the pills under the name at 200% text (1.4.4) */
+  position: sticky; top: 0; z-index: 2; display: grid; grid-template-columns: var(--tap) minmax(0, 1fr) var(--tap);
+  align-items: center; gap: 8px; padding: 6px 12px; color: var(--ink);
   background: var(--bg);   /* older Chrome: no color-mix, solid header */
   background: color-mix(in srgb, var(--bg) 85%, transparent); border-bottom: 1px solid var(--line);
   -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+}
+/* The wordmark (made by tools/make_wordmark.py, inline in each page): the logo and "InsideLabel"
+   in italic, the same on every page and screen. In running text the name stays plain. */
+.wordmark { position: relative; display: inline-flex; align-items: center; border-radius: 8px; }
+.wordmark-svg { display: block; width: 170px; height: 34px; }
+.wordmark::after { content: ""; position: absolute; inset: -8px -4px; }     /* a 48 px tall hit area */
+.wordmark:focus-visible { outline: 3px solid var(--ring); outline-offset: 4px; }
+.top .wordmark { justify-self: center; }
+.top-left { display: flex; }
+.top-back, .menu-btn {
+  width: var(--tap); height: var(--tap); display: flex; align-items: center; justify-content: center; border: 0; padding: 0;
+  border-radius: 50%; background: transparent; color: var(--ink); cursor: pointer;
+}
+.menu-btn { justify-self: end; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--e-1); }
+.top-back:focus-visible, .menu-btn:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
+.menu-btn .icon { width: 26px; height: 26px; }
+
+/* The menu: a sheet from the bottom on phones, a panel under the profile icon from 600 px up.
+   A modal <dialog>: focus moves in and back; Escape, a tap outside, Back or a choice close it. */
+.menu { border: 0; padding: 0; color: var(--ink); background: var(--surface); box-shadow: var(--e-2);
+        width: 100%; max-width: none; margin: auto 0 0; border-radius: var(--r-xl) var(--r-xl) 0 0; }
+.menu::backdrop { background: rgba(4, 34, 52, .42); }
+.menu-inner { padding: 10px 12px calc(16px + env(safe-area-inset-bottom)); }
+.menu ul { list-style: none; margin: 0; padding: 0; }
+.menu a { display: flex; align-items: center; min-height: var(--tap); padding: 10px 14px; border-radius: var(--r-md);
+          color: var(--ink); text-decoration: none; font-weight: 700; font-size: var(--fs-lg); }
+.menu a:active, .menu a:hover { background: var(--surface-2); }
+.menu a:focus-visible { outline: 3px solid var(--ring); outline-offset: -3px; }
+.menu .menu-small { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--line); }
+.menu .menu-small a { font-weight: 600; font-size: var(--fs-md); color: var(--muted); }
+@media (min-width: 600px) {
+  .menu { position: fixed; inset: 64px 12px auto auto; width: 280px; margin: 0;              /* under the profile icon */
+          border-radius: var(--radius); border: 1px solid var(--line); }
+  .menu::backdrop { background: transparent; }
+  .menu-inner { padding: 8px; }
 }
 a { color: var(--brand); text-underline-offset: 2px; }
 /* A link inside a sentence: padding on an inline box grows its hit area to 48 px or
    more, and the negative margin keeps every word where it was. */
 main a:not([class]) { padding: 14px 5px; margin-inline: -5px; }
-.top a { color: inherit; text-decoration: none; }
-.brand { position: relative; display: inline-flex; align-items: center; gap: 8px; font: 800 1.2rem/1 var(--display); letter-spacing: -.01em; }
-/* A 48 px hit area around a smaller visual (the name, the pills). */
-.brand::after, .top nav a::after { content: ""; position: absolute; inset: -10px -4px; }
-.mark { display: block; flex: none; width: 32px; height: 32px; }   /* D-112: the logo, icon.svg */
-.top nav { display: flex; flex-wrap: wrap; gap: 6px; font-size: .9rem; font-weight: 600; }
-.top nav a {
-  position: relative; padding: 8px 12px; white-space: nowrap; border: 1px solid var(--line); border-radius: var(--r-pill);
-  background: var(--surface); box-shadow: var(--e-1);
-}
-.top nav a::after { inset: -7px -2px; }
 
 h1, h2, h3 { font-family: var(--display); font-weight: 800; letter-spacing: -.01em; }
 h1 { font-size: 1.7rem; line-height: 1.1; margin: 0; }
@@ -152,10 +179,10 @@ select:focus-visible, textarea:focus-visible { outline: 3px solid var(--ring); o
 
 /* One press state for everything tappable (Apple HIG, Buttons: "Always include a
    press state"). Transform only, 100 ms; a press never blocks or delays the tap. */
-.btn, .scan-cta, .tile, .answer-chip, .list a, .top nav a, .brand, details > summary, .back, label.btn {
+.btn, .scan-cta, .tile, .answer-chip, .list a, .wordmark, .menu-btn, .top-back, details > summary, label.btn {
   transition: transform var(--d-press) var(--ease-standard);
 }
-.btn:active:not(:disabled), .answer-chip:active, .top nav a:active, label.btn:active { transform: scale(.97); }
+.btn:active:not(:disabled), .answer-chip:active, .menu-btn:active, .top-back:active, label.btn:active { transform: scale(.97); }
 .btn.primary:active:not(:disabled), .scan-cta:active, .tile:active, .list a:active, details > summary:active { transform: scale(.985); }
 /* The app's icons (web/icons.js): 24 px grid, 2 px round strokes, currentColor. */
 .icon { width: 24px; height: 24px; flex: none; fill: none; stroke: currentColor; stroke-width: 2;
@@ -260,13 +287,6 @@ legend { font-weight: 700; padding: 0 4px; }
    so it scrolls away with the page instead of covering half the screen. */
 @media (max-width: 300px) { .top { position: static; } html { scroll-padding-top: 0; } }
 
-/* A 360-390 px phone: the name, the mark and two pills on one line. */
-@media (max-width: 400px) {
-  .top { padding: 10px 12px; }
-  .brand { font-size: 1.05rem; gap: 6px; }
-  .mark { width: 28px; height: 28px; }
-  .top nav a { padding: 6px 10px; font-size: .85rem; }
-}
 
 /* D-146: the barcode's digits, checked against the pack; first 3 and last 4 large */
 .digits { font-variant-numeric: tabular-nums; letter-spacing: .06em; margin: 8px 0 4px; color: var(--ink);
@@ -460,9 +480,6 @@ body.ready .foot { visibility: visible; }
 .card.stop { background: var(--stop-bg); border-color: var(--stop); color: var(--ink); border-left: 6px solid var(--stop); }
 .more-pack > summary { font-family: var(--display); font-weight: 800; font-size: 1.05rem; }
 .more-pack[open] > .more-body { padding: 4px 0 8px; }
-.look-page .back { display: inline-flex; align-items: center; gap: 2px; min-height: var(--tap); padding-right: 8px;
-                   margin-left: -6px; font-weight: 700; color: var(--brand); text-decoration: none; }
-.look-page .back .icon { width: 22px; height: 22px; }
 .look-page .chip { font-size: .85rem; padding: 2px 10px; }
 .look-part > * + * { margin-top: 6px; }
 .look-part h2 { font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-family: var(--font); }
@@ -504,7 +521,7 @@ ul.plain > li > a, .look-part a { display: inline-flex; align-items: center; min
     animation-duration: .01ms !important; animation-delay: 0ms !important; animation-iteration-count: 1 !important;
     transition-duration: .01ms !important; transition-delay: 0ms !important; scroll-behavior: auto !important;
   }
-  .btn:active, .scan-cta:active, .tile:active, .answer-chip:active, .list a:active, .top nav a:active,
+  .btn:active, .scan-cta:active, .tile:active, .answer-chip:active, .list a:active, .menu-btn:active, .top-back:active,
   details > summary:active, label.btn:active { transform: none; }
   /* The stage running is shown still, half filled, not swept. */
   .track span.now::after { animation: none; transform: none; width: 50%; }

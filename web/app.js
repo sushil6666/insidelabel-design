@@ -98,11 +98,20 @@ function show(node) {
     else if (enterFrom !== "back") node.dataset.enter = enterFrom;
   }
   shownOnce = true;
+  setBack(node instanceof Element ? node.dataset.back : null, node instanceof Element ? node.dataset.backLabel : null);
   main.replaceChildren(node);
   document.body.classList.add("ready");      // the footer shows once a screen is in place (CLS)
   window.scrollTo(0, 0);
   const h = main.querySelector("h1, h2");
   if (h) { h.setAttribute("tabindex", "-1"); h.focus({ preventScroll: true }); }
+}
+
+// site-desktop: the header's left slot. A back button only on the screens that had one (a
+// result's own page, D-134); every other screen leaves it empty, so the name stays centred.
+function setBack(href, label) {
+  const slot = document.getElementById("top-left");
+  if (!slot) return;
+  slot.replaceChildren(href ? el("a", { class: "top-back", href, "aria-label": label || "Back" }, icon("back")) : "");
 }
 
 function revealAfterPeople(view) {
@@ -308,11 +317,13 @@ async function home() {
   const updates = el("div", {});
   loadUpdates(updates);
 
+  // site-desktop (Sushil, 2026-10-02): one wide "Scan here" bar, nothing above it but the
+  // header; it opens what "Scan a pack" opened. Everything else follows in the same order.
   return el("section", { class: "stack" },
-    updates,
     el("button", { type: "button", class: "scan-cta", onclick: () => { resetPending(); go("scan"); } },
       el("span", { class: "scan-cta-icon", "aria-hidden": "true" }, icon("barcode")),
-      el("span", {}, "Scan a pack")),
+      el("span", {}, "Scan here")),
+    updates,
     shopListCard(),
     done < 3 && el("div", { class: "card note" },
       el("h2", {}, "Start at home"),
@@ -1168,11 +1179,11 @@ function tileLink(h, t) {
 // D-134: a tile's own page, laid out from the server's `details[tile id]`.
 function lookView(h, tileId) {
   const d = h.screen.details?.[tileId];
-  const back = el("a", { class: "back", href: `#/result/${encodeURIComponent(h.id)}` }, icon("back"), "Back to the result");
-  if (!d) return el("section", { class: "stack look-page" }, back, el("p", {}, "We couldn't find that on this result."));
+  // site-desktop: "Back to the result" is the header's back button now (setBack, in show()).
+  const back = { "data-back": `#/result/${encodeURIComponent(h.id)}`, "data-back-label": "Back to the result" };
+  if (!d) return el("section", { class: "stack look-page", ...back }, el("p", {}, "We couldn't find that on this result."));
   const part = (title, ...kids) => el("div", { class: "look-part" }, el("h2", {}, title), ...kids);
-  return el("section", { class: "stack look-page" },
-    back,
+  return el("section", { class: "stack look-page", ...back },
     el("p", { class: "product" }, productName(h.product)),
     el("h1", {}, d.title),
     el("span", { class: `chip ${d.kind === "not_permitted" ? "tone-alert" : "tone-worth"}` }, d.chip),
@@ -1731,7 +1742,49 @@ function sampleBack() {
 }
 
 
+// site-desktop (Sushil, 2026-10-02): the profile icon at the top right opens the menu, which
+// holds every link the header and footer had (they stay in the footer too). A modal <dialog>:
+// focus moves into it and back to the icon; Escape, a tap outside, a choice or the phone's
+// Back close it (one history entry while it is open, dropped again when it closes).
+function setupMenu() {
+  const btn = document.getElementById("menu-btn");
+  const menu = document.getElementById("menu");
+  if (!btn || !menu || !menu.showModal) return;
+  let open = 0;
+  const onBack = () => close(1);
+  function close(byBack) {
+    if (!open) return;
+    open = 0;
+    removeEventListener("popstate", onBack);
+    menu.close();
+    btn.setAttribute("aria-expanded", String(false));   // a boolean: the wording lint reads string literals
+    if (!byBack) window.history.back();     // window.history: this file's history() is the scan list
+    btn.focus();
+  }
+  btn.addEventListener("click", () => {
+    open = 1;
+    menu.showModal();
+    btn.setAttribute("aria-expanded", String(true));
+    window.history.pushState({ menu: 1 }, "");
+    addEventListener("popstate", onBack);
+    record("menu");
+  });
+  menu.addEventListener("cancel", e => { e.preventDefault(); close(0); });       // Escape
+  menu.addEventListener("click", e => {
+    if (e.target === menu) return close(0);                                       // outside the panel
+    const a = e.target.closest("a");
+    if (!a) return;
+    e.preventDefault();
+    const href = a.getAttribute("href");
+    close(0);
+    // once Back has dropped the menu's entry, go where the link points
+    addEventListener("popstate", () => { if (href.startsWith("#")) location.hash = href; else location.href = href; },
+                     { once: true });
+  });
+}
+
 // ------------------------------------------------------------------ start
+setupMenu();
 window.addEventListener("hashchange", route);
 deviceId();
 record("start", { app_version: APP_VERSION });

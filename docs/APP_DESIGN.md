@@ -110,6 +110,8 @@ stacks the shop list, "Your scans" and "Recent scans", each a card of a differen
 when motion is allowed; the scan button's icon becomes a drawn barcode-and-frame icon.
 **D-150's "How it works" film card (2026-10-01) was removed by D-151 the same day:** home is the scan button
 first with nothing added; the film is on the website home only.
+**D-152 (2026-10-02):** the scan button says "Scan here" and nothing sits above it but the header; the "what's
+new" notes follow it.
 
 ### 3.5 The live scanner (D-024, D-124)
 **Feel:** the camera is there at once, which is good; the frame doesn't invite placing the barcode,
@@ -192,6 +194,9 @@ its red text (it is the one destructive action, and says so in words).
 
 ### 3.18 Shared chrome
 **Header:** the name, the mark and two pills; pills 34 px tall (fix: 48 px hit area, same look).
+**Changed by D-152 (2026-10-02):** the header is the centred italic wordmark, a back button on the left only on a
+result's own page, and a 48 px profile icon on the right that opens the menu (Household, Compare, Your data, Send
+feedback, Report a problem, Privacy). The pills are gone from the header.
 **Footer:** four links 18 px tall (fix: 48 px tall, wrapped). **Focus:** a 3 px ring, visible
 everywhere; with a sticky header a focused element can scroll under it (WCAG 2.2 2.4.11): fix with
 `scroll-padding-top`.

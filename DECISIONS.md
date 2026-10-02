@@ -2741,6 +2741,36 @@ waiting on Sushil's "accepted":
 - **The film's line "The first read of a pack takes about 8 to 15 seconds"** stays tied to the app's waiting text
   (`web/app.js`) and the scan-speed query (OPERATIONS.md section 5), as in D-150.
 `tests/test_film.py`.
+
+### D-152 · One centred italic wordmark everywhere; the app's links behind a profile menu; "Scan here" first; the website's desktop layout `RECOMMENDED` (2026-10-02)
+**Sushil, 2026-10-02:** "italic name for brand name everywhere and logo and brand name each page in center"; "In
+the app's header, right corner we will keep user profile icon, once click that the links (Compare, Household
+etc)"; from a marked-up screenshot of another company's app, the logo in the centre and one wide bar on the home
+that says "Scan here" (only the pattern taken; its colours, words and layout not); and for the website "lots of
+space right, left side of the webpage desktop version please adjust", "mobile version is perfect". The details,
+Claude's, waiting on Sushil's "accepted":
+- **The wordmark:** the logo and "InsideLabel" in a true italic, centred at the top of every website page and app
+  screen. Bricolage Grotesque (the display face) has no italic, so the name is drawn from DM Sans ExtraBold Italic
+  (OFL, the app's own text family). It is one inline SVG (4.4 KB, `role="img"`, named "InsideLabel", light and
+  dark ink) made by `tools/make_wordmark.py` and written into each page; not a web font (a 1.4 KB subset plus its
+  stylesheet, and then an SVG file, each cost the website's mobile LCP an extra request in Lighthouse). In running
+  text the name stays plain. Not changed now: the app icon and launcher icons, the Play listing, the explainer
+  film, the reviewer screen.
+- **The app header** (phone and desktop the same): the wordmark centred; on the left a back button only where a
+  screen had one (a result's own page: "Back to the result" moved there from the page); on the right a person icon
+  drawn for the app (never a photo, a name or initials: D-074), 48 x 48, labelled "Menu".
+- **The menu:** a modal dialog, a sheet from the bottom on phones and a panel under the icon from 600 px: Household,
+  Compare (with its count), then Your data, Send feedback, Report a problem, Privacy. Every header and footer link;
+  the footer keeps its links too. Focus moves in and back; Escape, a tap outside, a choice or the phone's Back close
+  it. No tap is added to the scan flow; D-146's digit check is unchanged.
+- **Home:** "Scan here" (no test pinned "Scan a pack") is the first thing under the header and opens what "Scan a
+  pack" opened; the "what's new" notes moved from above it to below it; the rest keeps its order.
+- **The website on desktop** (1024 px and up, a step at 1440 px): one container, 1200 px (1280 px), on the same
+  edges for every section; the hero in two columns (text about 4.5/12, film about 7.5/12, so the film is larger
+  than before at every width); "How it works" three equal cards across; "What it is, and isn't" in two columns.
+  The rules sit in the home page's own `<style media="(min-width: 1024px)">`, so phones never load them: below
+  the header, every website page on a 390 or 360 px phone is pixel-identical to before.
+`tests/test_site_desktop.py`.
 ---
 
 ## Open and pending

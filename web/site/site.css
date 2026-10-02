@@ -30,9 +30,15 @@ body { margin: 0; min-height: 100vh; color: var(--ink); font: 17px/1.55 var(--fo
        background: var(--hero) no-repeat top / 100% 520px; }
 .wrap { max-width: 760px; margin: 0 auto; padding: 0 16px; }
 header.wrap { padding-top: 20px; padding-bottom: 4px; }   /* .wrap alone would zero it */
-.brand { display: inline-flex; align-items: center; gap: 8px; color: var(--ink); text-decoration: none;
-         font: 800 22px/1 var(--display); letter-spacing: -.01em; }
-.mark { display: block; flex: none; width: 34px; height: 34px; }   /* D-112: the logo */
+/* site-desktop: the wordmark (web/wordmark.css), centred; the header keeps its height (65 px) so
+   nothing below it moves on a phone. */
+.site-top { text-align: center; }
+/* The wordmark (made by tools/make_wordmark.py, inline in each page): the logo and "InsideLabel"
+   in italic, the same on every page and screen. In running text the name stays plain. */
+.wordmark { position: relative; display: inline-flex; align-items: center; border-radius: 8px; }
+.wordmark-svg { display: block; width: 170px; height: 34px; }
+.wordmark::after { content: ""; position: absolute; inset: -8px -4px; }     /* a 48 px tall hit area */
+.wordmark:focus-visible { outline: 3px solid var(--ring); outline-offset: 4px; }
 h1, h2 { font-family: var(--display); font-weight: 800; letter-spacing: -.015em; }
 h1 { font-size: clamp(32px, 7vw, 46px); line-height: 1.05; margin: 24px 0 12px; }
 h2 { font-size: 22px; margin: 36px 0 10px; }

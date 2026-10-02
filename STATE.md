@@ -662,6 +662,25 @@ setup alarms.
 
 **NEXT SESSION STARTS HERE (2026-10-01).** Where things stand, newest first:
 
+- **`site-desktop` (2026-10-02, web-36, no migration), from `main` 0dc965b (#90).** Sushil's header, menu, "Scan
+  here" and desktop asks; D-152 (RECOMMENDED). One wordmark, the logo and "InsideLabel" in DM Sans ExtraBold Italic
+  (Bricolage has no italic), drawn as one inline SVG of 4.4 KB by `tools/make_wordmark.py` and written into the
+  app and every website page, centred. App header: wordmark centred, "Back to the result" as the left button on a
+  result's own page only, a 48 px person icon on the right ("Menu") opening a modal dialog (a bottom sheet on
+  phones, a panel from 600 px) with Household, Compare, Your data, Send feedback, Report a problem, Privacy (the
+  footer keeps its links). Home: "Scan here" first, the "what's new" notes below it. Website desktop (1024 px up,
+  step at 1440): one 1200/1280 px container, hero 4.5/12 + 7.5/12 (film 570/670/705 px at 1024/1280/1440, was
+  555/611/611), three equal cards, two-column points; the rules in the home page's own `<style media>` so phones
+  never load them; below the header every website page at 390 and 360 px is pixel-identical to before (16 of 16,
+  light and dark). Lighthouse (median of 5, cold): website mobile LCP 1364 to 1368 ms, CLS 0, 84 to 90 KB;
+  desktop 332 to 330 ms; app home mobile 2570 to 2448 ms, CLS 0.033 to 0, 201 to 197 KB; desktop 588 to 576 ms.
+  Tried and dropped, each measured slower on the website's mobile LCP: the italic as a web font with its own
+  stylesheet, the wordmark as a separate SVG file, the desktop rules in their own stylesheet. Walked at 390 x 844,
+  360 x 800 and 1280 x 800, light and dark: home, the menu (Escape, outside tap, Back, a choice), a result, a
+  result's own page, Household, Compare. `tests/test_site_desktop.py` (8). **Waiting on Sushil:** merge;
+  `update.sh`; a look on a phone and a laptop; "accepted" for D-152; later, whether the app icon, the Play listing,
+  the film and the reviewer screen take the italic wordmark too.
+
 - **`film-website-only` (2026-10-01, web-35, no migration), from `main` b96b322 (#89).** Sushil: "not liked it,
   keep only web page website on desktop and mobile version video". D-151 (RECOMMENDED) supersedes D-150: the app has
   no film (home is "Scan a pack" first, nothing added; `app.js`, `app.css`, `icons.js` are back to before D-150).
