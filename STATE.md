@@ -662,6 +662,15 @@ setup alarms.
 
 **NEXT SESSION STARTS HERE (2026-10-01).** Where things stand, newest first:
 
+- **D-153 step 1, the design system (2026-10-02, web-38, no migration), on `claude/trusting-einstein-kddhlb`.**
+  One block of tokens and components, identical in `web/app.css` and `web/site/site.css` (deep-blue panel, person
+  lines, serif headings, mono sources, numbered notes, ruled lists, the Finding / For / Source table, "in
+  preparation" boxes, the 60 px button); Source Serif 4 (400, 600) and IBM Plex Mono (400) self-hosted with their
+  OFL files, 56 KB. `tests/test_design_system.py` (7): the two copies identical, every token defined, repeated values
+  unchanged, WCAG AA computed in light and dark (it caught the table header at 4.27:1 and the hero stroke in dark
+  mode, both fixed). Reference sheet `/app/design.html` (noindex), walked at 390 light and dark and 1280. No screen
+  uses it yet. **Next:** step 2, the app's photo ask and result.
+
 - **`claude/trusting-einstein-kddhlb` (2026-10-02, decision only, no code).** D-153 **LOCKED** (Sushil: "accepted"):
   the redesign. One design system for the website and the app; the website home as row D ("Merged") of the canvas
   https://claude.ai/artifact/2rmu9zKpTyATZwibpcK1fF; the app's photo ask ("Photograph the ingredients list", 1

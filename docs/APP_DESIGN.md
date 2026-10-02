@@ -347,6 +347,33 @@ readable", never anything about the food.
 Every target at least 48 x 48 CSS px (a small visual element gets a larger invisible hit area);
 focus ring 3 px `--ring`, offset 2 px; `scroll-padding-top` the header's height.
 
+### 8.9 D-153 additions: the redesign ("Merged")
+
+One block, byte for byte the same at the end of `web/app.css` and `web/site/site.css`, between
+`D-153 design system: begin` and `end`; `tests/test_design_system.py` fails if the two differ, if a
+value it repeats from app.css changes, if a token is used but not defined, or if a text pair drops
+below WCAG AA (computed in the test, light and dark). The reference sheet is `web/design.html`
+(`/app/design.html`, not linked, `noindex`).
+
+| Token | Light | Dark | Use |
+|---|---|---|---|
+| `--deep` / `--on-deep` / `--on-deep-muted` | #193b57 / #f3fbf6 / #cfe6ee | #0e2435 / same / same | the deep-blue panel (app top, website hero and last band) |
+| `--deep-action` | #c4f6d4 | #66c189 | the big button on the panel, with `--deep` text |
+| `--mark` | #048149 | #048149 | the green stroke under the hero's last words (kept deep in dark mode: the light green failed under white words) |
+| `--serif` | Source Serif 4 400, 600 | | section headings, the pack name, the founder note |
+| `--mono` | IBM Plex Mono 400 | | sources, citation numbers, kickers, the table header |
+| `--fs-4xl`, `--fs-display` | 2.75rem; clamp(2.75rem, 1.6rem + 4.6vw, 5.5rem) | | big serif headings; the website hero (44 to 88 px) |
+| `--r-2xl`, `--tap-big` | 32 px; 60 px | | the panel's bottom corners; the one action a screen ends on |
+
+Components: `.deep` (`.deep.band` square-cornered), `.display` + `.mark`, `.person-line` (`.stop`,
+`.unsure`; calm by default), `.src`, `.cite`, `.kicker`, `.h-serif` (`.big`), `.notes` (numbered
+hairline notes), `.ruled` (a methods-page list or `<dl>`), `.table-scroll` + `.sourced` (Finding /
+For / Source), `.pending` + `.pending-tag` (promised, not built), `.btn-big`. Measured while building:
+`--muted` on `--surface-2` is 4.27:1, so the table header is set in `--ink`. Fonts: three files,
+56 KB in all, OFL, self-hosted (`web/fonts/`); a browser fetches a face only when text uses it, so
+nothing changes for a screen until it adopts these classes. They join `sw.js`'s shell with the first
+screen that uses them.
+
 ---
 
 ## 9. What was built (step 2, branch `app-polish`)
