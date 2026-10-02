@@ -900,9 +900,10 @@ function working(text, reading, stages = null) {
     if (!secs.isConnected) return clearInterval(timer);
     const n = Math.round((Date.now() - t0) / 1000);
     secs.textContent = String(n);
-    // D-124: a slow read should not look like a hang.
+    // D-124: a slow read should not look like a hang. D-153: no cause is named, because the
+    // app can't see one (a slow scan is usually Gemini, or the fallback reader, not "busy").
     if (reading && n >= 20 && !slow.textContent) {
-      slow.textContent = "Taking longer than usual: the reader is busy right now. It is still working.";
+      slow.textContent = "Taking longer than usual. It is still working.";
     }
   }, 1000);
   const title = el("h1", {}, stages ? stages[0] : text);
@@ -1574,7 +1575,8 @@ function apiMessage(e) {
   if (e.status === 0) return "No connection. Check your internet and try again.";
   // Our setup (key, credit), not a busy moment: "in a minute" would be untrue.
   if (e.body?.error === "vision_not_configured") return "The label reader isn't available right now. Please try again later today.";
-  if (e.status === 503) return "The label reader is busy right now. Try again in a minute.";
+  // D-153: every 503 from our server means the database is unavailable; nothing is "busy".
+  if (e.status === 503) return "Something on our side isn't working right now. Try again in a minute.";
   // D-095: the server's own text says how long to wait.
   if (e.status === 429) return e.body?.detail || "You've checked a lot of packs in a short time. Please wait a few minutes.";
   // D-103: the server names what's wrong with a barcode or a photo file.
