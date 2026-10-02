@@ -96,6 +96,21 @@ def test_app_and_shell_versions_move_together():
     assert app == sw, "bump APP_VERSION (lib.js) and VERSION (sw.js) together"
 
 
+def test_slow_scan_words_name_no_cause():                            # D-124, D-153
+    # The app can't see why a read is slow: with Cloud Vision down the fallback reader runs,
+    # and "the reader is busy" would be untrue. The 20 s line says only what the app knows.
+    app_js = JS["app.js"]
+    assert "Taking longer than usual. It is still working." in app_js
+    assert "reader is busy right now. It is still working" not in app_js
+
+
+def test_503_words_say_what_a_503_is():                              # D-153
+    # Every 503 the server sends is storage_unavailable: the reader is never what failed.
+    app_js = JS["app.js"]
+    assert "Something on our side isn't working right now. Try again in a minute." in app_js
+    assert all("label reader is busy" not in src for src in JS.values())
+
+
 def test_trail_keeps_no_query_strings_or_names():
     lib = JS["lib.js"]
     assert 'path: path.split("?")[0]' in lib                 # /updates?device_id=… → /updates
