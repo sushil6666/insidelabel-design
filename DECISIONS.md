@@ -2718,7 +2718,10 @@ Sushil's "accepted":
   (`web/app.js`); if the scan-speed query (OPERATIONS.md section 5) says otherwise, both change together.
 `tests/test_film.py`.
 
-### D-151 · The explainer film is on the website home only, as the hero; the app has no film `RECOMMENDED` (2026-10-01)
+### D-151 · The explainer film is on the website home only, as the hero; the app has no film `LOCKED` (2026-10-01)
+**Accepted by Sushil 2026-10-02 ("accepted")**, the details below included, with one change the same day: the
+caption under the film is "How InsideLabel checks a label, in 41 seconds." (Sushil: remove "No sound: the words
+are on screen.").
 **Sushil, 2026-10-01: "not liked it, keep only web page website on desktop and mobile version video".** Supersedes
 D-150. The app (`/app/`) has no film: the "How it works" card and its player are gone and home is back to "Scan a
 pack" first with nothing added (web-35). The website home (`/`) shows the film as its hero. The details, Claude's,
