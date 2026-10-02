@@ -2775,6 +2775,66 @@ Claude's, waiting on Sushil's "accepted":
   The rules sit in the home page's own `<style media="(min-width: 1024px)">`, so phones never load them: below
   the header, every website page on a 390 or 360 px phone is pixel-identical to before.
 `tests/test_site_desktop.py`.
+
+### D-153 · The redesign: one design system for the website and the app; the website home rebuilt as "Merged"; the app's photo ask and result fixed where a tester got stuck `LOCKED` (2026-10-02)
+**Accepted by Sushil 2026-10-02 ("accepted")**, after a five-round interview with Claude and four mockup directions
+on one canvas (https://claude.ai/artifact/2rmu9zKpTyATZwibpcK1fF; row D is the one accepted, rows A to C are kept for
+reference). Not built yet.
+
+**Why.** Sushil set InsideLabel next to Truthin's website (his screen recording, 2026-10-02) and ours looked
+unfinished. What Truthin does that we didn't: it *shows* the product (phone mockups of real screens, short headlines,
+numbered steps with a picture each) instead of describing it. Not taken from it: a single rating, "Good to go",
+"healthier", stock photos of families, its purple. Its proof section is download counts and press; we have neither
+yet, so ours is what we already keep: the source of every finding (D-046, D-086), shown next to the finding.
+
+**What a tester hit** (Sushil, 2026-10-02; seen, not guessed): after the barcode, "photograph the back" didn't say which
+panel (nutrition table, ingredients, FSSAI licence), how many photos, or why; a refused photo meant starting again.
+The result was too long, too many cards, nothing said what it meant for her child, and with only warnings and nothing
+to say "yes" to, she couldn't tell what to buy. The app today can ask for the ingredients, the front and the nutrition
+table, and some buttons say "Photograph the back" (`web/app.js`).
+
+- **Scope and order:** one design system (tokens, type, components) for the website and the app, built first; then
+  the app's photo ask and result; then the website home. English only. No deadline: right over fast.
+- **Look:** today's palette (D-110) kept. Big headlines, the hero, the CTA band and the app's per-person lines in
+  Bricolage Grotesque; section headings, the pack name and the founder note in a serif (Source Serif 4); text in
+  DM Sans; INS numbers and sources in a monospace (IBM Plex Mono). All OFL, self-hosted, only the weights used
+  (D-110); D-152's Lighthouse numbers are the bar. Dark mode keeps following the phone.
+- **Website home, top to bottom:** a deep-blue hero ("Read the label for your kids.", the D-151 film inside a phone
+  mockup, three cards that rise out of it, each with a citation number); How it works (three numbered steps); one
+  real pack from the gold set with the **brand hidden** and a Finding / For / Source table (a named brand's result as
+  marketing reads as judging that brand, D-042); Method (four statements, linking to `/how`); In preparation ("Ask
+  about this pack", Pro, D-113; other packs without the things on your avoid list, free, D-058/D-059); the founder
+  note; the CTA. Designed now, built later: public pages per additive and per product.
+- **App, photo ask:** one screen, "Photograph the ingredients list", "1 photo", why it's needed (the barcode isn't in
+  our checked list yet), a drawing of a pack's back with the ingredients block marked and the nutrition table and
+  licence marked "not needed", and frame and light hints. "Photograph the back" goes from every button. Refusals keep
+  `screen.py`'s specific reasons. Where another decision needs a second photo before the first answer, the build
+  says so and asks Sushil rather than dropping it.
+- **App, result:** the per-person lines first (D-060, D-064) and the only red on the screen; everything else folded
+  under "Worth knowing (n)", each line with its source (`fssai_basis` and `verified_on`, or where on the label it was
+  read); the screen ends with "Scan the next pack to compare" (D-057), then places kept for alternatives and "Ask
+  about this pack". The words stay in `lenses/screen.py` (D-091) and pass the wording lint.
+- **Motion:** CSS only, no library (D-090), off under `prefers-reduced-motion`. The motion-graphics toolkit Sushil
+  shared was a reference, not a dependency.
+- **The founder note**, Sushil's words, as given:
+  > I'm Sushil Behera, and I have a young son. When he visits the neighbours, someone always hands him a biscuit, a
+  > chocolate or a packet of chips. Kind people, kind gestures. But each time I turned the pack over, I couldn't tell
+  > what he was actually eating: the ingredient list was tiny, full of codes like INS 322 and 150d, and nothing on the
+  > pack explained them.
+  >
+  > I've worked with data for years, so I built the tool I wanted: scan the pack and see what's in it, in plain words,
+  > starting with anything on your family's avoid list.
+  >
+  > InsideLabel is paid for from my own money. No food company pays us, and none can change what we show. I read every
+  > reported mistake myself.
+
+  It states who pays and that no food company does, which is D-138's ground: it goes on the site together with
+  D-138's "approved", not before. "I read every reported mistake myself" is a promise: the build checks that
+  every problem report (`POST /report`, D-092) reaches Sushil before the note goes up.
+
+**Checks when built:** `tests/test_web.py`, `tests/test_wording.py`, `tests/test_no_dashes.py`,
+`tests/test_site_desktop.py`; a headless-Chromium walk at 390, 360 and 1280 px in light and dark with screenshots for
+Sushil before merge; Lighthouse against D-152's numbers; `APP_VERSION` and the `sw.js` cache version bumped.
 ---
 
 ## Open and pending

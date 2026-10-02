@@ -662,6 +662,14 @@ setup alarms.
 
 **NEXT SESSION STARTS HERE (2026-10-01).** Where things stand, newest first:
 
+- **`claude/trusting-einstein-kddhlb` (2026-10-02, decision only, no code).** D-153 **LOCKED** (Sushil: "accepted"):
+  the redesign. One design system for the website and the app; the website home as row D ("Merged") of the canvas
+  https://claude.ai/artifact/2rmu9zKpTyATZwibpcK1fF; the app's photo ask ("Photograph the ingredients list", 1
+  photo, which panel and why) and result (per-person lines first, the rest under "Worth knowing" with sources,
+  ending in "Scan the next pack to compare") fixed where a tester got stuck. Sushil's founder note is in D-153 word
+  for word; it goes up with D-138's "approved". **Next:** build the design system, then the photo ask and result,
+  then the website home.
+
 - **`d151-accepted` (2026-10-02, no code or migration), from `main` 77d0327 (#92).** Sushil: "accepted" for D-151
   (the film as the website home's hero), now **LOCKED**; and the caption under the film loses "No sound: the words
   are on screen.", leaving "How InsideLabel checks a label, in 41 seconds." (the caption keeps its two-line height,
