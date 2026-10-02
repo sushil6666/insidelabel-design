@@ -677,9 +677,9 @@ setup alarms.
   Tried and dropped, each measured slower on the website's mobile LCP: the italic as a web font with its own
   stylesheet, the wordmark as a separate SVG file, the desktop rules in their own stylesheet. Walked at 390 x 844,
   360 x 800 and 1280 x 800, light and dark: home, the menu (Escape, outside tap, Back, a choice), a result, a
-  result's own page, Household, Compare. `tests/test_site_desktop.py` (8). **Waiting on Sushil:** merge;
-  `update.sh`; a look on a phone and a laptop; "accepted" for D-152; later, whether the app icon, the Play listing,
-  the film and the reviewer screen take the italic wordmark too.
+  result's own page, Household, Compare. `tests/test_site_desktop.py` (8). Merged (#91); D-152 **LOCKED**, accepted
+  by Sushil 2026-10-02 ("accepted" for D-152). **Waiting on Sushil:** `update.sh`; a look on a phone and a laptop;
+  later, whether the app icon, the Play listing, the film and the reviewer screen take the italic wordmark too.
 
 - **`film-website-only` (2026-10-01, web-35, no migration), from `main` b96b322 (#89).** Sushil: "not liked it,
   keep only web page website on desktop and mobile version video". D-151 (RECOMMENDED) supersedes D-150: the app has
