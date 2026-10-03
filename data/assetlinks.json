@@ -12,5 +12,12 @@
     ]
   },
   "package_name": "ai.insidelabel.app.f",
-  "fingerprints": []
+  "fingerprints": [
+    {
+      "sha256": "44:2A:05:72:5D:A2:46:39:3A:17:AF:63:74:5D:6D:7C:06:F0:A5:1F:8B:76:67:1C:70:10:FD:95:6D:F5:5D:2A"
+    },
+    {
+      "sha256": "7A:F8:3D:22:DC:56:E5:EF:C0:3B:AE:A2:69:2F:FD:17:1A:87:31:E3:DD:15:75:F1:EB:F1:6D:33:01:8B:0C:7E"
+    }
+  ]
 }
