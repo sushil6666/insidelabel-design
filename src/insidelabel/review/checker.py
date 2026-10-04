@@ -51,6 +51,17 @@ _SECTION_END = ("nutrition", "allergen", "storage", "store in", "manufactured", 
                 "for complaints", "consumer care", "customer care")
 _NOT_INGREDIENTS = {"ingredients", "ingredient", "contains", "contain", "and", "the", "with", "numbers",
                     "brackets", "are", "per", "international", "numbering", "system", "each", "approx"}
+# D-157 (refines D-118): a date or batch stamp printed across the ingredient panel
+# ("AUG/26-APR", report #5) is not an ingredient the draft lost. Months always (as
+# whole words only: "marjoram" and "mayonnaise" stay); the stamp words of Indian packs.
+# "B.No" has no word of three letters, so it never reaches LOST anyway.
+_MONTHS = ("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "sept", "oct", "nov", "dec")
+_STAMP_WORDS = {"mfd", "mfg", "exp", "best", "before", "batch", "lot"}
+# A word in a stamp: next to a digit or "/" ("26-apr", "aug/"), or alone on its line.
+_STAMPED = re.compile(r"(?<=[\d/-])[a-z]{3,5}(?![a-z])|(?<![a-z])[a-z]{3,5}(?=[\d/-])"
+                      r"|^[ \t]*[a-z]{3,5}[ \t]*$", re.M)
+# The heading Cloud Vision reads twice where the parts of a back overlap ("ING" + "DIENT'S").
+_HEADINGS = ("ingredient", "ingredients")
 # Nutrition-panel words. Cloud Vision can read a curved panel into the middle of
 # the list, often cut short ("energ", "satur"), so a prefix counts too.
 # "Added" (sugars) and "sodium" are panel rows too (item 13); a dropped "sodium
@@ -72,6 +83,33 @@ def _words(text):
 
 def _nutrition_word(w):
     return len(w) >= 4 and any(n.startswith(w) or w.startswith(n) for n in _NUTRITION)
+
+
+def _stamp_words(section):
+    """
+    The words of a date or batch stamp in this text (D-157). A month or stamp word
+    counts wherever it is; a close misread of a month ("augt") only inside a stamp,
+    next to a digit or "/" or alone on its line, so a real ingredient that looks a
+    little like a month in running text is never dropped.
+    """
+    out = {w for w in _words(section) if w in _MONTHS or w in _STAMP_WORDS}
+    for m in _STAMPED.finditer(section):
+        w = m.group(0).strip()
+        if difflib.get_close_matches(w, _MONTHS, n=1, cutoff=0.8):
+            out.add(w)
+    return out
+
+
+def _cut(word, covered):
+    """
+    A word cut short where Cloud Vision read an overlap of the back's parts, or the
+    edge of the photo (D-157): the start of a word the list has ("frac", "leci"), or a
+    piece of the "ingredients" heading ("ing", "dient"). A cut word that starts no
+    word of the list still counts as lost.
+    """
+    if any(c != word and c.startswith(word) for c in covered):
+        return True
+    return any(h != word and (h.startswith(word) or h.endswith(word)) for h in _HEADINGS)
 
 
 def _found(word, pool):
@@ -178,8 +216,10 @@ def independent_read(ingredients, ocr_text, allergen_statement=None):
     missing = sorted({w for w in _words(" ".join(ingredients)) if pool and not _found(w, pool)})
     covered = sorted(set(_words(" ".join(list(ingredients) + [allergen_statement or ""]))))
     section = _ingredient_section(ocr_text, ingredients)
+    stamps = _stamp_words(section)
     lost = sorted({w for w in _words(section)
-                   if w not in _NOT_INGREDIENTS and not _nutrition_word(w) and not _found(w, covered)})
+                   if w not in _NOT_INGREDIENTS and w not in stamps and not _nutrition_word(w)
+                   and not _found(w, covered) and not _cut(w, covered)})
     return bool(section), (missing if pool else ["(no text)"]), lost
 
 
