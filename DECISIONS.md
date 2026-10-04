@@ -2935,6 +2935,35 @@ each new sector's primary documents (D-046).
   `/about` now says "No company whose labels we read pays us, and none can change what we show." (D-153 quotes the
   first wording.)
 
+### D-157 · The D-118 check ignores date stamps and words cut at an overlap `LOCKED` (2026-10-04)
+Refines D-118 (and the D-117 review checker, which shares `review/checker.py`'s `independent_read`).
+Recommended by Sushil and the advisor from problem report #5; built by Claude. **Accepted by Sushil 2026-10-04.**
+Why: a new pack (8901058009439, Nestle Choco Coated Wafer) was refused twice with "One clearer photo, please."
+(`independent_read_failed`) though Gemini read the list right both times; the tester spent about 9 minutes before
+"Use this one anyway". Cloud Vision was working. MISSING was empty; LOST held words that aren't ingredients:
+- scan 8c46004c: `apr`, `aug`, from the date stamp "AUG/26-APR" printed across the ingredient panel;
+- scan 8bd1c116 (the back in 3 parts): `augt` (the same stamp misread), `frac`, `leci`, `ing`, `dient` (words cut
+  where the parts overlap, read twice by Cloud Vision), `choce` (a cut, misread "Choco") and `water` (wrapper text in
+  the overlap).
+
+What changes, in LOST only (MISSING is as before), on every scan:
+- **Stamps:** a month (jan to dec, "sept") or a stamp word (mfd, mfg, exp, best, before, batch, lot) never counts,
+  as a whole word only ("marjoram", "mayonnaise" and "sausage" are untouched). A close misread of a month ("augt")
+  counts as a stamp only next to a digit or "/" or alone on its line, so a word like "mayo" in running text still
+  counts. The list lives in `checker.py` beside `_NOT_INGREDIENTS` (a parser rule); past a handful it moves to
+  `data/`.
+- **Cut words:** a word that is the start (3 letters or more) of a word in the given list, or a start or end piece of
+  "ingredients", doesn't count. A cut word that starts no word of the list still counts.
+- **Strict otherwise:** a whole ingredient word Cloud Vision read that Gemini's list lacks still refuses (D-118's
+  purpose); `tests/test_checker_stamps_and_cuts.py` holds a dropped "salt".
+
+Result on report #5: scan 8c46004c is confirmed; scan 8bd1c116 still asks, on `choce` and `water`.
+- **Open question for Sushil:** a single stray whole word (here "water", wrapper text caught in an overlap) can still
+  trip the gate, and so can a cut word that is also misread ("choce": not the start of any listed word, since the
+  list has no "choco"). Widening either (for example, letting one stray word through on a multi-part back, or
+  matching a cut word against the whole of Cloud Vision's text outside the list) is his call, not done here.
+`tests/test_checker_stamps_and_cuts.py`.
+
 ---
 
 ## Open and pending
