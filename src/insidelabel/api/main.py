@@ -647,6 +647,40 @@ def _clean_barcode(code):
     return b
 
 
+def lost_words_matter(ingredients, lost, allergen_statement=None):
+    """
+    D-159: would the words Cloud Vision read in the ingredient list, and Gemini's list
+    lacks (review_checker.independent_read's LOST), change this scan's result? The rules
+    judge (D-004): the same ones the result is built from run on Gemini's list, and on
+    the list with the lost words added as one more ingredient, and their answers are
+    compared. No word list here; the tables decide. True when anything differs:
+    an allergen's state for any code (allergens.json), the engine's verdict (additives,
+    sugar names, sweeteners, NOVA markers, band), the ingredient notes, the household
+    lines for any age band, or the baby lines.
+
+    Beside the gate, not in review/checker.py: it is /scan's question (what the user
+    would see), and the D-117 checker stays word-for-word strict without it.
+    """
+    if not lost:
+        return False
+
+    def answers(entries):
+        verdict = engine.analyze(", ".join(entries))
+        flags = sorted((f["matched_as"], f["type"], f["concern"]) for f in verdict["flags"])
+        verdict = {k: v for k, v in verdict.items() if k not in ("flags", "ingredient_count_parsed")}
+        states = {c: r.state for c, r in allergen_checker.check(
+            entries, allergen_statement, list(allergen_checker.ALLERGENS)).items()}
+        notes = [n["id"] for n in engine.ingredient_notes(entries)]
+        facts = {age: [(f.key, f.tier, f.parent_text) for f in
+                       shelf.extract_facts(shelf.Product("x", "x", entries), age).facts if f.tier == "strong"]
+                 for age in shelf.AGE_BANDS}
+        baby = [line["text"] for line in result_screen.baby_lines("food", entries, True)]
+        return flags, verdict, states, notes, facts, baby
+
+    listed = list(ingredients or [])
+    return answers(listed) != answers(listed + [" ".join(lost)])
+
+
 def _ms(t0):
     return int((time.monotonic() - t0) * 1000)
 
@@ -1543,12 +1577,23 @@ async def scan(
                                "source": barcode_source}
         tr["timings"]["barcode_check_ms"] = _ms(t_bc)
     from_screen = bool(reliability.get("from_screen"))
+    ask_again = False
     if (barcode and STORE and not accept_unconfirmed and not from_screen
             and ocr_text.get("reader") == "cloud_vision"
-            and (ocr_text.get("text") or "").strip()
-            and not review_checker.independent_read_confirmed(
-                vision["ingredients"], ocr_text["text"], vision.get("allergen_statement"))
-            and _persist(STORE.adds_version, barcode, vision["ingredients"])):
+            and (ocr_text.get("text") or "").strip()):
+        section, missing, lost = review_checker.independent_read(
+            vision["ingredients"], ocr_text["text"], vision.get("allergen_statement"))
+        if not (section and not missing and not lost):
+            # D-159: no list in Cloud Vision's text, or words of Gemini's list it never
+            # saw, still ask. Words only Cloud Vision read (LOST) ask only when they would
+            # change the user's result; the D-117 checker still sends them to a person.
+            matters = (not section or bool(missing)
+                       or lost_words_matter(vision["ingredients"], lost, vision.get("allergen_statement")))
+            ask_again = matters and bool(_persist(STORE.adds_version, barcode, vision["ingredients"]))
+            # Kept with the back's Cloud Vision read (scans.ocr), so repro.py shows it (D-092).
+            ocr_text["independent_read"] = {"section_found": bool(section), "missing": missing, "lost": lost,
+                                            "asked": ask_again}
+    if ask_again:
         reliability["error"] = "independent_read_failed"
         scan_id = _persist(STORE.record_failed_scan, "refused", error_code="independent_read_failed",
                            device_id=device_id, latency_ms=_ms(t0), front_key=keys.get("front"),

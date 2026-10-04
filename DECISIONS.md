@@ -2987,6 +2987,39 @@ What changes, in `review/checker.py` `_cut()` only:
   test pins it. Narrowing further (for example, only on a back sent in parts) is his call.
 `tests/test_checker_stamps_and_cuts.py`.
 
+### D-159 · /scan asks for a clearer photo only when a lost word could change the result `LOCKED` (2026-10-04)
+Refines D-118, D-157 and D-158. Proposed by the advisor in review; **accepted by Sushil 2026-10-04**; built by Claude.
+Sushil's rule: at most one quick check per scan, and only when it matters.
+Why: problem report #5 (Nestle Choco Coated Wafer, 8901058009439, the back in 3 parts). After D-157 and D-158,
+`independent_read()` still lost `choce` and `water` on scan 8bd1c116, so the tester was asked "One clearer photo,
+please." for two words that change nothing they would see ("water" is wrapper text from an overlap, "choce" a cut,
+misread "Choco"), and spent about 9 minutes before "Use this one anyway". The gate protects the user's result now;
+the catalogue is protected separately: every new pack goes to review, and the D-117 checker's `nothing_lost` sends a
+person "in Cloud Vision's ingredient list but not in the draft: choce, water".
+
+What changes, in `api/main.py`'s D-118 gate only:
+- No list in Cloud Vision's text, or words of Gemini's list it never saw (MISSING): still asks, as before.
+- Words only Cloud Vision read (LOST): asks only when `lost_words_matter()` says they change the result. It runs the
+  scan's own rules (D-004) on Gemini's list, and on the list with the lost words added as one more ingredient, and
+  compares: every allergen code's state (`allergens.json`), the engine's verdict (additives, sugar names,
+  sweeteners, NOVA markers, band), the ingredient notes, the household lines for each age band and the baby lines.
+  No word list in code. It sits beside the gate, not in `review/checker.py`: it is /scan's question, and the D-117
+  checker stays word-for-word strict. About 150 ms, only on a scan whose LOST isn't empty.
+- Recorded with the back's Cloud Vision read (`scans.ocr`, `back.independent_read`: section found, missing, lost,
+  asked), so `tools/repro.py show` prints it (D-092). No migration; the user's screen doesn't change.
+- `independent_read()`, `independent_read_confirmed()` and the D-117 `nothing_lost` check are unchanged.
+
+| Lost word, on report #5's list | Changes | Asks |
+|---|---|---|
+| `choce`, `water` (scan 8bd1c116) | nothing | no |
+| `milk` (on the list without "Milk solids" and its statement) | the milk allergen | yes |
+| `sucralose` | an additive finding | yes |
+| `glucose` | the sugar names | yes |
+| `rice`, `water` | nothing | no |
+
+Report #5's own list already has "Milk solids" and says milk in its statement, so a lost "milk" there changes nothing
+and doesn't ask: the rules decide, not the word. `tests/test_lost_words_gate.py`.
+
 ---
 
 ## Open and pending
