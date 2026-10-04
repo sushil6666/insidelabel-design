@@ -104,6 +104,20 @@ def test_slow_scan_words_name_no_cause():                            # D-124, D-
     assert "reader is busy right now. It is still working" not in app_js
 
 
+def test_app_never_shows_a_machine_field_as_words():                  # 2026-10-04
+    # test_screen.py skips these fields when it looks for file names and table keys, so
+    # the app must never draw one as text: only as a class, an attribute, a link or a test.
+    # Caught: a field passed to el() as content, alone or after "words " +. Not caught: a
+    # field put into a template string; fill(text, ref) picks a nickname and is allowed.
+    from test_screen import MACHINE_FIELDS
+    src = _COMMENT.sub("", JS["app.js"])
+    child = re.compile(r",\s*(?:\"[^\"]*\"\s*\+\s*)?\b[A-Za-z_$][\w$]*\??\.(%s)\b\s*(?=[,)])"
+                       % "|".join(sorted(MACHINE_FIELDS)))
+    shown = [src[max(0, m.start() - 60):m.end()] for m in child.finditer(src)
+             if not re.search(r"\bfill\([^()]*$", src[max(0, m.start() - 80):m.start()])]
+    assert not shown, shown
+
+
 def test_503_words_say_what_a_503_is():                              # D-154
     # Every 503 the server sends is storage_unavailable: the reader is never what failed.
     app_js = JS["app.js"]

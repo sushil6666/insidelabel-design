@@ -306,8 +306,10 @@ def test_the_words_used_are_explained_and_linked():
 
 # 2026-10-04 (Sushil, on a phone): the sugar card showed "normalization.json added_sugar aliases
 # matched: ...". Screen text is for people: no file names, no table keys, no internal ids.
+# Fields the PWA uses for logic, classes and links, never as words on the screen
+# (tests/test_web.py holds web/app.js to that). `ins` is not one: a card shows "INS " + ins.
 MACHINE_FIELDS = {"id", "ref", "key", "url", "kind", "status", "state", "code", "type", "tone",
-                  "tier", "concern", "ins"}
+                  "tier", "concern"}
 INTERNAL = re.compile(r"\.json\b|\b[a-z0-9]+_[a-z0-9_]+\b")
 SUGARY = ["Sugar", "Invert syrup", "Liquid glucose", "Palm oil", "Hydrogenated vegetable oil",
           "Colour (INS 102)", "Flavour enhancer (INS 621)", "Emulsifier (INS 471)", "Maltodextrin",
@@ -334,6 +336,23 @@ def test_screen_text_shows_no_file_names_or_table_keys():
             s = scan(ingredients, profiles=profiles).json()["screen"]
             leaks = [(k, t) for k, t in _texts(s) if INTERNAL.search(t)]
             assert not leaks, leaks
+
+
+def test_released_claim_rows_show_no_file_names_or_table_keys(monkeypatch):
+    # D-051: claims are shadowed today; this is the check to have before they are released.
+    from insidelabel.api import main
+    monkeypatch.setattr(main, "CLAIMS_TO_USERS", True)
+    claims = ["No preservatives", "No added sugar", "No artificial colours", "100% atta", "No maida",
+              "Made with real fruit", "No trans fat", "High protein", "No MSG"]
+    ingredients = SUGARY + ["Preservative (INS 202)", "Refined wheat flour (Maida)"]
+    r = c.post("/scan", files={"front": ("f.png", PNG, "image/png"), **BACK}, data={
+        "replay": vision(ingredients, front_status="read", front_claims=claims,
+                         product_match={"status": "match", "evidence": []}),
+        "pairing_confirmed": "true", "profiles": json.dumps(FAMILY)})
+    s = r.json()["screen"]
+    assert s["claims"], "the claim rows were not released"
+    leaks = [(k, t) for k, t in _texts(s) if INTERNAL.search(t)]
+    assert not leaks, leaks
 
 
 def test_the_sugar_card_quotes_the_label_and_names_its_source():
