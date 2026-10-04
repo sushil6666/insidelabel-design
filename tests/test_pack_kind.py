@@ -7,6 +7,8 @@ What is pinned here:
 - An ordinary food comes out exactly as before: the six gold labels' /scan output
   is compared with tests/fixtures/pack_kind_gold_before.json, captured on
   2026-09-30 before any phase 1 change.
+  Its `technical` lines were reworded on 2026-10-04 (no file names, table keys or
+  source codes shown to users); every other value is as captured.
 - Answers recorded before rule 11 (no pack_statements, no licences) parse and
   replay as food (D-092).
 - Invented labels for each kind (a multivitamin tablet, a protein powder, a gummy,

@@ -6,6 +6,7 @@ states that must never appear, and that profile names stay on the device.
 """
 import base64
 import json
+import re
 
 from fastapi.testclient import TestClient
 
@@ -301,3 +302,47 @@ def test_the_words_used_are_explained_and_linked():
     assert all(w["url"] == f"/how#{w['key']}" for w in words)
     plain = scan(PLAIN, profiles=[]).json()["screen"]["glossary"]
     assert [w["key"] for w in plain] == ["other"]
+
+
+# 2026-10-04 (Sushil, on a phone): the sugar card showed "normalization.json added_sugar aliases
+# matched: ...". Screen text is for people: no file names, no table keys, no internal ids.
+MACHINE_FIELDS = {"id", "ref", "key", "url", "kind", "status", "state", "code", "type", "tone",
+                  "tier", "concern", "ins"}
+INTERNAL = re.compile(r"\.json\b|\b[a-z0-9]+_[a-z0-9_]+\b")
+SUGARY = ["Sugar", "Invert syrup", "Liquid glucose", "Palm oil", "Hydrogenated vegetable oil",
+          "Colour (INS 102)", "Flavour enhancer (INS 621)", "Emulsifier (INS 471)", "Maltodextrin",
+          "Milk solids", "Soy lecithin", "Artificial flavouring substances", "Peanut", "Caffeine",
+          "Sucralose (INS 955)", "Honey", "Salt"]
+
+
+def _texts(obj, key=None):
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            yield from _texts(v, k)
+    elif isinstance(obj, list):
+        for v in obj:
+            yield from _texts(v, key)
+    elif isinstance(obj, str) and key not in MACHINE_FIELDS:
+        yield key, obj
+
+
+def test_screen_text_shows_no_file_names_or_table_keys():
+    households = [FAMILY, [{"ref": "me", "age": "adult", "avoid": []},
+                           {"ref": "p1", "age": "baby", "avoid": ["milk"]}], None]
+    for ingredients in (BISCUIT, PLAIN, MALIBAN, SUGARY):
+        for profiles in households:
+            s = scan(ingredients, profiles=profiles).json()["screen"]
+            leaks = [(k, t) for k, t in _texts(s) if INTERNAL.search(t)]
+            assert not leaks, leaks
+
+
+def test_the_sugar_card_quotes_the_label_and_names_its_source():
+    s = scan(SUGARY, profiles=[]).json()["screen"]
+    card = next(w for w in s["worth_knowing"] if w["name"].startswith("Sugar under"))
+    assert card["label_text"] == "honey, invert syrup, liquid glucose, sugar"
+    assert card["technical"] == screen.SUGAR_SOURCE
+    industrial = next(w for w in s["worth_knowing"] if w["name"] == "Industrial ingredients")
+    assert "NOVA marker" not in industrial["technical"]           # said twice before
+    tartrazine = next(w for w in s["worth_knowing"] if "INS 102" in w["technical"])
+    assert "Southampton study (Lancet 2007)" in tartrazine["technical"]
+    assert "SOUTHAMPTON" not in tartrazine["technical"]

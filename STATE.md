@@ -662,6 +662,8 @@ setup alarms.
 
 **NEXT SESSION STARTS HERE (2026-10-01).** Where things stand, newest first:
 
+- **`claude/gifted-faraday-v5s2db` (2026-10-04, no migration, no app change), from `main` 1618c6a (#100).** Sushil's phone bug: the "Sugar under N names" card showed "normalization.json added_sugar aliases matched: ...". Its source line is now `screen.SUGAR_SOURCE` (FSSAI's definition of added sugars, Labelling and Display Regulations 2020; the card already quotes the label's names). Every other card checked: the additive cards' "Sources:" showed table codes ("SOUTHAMPTON, CODEX"), now plain words from `additives.json` `_meta.sources_shown`; the industrial card said "NOVA marker:" twice per name; the household facts' `technical` (sent, not drawn) named files and keys ("normalization.json", "flavour_enhancer, concern: moderate"). `tests/test_screen.py` fails if any screen text outside the machine fields (id, ref, key, url, kind, status, state, code, type, tone, tier, concern, ins) has ".json" or a snake_case key. `tests/fixtures/pack_kind_gold_before.json`: only its `technical` lines changed. **Waiting on Sushil:** merge; `update.sh`.
+
 - **The home page's film redone for the redesign (2026-10-03, no app change), on `claude/trusting-einstein-kddhlb`.**
   Both cuts re-rendered from `videos/insidelabel-how-it-reads/src/` with the redesign's screens, the ingredients and
   nutrition table photo, and "Read the label for your family." at the close; served as `web/film/hero2-*` (old

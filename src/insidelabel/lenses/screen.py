@@ -46,6 +46,11 @@ BAND_LABEL = {
     "ultra-processed": "Made with industrial ingredients",
     "incomplete": "We could read only part of the ingredient list",
 }
+# The sugar card's source line (normalization.json sugar_aliases _note: FSSAI L&D 2020,
+# added sugars = mono- and disaccharides added). Never a file name or table key.
+SUGAR_SOURCE = ("Source: FSSAI's definition of added sugars (Labelling and Display "
+                "Regulations, 2020), as applied in InsideLabel's list of sugar names.")
+
 NOVA_NOTE = (
     "Researchers call this \"ultra-processed\" (NOVA group 4): made with "
     "ingredients rarely used in home cooking, such as glucose syrup or modified "
@@ -398,7 +403,7 @@ def _findings(verdict, sure=True):
             continue
         ins = extract_ins(f["matched_as"])
         item = {"name": _additive_name(f), "label_text": f["ingredient"], "why": f["why"],
-                "technical": f"{f['matched_as']}. Sources: {', '.join(f['sources'])}.",
+                "technical": f"{f['matched_as']}. Sources: {engine.source_names(f['sources'])}.",
                 "concern": f["concern"], "source": {"kind": "additive", "ref": f["matched_as"]},
                 "ins": ins,
                 "badge": _badge(engine._ADDITIVE_BY_INS.get(ins) if ins else None, f["concern"], sure)}
@@ -413,7 +418,8 @@ def _findings(verdict, sure=True):
             "name": "Industrial ingredients",
             "label_text": ", ".join(names),
             "why": NOVA_NOTE,
-            "technical": "NOVA group 4 markers: " + "; ".join(f["matched_as"] for f in nova) + ".",
+            "technical": "NOVA group 4 markers: "
+                         + "; ".join(f["matched_as"].removeprefix("NOVA marker: ") for f in nova) + ".",
             "concern": "moderate",
             "source": {"kind": "nova", "ref": [f["matched_as"] for f in nova]},
         })
@@ -426,7 +432,8 @@ def _findings(verdict, sure=True):
             "label_text": ", ".join(sugars),
             "why": "These are all added sugars. Ingredients are listed from most to least, "
                    "so each name sits lower on the list than their total would.",
-            "technical": "normalization.json added_sugar aliases matched: " + ", ".join(sugars) + ".",
+            # A plain source line: the card already quotes the label's names above it.
+            "technical": SUGAR_SOURCE,
             "concern": "moderate",
             "source": {"kind": "hidden_sugar", "ref": sugars},
         })
