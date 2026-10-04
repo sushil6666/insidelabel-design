@@ -49,6 +49,13 @@ NOTES = _load("ingredient_notes.json")["rows"]
 # Build fast lookups
 _ADDITIVE_BY_INS = {a["ins"]: a for a in ADDITIVES["additives"] if a.get("class") != "note"}
 
+
+def source_names(codes):
+    """The plain words for an additive row's `sources` codes, for a card's source line.
+    The codes ("SOUTHAMPTON", "CODEX") are table keys and never reach a user."""
+    shown = ADDITIVES["_meta"]["sources_shown"]
+    return ", ".join(shown.get(c, c) for c in codes)
+
 # alias -> canonical synonym key
 _SYNONYM_LOOKUP = {}
 for canonical, aliases in NORM["synonyms"].items():

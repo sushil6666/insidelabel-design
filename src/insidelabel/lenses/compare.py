@@ -48,7 +48,10 @@ def _load(name):
         return json.load(f)
 
 
-ADDITIVES = {a["ins"]: a for a in _load("additives.json")["additives"] if a["class"] != "note"}
+_ADDITIVES_TABLE = _load("additives.json")
+ADDITIVES = {a["ins"]: a for a in _ADDITIVES_TABLE["additives"] if a["class"] != "note"}
+# The words shown for each sources code; the codes are table keys, never shown.
+_SOURCES_SHOWN = _ADDITIVES_TABLE["_meta"]["sources_shown"]
 NORM = _load("normalization.json")
 NOVA = _load("nova_markers.json")["markers"]
 CLAIMS = _load("claim_rules.json")
@@ -164,7 +167,8 @@ def extract_facts(p: Product, age: str):
         a = ADDITIVES[ins]
         tags = set(a.get("flags", []))
         name = a["name"]
-        tech = f"INS {ins} {name} ({a['class']}, concern: {a['concern']}). {a['why']} Sources: {', '.join(a['sources'])}."
+        tech = (f"INS {ins} {name} ({a['class'].replace('_', ' ')}). {a['why']} "
+                f"Sources: {', '.join(_SOURCES_SHOWN.get(s, s) for s in a['sources'])}.")
 
         if "artificial_sweetener" in tags:
             # Fact only. No legal claim: FSSAI's labelling FAQ (June 2022) says
@@ -197,16 +201,17 @@ def extract_facts(p: Product, age: str):
         if len(set(names)) > 1:
             text += f" It appears under {len(set(names))} names: {', '.join(dict.fromkeys(names))}."
         facts.append(Fact(f"sugar_pos:{first}", tier, text,
-                          f"Added-sugar aliases from normalization.json at positions {positions}."))
+                          f"Added-sugar names at position{'s' if len(positions) > 1 else ''} "
+                          + ", ".join(map(str, positions)) + " of the ingredient list."))
     else:
         facts.append(Fact("no_added_sugar_found", "info", "No added sugar found in the ingredient list.",
-                          "No normalization.json added_sugar alias matched.", positive=True))
+                          "No added-sugar name in the ingredient list.", positive=True))
 
     # Maltodextrin: its own fact (see claim_rules.json OPEN_QUESTION).
     if any(_word_in(m, _base(t)) for t in p.ingredients for m in _ADJ):
         facts.append(Fact("maltodextrin", "moderate",
             "Has maltodextrin, a processed starch that raises blood sugar quickly.",
-            "claim_rules.json added_sugar_adjacent; nova_markers.json nova_maltodextrin."))
+            "Not counted as added sugar; a NOVA group 4 marker."))
 
     # Caffeine.
     if any(_word_in(w, t.lower()) for t in p.ingredients for w in ("caffeine", "coffee")):
@@ -230,7 +235,7 @@ def extract_facts(p: Product, age: str):
     if nova_hits:
         facts.append(Fact("nova", "info",
             f"{len(nova_hits)} ultra-processed ingredient{'s' if len(nova_hits) > 1 else ''}.",
-            "NOVA Group 4 markers (nova_markers.json): " + ", ".join(nova_hits)))
+            "NOVA group 4 markers: " + ", ".join(nova_hits)))
 
     p.facts = facts
     p._nova = len(nova_hits)

@@ -23,6 +23,16 @@
       "EU": "EU food additive regulation status",
       "CODEX": "Codex CAC/GL 36-1989, Class Names and the International Numbering System for Food Additives (names and functional classes)",
       "NOVA": "Monteiro et al., NOVA classification (see nova_markers.json)"
+    },
+    "sources_shown": {
+      "_note": "2026-10-04: the words a result card shows for each sources code (the codes are table keys, never shown to users).",
+      "FSSAI": "FSSAI",
+      "EFSA": "EFSA",
+      "SOUTHAMPTON": "Southampton study (Lancet 2007)",
+      "WHO": "WHO / JECFA",
+      "EU": "EU additive rules",
+      "CODEX": "Codex",
+      "NOVA": "NOVA classification"
     }
   },
   "additives": [
