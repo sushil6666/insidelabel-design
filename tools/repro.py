@@ -90,6 +90,9 @@ def show(store, media, pid, save=None):
               f"prompt {s['prompt_version']} · timings {s['timings']}")
         print(f"    request {json.dumps(s['request'])}")
         print(f"    photos back={s['back_image_key']} front={s['front_image_key']} hold={s['evidence_hold']}")
+        check = ((s.get("ocr") or {}).get("back") or {}).get("independent_read")
+        if check:                                                         # D-159: the D-118 gate's reading
+            print(f"    independent read {json.dumps(check)}")
         hit = store.version_hit(s["product_version_id"]) if s["cache_hit"] and s["product_version_id"] else None
         out = repro.replay_scan(s, media, hit)
         for n in out["notes"]:
