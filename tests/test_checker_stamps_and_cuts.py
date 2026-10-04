@@ -8,6 +8,10 @@ Cloud Vision's, as stored on the two scans (first 600 characters).
 
 Strict otherwise: a whole ingredient word Gemini doesn't have still refuses,
 and a cut word that starts no word of the list still counts.
+
+D-158 (the advisor's review, 2026-10-04): a word counts as cut only at the start
+or end of a line, and an allergen word or a one-word ingredient name never does,
+so "Nutmeg, Nut," or "Eggless mix, ... Egg" is a dropped ingredient again.
 """
 from insidelabel.review import checker
 
@@ -80,3 +84,34 @@ def test_a_word_like_a_month_in_running_text_still_counts():
 def test_a_cut_word_that_starts_nothing_in_the_list_still_counts():
     text = lines("INGREDIENTS: Sugar, Palm fat, Frac | Salt.")
     assert checker.independent_read(["Sugar", "Palm fat", "Salt"], text)[2] == ["frac"]
+
+
+# ---------------------------------------------------------------- D-158: cut words, narrowed
+
+def lost(ingredients, text):
+    return checker.independent_read(ingredients, lines(text))[2]
+
+
+def test_a_dropped_word_beside_a_longer_one_mid_line_refuses():
+    # Measured on main 14c2fc6, where all three passed as cut words.
+    assert lost(["Sugar", "Nutmeg", "Salt"], "Ingredients: Sugar, Nutmeg, Nut, Salt") == ["nut"]
+    assert lost(["Wheat flour", "Eggless mix", "Salt"], "Ingredients: Wheat flour, Eggless mix, Egg, Salt") == ["egg"]
+    assert lost(["Cornflour", "Salt"], "Ingredients: Cornflour, Corn, Salt") == ["corn"]
+
+
+def test_an_allergen_at_a_line_end_is_never_a_cut_word():
+    # Guard 2: where a cut could happen, an allergen word (allergens.json) still refuses.
+    assert lost(["Sugar", "Nutmeg", "Salt"], "Ingredients: Sugar, Nutmeg, Salt, Nut | Net weight") == ["nut"]
+    assert lost(["Wheat flour", "Eggless mix", "Salt"],
+                "Ingredients: Wheat flour, Eggless mix, Salt, Egg | Net weight") == ["egg"]
+
+
+def test_a_plain_word_at_a_line_end_beside_a_longer_one_is_still_taken_as_cut():
+    # What D-158 leaves: "corn" is neither an allergen word nor a synonym, so at a line's
+    # end beside "Cornflour" it reads as a cut. Recorded in D-158 as an open question.
+    assert lost(["Cornflour", "Salt"], "Ingredients: Cornflour, Salt, Corn | Net weight") == []
+
+
+def test_report_5_keeps_its_d157_result():
+    assert checker.independent_read(GEMINI, STAMPED) == (True, [], [])
+    assert checker.independent_read(GEMINI, PARTS) == (True, [], ["choce", "water"])

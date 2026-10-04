@@ -2964,6 +2964,29 @@ Result on report #5: scan 8c46004c is confirmed; scan 8bd1c116 still asks, on `c
   matching a cut word against the whole of Cloud Vision's text outside the list) is his call, not done here.
 `tests/test_checker_stamps_and_cuts.py`.
 
+### D-158 · A cut word only at a line's start or end, and never an allergen or an ingredient name `LOCKED` (2026-10-04)
+Refines D-157. Found in the advisor's review after #106 merged; built by Claude. **Accepted by Sushil 2026-10-04.**
+Why: D-157 took any lost word that starts a word of Gemini's list as a cut word, so a dropped ingredient beside a
+longer one went through the D-118 gate. Measured on `main` 14c2fc6 with `independent_read()`: "Sugar, Nutmeg, Nut,
+Salt" lost nothing (was `nut`); "Eggless mix, Egg" lost nothing (was `egg`); "Cornflour, Corn" lost nothing (was
+`corn`). The gate exists to catch Gemini dropping an ingredient, and allergens come first (D-060).
+
+What changes, in `review/checker.py` `_cut()` only:
+- **Where:** a word counts as cut only when it is the first or last word of a line of Cloud Vision's text, where an
+  overlap of the back's parts or the photo's edge cuts it. In report #5 every cut word sits there ("...vegetable fats,
+  Frac", "...(Soya leci", "ING" alone, "Choce DIENT'S"), so both scans keep their D-157 result: 8c46004c confirmed,
+  8bd1c116 lost `choce` and `water`.
+- **Never cut:** every word of an allergen's aliases and statement words in `data/allergens.json` (read from the table:
+  "egg", "wheat", "milk", "soy", "peanut", and "nut" from "pine nut" and "brazil nut", since the table has no "nut"
+  alias of its own); and the one-word names in `normalization.json` `synonyms` ("salt", "msg", "vanaspati" and the
+  like). The synonyms were added because the engine itself reads them as ingredients, and none of report #5's cut
+  words is one of them; multi-word synonym entries were left out, since their words ("yellow", "colour") are too
+  general.
+- **Open question for Sushil:** a plain word at a line's start or end that starts a longer listed word, and is neither
+  an allergen word nor a synonym, is still taken as cut ("Cornflour, Salt, Corn" at a line's end loses nothing). A
+  test pins it. Narrowing further (for example, only on a back sent in parts) is his call.
+`tests/test_checker_stamps_and_cuts.py`.
+
 ---
 
 ## Open and pending
