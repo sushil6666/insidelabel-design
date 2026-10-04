@@ -97,7 +97,14 @@ def fresh(monkeypatch):
     monkeypatch.setattr(cv, "_down_until", 0.0)
     monkeypatch.setattr(cv, "_alarm", None)
     monkeypatch.setattr(ocr_check, "AVAILABLE", True)
+    # A scan's result never waits for its read, so a slow fake's passes can outlive the
+    # test; the next test's fake would then count them. Each test waits for its own reads.
+    reads, start = [], ocr_check.start_back_read
+    monkeypatch.setattr(ocr_check, "start_back_read", lambda b: reads.append(start(b)) or reads[-1])
     yield
+    for read in reads:
+        if read is not None:
+            read.done.wait(30)
 
 
 def tesseract(monkeypatch, text=LABEL_TEXT, each_s=0.0):
