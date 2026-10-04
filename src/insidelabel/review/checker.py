@@ -81,6 +81,26 @@ def _words(text):
     return _WORD.findall(_fold(text))
 
 
+# D-158: words that are never a cut word, wherever they sit. Every word of an allergen
+# alias and of an allergen's statement words (allergens.json: "egg", "wheat", and "nut"
+# from "pine nut"), since allergens come first (D-060); and the one-word names in
+# normalization.json's synonyms ("salt", "msg", "vanaspati"), which the engine reads
+# as ingredients. A dropped one of these next to a longer word still refuses.
+_ALLERGEN_ROWS = json.load(open(os.path.join(DATA_DIR, "allergens.json"), encoding="utf-8"))["allergens"]
+_NEVER_CUT = ({w for r in _ALLERGEN_ROWS for a in r["aliases"] + r.get("statement_words", []) for w in _words(a)}
+              | {n for k, v in _NORM["synonyms"].items() for n in [k, *v] if re.fullmatch(r"[a-z]{3,}", n)})
+
+
+def _line_ends(text):
+    """The first and last word of each line: where an overlap or the photo's edge cuts a word (D-158)."""
+    out = set()
+    for line in text.splitlines():
+        ws = _words(line)
+        if ws:
+            out.update((ws[0], ws[-1]))
+    return out
+
+
 def _nutrition_word(w):
     return len(w) >= 4 and any(n.startswith(w) or w.startswith(n) for n in _NUTRITION)
 
@@ -100,13 +120,18 @@ def _stamp_words(section):
     return out
 
 
-def _cut(word, covered):
+def _cut(word, covered, ends):
     """
     A word cut short where Cloud Vision read an overlap of the back's parts, or the
     edge of the photo (D-157): the start of a word the list has ("frac", "leci"), or a
     piece of the "ingredients" heading ("ing", "dient"). A cut word that starts no
     word of the list still counts as lost.
+    D-158: only at the start or end of a line (`ends`), where a cut happens, and never
+    an allergen or an ingredient name: "Nutmeg, Nut," mid-line, or "Egg" at a line's
+    end beside "Eggless", is a dropped ingredient, not a cut one.
     """
+    if word not in ends or word in _NEVER_CUT:
+        return False
     if any(c != word and c.startswith(word) for c in covered):
         return True
     return any(h != word and (h.startswith(word) or h.endswith(word)) for h in _HEADINGS)
@@ -217,9 +242,10 @@ def independent_read(ingredients, ocr_text, allergen_statement=None):
     covered = sorted(set(_words(" ".join(list(ingredients) + [allergen_statement or ""]))))
     section = _ingredient_section(ocr_text, ingredients)
     stamps = _stamp_words(section)
+    ends = _line_ends(section)
     lost = sorted({w for w in _words(section)
                    if w not in _NOT_INGREDIENTS and w not in stamps and not _nutrition_word(w)
-                   and not _found(w, covered) and not _cut(w, covered)})
+                   and not _found(w, covered) and not _cut(w, covered, ends)})
     return bool(section), (missing if pool else ["(no text)"]), lost
 
 
