@@ -379,7 +379,12 @@ Before production, remove or change the last line ("closed beta").
 
 **Graphics** (Sushil makes them):
 - App icon: `android/store_icon.png`, 512 x 512 (made from `web/icon-512.png`).
-- Feature graphic: 1024 x 500, the name on the app's cream background (`#FBF9EE`), no pack, no brand.
+- Feature graphic: `android/feature_graphic.png`, 1024 x 500, 24-bit PNG with no alpha: the D-152 wordmark
+  (logo and italic "InsideLabel", light ink) centred on the app's cream (`#FBF9EE`), about two thirds of the width;
+  no pack, no brand, no tagline (D-161). It is drawn from the wordmark's one definition; to remake it after the
+  wordmark changes: `pip install fonttools brotli uharfbuzz cairosvg pillow`, then
+  `python tools/make_wordmark.py --feature-graphic`. Sushil uploads it in Play Console: Grow > Store presence >
+  Main store listing > Graphics. A listing change goes to Google's review again.
 - Phone screenshots, from the app on a phone, portrait. **No brand name, logo or pack art may be
   readable in any of them** (the listing never names a brand): use a pack whose name isn't shown,
   or crop. Suggested set, in this order:
