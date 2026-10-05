@@ -647,21 +647,30 @@ def _clean_barcode(code):
     return b
 
 
-def lost_words_matter(ingredients, lost, allergen_statement=None):
+def lost_words_matter(ingredients, lost, allergen_statement=None, lost_ins=()):
     """
     D-159: would the words Cloud Vision read in the ingredient list, and Gemini's list
     lacks (review_checker.independent_read's LOST), change this scan's result? The rules
     judge (D-004): the same ones the result is built from run on Gemini's list, and on
-    the list with the lost words added as one more ingredient, and their answers are
-    compared. No word list here; the tables decide. True when anything differs:
-    an allergen's state for any code (allergens.json), the engine's verdict (additives,
-    sugar names, sweeteners, NOVA markers, band), the ingredient notes, the household
-    lines for any age band, or the baby lines.
+    the list with what was lost added, and their answers are compared. No word list
+    here; the tables decide. True when anything differs: an allergen's state for any
+    code (allergens.json), the engine's verdict (additives, sugar names, sweeteners,
+    NOVA markers, band), the ingredient notes, the household lines for any age band,
+    or the baby lines.
+
+    D-160: two runs, not one per word: the list, and the list with each lost word as its
+    own entry (the sorted words joined could form an `exclude` phrase: "coconut milk",
+    "egg free"), the words joined as one more entry (so "corn syrup" still reads as one
+    name), and the lost INS numbers (review_checker.lost_ins_numbers) as "INS n"
+    entries, so a dropped "Preservative (211)" counts. One run holds them all: the
+    allergen check strips `exclude` phrases entry by entry, and the engine's findings
+    only add up, so the joined entry can't hide a separate "milk". A misread number that
+    is no additive changes nothing and doesn't ask.
 
     Beside the gate, not in review/checker.py: it is /scan's question (what the user
     would see), and the D-117 checker stays word-for-word strict without it.
     """
-    if not lost:
+    if not lost and not lost_ins:
         return False
 
     def answers(entries):
@@ -678,7 +687,8 @@ def lost_words_matter(ingredients, lost, allergen_statement=None):
         return flags, verdict, states, notes, facts, baby
 
     listed = list(ingredients or [])
-    return answers(listed) != answers(listed + [" ".join(lost)])
+    added = list(lost) + ([" ".join(lost)] if len(lost) > 1 else []) + [f"INS {n}" for n in lost_ins]
+    return answers(listed) != answers(listed + added)
 
 
 def _ms(t0):
@@ -1583,16 +1593,34 @@ async def scan(
             and (ocr_text.get("text") or "").strip()):
         section, missing, lost = review_checker.independent_read(
             vision["ingredients"], ocr_text["text"], vision.get("allergen_statement"))
-        if not (section and not missing and not lost):
+        check, error = {"section_found": bool(section), "missing": missing, "lost": lost}, False
+        try:
+            # D-160: the numbers too; LOST holds words only. Against the list as it now
+            # stands (after D-093's recovery), so a number recovered in a form the parser
+            # can't read ("Raising agents (500(ii)") still counts as lost.
+            check["lost_ins"] = review_checker.lost_ins_numbers(vision["ingredients"], ocr_text["text"])
+        except Exception:                                                  # noqa: BLE001
+            log.exception("lost-numbers check failed")
+            check["lost_ins"], error = [], True
+        if error or not (section and not missing and not lost and not check["lost_ins"]):
             # D-159: no list in Cloud Vision's text, or words of Gemini's list it never
-            # saw, still ask. Words only Cloud Vision read (LOST) ask only when they would
-            # change the user's result; the D-117 checker still sends them to a person.
-            matters = (not section or bool(missing)
-                       or lost_words_matter(vision["ingredients"], lost, vision.get("allergen_statement")))
+            # saw, still ask. What only Cloud Vision read (LOST, and D-160's numbers) asks
+            # only when it would change the user's result; the D-117 checker still sends
+            # the words to a person.
+            matters = error or not section or bool(missing)
+            if not matters:
+                try:
+                    matters = lost_words_matter(vision["ingredients"], lost, vision.get("allergen_statement"),
+                                                check["lost_ins"])
+                except Exception:                                          # noqa: BLE001
+                    # D-160: a failed check never costs the result; it asks, as before D-159.
+                    log.exception("lost-words check failed")
+                    matters, error = True, True
+            if error:
+                check["error"] = True
             ask_again = matters and bool(_persist(STORE.adds_version, barcode, vision["ingredients"]))
             # Kept with the back's Cloud Vision read (scans.ocr), so repro.py shows it (D-092).
-            ocr_text["independent_read"] = {"section_found": bool(section), "missing": missing, "lost": lost,
-                                            "asked": ask_again}
+            ocr_text["independent_read"] = {**check, "asked": ask_again}
     if ask_again:
         reliability["error"] = "independent_read_failed"
         scan_id = _persist(STORE.record_failed_scan, "refused", error_code="independent_read_failed",

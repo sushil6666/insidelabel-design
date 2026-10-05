@@ -3020,6 +3020,58 @@ What changes, in `api/main.py`'s D-118 gate only:
 Report #5's own list already has "Milk solids" and says milk in its statement, so a lost "milk" there changes nothing
 and doesn't ask: the rules decide, not the word. `tests/test_lost_words_gate.py`.
 
+### D-160 · The lost-words check reads lost INS numbers, each lost word on its own, and asks on its own failure `LOCKED` (2026-10-05)
+Refines D-159. Proposed by the advisor in review of D-159; **accepted by Sushil 2026-10-05**; built by Claude.
+Why: D-159's `lost_words_matter()` could let a dropped additive or allergen through the D-118 gate.
+
+**Bug 1, lost INS numbers.** LOST holds words only, so an additive Gemini dropped shows only as its class word, which
+alone changes nothing. Measured on `lost_words_matter()` with the list "Wheat flour, Sugar, Edible vegetable oil
+(palm), Cocoa solids, Salt" and Cloud Vision's "INGREDIENTS: ..., Cocoa solids, <X>, Salt.":
+
+| <X> (dropped by Gemini) | LOST | D-159 asked | D-160 asks |
+|---|---|---|---|
+| Preservative (211) | preservative | no | yes |
+| Antioxidant (319) | antioxidant | no | yes |
+| Acidity regulator (INS 330) | acidity, ins, regulator | no | yes |
+| Raising agents (500(ii), 503(ii)) | agents, raising | no | yes |
+| Colour (150d) | colour | yes | yes |
+
+**Bug 2, a joined phrase.** The sorted lost words joined can form an `exclude` phrase of `allergens.json`. With the same
+list and "..., Sugar, Coconut, Milk solids, ...", LOST is `coconut`, `milk`; joined, "coconut milk" is in milk's
+exclude list, so milk wasn't flagged and the gate didn't ask. "egg free" forms the same way.
+
+| Lost words | Joined | D-159 asked | D-160 asks |
+|---|---|---|---|
+| coconut, milk | coconut milk (milk's exclude) | no | yes |
+| egg, free | egg free (egg's exclude) | no | yes |
+| choce, water (report #5, scan 8bd1c116) | choce water | no | no |
+
+**Bug 3.** No error handling: an exception in the rules would have cost the user their result.
+
+What changes (`api/main.py`'s `lost_words_matter()` and its call at the gate; `review/checker.py` gains
+`lost_ins_numbers()`; `independent_read()`, `independent_read_confirmed()` and the D-117 checker are unchanged):
+- **Numbers:** `lost_ins_numbers()` gives the INS numbers in Cloud Vision's ingredient section (the one
+  `independent_read()` reads) that the list doesn't have, read with `core/tokenize.ins_numbers` only (D-099). It sits
+  in the checker because the section is defined there, and it leaves `independent_read()` as it is. The numbers go to
+  the rules as "INS n" entries, so the rules decide: a misread that is no additive ("INS 987") changes nothing and
+  doesn't ask (pinned by a test); a bare "(987)" isn't read as a number at all.
+- **Words:** one run of the rules on the list with each lost word as its own entry, the words joined as one more
+  entry ("corn syrup" still reads as one name), and the numbers. One run holds them all: the allergen check strips
+  `exclude` phrases entry by entry, and the engine's findings only add up. Two runs in all (the list, and the list
+  with what was lost); about 170 ms on report #5, only on a scan where something was lost.
+- **Errors:** any exception logs (`log.exception`) and asks, as before D-159; the record says `"error": true`.
+- **Record:** `scans.ocr` `back.independent_read` adds `lost_ins` (and `error`); `tools/repro.py show` prints it.
+- **At the gate, the list after D-093's recovery.** Measured in a scan, D-093's cross-check reads the same Cloud Vision
+  text first and puts an omitted additive back in the list, so rows 1, 2, 3 and 5 of the first table are recovered
+  and the result shows the additive: those scans go through, complete, as they should. Row 4 is the one that reached
+  a user: the cross-check recovers "Raising agents (500(ii)" and "(503)", which the engine can't read, so 500 and 503
+  were missing from the result while its caveat said "Recovered and included in the verdict", and the recovered words
+  confirmed the read. D-160 counts a number as lost when the list as it stands doesn't yield it to the parser, and
+  checks lost numbers even when no word is lost, so this scan now asks.
+- **Open, for Sushil:** D-093's recovery itself (`ocr_check.recover_from()`) cuts an entry at a nested bracket; a fix
+  there would put 500 and 503 in the result instead of asking. Not changed here.
+`tests/test_lost_words_gate.py`.
+
 ---
 
 ## Open and pending
