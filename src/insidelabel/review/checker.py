@@ -21,6 +21,7 @@ import unicodedata
 
 from insidelabel import barcode as barcode_rules
 from insidelabel.core import pack_kind
+from insidelabel.core.tokenize import ins_numbers
 from insidelabel.lenses import nutrition
 from insidelabel.trace import DATA_DIR
 
@@ -252,6 +253,18 @@ def independent_read(ingredients, ocr_text, allergen_statement=None):
 def independent_read_confirmed(ingredients, ocr_text, allergen_statement=None):
     found, missing, lost = independent_read(ingredients, ocr_text, allergen_statement)
     return found and not missing and not lost
+
+
+def lost_ins_numbers(ingredients, ocr_text):
+    """
+    D-160: the INS numbers in Cloud Vision's ingredient list (the section
+    independent_read() reads) that the given list doesn't have. LOST holds words
+    only, so "Preservative (211)" dropped by Gemini shows there as "preservative";
+    this gives /scan's gate the 211. Read with core/tokenize.ins_numbers (D-099).
+    Not part of independent_read(): the D-117 checker stays as it is.
+    """
+    section = _ingredient_section(ocr_text, ingredients)
+    return sorted(ins_numbers(section) - ins_numbers(list(ingredients or [])))
 
 
 def _claim_rule_hits(claims):

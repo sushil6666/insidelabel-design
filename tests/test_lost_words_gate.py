@@ -22,6 +22,7 @@ from test_checker_stamps_and_cuts import GEMINI, PARTS  # noqa: E402
 
 from insidelabel import repro  # noqa: E402
 from insidelabel.api import main  # noqa: E402
+from insidelabel.core.tokenize import ins_numbers  # noqa: E402
 from insidelabel.db.store import Store  # noqa: E402
 from insidelabel.extraction.providers import cloud_vision  # noqa: E402
 from insidelabel.media import LocalMedia  # noqa: E402
@@ -90,7 +91,7 @@ def test_report_5_goes_through_and_the_trace_keeps_the_lost_words(env):
     assert r.json()["screen"]["state"] == "result"
     ocr = q(env, "SELECT ocr FROM scans WHERE id = %s", r.json()["scan_id"])[0][0]
     assert ocr["back"]["independent_read"] == {"section_found": True, "missing": [], "lost": ["choce", "water"],
-                                         "asked": False}
+                                               "lost_ins": [], "asked": False}
 
 
 def test_a_lost_word_that_matters_still_asks(env):
@@ -133,3 +134,94 @@ def test_a_replay_of_a_let_through_scan_gives_the_same_result(env):
     out = repro.replay_scan(row, media=main.MEDIA)
     assert out["status"] == 200
     assert repro.compare(repro.summary(first.json()["screen"]), repro.summary(out["screen"])) == []
+
+
+# ---------------------------------------------------------------- D-160: numbers, phrases, errors
+
+PLAIN = ["Wheat flour", "Sugar", "Edible vegetable oil (palm)", "Cocoa solids", "Salt"]
+
+
+def with_dropped(x, before="Cocoa solids, "):
+    return f"INGREDIENTS: Wheat flour, Sugar, Edible vegetable oil (palm), {before}{x}, Salt."
+
+
+@pytest.mark.parametrize("dropped, lost, numbers", [
+    ("Preservative (211)", ["preservative"], ["211"]),
+    ("Antioxidant (319)", ["antioxidant"], ["319"]),
+    ("Acidity regulator (INS 330)", ["acidity", "ins", "regulator"], ["330"]),
+    ("Raising agents (500(ii), 503(ii))", ["agents", "raising"], ["500", "503"]),
+    ("Colour (150d)", ["colour"], ["150d"]),
+])
+def test_an_additive_dropped_by_its_number(env, dropped, lost, numbers):
+    # The advisor's table: on Gemini's list, D-159 found that the first four changed
+    # nothing (LOST holds words only, and the class word alone changes nothing). With
+    # the lost numbers read by core/tokenize and given to the rules, all five matter.
+    text = with_dropped(dropped)
+    assert checker.independent_read(PLAIN, text)[2] == lost
+    assert checker.lost_ins_numbers(PLAIN, text) == numbers
+    assert main.lost_words_matter(PLAIN, lost, None, numbers) is True
+    # In a scan, D-093's cross-check has already put the omitted additive back in the
+    # list (it reads the same Cloud Vision text first). Where the entry it adds can be
+    # read, the result shows the additive and the read is confirmed outright.
+    r = scan(text, ingredients=PLAIN, statement=None)
+    if dropped.startswith("Raising agents"):
+        # Nested brackets: the cross-check adds "Raising agents (500(ii)" and "(503)", which
+        # the engine can't read, so 500 and 503 aren't in the result. Their numbers are lost
+        # (D-160) and change the result: the gate asks.
+        assert r.status_code == 422, r.text
+        ocr = q(env, "SELECT ocr FROM scans WHERE id = %s", r.json()["scan_id"])[0][0]
+        assert ocr["back"]["independent_read"]["lost"] == []
+        assert ocr["back"]["independent_read"]["lost_ins"] == numbers
+        assert ocr["back"]["independent_read"]["asked"] is True
+        return
+    assert r.status_code == 200, r.text
+    assert "model_omitted_additive" in [c["code"] for c in r.json()["reliability"]["caveats"]]
+    assert set(numbers) <= ins_numbers(r.json()["extracted"]["ingredients"])
+    ocr = q(env, "SELECT ocr FROM scans WHERE id = %s", r.json()["scan_id"])[0][0]
+    # Confirmed outright, or (INS 330: the recovered entry reads "(330)", so the word "ins"
+    # is still lost) checked and found to change nothing.
+    assert ocr["back"].get("independent_read", {}).get("asked", False) is False
+
+
+def test_a_lost_number_the_cross_check_did_not_recover_asks(env, monkeypatch):
+    # The gate's own net, should the cross-check ever not recover one: the number reaches
+    # the rules through lost_ins_numbers and the gate asks.
+    monkeypatch.setattr(main.ocr_check, "recover_from", lambda result, ingredients: (ingredients, []))
+    r = scan(with_dropped("Preservative (211)"), ingredients=PLAIN, statement=None)
+    assert r.status_code == 422, r.text
+    ocr = q(env, "SELECT ocr FROM scans WHERE id = %s", r.json()["scan_id"])[0][0]
+    assert ocr["back"]["independent_read"]["lost_ins"] == ["211"]
+    assert ocr["back"]["independent_read"]["asked"] is True
+
+
+def test_sorted_lost_words_that_form_an_exclude_phrase_still_ask(env):
+    # "coconut" + "milk" joined is "coconut milk", in milk's exclude list (allergens.json).
+    text = with_dropped("Milk solids", before="Coconut, ")
+    text = text.replace("Sugar, Edible", "Sugar, Coconut, Milk solids, Edible").replace("Coconut, Milk solids, Salt", "Salt")
+    assert checker.independent_read(PLAIN, text)[2] == ["coconut", "milk"]
+    assert scan(text, ingredients=PLAIN, statement=None).status_code == 422
+    # "egg" + "free": "egg free" is in egg's exclude list.
+    assert main.lost_words_matter(PLAIN, ["egg", "free"]) is True
+
+
+def test_a_misread_number_that_is_no_additive_goes_through(env):
+    # Chosen: the rules decide what a lost number means. "INS 987" is in no table, so it
+    # changes nothing and doesn't ask; a bare "(987)" isn't read as a number at all (D-099).
+    text = with_dropped("Water (INS 987)")
+    assert checker.lost_ins_numbers(PLAIN, text) == ["987"]
+    assert main.lost_words_matter(PLAIN, ["ins", "water"], None, ["987"]) is False
+    r = scan(text, ingredients=PLAIN, statement=None)
+    assert r.status_code == 200, r.text
+
+
+def test_a_failing_check_asks_and_says_so(env, monkeypatch):
+    def broken(*a, **k):
+        raise RuntimeError("engine down")
+    monkeypatch.setattr(main.engine, "ingredient_notes", broken)
+    r = scan(PARTS)
+    assert r.status_code == 422, r.text
+    assert r.json()["reliability"]["error"] == "independent_read_failed"
+    assert r.json()["screen"]["can_use_anyway"] is True
+    ocr = q(env, "SELECT ocr FROM scans WHERE id = %s", r.json()["scan_id"])[0][0]
+    assert ocr["back"]["independent_read"]["error"] is True
+    assert ocr["back"]["independent_read"]["asked"] is True
