@@ -8,6 +8,9 @@ Static checks on web/, like tests/test_web.py:
   (a drawing, never a name: D-074) that opens a menu holding every header and footer link.
 - The home: "Scan here" first, nothing above it but the header.
 - The website: the desktop layout is scoped to desktops (phones unchanged).
+- D-161: the reviewer screen's header (review/templates/base.html) carries the same wordmark,
+  then "review", left-aligned in its work-tool header; GET /review shows it. The Play feature
+  graphic (android/feature_graphic.png) is drawn from it by make_wordmark.py --feature-graphic.
 """
 import os
 import re
@@ -21,11 +24,13 @@ APP_JS = read(WEB_DIR, "app.js")
 APP_CSS = read(WEB_DIR, "app.css")
 SITE = {n: read(WEB_DIR, "site", f"{n}.html") for n in ("index", "privacy", "about", "how")}
 SITE_CSS = read(WEB_DIR, "site", "site.css")
+REVIEW_BASE = read(ROOT, "src", "insidelabel", "review", "templates", "base.html")
 WORDMARK = re.compile(r"<!--wordmark-->(.*?)<!--/wordmark-->", re.S)
 
 
 def test_every_page_and_the_app_carry_the_same_wordmark():
-    copies = [WORDMARK.findall(APP_HTML)] + [WORDMARK.findall(h) for h in SITE.values()]
+    copies = ([WORDMARK.findall(APP_HTML)] + [WORDMARK.findall(h) for h in SITE.values()]
+              + [WORDMARK.findall(REVIEW_BASE)])                 # D-161
     assert all(len(c) == 1 for c in copies), [len(c) for c in copies]
     assert len({c[0] for c in copies}) == 1                  # one definition, the same everywhere
     svg = copies[0][0]
@@ -96,3 +101,50 @@ def test_the_website_desktop_layout_touches_desktops_only():
     assert "max-width: 1280px" in style.group(1)                            # the step at 1440 px
     assert ".home " not in SITE_CSS                                         # nothing in the phones' stylesheet
     assert 'class="home"' in SITE["index"]
+
+
+# ---------------------------------------------------------------- D-161: the reviewer screen
+
+def test_the_reviewer_header_takes_the_wordmark_then_review():
+    header = re.search(r"<header>.*?</header>", REVIEW_BASE, re.S).group(0)
+    # Jinja never reads the SVG: the block sits inside {% raw %}, outside the markers.
+    assert "{% raw %}<!--wordmark-->" in header and "<!--/wordmark-->{% endraw %}" in header
+    assert 'href="/review" aria-label="InsideLabel review"' in header
+    assert '<span class="sub">review</span>' in header
+    assert 'class="who"' in header                                   # "Signed in as" stays right
+
+
+def test_get_review_shows_the_wordmark(fresh_db):
+    import base64
+
+    import pytest
+    from fastapi.testclient import TestClient
+
+    from insidelabel.api import main
+    from insidelabel.review import routes
+    from insidelabel.review.service import ReviewService
+
+    saved, mp = routes.SERVICE, pytest.MonkeyPatch()
+    routes.SERVICE = ReviewService(fresh_db[0], main.ENGINE_VERSION)
+    mp.setenv("INSIDELABEL_REVIEW_TOKEN", "wordmark-token")             # signed in, as test_reviewer_logins does
+    try:
+        cred = base64.b64encode(b"asha:wordmark-token").decode()
+        r = TestClient(main.app, headers={"Authorization": f"Basic {cred}"}).get("/review")
+    finally:
+        mp.undo()
+        routes.SERVICE = saved
+    assert r.status_code == 200, r.text
+    assert WORDMARK.findall(r.text) == WORDMARK.findall(APP_HTML)        # the same copy, rendered
+    assert 'aria-label="InsideLabel review"' in r.text and "{% raw %}" not in r.text
+
+
+def test_the_play_feature_graphic_is_the_wordmark_on_cream():
+    from PIL import Image
+
+    path = os.path.join(ROOT, "android", "feature_graphic.png")
+    im = Image.open(path)
+    assert im.size == (1024, 500)
+    assert im.mode == "RGB"                                          # 24-bit, no alpha (Play's rule)
+    for xy in ((0, 0), (1023, 0), (0, 499), (1023, 499)):
+        assert im.getpixel(xy) == (0xFB, 0xF9, 0xEE), xy             # the app's cream
+    assert "--feature-graphic" in read(ROOT, "tools", "make_wordmark.py")   # drawn from the one definition

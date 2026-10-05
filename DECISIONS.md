@@ -3072,6 +3072,30 @@ What changes (`api/main.py`'s `lost_words_matter()` and its call at the gate; `r
   there would put 500 and 503 in the result instead of asking. Not changed here.
 `tests/test_lost_words_gate.py`.
 
+### D-161 · The reviewer screen and the Play feature graphic take the wordmark `LOCKED` (2026-10-05)
+Refines D-152, which listed the reviewer screen and the Play listing under "Not changed now". **Decided by Sushil
+2026-10-05:** "Add the wordmark" (the reviewer screen) and "Play feature graphic yes". Built by Claude.
+- **The header** (`review/templates/base.html`; the queue and item pages extend it, and no other reviewer page renders
+  HTML: sign-in is the browser's own dialog, errors are JSON): the D-152 wordmark, then the plain word "review" (muted,
+  normal weight), one link to `/review` named "InsideLabel review". The row stays as it was, left-aligned for a work
+  tool, "Signed in as" on the right; the wordmark is drawn 22 px high, the text line's height, so the header goes from
+  42.75 to 43 px (no layout jump).
+- **One definition:** `tools/make_wordmark.py` writes the block into `base.html` between the markers, as it does for
+  the app and the website; regenerating left the other five pages byte for byte the same. The template wraps the block
+  in `{% raw %}` ... `{% endraw %}`, outside the markers, so Jinja never reads the SVG's braces. No font and no image
+  request.
+- **Colours:** the wordmark's own light and dark ink follow `prefers-color-scheme`, as the reviewer page does: 9.2:1 on
+  the light panel (#244b6b on #ffffff) and 14.6:1 on the dark one (#e0f2f6 on #1a1d23). No change needed.
+- **The Play feature graphic** (`android/feature_graphic.png`): 1024 x 500, the wordmark in its light ink centred on
+  the app's cream (#FBF9EE), 676 x 135 px (66% of the width, readable when Play shows it small); nothing else. A
+  24-bit PNG with no alpha (Play's rule), flattened onto the cream. Drawn by `python tools/make_wordmark.py
+  --feature-graphic` from the same definition (rasterised with cairosvg, dev only), so it changes when the wordmark
+  does. Sushil uploads it in Play Console (Grow > Store presence > Main store listing > Graphics); a listing change
+  goes to Google's review again (`docs/PLAY_RELEASE.md`, section 6).
+- **Unchanged:** the app icon (no name on it); the explainer film already shows the wordmark (D-153).
+`tests/test_site_desktop.py` (the same copy on every page, GET /review shows it, and the graphic's size, mode and
+cream corners).
+
 ---
 
 ## Open and pending
