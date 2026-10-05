@@ -9,8 +9,7 @@ Static checks on web/, like tests/test_web.py:
 - The home: "Scan here" first, nothing above it but the header.
 - The website: the desktop layout is scoped to desktops (phones unchanged).
 - D-161: the reviewer screen's header (review/templates/base.html) carries the same wordmark,
-  then "review", left-aligned in its work-tool header; GET /review shows it. The Play feature
-  graphic (android/feature_graphic.png) is drawn from it by make_wordmark.py --feature-graphic.
+  then "review", left-aligned in its work-tool header; GET /review shows it.
 """
 import os
 import re
@@ -137,14 +136,3 @@ def test_get_review_shows_the_wordmark(fresh_db):
     assert WORDMARK.findall(r.text) == WORDMARK.findall(APP_HTML)        # the same copy, rendered
     assert 'aria-label="InsideLabel review"' in r.text and "{% raw %}" not in r.text
 
-
-def test_the_play_feature_graphic_is_the_wordmark_on_cream():
-    from PIL import Image
-
-    path = os.path.join(ROOT, "android", "feature_graphic.png")
-    im = Image.open(path)
-    assert im.size == (1024, 500)
-    assert im.mode == "RGB"                                          # 24-bit, no alpha (Play's rule)
-    for xy in ((0, 0), (1023, 0), (0, 499), (1023, 499)):
-        assert im.getpixel(xy) == (0xFB, 0xF9, 0xEE), xy             # the app's cream
-    assert "--feature-graphic" in read(ROOT, "tools", "make_wordmark.py")   # drawn from the one definition

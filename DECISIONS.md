@@ -3095,6 +3095,11 @@ Refines D-152, which listed the reviewer screen and the Play listing under "Not 
 - **Unchanged:** the app icon (no name on it); the explainer film already shows the wordmark (D-153).
 `tests/test_site_desktop.py` (the same copy on every page, GET /review shows it, and the graphic's size, mode and
 cream corners).
+- **Corrected by Sushil, 2026-10-05 (after #111 merged):** drop the feature graphic part. The feature graphic live on
+  Play already carries the italic wordmark: the logo and italic "InsideLabel" on cream, with "Read the label for your
+  family." under it (Sushil checked the Console). It already matches D-152 and needs no change. So
+  `android/feature_graphic.png`, `make_wordmark.py --feature-graphic` and its test are removed; the graphic is kept in
+  Play Console, not in the repo (`docs/PLAY_RELEASE.md`, section 6). The reviewer screen's wordmark stands as built.
 
 ---
 

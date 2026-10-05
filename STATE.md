@@ -662,7 +662,9 @@ setup alarms.
 
 **NEXT SESSION STARTS HERE (2026-10-01).** Where things stand, newest first:
 
-- **`claude/gifted-faraday-v5s2db` (2026-10-05, no migration, no app change), from `main` 5bd877d (#110).** D-161 (LOCKED, Sushil: "Add the wordmark"): the reviewer screen's header shows the D-152 wordmark, then "review", written into `review/templates/base.html` by `tools/make_wordmark.py` (inside `{% raw %}`). Header 43 px (was 42.75); readable in light and dark. And ("Play feature graphic yes") `android/feature_graphic.png`, 1024 x 500, the wordmark on cream, from `python tools/make_wordmark.py --feature-graphic`. **Waiting on Sushil:** merge; `update.sh`; upload the feature graphic in Play Console (Grow > Store presence > Main store listing > Graphics; goes to Google's review again).
+- **`claude/gifted-faraday-v5s2db` (2026-10-05, no migration, no app change), from `main` b5f91de (#111).** D-161 corrected (Sushil): the Play feature graphic part is dropped. The live graphic already carries the italic wordmark (logo, italic "InsideLabel" and "Read the label for your family." on cream) and needs no change; `android/feature_graphic.png`, `make_wordmark.py --feature-graphic` and its test are removed, and `docs/PLAY_RELEASE.md` says what is live. The reviewer wordmark stays. **Waiting on Sushil:** merge.
+
+- **`claude/gifted-faraday-v5s2db` (2026-10-05, no migration, no app change), from `main` 5bd877d (#110).** D-161 (LOCKED, Sushil: "Add the wordmark"): the reviewer screen's header shows the D-152 wordmark, then "review", written into `review/templates/base.html` by `tools/make_wordmark.py` (inside `{% raw %}`). Header 43 px (was 42.75); readable in light and dark. Merged (#111).
 
 - **2026-10-05, deployed.** #106 to #109 (D-157 to D-160) merged and `update.sh` run: report #5's pack goes straight to its result, and a dropped additive number or allergen still asks for one clearer photo. **Next:** D-093's recovery (`ocr_check.recover_from()`) cuts an entry at a nested bracket ("Raising agents (500(ii), 503(ii))"); fixing it puts 500 and 503 in the result instead of asking (open in D-160). **Waiting on Sushil:** retest report #5 on the phone.
 

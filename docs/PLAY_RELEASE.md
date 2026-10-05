@@ -379,12 +379,10 @@ Before production, remove or change the last line ("closed beta").
 
 **Graphics** (Sushil makes them):
 - App icon: `android/store_icon.png`, 512 x 512 (made from `web/icon-512.png`).
-- Feature graphic: `android/feature_graphic.png`, 1024 x 500, 24-bit PNG with no alpha: the D-152 wordmark
-  (logo and italic "InsideLabel", light ink) centred on the app's cream (`#FBF9EE`), about two thirds of the width;
-  no pack, no brand, no tagline (D-161). It is drawn from the wordmark's one definition; to remake it after the
-  wordmark changes: `pip install fonttools brotli uharfbuzz cairosvg pillow`, then
-  `python tools/make_wordmark.py --feature-graphic`. Sushil uploads it in Play Console: Grow > Store presence >
-  Main store listing > Graphics. A listing change goes to Google's review again.
+- Feature graphic (live on Play, checked by Sushil 2026-10-05): the logo and italic "InsideLabel" (the D-152
+  wordmark) with "Read the label for your family." under it, on the app's cream; no pack, no brand. It already
+  matches D-152 and needs no change (D-161). It is uploaded in Play Console (Grow > Store presence > Main store
+  listing > Graphics), not kept in the repo; a change to it goes to Google's review again.
 - Phone screenshots, from the app on a phone, portrait. **No brand name, logo or pack art may be
   readable in any of them** (the listing never names a brand): use a pack whose name isn't shown,
   or crop. Suggested set, in this order:
