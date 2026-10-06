@@ -219,12 +219,12 @@ Console shows them in 2026; if one has moved, search for it in the console.
    - Create a release: upload the same `app-release-bundle.aab` (or "Promote release" from internal
      testing, which reuses it). Save, then Publishing overview > **Send changes for review**. Unlike
      internal testing, this is reviewed by Google before testers can install it.
-   - **App access for Google's review** (section 5.1): an invite code for the reviewers.
-8. **Each tester needs two things:** the Play opt-in link for the closed track, and their own
-   invite code for the server (D-102), on the server:
-   `il tools/beta.py invite 1 --label T08` (OPERATIONS.md "Testers"). The code's join link opens
-   the app if it is installed and the asset links check passed, otherwise Chrome; both share the
-   same data (section 7).
+   - **App access for Google's review** (section 5.1): since D-162, no restriction (no invite code).
+8. **Each tester needs the Play links only** (D-162, no invite code): join the Google Group, open
+   the opt-in link https://play.google.com/apps/testing/ai.insidelabel.app.f and tap "Become a
+   tester", then install from https://play.google.com/store/apps/details?id=ai.insidelabel.app.f
+   (search doesn't find a closed-test app). Before D-162 each tester also had a code
+   (`tools/beta.py`, D-102); `INSIDELABEL_INVITE_ONLY=on` brings that back.
 9. **The closed-testing rule for new personal accounts.** Read it first-hand at
    https://support.google.com/googleplay/android-developer/answer/14151465 and on the Play Console
    **Dashboard**, which shows the count and days as they stand. This session could not open
@@ -244,7 +244,7 @@ Console shows them in 2026; if one has moved, search for it in the console.
 | Item | Answer | Basis |
 |---|---|---|
 | Privacy policy | https://insidelabel.ai/privacy.html | Sushil's choice. Served since this branch (it was a 404 before; `/privacy` serves the same page). Decided by Sushil 2026-10-01 (section 8, 1) |
-| App access | **All or some functionality is restricted.** Instructions: "InsideLabel is an invite-only beta. On 'Welcome to the InsideLabel beta', type the invite code below, tap 'Join the beta', then read 'Before you start' and agree. Then scan the barcode of any packaged food, or photograph its ingredient list." Give one code made for Google, on the server: `il tools/beta.py invite 1 --label PLAY --devices 10` | D-102: the server runs invite-only (`deploy/settings.env.example`); D-105 for "Before you start". Reviewers may use several devices, hence 10. Leave code PLAY out of the W4 count (D-055) |
+| App access | **All functionality is available without special access** (D-162, 2026-10-06). Before D-162: "All or some functionality is restricted" with code PLAY (`N4EAHG74`) for Google's reviewers; revoke it after the change is approved (`il tools/beta.py revoke N4EAHG74`). | D-162: the server runs with `INSIDELABEL_INVITE_ONLY=off`; "Before you start" (D-105) still shows once, then scanning. Changing this in the Console goes to Google's review |
 | Ads | **No**, the app contains no ads | D-148 |
 | Content rating | section 5.3 | |
 | Target audience | **18 and over** only. "Could your store listing unintentionally appeal to children?" **No** | The app is for adults; parents add a child's profile and children aren't users (D-052, D-074, privacy page "InsideLabel is for adults"; DPDP map point 2: Gemini's terms bar apps "directed towards or ... likely to be accessed by individuals under the age of 18") |
@@ -287,7 +287,7 @@ only ephemerally (all are stored). "Required" means the app can't work without i
 |---|---|---|---|---|
 | Photos and videos > Photos | Pack photos (front, back, a screenshot of a listing) | 4, 10 | App functionality | Required for a pack not in the catalogue (a catalogue hit by barcode needs none) |
 | Device or other IDs | The install id the browser makes | 1 | App functionality; Fraud prevention, security and compliance (rate limits, D-095); Analytics (days an install scanned, row 11a, D-055) | Required |
-| Personal info > User IDs | The invite code a tester joined with | 2 | App functionality (invite-only beta) | Required while the beta is invite-only. Decided by Sushil 2026-10-01 (section 8, 3) |
+| Personal info > User IDs | Since D-162 (2026-10-06): not collected from new testers; remove it from Data safety. Codes from before stay with their install until deleted (row 2's retention) | 2 | App functionality (invite-only beta, until D-162) | Was required while the beta was invite-only (Sushil 2026-10-01, section 8, 3). Removing it goes to Google's review |
 | Health and fitness > Health info | Each household member's avoid list (for example milk) sent with a scan | 6 | App functionality | Optional (profiles are optional). Decided by Sushil 2026-10-01 (section 8, 4) |
 | Personal info > Other info | Each household member's age band (baby to older) sent with a scan | 6 | App functionality | Optional. Decided by Sushil 2026-10-01 (section 8, 4) |
 | App activity > App interactions | Scan records linked to the install id for 30 days; days an install scanned; the app's recent trail in a problem report | 5, 11a, 9 | App functionality; Analytics | Required (scans); optional (problem reports) |
@@ -411,8 +411,8 @@ date and the phone model next to each line.
 - [ ] **A photo scan** of an ingredient list gives a result.
 - [ ] **The D-148 limit screen** (15 photo scans a day), once `beta-limit` is deployed. It follows in
       the closed test's first week and doesn't hold the test up.
-- [ ] **An invite code (D-102):** on a phone that hasn't joined, the join screen, a code, "Before you
-      start"; a join link from a message opens the app (or Chrome) with the code filled in.
+- [ ] **No invite code (D-162):** on a fresh install from Play, no join screen: "Before you start",
+      then the scan screen.
 - [ ] **Data from the website is still there:** profiles and the shop list saved earlier in Chrome on
       insidelabel.ai show in the app (the app runs in Chrome and shares its site data).
 - [ ] **"Report a mistake"** from a result sends, and the report shows on `/review`.
@@ -428,7 +428,7 @@ Answered by Sushil, 2026-10-01:
 1. **The privacy page's "DRAFT" line.** Answered: replaced with "Beta version, last updated 1 October
    2026. A lawyer will review it before the public launch." (branch `beta-limit`). Nothing else on the
    page changed.
-3. **The invite code:** declare it as **Personal info > User IDs** (5.2).
+3. **The invite code:** declare it as **Personal info > User IDs** (5.2). Superseded by D-162: no codes; remove it.
 4. **Household profiles:** declare avoid lists as **Health and fitness > Health info** and age bands as
    **Personal info > Other info** (5.2).
 5. **IP addresses:** **not declared**: processed briefly for rate limits, never stored (5.2, map row 11).

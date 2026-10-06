@@ -182,6 +182,19 @@ journalctl -u caddy -n 50 --no-pager            # web server, certificates
 
 ### Testers
 
+D-162 (2026-10-06): no invite codes. Testers join the Google Group `insidelabel@googlegroups.com`,
+open the opt-in link https://play.google.com/apps/testing/ai.insidelabel.app.f ("Become a tester"),
+and install from https://play.google.com/store/apps/details?id=ai.insidelabel.app.f. The server runs
+with `INSIDELABEL_INVITE_ONLY=off`; to switch it (either way):
+
+```bash
+sudoedit /etc/insidelabel/settings.env      # INSIDELABEL_INVITE_ONLY=off (on brings the D-102 codes back)
+sudo systemctl restart insidelabel
+curl -s "https://insidelabel.ai/access?device_id=x"   # expect "invite_only":false
+```
+
+With codes off, `beta.py list` shows only codes made before D-162; the rest still work if codes come back:
+
 ```bash
 il tools/beta.py invite 1 --label T07       # one code; prints the link to send
 il tools/beta.py list                       # each code: devices, scans, days active (the W4 number)
@@ -190,7 +203,7 @@ il tools/beta.py reset <CODE>               # tester has a new phone
 il tools/beta.py revoke <CODE>              # lock a tester out
 ```
 
-Invite codes are personal: send each privately, never post them anywhere public.
+Invite codes (when on) are personal: send each privately, never post them anywhere public.
 
 **The daily photo-scan limit (D-148):** 15 per phone in any 24 hours. To change it, change
 `PHOTO_SCANS_A_DAY` in `src/insidelabel/ratelimit.py` on a branch, merge, then `update.sh`
@@ -521,7 +534,8 @@ Check the registry's own view any time: https://rdap.nixiregistry.in/rdap/domain
   manager, never in the repo.
 - **The deploy key is read-only:** the server can pull the code, never change it.
 - **Only 22, 80 and 443 are open**; PostgreSQL and the app listen on the machine only.
-- **`replay` is refused** on the server, and so is any scan from a phone without an invite.
+- **`replay` is refused** on the server. Since D-162 a scan needs no invite; the daily photo limit
+  (D-148) and the per-IP limits (D-095) cap the cost.
 - **Cloudflare stays "DNS only"** until the proxy step, which needs Caddy and a setting changed
   together (D-114); otherwise every tester would share one rate limit.
 

@@ -195,7 +195,7 @@ MANUAL_ITEMS = [
     "Conflict-of-interest policy, methodology page, who is behind the app, 'last verified' dates (D-076)",
     "Play Console: developer account verified (D-011), closed-testing requirement met, target audience adults",
     "Rate limits (D-095): one server process (or shared counters), INSIDELABEL_PROXY_HOPS set behind the proxy",
-    "Web beta (D-102): INSIDELABEL_INVITE_ONLY=on on the deploy; privacy/about drafts completed; codes sent (tools/beta.py)",
+    "Beta access (D-162): INSIDELABEL_INVITE_ONLY=off on the deploy on purpose; the daily photo limit (D-148) and per-IP limits (D-095) on; testers opted in through the Play closed test",
 ]
 
 
