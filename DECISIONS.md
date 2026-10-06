@@ -3127,6 +3127,17 @@ What changes:
   safety drops Personal info > User IDs (the invite code). Both go to Google's review. `docs/PLAY_RELEASE.md`.
 - `tools/release_check.py`'s manual item and `tests/test_deploy.py` expect `off`.
 
+### D-163 · The photo screen asks to keep the barcode in the photo when it's on the same side `LOCKED` (2026-10-06)
+Refines D-143. Proposed by the advisor in review; **accepted by Sushil 2026-10-06** ("agree"). Built by Claude.
+Why: review item for Saffola Soya Chunks (8901088072236, 2026-10-06). The tester scanned the barcode, confirmed its
+digits (D-146) and photographed the ingredients and the front; no photo showed the barcode, so D-143 asked the
+reviewer to check it by hand. A machine check isn't available: GS1's "Verified by GS1" site refuses scripted
+lookups (403), its API needs a GS1 licence, and it often names only the company.
+What changes: on the photo screen (`web/app.js`), when the scan has a barcode, the hints add "Barcode: If it's on
+the same side, keep it in the photo too. We check the number against it." D-143 already reads every photo of the
+scan (back, parts, front) with zxing-cpp, so a code in any photo is confirmed and the reviewer's box doesn't show.
+A hint only: no extra photo, step or screen (Sushil's low-friction rule). web-43. `tests/test_web.py`.
+
 ---
 
 ## Open and pending

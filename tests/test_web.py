@@ -187,6 +187,9 @@ def test_photo_ask_names_the_panel_the_count_and_why():                # D-153
     assert '"Photograph these"' in app and '"NUTRITION"' in app     # the drawing marks both blocks
     assert app.count('"Not needed"') == 1                           # only the licence
     assert "Optional: the front of the pack" in app                 # D-100's front stays optional
+    # D-163: with a scanned barcode, a hint to keep it in the photo (D-143 then confirms it).
+    assert 'pending.barcode ? el("div", {}, el("dt", {}, "Barcode"),' in app
+    assert "keep it in the photo too. We check the number against it." in app
 
 
 def test_result_puts_people_first_and_folds_the_rest():                # D-153
