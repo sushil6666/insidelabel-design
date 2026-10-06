@@ -433,11 +433,10 @@ function data() {
   const err = el("p", { class: "error", role: "alert" });
   const confirmBox = el("div", { class: "stack", hidden: true },
     el("p", {}, el("strong", {}, "Delete everything we keep about this phone?")),
-    el("p", {}, "We delete your feedback, problem reports, invite link and the photos you took. Your scans " +
+    el("p", {}, "We delete your feedback, problem reports, any invite link and the photos you took. Your scans " +
       "lose any link to this phone and to your household. A pack you helped add to our catalogue stays in " +
       "it, with nothing that points to you."),
-    el("p", {}, "This phone's household and scan history are cleared too. To use InsideLabel again, " +
-      "you'll need your invite link."),
+    el("p", {}, "This phone's household and scan history are cleared too."),
     err,
     button("Delete my data", async e => {
       e.target.disabled = true;

@@ -14,7 +14,7 @@ should check those points against the Rules text.
 
 ## 1. What the service is
 
-An invite-only beta web app (a PWA) for adults in India who shop for packaged food. A user
+A beta web app (a PWA; invite-only until D-162, 2026-10-06, now open to the Play closed test's testers and the website) for adults in India who shop for packaged food. A user
 photographs a pack; the app reads the ingredient list and says whether any listed ingredient
 matches the foods the household avoids (allergens) and what additives and sugars are listed.
 No account, name, phone number or email is asked for. Operator: Sushil (sole founder).
@@ -25,7 +25,7 @@ Hosting: one Google Cloud virtual machine in Mumbai (asia-south1).
 | # | Data | Why | Where kept | Who can see it | When deleted today |
 |---|---|---|---|---|---|
 | 1 | **Install id**: a random id the browser makes on first use (`users.id`) | Ties a device's scans, reports and feedback together; rate limits | Server database; the phone (`localStorage`) | Operator | 12 months after the device was last seen (D-128) |
-| 2 | **Invite code and its label**: the code a tester joined with (`invite_devices`); the operator's own label for the code (`invites.label`) | Invite-only beta; knowing which tester sent what | Server database | Operator only; the app never shows the label | With the install id (D-128). Labels are codes (T01), no names |
+| 2 | **Invite code and its label**: the code a tester joined with (`invite_devices`); the operator's own label for the code (`invites.label`) | Invite-only beta, until D-162 (2026-10-06): no new codes since, existing ones kept until their retention ends; knowing which tester sent what | Server database | Operator only; the app never shows the label | With the install id (D-128). Labels are codes (T01), no names |
 | 3 | **Terms agreement**: install id, terms version, time (`agreements`) | Record that the user agreed | Server database | Operator | With the install id (D-128) |
 | 4 | **Pack photos** (front and back of a food pack; since D-130 also a photo or screenshot of a screen showing one, such as a shop listing) and the barcode | Reading the label | Server disk (`/var/lib/insidelabel/media`); sent to Google (row 10) | Operator; reviewers of the catalogue; Google as processor | **30 days** after the scan, by a daily job (`retention.py`, D-080, D-098), unless: the user reported a problem with that scan, sent the pack to us, a review of it is open, or the photo became the reviewed catalogue record of that pack |
 | 5 | **Scan record**: time, result, the model's reading of the label, timings, and the request (`scans`) | Showing the result; replaying a scan to fix a bug (D-092) | Server database | Operator | The link to the install id is removed after 30 days (D-128); what the label said is kept |

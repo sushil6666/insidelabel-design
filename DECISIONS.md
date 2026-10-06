@@ -838,6 +838,7 @@ the catalogue; it still fills the queue with junk at no cost to the sender.
 
 ### D-102 · The beta launches on the web first, invite-only, one code per tester `LOCKED` (2026-09-26)
 Its "on the web first" part superseded by D-148 (2026-10-01): the beta runs in the Play Store app; invite codes stay.
+Its invite-code part `SUPERSEDED by D-162` (2026-10-06): no codes; the gate stays in the code, off.
 Direction from Sushil ("launch the website first, then the Android app"; "I will ask
 50 people to test and ask feedback"); design by Claude; accepted by Sushil 2026-09-26.
 
@@ -3100,6 +3101,31 @@ cream corners).
   family." under it (Sushil checked the Console). It already matches D-152 and needs no change. So
   `android/feature_graphic.png`, `make_wordmark.py --feature-graphic` and its test are removed; the graphic is kept in
   Play Console, not in the repo (`docs/PLAY_RELEASE.md`, section 6). The reviewer screen's wordmark stands as built.
+
+### D-162 · No invite code: the Play closed test decides who installs, the limits cap the cost `LOCKED` (2026-10-06)
+Supersedes D-102's invite-code part (and D-148's "invite codes stay"). **Decided by Sushil 2026-10-06:** "it should
+redirect to android app not asking any beta", then, of three options, "No codes anywhere". Built by Claude.
+Why: testers already opt in through Play's closed test (the Google Group, the opt-in link), so a second code is
+friction for nothing (Sushil's rule: at most one quick check, D-146). The cost stays capped by what exists: 15 photo
+scans per install per rolling 24 h (D-148) and per IP 60 per 10 minutes and 400 a day (D-095, about Rs 240 a day for
+someone rotating install ids).
+
+Not chosen: "the Play app skips the code, the website keeps it" (the app is the website in Chrome, so the server can
+only take the app's word for it; fakeable for the same capped cost) and "keep codes for everyone" (strongest control,
+one tap with the join link).
+
+What changes:
+- **The server:** `INSIDELABEL_INVITE_ONLY=off` (`deploy/settings.env.example`; Sushil sets it in
+  `/etc/insidelabel/settings.env`, OPERATIONS.md "Testers"). `/access` then says `invite_only: false` and the app
+  treats every phone as joined, so the join screen never shows. "Before you start" (D-105) stays: it is consent.
+- **No code removed:** the gate, `tools/beta.py`, the invites tables and `#/join/CODE` keep working, so `on` brings
+  D-102 back with one setting. Codes made before D-162 stay with their install until their retention ends.
+- **Words:** the website home says "In an early beta. On Android, testers get it through Google Play." instead of
+  the invite line; the privacy page says "only if you joined with one" for the invite code; "Delete my data" no
+  longer says you'll need your invite link (web-42).
+- **Play Console (Sushil):** App access becomes "All functionality is available without special access"; Data
+  safety drops Personal info > User IDs (the invite code). Both go to Google's review. `docs/PLAY_RELEASE.md`.
+- `tools/release_check.py`'s manual item and `tests/test_deploy.py` expect `off`.
 
 ---
 

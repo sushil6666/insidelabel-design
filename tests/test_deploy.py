@@ -2,7 +2,7 @@
 The deploy files (D-114) keep the server's safety settings. A settings file is
 easy to edit in a hurry; these are the lines that must not drift:
 
-- invite-only on (D-102), one proxy hop (D-095), the public address;
+- invite-only off (D-162: no codes; on brings D-102 back), one proxy hop (D-095), the public address;
 - replay, the claim check and the shared review token never switched on
   (D-101, D-051, D-097);
 - no key values in the repo (CLAUDE.md: keys live in the environment only);
@@ -35,7 +35,7 @@ def _settings(name):
 
 def test_settings_template_keeps_the_server_switches():
     s = _settings("settings.env.example")
-    assert s["INSIDELABEL_INVITE_ONLY"] == "on"
+    assert s["INSIDELABEL_INVITE_ONLY"] == "off"                  # D-162
     assert s["INSIDELABEL_PROXY_HOPS"] == "1"
     assert s["INSIDELABEL_PUBLIC_URL"] == "https://insidelabel.ai"
     for never in ("INSIDELABEL_ALLOW_REPLAY", "INSIDELABEL_CLAIMS_TO_USERS",
