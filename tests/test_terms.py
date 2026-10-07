@@ -82,7 +82,8 @@ def test_a_joined_phone_must_agree_before_scanning(env, monkeypatch):
     r = scan(dev)
     assert r.status_code == 403 and r.json()["error"] == "terms_required"
     assert c.get("/access", params={"device_id": dev}).json() == {
-        "invite_only": True, "joined": True, "agreed": False, "terms_version": main.TERMS["version"]}
+        "invite_only": True, "joined": True, "agreed": False, "terms_version": main.TERMS["version"],
+        "live_shutter": False}                                       # D-171: off unless switched on
 
 
 def test_agreeing_opens_the_app_and_is_recorded(env):

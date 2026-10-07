@@ -14,22 +14,24 @@ import {
   accessRequest, agreeRequest, checkPhotoRequest, feedbackRequest, joinRequest, termsRequest,
   updatesRequest, forgetRequest, clearTrail,
 } from "./lib.js";
-import { barcodeSupported, startScanner } from "./camera.js";
+import { barcodeSupported, labelCameraSupported, startLabelCamera, startScanner } from "./camera.js";
 import { icon, kindIcon, spot } from "./icons.js";
 
 const main = document.getElementById("main");
 let stopCamera = null;
+let liveShutter = false;      // D-171: the server's switch for the app's own label shutter (/access)
 let navSeq = 0;               // async views check this so a late result can't replace a newer page
 // The scan in progress: barcode (if read), photos, and how many times it was refused
 // (with the refused scans' ids, for "Send it to us", D-070).
 // frontWanted: offer the front photo (D-100); off for a re-check of a pack whose front is on file.
 // acceptUnconfirmed: "use this one anyway" after a request for a clearer photo (D-118).
-// parts: the ingredient list's 2nd and 3rd photos, when it doesn't fit one (D-119).
+// parts: the ingredient list's 2nd and 3rd photos, when it doesn't fit one (D-119), or the
+// nutrition table's photo; partKinds says which ("list" or "table", D-171).
 // barcodeAnswer: "confirmed" or "rescanned", the answer to D-146's digit check; rescanned:
 // the user tapped "Scan again" on an earlier code for this pack.
 let pending = { barcode: null, barcodeSource: null, back: null, front: null, backSource: null,
                 frontSource: null, pairing: false, attempts: 0, refused: [], frontWanted: true,
-                acceptUnconfirmed: false, parts: [], partSources: [],
+                acceptUnconfirmed: false, parts: [], partSources: [], partKinds: [],
                 screenPack: null, shopItem: null, barcodeAnswer: null, rescanned: false };
 
 // ------------------------------------------------------------------ navigation
@@ -156,6 +158,7 @@ function checkAccess() {
       const joined = !body.invite_only || body.joined;
       if (joined) store.set("joined", true);
       store.set("termsVersion", body.terms_version);
+      liveShutter = !!body.live_shutter;                                 // D-171
       // D-105: agreed on the server, or (a server without a database) on this phone.
       const needAgree = !body.agreed && store.get("agreed", null) !== body.terms_version;
       return { joined, needAgree };
@@ -568,7 +571,7 @@ function nextRef(list) {
 function resetPending() {
   pending = { barcode: null, barcodeSource: null, back: null, front: null, backSource: null,
               frontSource: null, pairing: false, attempts: 0, refused: [], frontWanted: true,
-              acceptUnconfirmed: false, parts: [], partSources: [],
+              acceptUnconfirmed: false, parts: [], partSources: [], partKinds: [],
               screenPack: null, shopItem: null, barcodeAnswer: null, rescanned: false };
 }
 
@@ -592,6 +595,7 @@ async function scan() {
   const preview = el("div", { class: "thumb" });
   const next = el("div", {});
   const view = el("section", { class: "stack" },
+    stepLine(1, "Barcode"),                                       // D-171
     el("h1", {}, "Scan the barcode"),
     // app-polish: corner guides say where the barcode goes; a slow line says the camera is looking.
     el("div", { class: "viewfinder-wrap" }, video, el("div", { class: "frame", "aria-hidden": "true" },
@@ -682,83 +686,211 @@ function digitCheck(c) {
       button(c.again, scanAgain)));
 }
 
-// ------------------------------------------------------------------ scan: the back photo (D-025, D-068)
+// ------------------------------------------------------------------ scan: the label photos (D-025, D-068, D-171)
+// D-171 (a tester via Sushil, 2026-10-07): the barcode step was clear, the one long label page
+// was not. So the label is taken in steps, one job per screen: the ingredient list (step 2),
+// then, only if it isn't in that photo, the nutrition table (step 3). D-119's extra parts of
+// a long list stay possible. Every photo goes to the server as today (back, back2, back3) and
+// the pack is read once. The front photo (D-100) is no longer asked for here: the result
+// offers it once the pack is in the catalogue.
+// The camera: the app's own live view and shutter where the server has it switched on
+// (/access live_shutter) and the phone can take a full-size still; otherwise the phone's
+// camera app, as before.
+const STEPS = 3;
+const MAX_PHOTOS = 3;                    // D-119's limit: back, back2, back3
+
+function stepLine(n, what) {
+  return el("p", { class: "kicker step" }, el("span", {}, `Step ${n} of ${STEPS}`), el("span", {}, what));
+}
+
 function photo() {
-  // D-153: a tester didn't know which panel "the back" meant (nutrition table, ingredients,
-  // licence), how many photos, or why. So the ask names the panel, the count and the reason
-  // first, and a drawing marks the one block to photograph.
-  // Sushil, 2026-10-03: for food, the ingredients and the nutrition table, everywhere (D-133
-  // reads the table from the same photos). One photo if both fit; the table as a second if not.
-  const why = pending.barcode
-    ? "We haven't checked this barcode yet, so we read the pack itself. Our team then checks it, " +
-      "so the next scan of this barcode is instant, for everyone."
-    : "We read the pack from your photo.";
-  const ask = el("div", { class: "deep opener" },
-    el("p", { class: "kicker" }, pending.barcode ? "New pack · 1 or 2 photos" : "1 or 2 photos"),
-    el("h1", {}, "Photograph the ingredients and the nutrition table"),
-    el("p", { class: "on-muted" }, why),
-    el("p", { class: "on-muted" }, "Both are usually on the back. If they fit in one clear photo, one is enough; " +
-                                   "if not, take the table as a second photo."));
+  return pending.back ? shotReview() : listShot();
+}
 
-  const backPreview = el("div", { class: "thumb" });
-  const frontPreview = el("div", { class: "thumb" });
-  const pairing = el("input", { type: "checkbox", id: "pairing", checked: pending.pairing,
-                                onchange: e => { pending.pairing = e.target.checked; } });
-  const pairRow = el("label", { class: "choice", hidden: !pending.front }, pairing,
-                     " Both photos are of the same pack");
-  const go_ = el("button", { type: "button", class: "btn primary", disabled: !pending.back,
-                             onclick: () => sendPhotos() }, "Check this pack");
+// The ingredient list, or its next part (D-119).
+function listShot() {
+  const n = pending.back ? pending.parts.length + 2 : 1;
+  return labelShot({
+    role: n === 1 ? "back" : "back" + n,
+    step: stepLine(2, n === 1 ? "Ingredients" : `Ingredients, part ${n}`),
+    title: n === 1 ? "Photograph the ingredient list" : "Photograph the rest of the list",
+    line: n === 1 ? "Fit the list, from \"Ingredients\" to the last word"
+                  : "Start where the last photo ended. A little overlap is fine.",
+    onShot: (b, res, source) => { addShot(n, "list", b, source, res); show(shotReview(res)); },
+  });
+}
 
-  // D-119: a long list in up to three photos; the server joins them into one.
-  // Most lists fit one photo, so the app asks first and shows the part camera
-  // only on "No" (Sushil, 2026-09-27). Not answering means one photo.
-  const parts = el("div", { class: "stack" });
-  let more = false;              // "No, it continues" for the part now being asked about
-  const drawParts = () => {
-    parts.replaceChildren();
-    if (!pending.back) return;
-    pending.parts.forEach((_b, i) => parts.append(
-      kinded("p", "done", { class: "check ok", role: "status" }, `Photo ${i + 2} added.`)));
-    if (pending.parts.length >= 2 || more === null) return;
-    const n = pending.parts.length + 2;
-    const ask = n === 2 ? "Are the whole ingredient list and the nutrition table in this photo?" : "Is everything in now?";
-    if (!more) {
-      parts.append(el("div", { class: "card" },
-        el("h2", {}, ask),
-        el("p", { class: "muted" }, n === 2
-          ? "If not, take what's missing as a second photo: the rest of the list, or the nutrition table."
-          : "You can add one more photo if something is still missing."),
-        el("div", { class: "row wrap" },
-          el("button", { type: "button", class: "btn", onclick: () => { more = null; drawParts(); } },
-             n === 2 ? "Yes, both are in" : "Yes, that's all"),
-          el("button", { type: "button", class: "btn", onclick: () => { more = true; drawParts(); } },
-             `No, add photo ${n}`))));
-      return;
-    }
-    const prev = el("div", { class: "thumb" });
-    parts.append(el("div", { class: "card" },
-      el("h2", {}, `Photo ${n}`),
-      el("p", { class: "muted" }, "What the last photo missed: the rest of the list, or the nutrition table. A little overlap is fine."),
-      photoPicker("back" + n, `Take photo ${n}`, prev, (b, res, source) => {
-        if (!b || (res && !res.ok)) return;
-        pending.parts.push(b);
-        pending.partSources.push(source);
-        more = false;            // ask again about the next part
-        drawParts();
-      }, "back"),
-      prev));
+// The nutrition table, as the next part. `after`: what else the screen offers.
+function tableShot(after = null) {
+  const n = pending.parts.length + 2;
+  return labelShot({
+    role: "back" + n, table: true,
+    step: stepLine(3, "Nutrition table"),
+    title: "Photograph the nutrition table",
+    line: "Fit the whole table, from its title to the last row",
+    after: after || button("This pack has no table", () => sendPhotos(), "link"),
+    onShot: (b, res, source) => { addShot(n, "table", b, source, res); show(shotReview(res)); },
+  });
+}
+
+function addShot(n, kind, b, source, res) {
+  if (n === 1) {
+    pending.back = b;
+    pending.backSource = source;
+    pending.parts = []; pending.partSources = []; pending.partKinds = [];     // a new first photo starts again
+    if (res?.barcode && !pending.barcode) { pending.barcode = res.barcode; pending.barcodeSource = "photo"; }
+    return;
+  }
+  pending.parts = [...pending.parts.slice(0, n - 2), b];
+  pending.partSources = [...pending.partSources.slice(0, n - 2), source];
+  pending.partKinds = [...(pending.partKinds || []).slice(0, n - 2), kind];
+}
+
+// After a shot: the photos in hand, the check's line for the last one, and what's next.
+// Not answering the table question is "yes": the pack is read from what's in hand.
+function shotReview(res = undefined) {
+  const photos = [pending.back, ...pending.parts];
+  const kinds = ["list", ...pending.parts.map((_p, i) => (pending.partKinds || [])[i] || "list")];
+  const n = photos.length;
+  const tableIn = kinds.includes("table");
+  const names = kinds.map((k, i) => k === "table" ? "Nutrition table" : i === 0 ? "Ingredients" : `Ingredients, part ${i + 1}`);
+  const retake = () => {
+    if (n === 1) { pending.back = null; return show(listShot()); }
+    const kind = kinds[n - 1];
+    pending.parts = pending.parts.slice(0, n - 2);
+    pending.partSources = pending.partSources.slice(0, n - 2);
+    pending.partKinds = (pending.partKinds || []).slice(0, n - 2);
+    show(kind === "table" ? tableShot() : listShot());
   };
-  drawParts();
+  const pics = el("div", { class: n === 1 ? "thumb" : "taken" },
+    photos.map((b, i) => n === 1
+      ? el("img", { src: URL.createObjectURL(b), alt: "Your photo of the ingredient list" })
+      : el("figure", { class: "thumb" }, el("img", { src: URL.createObjectURL(b), alt: `Your photo: ${names[i]}` }),
+          el("figcaption", { class: "muted" }, names[i]))));
+  const line = res === undefined ? null : checkLine(res, retake);
+  const ask = !tableIn && n < MAX_PHOTOS;          // the table question, while there's room for its photo
+  const check = button(ask ? "Yes, check this pack" : "Check this pack", () => sendPhotos(), "primary");
+  return el("section", { class: "stack shot-review" },
+    stepLine(tableIn ? 3 : 2, names[n - 1]),
+    pics, line,
+    ask ? el("h1", {}, "Is the nutrition table in this photo too?")
+      : el("h1", {}, n === 2 ? "Both photos are in" : "All three photos are in"),
+    check,
+    ask && button("No, photograph the table", () => show(tableShot())),
+    el("div", { class: "row between" },
+      ask ? button("The list continues", () => show(listShot()), "link") : el("span", {}),
+      button(tableIn ? "Retake the table" : "Retake", retake, "link")));
+}
 
-  // app-polish: the first thing to do looks like it. Until a photo is in, taking it is the
-  // filled button; after, "Check this pack" is (finding 8). No new tap.
-  let backPicker = null;
-  const markNext = () => { leadWith(backPicker, !pending.back); };
+// One photo of the label. o: { role, step (a node), title, line, table, after, onShot(blob, res, source) }.
+// onShot runs once a photo is in and the check didn't turn it down.
+function labelShot(o) {
+  const tips = button("Tips", () => tipsSheet(liveOn()), "link");
+  const view = el("section", { class: "stack label-cam" }, o.step, el("h1", {}, o.title));
+  const shot = el("div", { class: "stack" });
+  view.append(shot);
+  if (o.after) view.append(o.after);
 
-  return el("section", { class: "stack photo-ask" },
-    ask,
+  // The phone's camera app (D-102's file inputs): the default, and the way back when the live
+  // camera can't open. photoPicker shows the photo and the check's line, with Retake.
+  const appCamera = why => {
+    const preview = el("div", { class: "thumb" });
+    let picker = null;
+    shot.replaceChildren(...[
+      !o.table && el("figure", { class: "pack-back" }, packBack()),
+      el("p", { class: "cam-line" }, o.line),
+      why && kinded("p", "info", { class: "muted" }, why),
+      (picker = photoPicker(o.role, "Take the photo", preview, (b, res, source) => {
+        if (b && !(res && !res.ok)) o.onShot(b, res, source);
+      }, "back"), leadWith(picker, true), picker),
+      preview,
+      el("div", { class: "row" }, tips)].filter(Boolean));
+  };
+  if (!liveOn()) {
+    appCamera(null);
+    return view;
+  }
+
+  // The live camera (D-171): a frame, one line, the shutter; a hint when it's dark or moving.
+  const video = el("video", { class: "viewfinder", muted: true, playsinline: true, "aria-label": "Camera" });
+  const hint = el("div", { class: "cam-hint-slot", "aria-live": "polite" });
+  const wrap = el("div", { class: "viewfinder-wrap tall" }, video,
+    el("div", { class: "frame label" + (o.table ? " table" : ""), "aria-hidden": "true" },
+      el("i", {}), el("i", {}), el("i", {}), el("i", {})),
+    hint);
+  const shutter = el("button", { type: "button", class: "shutter", "aria-label": "Take the photo", disabled: true });
+  const upload = uploadLink(o.role, file => checkShot(o, file, "upload", again));
+  shot.replaceChildren(wrap, el("p", { class: "cam-line" }, o.line),
+    el("div", { class: "shutter-row" }, tips, shutter, upload));
+
+  const seq = navSeq;
+  const onHint = h => hint.replaceChildren(h ? kinded("p", "problem", { class: "cam-hint check bad" },
+    h === "dark" ? "Too dark" : "Hold still") : "");
+  startLabelCamera(video, onHint).then(stop => {
+    if (seq !== navSeq || !view.isConnected) return stop();         // the user left before it opened
+    record("label_camera", { started: true });
+    stopCamera = stop;
+    shutter.disabled = false;
+    if (stop.hasTorch) {
+      let on = false;
+      const t = el("button", { type: "button", class: "cam-light", "aria-pressed": String(on) }, "Light");
+      t.addEventListener("click", async () => {
+        if (await stop.torch(!on)) { on = !on; t.setAttribute("aria-pressed", String(on)); }
+      });
+      wrap.append(t);
+    }
+    shutter.addEventListener("click", async () => {
+      shutter.disabled = true;
+      let blob = null;
+      try { blob = await stop.takePhoto(); } catch (e) { record("label_camera", { shot: false, error: String(e?.name || e) }); }
+      if (!blob) { shutter.disabled = false; return; }
+      if (!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) navigator.vibrate?.(15);
+      stop();
+      if (stopCamera === stop) stopCamera = null;
+      record("photo_source", { role: o.role, source: "live" });
+      checkShot(o, blob, "live", again);
+    });
+  }).catch(e => {
+    record("label_camera", { started: false, error: String(e?.name || e) });
+    appCamera("We couldn't open the camera here, so your phone's camera app takes the photo.");
+  });
+  // Retake after a refused photo: this same screen again.
+  function again() { show(labelShot(o)); }
+  return view;
+}
+
+// A photo from the live camera or "Upload a photo": shown while it's checked, then on to the
+// next screen, or back with the problem named (D-170) and Retake.
+async function checkShot(o, file, source, again) {
+  if (!file) return;
+  if (stopCamera) { stopCamera(); stopCamera = null; }
+  const wait = el("div", { class: "thumb" }, el("p", { class: "muted", role: "status" }, "Preparing photo…"));
+  show(el("section", { class: "stack shot-review" }, o.step, wait));
+  const out = await checkPhoto(o.role, "back", file, b => wait.replaceChildren(
+    el("img", { src: URL.createObjectURL(b), alt: "Your photo" }),
+    el("p", { class: "muted", role: "status" }, "Checking the photo…")));
+  if (!out) return;
+  const { blob, res } = out;
+  if (res && !res.ok) {
+    return show(el("section", { class: "stack shot-review" }, o.step,
+      el("div", { class: "thumb" }, el("img", { src: URL.createObjectURL(blob), alt: "Your photo" }), checkLine(res, again)),
+      uploadLink(o.role, f => checkShot(o, f, "upload", again))));
+  }
+  o.onShot(blob, res, source);
+}
+
+function uploadLink(role, onFile) {
+  const i = el("input", { type: "file", accept: "image/*", class: "sr", id: "upload-" + role });
+  i.addEventListener("change", () => { record("photo_source", { role, source: "upload" }); onFile(i.files && i.files[0]); });
+  return el("span", {}, i, el("label", { for: "upload-" + role, class: "btn link" }, "Upload a photo"));
+}
+
+// The D-163 and D-167 hints and the pack-back drawing, out of the way until asked for.
+function tipsSheet(live) {
+  const d = el("dialog", { class: "sheet", "aria-label": "Tips" },
+    el("h2", {}, "Tips"),
     el("figure", { class: "pack-back" }, packBack(),
-      el("figcaption", { class: "src" }, "The back of a pack. Photograph the green blocks: in one photo if they fit, or two.")),
+      el("figcaption", { class: "src" }, "The back of a pack. The ingredients first, then the nutrition table.")),
     el("dl", { class: "ruled hints" },
       el("div", {}, el("dt", {}, "Frame"), el("dd", {}, "The whole ingredient list, from \"Ingredients:\" to the last word, and the whole nutrition table.")),
       el("div", {}, el("dt", {}, "Light"), el("dd", {}, "Hold the phone close and steady. On a pouch or a shiny pack, lay it on a table, smooth it flat and tilt it away from the light.")),
@@ -766,35 +898,10 @@ function photo() {
       // reviewer needn't check it by hand. A hint only: no extra photo or step.
       pending.barcode ? el("div", {}, el("dt", {}, "Barcode"),
         el("dd", {}, "If it's on the same side, keep it in the photo too. We check the number against it.")) : null),
-    backPicker = photoPicker("back", pending.back ? "Retake the photo" : "Take the photo", backPreview,
-                (b, res, source) => {
-                  // A red cross keeps "Check this pack" off; an unchecked photo (the
-                  // check couldn't run) is let through, and /scan checks it again anyway.
-                  pending.back = res && !res.ok ? null : b;
-                  pending.backSource = source;
-                  // A new first photo starts the list again (D-119).
-                  pending.parts = []; pending.partSources = []; more = false;
-                  drawParts();
-                  go_.disabled = !pending.back;
-                  markNext();
-                  if (res?.barcode && !pending.barcode) { pending.barcode = res.barcode; pending.barcodeSource = "photo"; }
-                }),
-    (markNext(), null),
-    backPreview,
-    parts,
-    // D-100: asked for once per pack, not once per scan. A re-check of a pack
-    // whose front is already on file doesn't ask again.
-    pending.frontWanted && el("div", { class: "card" },
-      el("h2", {}, "Optional: the front of the pack"),
-      el("p", { class: "muted" }, "Not needed for your result. The front shows the pack's name and what it promises; " +
-                                  "our team records it once for each pack."),
-      photoPicker("front", "Take the front photo", frontPreview, (b, res, source) => {
-        pending.front = res && !res.ok ? null : b;
-        pending.frontSource = source;
-        pairRow.hidden = !pending.front;
-      }),
-      frontPreview, pairRow),
-    go_);
+    button(live ? "Back to the camera" : "Close", () => d.close(), "primary"));
+  d.addEventListener("close", () => d.remove());
+  main.append(d);
+  d.showModal();
 }
 
 // app-polish: a picker's take-photo button carries the primary style while it is the next step.
@@ -810,6 +917,43 @@ function leadWith(picker, lead) {
 // dropped onto the box.
 const TOUCH = window.matchMedia?.("(pointer: coarse)").matches ?? true;
 
+// D-171: the live camera, where the server has it on and the phone can take a full-size still.
+const liveOn = () => liveShutter && TOUCH && labelCameraSupported();
+
+// D-104: every photo is checked on the server as soon as it is picked. Returns {blob, res}:
+// res is {ok, message, barcode, label}, or null when the check couldn't run; null in place of
+// both when the phone has to join or agree first (the screen has changed). onReady(blob): the
+// photo is ready to show while it's checked.
+async function checkPhoto(role, checkAs, file, onReady = null) {
+  const blob = await prepareImage(file);
+  onReady?.(blob);
+  let res = null;
+  try {
+    res = (await checkPhotoRequest(checkAs, blob)).body;
+  } catch (e) {
+    const gate = accessProblem(e);
+    if (gate) { go(gate); return null; }
+    if (e.status === 429 || e.status === 413 || e.status === 415) res = { ok: false, message: apiMessage(e) };
+  }
+  record("photo_check", { role, ok: res ? res.ok : null, problem: res?.problem || null, barcode: !!res?.barcode });
+  return { blob, res };
+}
+
+// The check's line: a green tick or the problem with a Retake (D-170).
+function checkLine(res, retake, role = "back") {
+  return res === null
+    ? kinded("p", "problem", { class: "check unknown", role: "status" },
+        role === "barcode" ? "We couldn't check this photo just now. Try again in a moment."
+                           : "We couldn't check this photo just now. It will be checked when you continue.")
+    : !res.ok && res.label
+      // D-170: the problem named over the server's sentence, and a way straight back to the camera.
+      ? kinded("div", "problem", { class: "check bad", role: "status" },
+          el("strong", { class: "problem-label" }, res.label), el("p", {}, res.message),
+          button("Retake", retake))
+      : kinded("p", res.ok ? "done" : "problem", { class: "check " + (res.ok ? "ok" : "bad"), role: "status" },
+          res.message);
+}
+
 // D-104: every photo is checked on the server as soon as it is picked, and
 // gets a green tick or a red cross with the reason. onPick(blob, result):
 // result is {ok, message, barcode}, or null when the check couldn't run.
@@ -818,30 +962,14 @@ function photoPicker(role, label, preview, onPick, checkAs = role) {
   const use = async (file, source) => {
     if (!file || !file.type.startsWith("image/")) return;
     preview.replaceChildren(el("p", { class: "muted" }, "Preparing photo…"));
-    const blob = await prepareImage(file);
-    const img = el("img", { src: URL.createObjectURL(blob), alt: `Your ${role} photo` });
-    preview.replaceChildren(img, el("p", { class: "muted", role: "status" }, "Checking the photo…"));
-    let res = null;
-    try {
-      res = (await checkPhotoRequest(checkAs, blob)).body;
-    } catch (e) {
-      const gate = accessProblem(e);
-      if (gate) return go(gate);
-      if (e.status === 429 || e.status === 413 || e.status === 415) res = { ok: false, message: apiMessage(e) };
-    }
-    record("photo_check", { role, ok: res ? res.ok : null, problem: res?.problem || null, barcode: !!res?.barcode });
-    const line = res === null
-      ? kinded("p", "problem", { class: "check unknown", role: "status" },
-          role === "barcode" ? "We couldn't check this photo just now. Try again in a moment."
-                             : "We couldn't check this photo just now. It will be checked when you continue.")
-      : !res.ok && res.label
-        // D-170: the problem named over the server's sentence, and a way straight back to the camera.
-        ? kinded("div", "problem", { class: "check bad", role: "status" },
-            el("strong", { class: "problem-label" }, res.label), el("p", {}, res.message),
-            button("Retake", () => document.getElementById("pick-" + role)?.click()))
-        : kinded("p", res.ok ? "done" : "problem", { class: "check " + (res.ok ? "ok" : "bad"), role: "status" },
-            res.message);
-    preview.replaceChildren(img, line);
+    let img = null;
+    const out = await checkPhoto(role, checkAs, file, b => {
+      img = el("img", { src: URL.createObjectURL(b), alt: `Your ${role} photo` });
+      preview.replaceChildren(img, el("p", { class: "muted", role: "status" }, "Checking the photo…"));
+    });
+    if (!out) return;
+    const { blob, res } = out;
+    preview.replaceChildren(img, checkLine(res, () => document.getElementById("pick-" + role)?.click(), role));
     onPick(blob, res, source);
   };
   const input = (id, capture) => {
@@ -912,9 +1040,8 @@ function tablephoto(id) {
   const offer = h && h.screen && h.screen.table_offer;
   if (!h || !h.barcode || !offer) return errorView("We couldn't find that pack on this phone.");
   const w = offer.photo;
-  const preview = el("div", { class: "thumb" });
-  let blob = null, blobSource = null, picker = null;
-  const send = el("button", { type: "button", class: "btn primary", disabled: true, onclick: async () => {
+  const back = () => go("result/" + encodeURIComponent(id));
+  const send = async (blob, blobSource) => {
     show(working("Sending the photo…", false));
     try {
       const { body } = await scanRequest({ barcode: h.barcode, back: blob, backSource: blobSource, tableOnly: true });
@@ -925,25 +1052,25 @@ function tablephoto(id) {
       show(el("section", { class: "stack" },
         el("h1", {}, w.title),
         kinded("p", t.kind || "problem", { class: "lead" }, t.text),
-        button("Back to the result", () => go("result/" + encodeURIComponent(id)))));
+        button("Back to the result", back)));
     } catch (e) {
       show(apiErrorView(e, () => go("tablephoto/" + encodeURIComponent(id))));
     }
-  } }, w.button);
-  return el("section", { class: "stack" },
-    el("h1", {}, w.title),
-    el("p", { class: "product" }, productName(h.product)),
-    el("p", { class: "lead" }, w.lead),
-    el("p", { class: "muted" }, w.barcode),
-    (picker = photoPicker("back", offer.button, preview, (b, res, source) => {
-      blob = res && !res.ok ? null : b;
-      blobSource = source;
-      send.disabled = !blob;
-      leadWith(picker, !blob);
-    }, "back"), leadWith(picker, true), picker),
-    preview,
-    send,
-    button("Not now", () => go("result/" + encodeURIComponent(id)), "link"));
+  };
+  // D-171: the step 3 camera, with the server's words (screen.TABLE_OFFER).
+  const o = {
+    role: "back", table: true,
+    step: el("p", { class: "kicker product" }, productName(h.product)),
+    title: w.title, line: w.lead,
+    after: el("div", { class: "stack" }, el("p", { class: "muted" }, w.barcode), button("Not now", back, "link")),
+    onShot: (b, res, source) => show(el("section", { class: "stack shot-review" }, o.step,
+      el("div", { class: "thumb" }, el("img", { src: URL.createObjectURL(b), alt: "Your photo of the table" }),
+        res === undefined ? null : checkLine(res, () => show(labelShot(o)))),
+      el("h1", {}, w.title),
+      button(w.button, () => send(b, source), "primary"),
+      button("Retake", () => show(labelShot(o)), "link"))),
+  };
+  return labelShot(o);
 }
 
 async function sendPhotos() {
@@ -1038,22 +1165,8 @@ function finish(body, { lookedUp = false } = {}) {
 // back photos as the next part (the D-119 parts flow), and the pack is read again.
 function table() {
   if (!pending.back || pending.parts.length >= 2) return errorView("Scan the pack again to add its nutrition table.");
-  const preview = el("div", { class: "thumb" });
-  const go_ = el("button", { type: "button", class: "btn primary", disabled: true, onclick: () => sendPhotos() },
-                 "Read the pack again");
-  const n = pending.parts.length + 2;
-  let picker = null;
-  return el("section", { class: "stack" },
-    el("h1", {}, "Photograph the nutrition table"),
-    el("p", { class: "lead" }, "Fill the frame with the table. We'll read it together with your ingredient photo."),
-    (picker = photoPicker("back" + n, "Take the table photo", preview, (b, res, source) => {
-      if (!b || (res && !res.ok)) return;
-      pending.parts = [...pending.parts.slice(0, n - 2), b];
-      pending.partSources = [...pending.partSources.slice(0, n - 2), source];
-      go_.disabled = false;
-      leadWith(picker, false);
-    }, "back"), leadWith(picker, true), picker),
-    preview, go_);
+  // D-171: the same step 3 screen as a new pack's table photo.
+  return tableShot(button("Not now", () => history.back(), "link"));
 }
 
 // D-133: the nutrition table beside ICMR-NIN's thresholds. Every sentence is the server's.
@@ -1130,7 +1243,7 @@ function result(id, sub, tileId) {
                 : kinded("p", "problem", { class: "card" }, s.retake),
       button("Retake the photo", () => {
         pending.back = null;
-        pending.parts = []; pending.partSources = [];
+        pending.parts = []; pending.partSources = []; pending.partKinds = [];
         pending.acceptUnconfirmed = false;
         // D-108: after "these look like different packs", neither photo can be trusted.
         if (s.headline?.source?.ref === "product_mismatch") { pending.front = null; pending.pairing = false; }

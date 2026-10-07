@@ -213,19 +213,60 @@ def test_how_we_check_says_there_is_no_score():                         # D-165,
     assert '"No concerns found"' not in r.text
 
 
-def test_photo_ask_names_the_panel_the_count_and_why():                # D-153
-    """A tester didn't know which panel "the back" was, how many photos, or why."""
+def test_label_photos_come_in_steps():                                   # D-171 (was D-153's one page)
+    """A tester liked the barcode step and was lost on the one long label page (2026-10-07)."""
     app = JS["app.js"]
-    assert "Photograph the back" not in app
-    # Sushil, 2026-10-03: for food, the ingredients and the nutrition table everywhere (D-133).
-    assert 'el("h1", {}, "Photograph the ingredients and the nutrition table")' in app
-    assert '"New pack · 1 or 2 photos"' in app and "We haven't checked this barcode yet" in app
-    assert '"Photograph these"' in app and '"NUTRITION"' in app     # the drawing marks both blocks
+    assert "Step ${n} of ${STEPS}" in app and "const STEPS = 3;" in app
+    assert 'stepLine(1, "Barcode")' in app
+    # Step 2: one line under the camera; step 3 only when the table isn't in that photo.
+    assert 'title: n === 1 ? "Photograph the ingredient list"' in app
+    assert '"Fit the list, from \\"Ingredients\\" to the last word"' in app
+    assert 'el("h1", {}, "Is the nutrition table in this photo too?")' in app
+    assert '"Yes, check this pack"' in app and '"No, photograph the table"' in app
+    assert '"The list continues"' in app and '"This pack has no table"' in app
+    assert 'title: "Photograph the nutrition table"' in app
+    # The table rides as the next part, so /scan's roles are unchanged (back, back2, back3).
+    assert "const MAX_PHOTOS = 3;" in app and 'role: "back" + n, table: true' in app
+    # D-163 and D-167's hints and the drawing move to Tips.
+    tips = app[app.index("function tipsSheet("):app.index("function leadWith(")]
+    assert "keep it in the photo too. We check the number against it." in tips
+    assert 'pending.barcode ? el("div", {}, el("dt", {}, "Barcode"),' in tips
+    assert "packBack()" in tips and '"Photograph these"' in app and '"NUTRITION"' in app
     assert app.count('"Not needed"') == 1                           # only the licence
-    assert "Optional: the front of the pack" in app                 # D-100's front stays optional
-    # D-163: with a scanned barcode, a hint to keep it in the photo (D-143 then confirms it).
-    assert 'pending.barcode ? el("div", {}, el("dt", {}, "Barcode"),' in app
-    assert "keep it in the photo too. We check the number against it." in app
+    # D-100's front is no longer asked on the label steps; the result offers it (catalogue).
+    steps = app[app.index("function photo() {"):app.index("function tipsSheet(")]
+    assert "front" not in steps.lower()
+    assert '"Add the front of the pack?"' in app
+    # D-168 and D-133's table photos use the same step 3 camera.
+    assert "return labelShot(o);" in app[app.index("function tablephoto("):]
+    assert "return tableShot(" in app[app.index("function table() {"):]
+
+
+def test_the_live_shutter_is_switched_on_by_the_server_and_falls_back():   # D-171
+    app, cam = JS["app.js"], JS["camera.js"]
+    # Off by default (Sushil, 2026-10-07): today's camera app until he has compared the two.
+    assert "liveShutter = !!body.live_shutter;" in app
+    assert "const liveOn = () => liveShutter && TOUCH && labelCameraSupported();" in app
+    # Full-resolution still where the phone has it; otherwise the camera app's input.
+    assert '"ImageCapture" in window' in cam and "capture.takePhoto(settings)" in cam
+    assert 'capture: "environment"' in app
+    assert "appCamera(\"We couldn't open the camera here, so your phone's camera app takes the photo.\")" in app
+    # Hints on the phone only: no request before the shutter.
+    label = cam[cam.index("export async function startLabelCamera("):]
+    assert "fetch(" not in label and "Request(" not in label
+    assert '"Too dark"' in app and '"Hold still"' in app
+    # The shot goes up as "live", so the stored scans tell the two apart.
+    assert 'checkShot(o, blob, "live", again)' in app
+
+
+def test_access_says_whether_the_live_shutter_is_on(monkeypatch):     # D-171
+    from insidelabel.api import main
+    monkeypatch.delenv("INSIDELABEL_LIVE_SHUTTER", raising=False)
+    assert c.get("/access").json()["live_shutter"] is False
+    monkeypatch.setenv("INSIDELABEL_LIVE_SHUTTER", "on")
+    assert c.get("/access").json()["live_shutter"] is True
+    monkeypatch.setattr(main, "LIVE_SHUTTER", False)
+    assert c.get("/access").json()["live_shutter"] is False
 
 
 def test_result_puts_people_first_and_folds_the_rest():                # D-153
@@ -403,7 +444,8 @@ def test_the_refusal_shows_the_photo_and_its_problem_without_report_a_mistake():
 def test_the_photo_check_names_its_problem_and_offers_retake():
     app = JS["app.js"]
     assert re.search(r'res\.label\s*\n\s*//[^\n]*\n\s*\? kinded\("div", "problem", \{ class: "check bad"', app)
-    assert 'button("Retake", () => document.getElementById("pick-" + role)?.click())' in app
+    assert 'button("Retake", retake)' in app
+    assert 'checkLine(res, () => document.getElementById("pick-" + role)?.click(), role)' in app
 
 
 def test_problem_labels_come_from_the_server():

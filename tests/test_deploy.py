@@ -36,6 +36,7 @@ def _settings(name):
 def test_settings_template_keeps_the_server_switches():
     s = _settings("settings.env.example")
     assert s["INSIDELABEL_INVITE_ONLY"] == "off"                  # D-162
+    assert s["INSIDELABEL_LIVE_SHUTTER"] == "off"                 # D-171: on only after the comparison
     assert s["INSIDELABEL_PROXY_HOPS"] == "1"
     assert s["INSIDELABEL_PUBLIC_URL"] == "https://insidelabel.ai"
     for never in ("INSIDELABEL_ALLOW_REPLAY", "INSIDELABEL_CLAIMS_TO_USERS",

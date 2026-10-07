@@ -89,6 +89,15 @@ def test_the_scan_records_where_each_photo_came_from(env):
     assert s["request"]["photo_sources"] == {"back": "upload"}
 
 
+def test_the_apps_own_shutter_is_recorded_as_live(env):            # D-171
+    r = scan(back_source="live")
+    assert r.status_code == 200
+    s = row(env, "SELECT request FROM scans WHERE id = %s", r.json()["scan_id"])
+    assert s["request"]["photo_sources"] == {"back": "live"}
+    page = reviewer().get(f"/review/item/{_item_for(env, r.json()['scan_id'])}").text
+    assert "Taken with the app's own shutter" in page and "Uploaded, not taken" not in page
+
+
 def test_an_unknown_source_is_refused(env):
     r = scan(back_source="telepathy")
     assert r.status_code == 422 and r.json()["error"] == "bad_photo_source"

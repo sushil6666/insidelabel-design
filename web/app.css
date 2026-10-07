@@ -758,3 +758,42 @@ details[open]:not(.look) > summary::after { transform: rotate(180deg); }
 .problem-label .kind-icon { width: 24px; height: 24px; }
 .check.kmsg .problem-label { font-size: var(--fs-md); }
 .check.kmsg > .btn { justify-self: start; margin-top: var(--sp-2); }
+
+/* D-171: the label photos in steps. "Step n of 3" over each screen; the label camera is the
+   barcode's viewfinder made taller, with a frame for the list (wide) or the table (squarer),
+   a hint chip, one line and a shutter. White on the dimmed view, so it reads on any pack. */
+.kicker.step { display: flex; justify-content: space-between; gap: var(--sp-3); }
+.kicker.step span + span { text-align: right; }
+.label-cam.stack > * + *, .shot-review.stack > * + * { margin-top: var(--sp-3); }
+.label-cam h1, .shot-review h1 { margin: 0; font-size: var(--fs-xl); line-height: 1.2; }
+.viewfinder-wrap.tall { aspect-ratio: 4 / 5; max-height: 58vh; margin-inline: auto; }
+.frame.label { inset: 13% 5% 6%; }
+.frame.label.table { inset: 13% 10% 10%; }
+.cam-hint-slot { position: absolute; left: 0; right: 0; bottom: 14px; display: flex; justify-content: center; }
+.cam-hint { margin: 0; white-space: nowrap; border-radius: var(--r-pill); padding: 6px 14px; box-shadow: var(--shadow); }
+.cam-light { position: absolute; top: 10px; right: 10px; min-height: 40px; padding: 0 14px; border: 0;
+             border-radius: var(--r-pill); background: rgba(0, 0, 0, .5); color: #fff; font: 600 var(--fs-sm) var(--font); }
+.cam-light[aria-pressed="true"] { background: #fff; color: #000; }
+.cam-light:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
+.cam-line { margin: 0; text-align: center; font-weight: 600; }
+.shutter-row { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: var(--sp-2); }
+.shutter-row > :first-child { justify-self: start; }
+.shutter-row > :last-child { justify-self: end; }
+.shutter { width: 76px; height: 76px; border-radius: 50%; border: 4px solid var(--brand); background: var(--surface);
+           padding: 5px; box-shadow: var(--shadow); cursor: pointer; }
+.shutter::before { content: ""; display: block; width: 100%; height: 100%; border-radius: 50%; background: var(--brand); }
+.shutter:disabled { opacity: .45; cursor: default; }
+.shutter:focus-visible { outline: 3px solid var(--ring); outline-offset: 3px; }
+.shutter:active:not(:disabled) { transform: scale(.94); }
+.shot-review > .thumb img { width: 100%; max-height: 300px; object-fit: cover; }
+.taken { display: flex; gap: var(--sp-2); }
+.taken figure { margin: 0; flex: 1 1 0; min-width: 0; }
+.taken img { width: 100%; height: 150px; object-fit: cover; }
+.taken figcaption { font-size: var(--fs-sm); margin-top: 4px; }
+.sheet { width: 100%; max-width: 560px; max-height: 88vh; margin: auto auto 0; border: 0; padding: var(--sp-5) var(--sp-4) var(--sp-6);
+         border-radius: var(--r-xl) var(--r-xl) 0 0; background: var(--surface); color: var(--ink); box-shadow: var(--e-2); }
+.sheet::backdrop { background: rgba(4, 34, 52, .42); }
+.sheet > * + * { margin-top: var(--sp-3); }
+.sheet h2 { margin: 0; }
+.sheet .btn.primary { display: flex; }
+@media (prefers-reduced-motion: reduce) { .shutter:active:not(:disabled) { transform: none; } }
