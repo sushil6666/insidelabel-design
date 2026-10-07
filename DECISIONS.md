@@ -3230,6 +3230,42 @@ Curd, fresh, ..., 8 Cashews, whole (Optional)"). That scan read the pack right f
   it on a table, smooth it flat and tilt it away from the light." A hint only, no new step (web-44).
 `tests/test_unchecked_note.py`, `tests/test_web.py`.
 
+
+### D-168 · A published pack without a nutrition table offers one photo of it `LOCKED` (2026-10-07)
+Proposed by the advisor; **accepted by Sushil 2026-10-07, with two changes** (below). Built by Claude. Replaces the
+D-147 draft ("nutrition-capture"), which was never recorded here: its core, asking for the table before the one read,
+is live since D-153 (2026-10-03: the photo screen asks for "the ingredients and the nutrition table, 1 or 2 photos").
+Why: label data is gold (D-128), and the D-133 numbers are what D-136 needs. Sushil's server numbers: new versions with
+a table were 2 of 6 on 1 to 2 October, 3 of 5 on 4 to 7 October, 2 of 2 on 6 to 7 October. The gap: a pack already
+published without a table never got one (a catalogue hit never asked; a table-only photo couldn't go through /scan).
+- **The offer:** on a catalogue hit for a food pack with no nutrition table on file and none on its way (no
+  `nutrition` item waiting, no pending version carrying one: `store.find_current()` `table_wanted`), the result ends
+  with a card (`screen.TABLE_OFFER`): "Add the nutrition table?" / "We have this pack's ingredients but not its
+  nutrition table. One photo of the table lets our team add it, so everyone who scans this pack sees its sugar, salt
+  and fat beside ICMR-NIN's guide." / "Photograph the nutrition table". Never from a screen (D-130), without a barcode
+  (D-107), or for another kind (D-140). An offer, never a gate (D-146's one check stays the only one).
+- **The photo** (`/scan` with `table_only`, a barcode and one back photo): the same single read as a scan (about 50 to
+  60 paise a photo), counted in D-095's limits and D-148's daily photo limit. Only the table is used, through
+  `nutrition.check()` (D-133's second reader and arithmetic); the ingredient list isn't gated, read into the record or
+  changed. A checked table makes one pending version, the published content copied plus the table, queued as
+  `nutrition` (`store.add_table()`, sharing `save_scan()`'s D-133 insert). Answers (`screen.TABLE_ANSWER`): "Thanks.
+  Our team checks the table, then it shows for everyone who scans this pack." / "We couldn't find a nutrition table in
+  that photo, so nothing was added." / "We couldn't read every number on that table clearly, so nothing was added." /
+  "That photo shows a different barcode, so nothing was added." Every read is stored with its trace (D-092; `repro`
+  replays it) and its photo follows D-098.
+- **Sushil's changes (2026-10-07):**
+  1. "The table photo might be another pack's." The photo view adds "If the barcode is on the same side, keep it in the
+     photo." (as D-163). A barcode in the photo must match (D-143's `barcode.confirm()`); another code stores nothing,
+     with the "different barcode" line. /review shows the published version's pack photos beside the table photo.
+  2. "The card goes at the end of the result, after everything else, never above the allergen lines (D-060), and isn't
+     offered again on this phone once it sent a table for this pack." (The server also stops offering once one waits.)
+- **/review:** the `nutrition` item labels the table photo and shows the published pack's back and front beside it;
+  the "Every number shown to users matches the photo" tick (D-133) and `ReviewService.approve()` are unchanged.
+- **Out of scope:** a 4th photo for the table when a list takes 3 parts (rare, Sushil 2026-10-01); the layout and
+  accuracy measurement, which waits for the one gold run Sushil approved (about Rs 10 to 15, once the gold set has 20
+  labels; asked before any paid call).
+`tests/test_table_photo.py`, `tests/test_web.py`.
+
 ---
 
 ## Open and pending

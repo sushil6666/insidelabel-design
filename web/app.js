@@ -35,7 +35,7 @@ let pending = { barcode: null, barcodeSource: null, back: null, front: null, bac
 // ------------------------------------------------------------------ navigation
 const routes = {
   "": home, welcome, who, household, person, scan, photo, front, result, report, compare, problem, send,
-  join, agree, feedback, data, table,
+  join, agree, feedback, data, table, tablephoto,
 };
 
 // Setting the hash it already has fires no hashchange, so the page wouldn't
@@ -897,6 +897,50 @@ function front(id) {
     button("Not now", () => go("result/" + encodeURIComponent(id)), "link"));
 }
 
+// ------------------------------------------------------------------ a table photo (D-168)
+// For a pack the catalogue has without its nutrition table: one photo, read once; only the
+// table is used. Every word is the server's (screen.TABLE_OFFER, TABLE_ANSWER).
+const tableSent = barcode => !!store.get("tableSent", {})[barcode];
+
+function tablephoto(id) {
+  const h = historyItem(id);
+  const offer = h && h.screen && h.screen.table_offer;
+  if (!h || !h.barcode || !offer) return errorView("We couldn't find that pack on this phone.");
+  const w = offer.photo;
+  const preview = el("div", { class: "thumb" });
+  let blob = null, blobSource = null, picker = null;
+  const send = el("button", { type: "button", class: "btn primary", disabled: true, onclick: async () => {
+    show(working("Sending the photo…", false));
+    try {
+      const { body } = await scanRequest({ barcode: h.barcode, back: blob, backSource: blobSource, tableOnly: true });
+      const t = body.table || {};
+      if (t.status === "added" || t.status === "already_waiting") {
+        store.set("tableSent", { ...store.get("tableSent", {}), [h.barcode]: true });
+      }
+      show(el("section", { class: "stack" },
+        el("h1", {}, w.title),
+        el("p", { class: "lead" }, t.text),
+        button("Back to the result", () => go("result/" + encodeURIComponent(id)))));
+    } catch (e) {
+      show(apiErrorView(e, () => go("tablephoto/" + encodeURIComponent(id))));
+    }
+  } }, w.button);
+  return el("section", { class: "stack" },
+    el("h1", {}, w.title),
+    el("p", { class: "product" }, productName(h.product)),
+    el("p", { class: "lead" }, w.lead),
+    el("p", { class: "muted" }, w.barcode),
+    (picker = photoPicker("back", offer.button, preview, (b, res, source) => {
+      blob = res && !res.ok ? null : b;
+      blobSource = source;
+      send.disabled = !blob;
+      leadWith(picker, !blob);
+    }, "back"), leadWith(picker, true), picker),
+    preview,
+    send,
+    button("Not now", () => go("result/" + encodeURIComponent(id)), "link"));
+}
+
 async function sendPhotos() {
   // app-polish: one photo has two stages the app really knows: going up, then being
   // read. With more photos the wait keeps one stage ("the photo" would be untrue).
@@ -1202,6 +1246,15 @@ function result(id, sub, tileId) {
   // 6. Everything else, closed.
   put(el("details", { class: "item more-pack" }, el("summary", {}, s.more_title || "More about this pack"),
     el("div", { class: "stack more-body" }, moreAbout(h, !askTable))));
+  // D-168: a published pack without a nutrition table: one photo of it, offered last (never
+  // above the allergen lines, D-060), and not again on this phone once it sent one for the pack.
+  const offer = s.table_offer;
+  if (offer && h.barcode && !tableSent(h.barcode)) {
+    put(el("div", { class: "card note" },
+      el("h2", {}, offer.title),
+      el("p", {}, offer.text),
+      button(offer.button, () => go("tablephoto/" + encodeURIComponent(h.id)))));
+  }
   return view;
 }
 

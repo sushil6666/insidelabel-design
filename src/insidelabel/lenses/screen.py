@@ -679,6 +679,26 @@ NUTRITION_PARTIAL = "We couldn't read the nutrition table clearly, so some of it
 NUTRITION_UNVERIFIED = ("We couldn't check the nutrition table against a second reading of the photo, "
                         "so its numbers aren't shown.")
 NUTRITION_ASK = "Add a photo of the nutrition table"
+# D-168 (Sushil, 2026-10-07): a published pack without a nutrition table offers one photo of
+# it, at the end of the result. Only the table is read; the ingredients stay as checked.
+TABLE_OFFER = {
+    "title": "Add the nutrition table?",
+    "text": ("We have this pack's ingredients but not its nutrition table. One photo of the table lets our "
+             "team add it, so everyone who scans this pack sees its sugar, salt and fat beside ICMR-NIN's "
+             "guide."),
+    "button": "Photograph the nutrition table",
+    "photo": {"title": "Photograph the nutrition table",
+              "lead": "Fill the frame with the table. We read only the table; the ingredients stay as we "
+                      "checked them.",
+              "barcode": "If the barcode is on the same side, keep it in the photo.",
+              "button": "Send the table"},
+}
+TABLE_ANSWER = {
+    "added": "Thanks. Our team checks the table, then it shows for everyone who scans this pack.",
+    "no_table": "We couldn't find a nutrition table in that photo, so nothing was added.",
+    "unclear": "We couldn't read every number on that table clearly, so nothing was added.",
+    "different_barcode": "That photo shows a different barcode, so nothing was added.",
+}
 NUTRITION_CHECKED = "As printed on the pack, each number checked against a second reading of the photo."
 NUTRITION_ADULTS = "The daily amounts are for adults."
 MAX_PARTS = 3                            # D-119: the list and the table share the three back photos
@@ -1318,6 +1338,10 @@ def build(*, verdict, display, claim_check, extracted, reliability, profiles,
             "detail": _misread(alert["ins"]),
             "source": alert["source"],
         }
+    # D-168: a catalogue pack with no nutrition table on file or on its way. Food only (the
+    # other kinds return above), never from a screen (D-130); the app puts it last.
+    if catalogue and catalogue.get("table_wanted") and has_barcode and not from_screen:
+        out["table_offer"] = TABLE_OFFER
     return _notes_for_every_result(out, catalogue=catalogue, profiles=profiles, screen_pack=screen_pack,
                                    ingredients=ingredients, statement=statement,
                                    allergen_confidence=allergen_confidence, allergen_reliable=allergen_reliable,

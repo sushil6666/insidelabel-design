@@ -691,6 +691,37 @@ def lost_words_matter(ingredients, lost, allergen_statement=None, lost_ins=()):
     return answers(listed) != answers(listed + added)
 
 
+async def _table_answer(hit, panel, barcode, barcode_source, images, keys, ocr_result, vision, device_id, t0, tr):
+    """
+    D-168: the answer to a table photo for a published pack. Only the checked table
+    (nutrition.check(), D-133) is used: the ingredient list isn't gated, kept or changed.
+    A photo that shows another barcode (D-143's check) or no usable table stores no
+    version; every read is kept with its trace (D-092). One line of the server's words.
+    """
+    check = await run_in_threadpool(barcode_rules.confirm, barcode, [(r, d) for d, _m, r in images],
+                                    ocr_result.get("ocr_text"))
+    tr["barcode_check"] = {**check, "source": barcode_source}
+    state = (panel or {}).get("status")
+    status = ("different_barcode" if check["status"] == "mismatch"
+              else "added" if state in ("read", "partial")
+              else "no_table" if state in (None, "not_read", "missing") else "unclear")
+    saved = None
+    if status == "added" and STORE and hit:
+        saved = _persist(STORE.add_table, hit, table=panel, back_key=keys.get("back"),
+                         verdict=engine.analyze(", ".join(hit["ingredients"])),
+                         model_name=vision.get("_model") or MODEL, prompt_version=PROMPT_VERSION,
+                         engine_version=ENGINE_VERSION, device_id=device_id, latency_ms=_ms(t0), trace=tr)
+        if saved is None:
+            status = "already_waiting"        # another table arrived meanwhile: the same thanks is true
+    scan_id = saved["scan_id"] if saved else _persist(
+        STORE and STORE.record_failed_scan, "refused", error_code=f"table_{status}", device_id=device_id,
+        latency_ms=_ms(t0), back_key=keys.get("back"), trace=tr)
+    words = result_screen.TABLE_ANSWER["added" if status == "already_waiting" else status]
+    return {"table": {"status": status, "text": words}, "scan_id": _str(scan_id),
+            "request_id": tr["request_id"], "nutrition": nutrition.public(panel),
+            "catalogue": {"source": "scan", "queued_for_review": saved and saved["queued"]}}
+
+
 def _ms(t0):
     return int((time.monotonic() - t0) * 1000)
 
@@ -776,6 +807,8 @@ def _catalogue_result(hit, avoid_codes, who, compare_regulators, profiles=(), sc
         "allergen_recheck_suggested": bool(avoid_codes),
         # D-100: no front on file and none waiting for review; the app offers to add one.
         "front_wanted": bool(hit.get("front_wanted")),
+        # D-168: no nutrition table on file or waiting; the result offers one photo of it.
+        "table_wanted": bool(hit.get("table_wanted")),
     }
     display = rel.apply_display_rule(verdict, reliability)
     claim_check = _user_claim_check(claim_checker.check_claims(
@@ -1191,6 +1224,8 @@ async def scan(
     profiles: Optional[str] = Form(None, examples=[""],
                                    description='JSON [{"ref","age","avoid"}], up to 3. No names (D-074).'),
     accept_unconfirmed: bool = Form(False, description="D-118: 'use this one anyway' after a clearer-photo request."),
+    table_only: bool = Form(False, description="D-168: the back photo is a published pack's nutrition table; "
+                                               "only the table is read and added for review."),
     screen_pack: Optional[str] = Form(None, examples=[""],
                                       description='D-130: JSON {"ingredients", "allergen_statement"} from an earlier '
                                                   'result read from a screen; the answer says what differs on this pack.'),
@@ -1238,6 +1273,19 @@ async def scan(
     if barcode_answer not in (None, "confirmed", "rescanned"):
         raise HTTPException(status_code=422, detail={
             "error": "bad_barcode_answer", "detail": 'barcode_answer is "confirmed" or "rescanned".'})
+    # D-168: a table photo is for a published pack that has no table yet: its barcode and
+    # one back photo, nothing else. A replay without a store (repro, tools) has no hit.
+    table_hit = None
+    if table_only:
+        if not barcode or back is None or front is not None or back2 is not None or back3 is not None:
+            raise HTTPException(status_code=422, detail={
+                "error": "bad_table_photo",
+                "detail": "A nutrition table photo goes with the pack's barcode and nothing else."})
+        table_hit = _persist(STORE.find_current, barcode) if STORE else None
+        if STORE and not (table_hit and table_hit.get("table_wanted")):
+            raise HTTPException(status_code=422, detail={
+                "error": "table_not_wanted",
+                "detail": "This pack's nutrition table is already on file or waiting to be checked."})
 
     images = []
     for upload, role in ((back, "back"), (back2, "back2"), (back3, "back3"), (front, "front")):
@@ -1297,7 +1345,8 @@ async def scan(
                     "compare_regulators": compare_regulators,
                     "images": [r for _d, _m, r in images], "back_parts": max(1, len(parts)),
                     "replay": replay is not None,
-                    "accept_unconfirmed": accept_unconfirmed, "screen_pack": screen_pack},
+                    "accept_unconfirmed": accept_unconfirmed, "screen_pack": screen_pack,
+                    "table_only": table_only},
         "timings": {},
     }
 
@@ -1427,7 +1476,8 @@ async def scan(
     # in the pipeline that is not the model grading itself, and it is the only
     # one that has ever caught a silent omission.
     ocr_result = {"available": False, "reason": "no back image"}
-    if back_bytes and vision.get("ingredients"):
+    # D-168: a table photo has no ingredient list, and the table still needs its second reading.
+    if back_bytes and (vision.get("ingredients") or table_only):
         ocr_result = ocr_check.result_of(back_read, vision["ingredients"])
         fixed, recovered = ocr_check.recover_from(ocr_result, vision["ingredients"])
         if recovered:
@@ -1491,6 +1541,9 @@ async def scan(
     alarm = cloud_vision.take_alarm()
     if alarm:
         _setup_alarm(f"ocr_config:{alarm}", cloud_vision.alarm_text(alarm))
+    if table_only:
+        return await _table_answer(table_hit, panel, barcode, barcode_source, images, keys, ocr_result,
+                                   vision, device_id, t0, tr)
     vision["_pairing_attested_by_user"] = pairing_confirmed
     proceed, reliability = rel.assess(vision)
     reliability["client_corrections"] = corrections

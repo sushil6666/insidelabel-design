@@ -177,6 +177,17 @@ def test_how_we_check_page_has_a_section_for_every_word():          # D-127
         assert f'id="{key}"' in r.text, key
 
 
+def test_the_table_offer_comes_last_and_uses_the_servers_words():      # D-168
+    app = JS["app.js"]
+    assert "tablephoto" in app and 'store.get("tableSent", {})' in app
+    # Placed after "More about this pack", the last block of the result (never above D-060's lines).
+    assert app.index('s.more_title || "More about this pack"') < app.index("const offer = s.table_offer;")
+    # Every word is the server's (lenses/screen.py TABLE_OFFER, TABLE_ANSWER).
+    for words in ("Add the nutrition table?", "Send the table", "nothing was added"):
+        assert words not in app
+    assert 'fd.append("table_only", "true")' in JS["lib.js"]
+
+
 def test_the_light_hint_is_for_pouches_and_shiny_packs():             # D-167
     # A tester's glossy, curved ketchup pouch with tiny text (Sushil, 2026-10-07, "yes pls").
     app = JS["app.js"]
