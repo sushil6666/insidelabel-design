@@ -663,6 +663,22 @@ setup alarms.
 
 **NEXT SESSION STARTS HERE (2026-10-01).** Where things stand, newest first:
 
+- **`d174-sent-table` (2026-10-07, web-51, migration 023), from `main` 6d2283b (#125).** D-174 (LOCKED, Sushil: "yes", after items #71 and #72):
+  - **What changed:** a pack sent to us has its nutrition table read once from the photos we hold:
+    - an earlier answer that copied the table is checked again, for free;
+    - otherwise one table-only read (its own prompt; the label prompt is unchanged);
+    - Cloud Vision is the second reader (D-133).
+  - **On /review:** the numbers show with the tick, and `approve()` publishes them. The pack then gets no D-168 table
+    offer.
+  - **Supporting changes:**
+    - the app sends `back_kinds` ("list,table");
+    - a blocked scan keeps Cloud Vision's text;
+    - every read is stored in `review_table_reads`, failures included.
+  - **Waiting on Sushil:**
+    - merge;
+    - `update.sh` (it runs migration 023);
+    - optionally `il tools/table_read.py 71` to measure the read on item #71's photos (about Rs 0.75).
+
 - **`d173-keep-table` (2026-10-07, web-50, no migration, app only), from `main` f57039f (#124).** D-173 (LOCKED, Sushil: "it should reuse as it reads properly in previous photo"): a retake after a refusal, D-118's clearer photo or a partial read drops the list's photos only; the table photo and the front stay (front still dropped after "two packs", D-108; nothing kept for a screen or not-a-pack photo). After the retake, step 2 only, then "Check this pack" with the kept table as the last part, or "Retake the table too". Also on this branch: "What this check covers" no longer says "score" (D-165 follow-up, Sushil: "find all scores and remove"; a test keeps "score" and "grade" out of every shown text), and every ingredient count on a result is the printed entries (D-111 follow-up: "We checked the 11 ingredients on the list ..." for 50 50 Maska Chaska, was "20"). **Waiting on Sushil:** merge; `update.sh`.
 
 - **`d172-recitation` (2026-10-07, web-49, migration 022), from `main` 529cf47 (#123).** D-172 (LOCKED, Sushil: "accepted"): problem report #7's 502s were Gemini's RECITATION guard blocking the answer (Britannia 8901063367456, reproducible). A blocked answer is now `VisionBlocked`; RECITATION is retried twice; one that survives is a refusal (`vision_blocked:<reason>`), never a 502, with "Send it to us" at once when there is a barcode (one scan is enough; photos held only when sent). Words in `screen.py` (Set A). Every model failure stores its text in `scans.model_error` (migration 022) and logs it with the request id; `repro.py show` prints it. A blocked answer replays from the `{"_blocked": ...}` marker, which every other reader of `model_raw` leaves alone (test lists them). **Waiting on Sushil:** merge; `update.sh` (runs migration 022); rescan the Britannia pack: expect the refusal and "Send it to us", or a result if a retry passes.

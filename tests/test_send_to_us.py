@@ -145,7 +145,7 @@ def test_reviewer_sees_every_attempt_and_the_barcode(env):
     page = TestClient(main.app, headers={"Authorization": f"Basic {cred}"}).get(f"/review/item/{rid}").text
     assert d["attempts"][0]["back_image_key"] in page                # both photos on the page
     assert 'value="8901000000040"' in page                          # barcode the app read, pre-filled
-    assert "Nothing was read automatically" in page
+    assert "Type the label from the photos" in page
 
 
 def test_published_by_a_reviewer_then_ready_on_updates(env):
