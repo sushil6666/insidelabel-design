@@ -113,7 +113,7 @@ def test_the_table_photo_waits_for_a_reviewer_and_changes_nothing_published(env)
     findings = q(env, "SELECT count(*) FROM findings WHERE product_version_id = %s", before[0][0])[0][0]
     r = table_photo(bc)
     assert r.status_code == 200, r.text
-    assert r.json()["table"] == {"status": "added", "text": screen.TABLE_ANSWER["added"]}
+    assert r.json()["table"] == {"status": "added", "text": screen.TABLE_ANSWER["added"], "kind": "done"}
     after = versions(env, bc)
     assert after[0] == before[0]                                       # the published version, untouched
     assert len(after) == 2
@@ -144,10 +144,12 @@ def test_no_table_or_an_unclear_one_adds_nothing(env):
     bc = published(env)
     none = table_photo(bc, table={"status": "not_found", "rows": []})   # the model's "no table" (prompt rule)
     assert none.status_code == 200
-    assert none.json()["table"] == {"status": "no_table", "text": screen.TABLE_ANSWER["no_table"]}
+    assert none.json()["table"] == {"status": "no_table", "text": screen.TABLE_ANSWER["no_table"],
+                                     "kind": "problem"}
     unclear = table_photo(bc, ocr="nothing here matches")             # the second reader finds no number
     assert unclear.json()["table"]["status"] == "unclear"
     assert unclear.json()["table"]["text"] == screen.TABLE_ANSWER["unclear"]
+    assert unclear.json()["table"]["kind"] == "problem"                 # D-169
     assert len(versions(env, bc)) == 1
     rows = q(env, "SELECT outcome, error_code FROM scans WHERE id = %s", unclear.json()["scan_id"])
     assert rows == [("refused", "table_unclear")]                     # kept, with its trace (D-092)
@@ -163,7 +165,8 @@ def test_a_photo_of_another_barcode_adds_nothing(env):
     img.convert("RGB").save(buf, "PNG")
     r = table_photo(bc, data=buf.getvalue())
     assert r.status_code == 200, r.text
-    assert r.json()["table"] == {"status": "different_barcode", "text": screen.TABLE_ANSWER["different_barcode"]}
+    assert r.json()["table"] == {"status": "different_barcode",
+                                  "text": screen.TABLE_ANSWER["different_barcode"], "kind": "problem"}
     assert len(versions(env, bc)) == 1
 
 

@@ -282,3 +282,100 @@ def test_every_script_parses_as_a_module(tmp_path):
         r = subprocess.run([node, "--check", str(copy)], capture_output=True, text=True)
         assert r.returncode == 0, (name, r.stderr[-400:])
 
+
+
+# ---------------------------------------------------------------- D-169: message kinds
+CSS = open(os.path.join(WEB_DIR, "app.css"), encoding="utf-8").read()
+KIND_SYMBOL = {"problem": "retake", "avoid": "circlecross", "notpermitted": "triangle",
+               "worth": "circlealert", "info": "info", "done": "check"}
+KIND_TOKEN = {"problem": "--problem", "avoid": "--stop", "notpermitted": "--stop",
+              "worth": "--unsure", "info": "--calm", "done": "--brand"}
+
+
+def _rule(selector):
+    """The declarations of every CSS rule whose selector list names `selector`."""
+    out = []
+    for sel, body in re.findall(r"([^{}]+)\{([^{}]*)\}", _COMMENT.sub("", CSS)):
+        if selector in [s.strip() for s in sel.split(",")]:
+            out.append(body)
+    return " ".join(out)
+
+
+def _tokens(dark):
+    """The first :root block (light) or the first dark-mode :root block's custom properties."""
+    src = _COMMENT.sub("", CSS)
+    if dark:
+        src = src[src.index("@media (prefers-color-scheme: dark)"):]
+    body = re.search(r":root\s*\{([^{}]*)\}", src).group(1)
+    return dict(re.findall(r"(--[\w-]+)\s*:\s*([^;]+);", body))
+
+
+def test_every_kind_has_its_symbol_name_class_and_tokens():
+    icons = JS["icons.js"]
+    for kind, symbol in KIND_SYMBOL.items():
+        assert re.search(rf"^\s*{symbol}: \[", icons, re.M) or symbol == "check", symbol
+        assert re.search(rf'{kind}: \["{symbol}", "[A-Z][^"]+"\]', icons), kind      # its accessible name
+        assert f"var({KIND_TOKEN[kind]})" in _rule(f".ki-{kind}"), kind               # the symbol's ink
+        assert _rule(f".k-{kind}"), kind                                              # the block's colours
+        for dark in (False, True):
+            assert KIND_TOKEN[kind] in _tokens(dark), (kind, dark)
+    for dark in (False, True):
+        assert {"--problem", "--problem-bg"} <= set(_tokens(dark)), dark
+    # kindIcon names the symbol unless the words beside it say the same.
+    assert 'svg.setAttribute("aria-label", label)' in icons and 'svg.setAttribute("role", "img")' in icons
+
+
+def _ratio(a, b):
+    def lum(h):
+        c = [int(h[i:i + 2], 16) / 255 for i in (1, 3, 5)]
+        c = [x / 12.92 if x <= 0.03928 else ((x + 0.055) / 1.055) ** 2.4 for x in c]
+        return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+    hi, lo = sorted((lum(a), lum(b)), reverse=True)
+    return (hi + 0.05) / (lo + 0.05)
+
+
+def test_the_problem_colour_is_readable_in_light_and_dark():
+    for dark in (False, True):
+        t = _tokens(dark)
+        for bg in ("--bg", "--surface", "--problem-bg"):
+            assert _ratio(t["--problem"].strip(), t[bg].strip()) >= 4.5, (dark, bg)
+        for kind, token in KIND_TOKEN.items():                         # each symbol on the page, 3:1
+            for bg in ("--bg", "--surface"):
+                assert _ratio(t[token].strip(), t[bg].strip()) >= 3, (dark, kind, bg)
+
+
+def test_no_error_or_refusal_is_red():
+    for sel in (".error", ".check.bad", ".check.unknown", ".k-problem", ".ki-problem", ".spot.k-problem"):
+        assert "--stop" not in _rule(sel), sel
+    app = JS["app.js"]
+    assert 'class: "error"' not in app.replace('{ class: "error" }, apiMessage', "")   # only through errorLine/kinded
+    assert 'el("p", { class: "error", role: "alert" })' not in app
+    assert '"card warn"' not in app                                     # the retake card was amber
+    for retake in re.findall(r"\(s\.retake\)[^\n]*|\n[^\n]*s\.retake\),", app):
+        assert '"problem"' in retake, retake
+    assert 'icon(res.ok ? "check" : "cross")' not in app
+    assert re.search(r'kinded\("p", res\.ok \? "done" : "problem"', app)
+    assert 'problemSpot(e instanceof ApiError && e.status === 0 ? "wifi" : "retake")' in app
+    assert 'kinded("p", t.kind || "problem"' in app                   # D-168's answer, by the server's kind
+
+
+def test_the_avoid_list_and_not_permitted_stay_red():
+    for sel in (".ki-avoid", ".ki-notpermitted", ".k-avoid", ".k-notpermitted", ".person-line.stop",
+                ".chip.tone-alert", ".add-not_permitted .badge"):
+        assert "--stop" in _rule(sel), sel
+    app = JS["app.js"]
+    assert 'const PERSON_KIND = { contains: "avoid", may_contain: "avoid",' in app
+    assert 'const BADGE_KIND = { not_permitted: "notpermitted", worth_knowing: "worth" };' in app
+    assert 'kindIcon(t.kind === "not_permitted" ? "notpermitted" : "worth")' in app
+    # D-060's allergen tokens keep their meaning: the person lines' classes are unchanged.
+    assert ('const PERSON_TONE = { contains: "stop", may_contain: "stop",\n'
+            '                      cannot_confirm: "unsure", uncertain: "unsure", worth_knowing: "unsure" };') in app
+
+
+def test_the_kind_comes_from_the_server_never_from_words_or_score():
+    from insidelabel.lenses import screen
+    assert set(screen.TABLE_ANSWER_KIND) == set(screen.TABLE_ANSWER)
+    assert set(screen.TABLE_ANSWER_KIND.values()) <= set(KIND_SYMBOL)
+    body = JS["app.js"]
+    for call in re.findall(r"kinded\([^\n]*|kindIcon\([^\n]*", body):
+        assert "score" not in call and ".text ===" not in call, call

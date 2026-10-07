@@ -2,9 +2,13 @@
 // InsideLabel on a 24 px grid: 2 px strokes, round caps and joins, currentColor.
 //
 // Built with createElementNS from constant path data: no innerHTML, no server
-// text (tests/test_web.py). Every icon is decoration (aria-hidden); the words
+// text (tests/test_web.py). Every icon but kindIcon is decoration (aria-hidden); the words
 // beside it carry the meaning. A check means only "this photo is readable",
 // never anything about the food, and no icon says a pack is good or bad.
+//
+// D-169: each kind of message has one fixed symbol (kindIcon below) and one colour
+// (the .k-* classes in app.css), on every screen. A photo problem is never drawn
+// like a finding about the food: it has its own retake arrow and grey-blue.
 
 const NS = "http://www.w3.org/2000/svg";
 
@@ -25,6 +29,12 @@ const SHAPES = {
   clock: [["circle", 12, 12, 8.5], "M12 7.5V12l3 2"],
   pack: ["M6.5 3.5h11l1.5 4v13h-14v-13z", "M5 7.5h14", "M9 11.5h6", "M9 14.5h6", "M9 17.5h3.5"],
   compare: ["M4 4.5h6.5v15H4z", "M13.5 4.5H20v15h-6.5z", "M6.5 9h1.5", "M16 9h1.5", "M6.5 12.5h1.5", "M16 12.5h1.5"],
+  // D-169: the message kinds' own symbols.
+  retake: ["M18.5 12a6.5 6.5 0 1 1-1.9-4.6", "M18.6 4.6v3.6H15"],
+  circlecross: [["circle", 12, 12, 9], "M9.2 9.2l5.6 5.6", "M14.8 9.2l-5.6 5.6"],
+  triangle: ["M12 4l9 15.5H3z", "M12 10v4.2", "M12 17.2v.01"],
+  circlealert: [["circle", 12, 12, 9], "M12 7.6v5.4", "M12 16.4v.01"],
+  info: [["circle", 12, 12, 9], "M12 11.2v5.2", "M12 7.8v.01"],
   wifi: ["M3.5 9.5a12 12 0 0 1 17 0", "M6.5 12.8a7.5 7.5 0 0 1 11 0", "M9.5 16a3.2 3.2 0 0 1 5 0",
          "M12 19.5v.01"],
 };
@@ -56,4 +66,26 @@ export function spot(...names) {
   box.setAttribute("aria-hidden", "true");
   names.forEach(n => box.append(icon(n)));
   return box;
+}
+
+// D-169: one symbol per kind of message. The name is what a screen reader says when the
+// symbol stands alone; beside words that already say the same, pass decorative = true.
+export const KINDS = {
+  problem: ["retake", "Photo problem"],
+  avoid: ["circlecross", "On your avoid list"],
+  notpermitted: ["triangle", "Not permitted in India"],
+  worth: ["circlealert", "Worth a look"],
+  info: ["info", "Information"],
+  done: ["check", "Done"],
+};
+
+export function kindIcon(kind, decorative = false) {
+  const [name, label] = KINDS[kind];
+  const svg = icon(name, "kind-icon ki-" + kind);
+  if (!decorative) {
+    svg.removeAttribute("aria-hidden");
+    svg.setAttribute("role", "img");
+    svg.setAttribute("aria-label", label);
+  }
+  return svg;
 }
