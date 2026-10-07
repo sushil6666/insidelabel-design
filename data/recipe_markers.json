@@ -1,0 +1,14 @@
+{
+  "_meta": {
+    "table": "recipe_markers",
+    "version": "1",
+    "purpose": "D-166: tells a recipe printed on a pack from the pack's own ingredient list. The reliability gate (reliability/gates.py) refuses a read list as no_ingredient_list_found when a clear share of its entries carry one of these markers, so a recipe's 'Curd' or 'Cashews' never shows as the pack's contents. AI reads, rules judge (D-004).",
+    "case": "Saffola Soya Chunks (8901088072236), 2026-10-06: the back photo was the cooking side, whose 'SOYA MASALA GRAVY RECIPE' box has its own 'INGREDIENTS:' heading. The pack's list came from a second photo, so it reached no user.",
+    "rule": "A marker is a measure (a number, then one of measure_units: '2 cups', '1/2 tsp', '1-inch', '3 cloves') or one of cooking_words at the end of an entry (after a comma or a space, or the whole entry: 'finely chopped', 'Salt to taste'). A list is a recipe's when at least threshold.min_entries entries, and at least threshold.min_share of all entries, carry one.",
+    "narrow": "A unit counts only after a number: 'Cup cake mix', '8 Cashews', '1 Bay leaf' don't. Percentages and INS numbers are never measures ('Tomato paste (28%)', 'Raising agent (500(ii))'). A cooking word counts only at an entry's end: 'Chopped nuts', 'Fresh cream' don't. No g or ml: packs print weights."
+  },
+  "measure_units": ["cup", "cups", "tsp", "tbsp", "teaspoon", "teaspoons", "tablespoon", "tablespoons",
+                    "inch", "inches", "clove", "cloves", "pinch"],
+  "cooking_words": ["finely chopped", "thinly sliced", "crushed", "to taste", "(optional)", "fresh"],
+  "threshold": {"min_entries": 3, "min_share": 0.5}
+}
