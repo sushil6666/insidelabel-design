@@ -3138,6 +3138,25 @@ the same side, keep it in the photo too. We check the number against it." D-143 
 scan (back, parts, front) with zxing-cpp, so a code in any photo is confirmed and the reviewer's box doesn't show.
 A hint only: no extra photo, step or screen (Sushil's low-friction rule). web-43. `tests/test_web.py`.
 
+### D-164 · D-093's recovery takes the omitted additive's whole bracket group `LOCKED` (2026-10-07)
+Closes D-160's open item. Proposed by the advisor; **accepted by Sushil 2026-10-07** ("yes"). Built by Claude.
+Why: `ocr_check.recover_from()` cut an omitted entry at the first ")", so "Raising agents (500(ii), 503(ii))" came
+back as "Raising agents (500(ii)" and a bare "(503)". The engine can't read either, so 500 and 503 were missing from
+the result while its caveat said "Recovered and included in the verdict"; since D-160 the gate asked for a clearer
+photo instead, a request the user needn't have had.
+What changes (`extraction/providers/ocr_check.py` only): the entry is the innermost bracket group holding the number,
+closed by bracket matching (`core/tokenize._balanced_span`: round, square and curly alike), with the class name before
+it. Two missing numbers of one group give one entry. A compound ingredient still gives only the inner group
+("emulsifier (322)", not the whole "Compound chocolate (...)" the model kept). A number with no name before it keeps
+the bare "(n)" fallback, as before; the D-160 gate still catches it.
+| Printed, omitted by the model | Recovered before | Recovered now |
+|---|---|---|
+| Raising agents (500(ii), 503(ii)) | Raising agents (500(ii), (503) | Raising agents (500(ii), 503(ii)) |
+| Humectant [420(ii)] | (420) | Humectant [420(ii)] |
+| Mix {Emulsifiers [481(i) & 471]} | (481), (471) | Emulsifiers [481(i) & 471] |
+| Preservative (211), Colour (150d) | unchanged | unchanged |
+`tests/test_recovery_brackets.py`; `tests/test_lost_words_gate.py` now expects the raising agents scan to go through.
+
 ---
 
 ## Open and pending
