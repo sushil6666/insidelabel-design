@@ -163,17 +163,10 @@ def test_an_additive_dropped_by_its_number(env, dropped, lost, numbers):
     # In a scan, D-093's cross-check has already put the omitted additive back in the
     # list (it reads the same Cloud Vision text first). Where the entry it adds can be
     # read, the result shows the additive and the read is confirmed outright.
+    # D-164: nested brackets too. The cross-check used to add "Raising agents (500(ii)" and
+    # "(503)", which the engine can't read, so the gate asked (D-160); it now adds the whole
+    # "Raising agents (500(ii), 503(ii))", and 500 and 503 are in the result.
     r = scan(text, ingredients=PLAIN, statement=None)
-    if dropped.startswith("Raising agents"):
-        # Nested brackets: the cross-check adds "Raising agents (500(ii)" and "(503)", which
-        # the engine can't read, so 500 and 503 aren't in the result. Their numbers are lost
-        # (D-160) and change the result: the gate asks.
-        assert r.status_code == 422, r.text
-        ocr = q(env, "SELECT ocr FROM scans WHERE id = %s", r.json()["scan_id"])[0][0]
-        assert ocr["back"]["independent_read"]["lost"] == []
-        assert ocr["back"]["independent_read"]["lost_ins"] == numbers
-        assert ocr["back"]["independent_read"]["asked"] is True
-        return
     assert r.status_code == 200, r.text
     assert "model_omitted_additive" in [c["code"] for c in r.json()["reliability"]["caveats"]]
     assert set(numbers) <= ins_numbers(r.json()["extracted"]["ingredients"])

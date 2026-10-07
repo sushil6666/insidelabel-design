@@ -60,7 +60,7 @@ except ImportError:                                              # pragma: no co
     AVAILABLE = False
 
 from insidelabel.core import engine
-from insidelabel.core.tokenize import INS_RE
+from insidelabel.core.tokenize import INS_RE, _balanced_span
 from insidelabel.extraction.providers import cloud_vision
 
 # scan-speed (2026-10-01): Tesseract passes run two at a time (the server has two
@@ -553,17 +553,44 @@ def recover_from(result, ingredients):
     """recover_entries() for a result already in hand: no read of its own."""
     if not result.get("available") or not result.get("missing"):
         return list(ingredients or []), []
-    text = result["ocr_text"]
+    text = engine.prefix_bare_ins(result["ocr_text"]).replace("INS ", "")
     recovered = []
     for ins in result["missing"]:
         # Pull the surrounding printed fragment so the entry keeps label wording
         # rather than being synthesised from the number alone.
-        m = re.search(
-            r"([A-Za-z][A-Za-z \-]{2,30}\([^)]*\b" + re.escape(ins) + r"\b[^)]*\))",
-            engine.prefix_bare_ins(text).replace("INS ", ""),
-        )
-        recovered.append(m.group(1).strip() if m else f"({ins})")
+        entry = _printed_entry(text, ins) or f"({ins})"
+        if entry not in recovered:     # D-164: two numbers of one group are one entry
+            recovered.append(entry)
     return list(ingredients or []) + recovered, recovered
+
+
+def _printed_entry(text, ins):
+    """
+    The printed entry holding `ins`: the class name and its whole bracket group,
+    "Raising agents (500(ii), 503(ii))", or None. D-164: the group is closed by
+    bracket matching (core/tokenize), not by the first ")": a regex stopping there
+    cut that entry to "Raising agents (500(ii)" and left 503 as a bare "(503)",
+    which the engine can't read (D-160's open item). The innermost bracket holding
+    the number is taken, so a compound ingredient isn't recovered whole for one
+    additive inside it.
+    """
+    m = re.search(r"\b" + re.escape(ins) + r"\b", text)
+    if not m:
+        return None
+    depth = 0
+    for i in range(m.start() - 1, -1, -1):
+        if text[i] in ")]}":
+            depth += 1
+        elif text[i] in "([{":
+            if depth:
+                depth -= 1
+                continue
+            end = _balanced_span(text, i)
+            name = re.search(r"[A-Za-z][A-Za-z \-]{2,30}$", text[:i])
+            if end is None or not name:
+                return None
+            return (name.group(0) + text[i:end]).strip()
+    return None
 
 
 def corroborate_text(text, needle):
