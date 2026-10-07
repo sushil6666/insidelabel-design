@@ -748,12 +748,15 @@ function addShot(n, kind, b, source, res) {
 
 // After a shot: the photos in hand, the check's line for the last one, and what's next.
 // Not answering the table question is "yes": the pack is read from what's in hand.
-function shotReview(res = undefined) {
+// frontRes: the check's answer for a front photo just added.
+function shotReview(res = undefined, frontRes = undefined) {
   const photos = [pending.back, ...pending.parts];
   const kinds = ["list", ...pending.parts.map((_p, i) => (pending.partKinds || [])[i] || "list")];
   const n = photos.length;
   const tableIn = kinds.includes("table");
   const names = kinds.map((k, i) => k === "table" ? "Nutrition table" : i === 0 ? "Ingredients" : `Ingredients, part ${i + 1}`);
+  const shown = pending.front ? [...photos, pending.front] : photos;
+  const shownNames = pending.front ? [...names, "Front"] : names;
   const retake = () => {
     if (n === 1) { pending.back = null; return show(listShot()); }
     const kind = kinds[n - 1];
@@ -762,12 +765,13 @@ function shotReview(res = undefined) {
     pending.partKinds = (pending.partKinds || []).slice(0, n - 2);
     show(kind === "table" ? tableShot() : listShot());
   };
-  const pics = el("div", { class: n === 1 ? "thumb" : "taken" },
-    photos.map((b, i) => n === 1
+  const pics = el("div", { class: shown.length === 1 ? "thumb" : "taken" },
+    shown.map((b, i) => shown.length === 1
       ? el("img", { src: URL.createObjectURL(b), alt: "Your photo of the ingredient list" })
-      : el("figure", { class: "thumb" }, el("img", { src: URL.createObjectURL(b), alt: `Your photo: ${names[i]}` }),
-          el("figcaption", { class: "muted" }, names[i]))));
-  const line = res === undefined ? null : checkLine(res, retake);
+      : el("figure", { class: "thumb" }, el("img", { src: URL.createObjectURL(b), alt: `Your photo: ${shownNames[i]}` }),
+          el("figcaption", { class: "muted" }, shownNames[i]))));
+  const line = frontRes !== undefined ? checkLine(frontRes, () => show(frontShot()), "front")
+    : res === undefined ? null : checkLine(res, retake);
   const ask = !tableIn && n < MAX_PHOTOS;          // the table question, while there's room for its photo
   const check = button(ask ? "Yes, check this pack" : "Check this pack", () => sendPhotos(), "primary");
   return el("section", { class: "stack shot-review" },
@@ -779,10 +783,37 @@ function shotReview(res = undefined) {
     ask && button("No, photograph the table", () => show(tableShot())),
     el("div", { class: "row between" },
       ask ? button("The list continues", () => show(listShot()), "link") : el("span", {}),
-      button(tableIn ? "Retake the table" : "Retake", retake, "link")));
+      button(tableIn ? "Retake the table" : "Retake", retake, "link")),
+    // D-100: the reviewer reads the brand, name and claims from the front. A link, not a step:
+    // skipping it costs no tap (Sushil, 2026-10-07). Sent with the back in the one /scan.
+    pending.frontWanted && !pending.front &&
+      button("Add the front of the pack too (optional)", () => show(frontShot()), "link"),
+    pending.front && el("label", { class: "choice" },
+      el("input", { type: "checkbox", id: "pairing", checked: pending.pairing,
+                    onchange: e => { pending.pairing = e.target.checked; } }),
+      shown.length === 2 ? " Both photos are of the same pack" : " All these photos are of the same pack"),
+    pending.front && button("Retake the front", () => show(frontShot()), "link"));
 }
 
-// One photo of the label. o: { role, step (a node), title, line, table, after, onShot(blob, res, source) }.
+// The optional front photo (D-100), then back to the same answer screen.
+function frontShot() {
+  const back = () => show(shotReview());
+  return labelShot({
+    role: "front", checkAs: "front", front: true,
+    step: el("p", { class: "kicker" }, "Optional"),
+    title: "Photograph the front",
+    line: "Fill the frame with the front of the pack, including any words printed on it.",
+    after: button("Not now", back, "link"),
+    onShot: (b, res, source) => {
+      pending.front = b;
+      pending.frontSource = source;
+      show(shotReview(undefined, res));
+    },
+  });
+}
+
+// One photo of the label. o: { role, checkAs, step (a node), title, line, table, front, after,
+// onShot(blob, res, source) }.
 // onShot runs once a photo is in and the check didn't turn it down.
 function labelShot(o) {
   const tips = button("Tips", () => tipsSheet(liveOn()), "link");
@@ -797,12 +828,12 @@ function labelShot(o) {
     const preview = el("div", { class: "thumb" });
     let picker = null;
     shot.replaceChildren(...[
-      !o.table && el("figure", { class: "pack-back" }, packBack()),
+      !o.table && !o.front && el("figure", { class: "pack-back" }, packBack()),
       el("p", { class: "cam-line" }, o.line),
       why && kinded("p", "info", { class: "muted" }, why),
       (picker = photoPicker(o.role, "Take the photo", preview, (b, res, source) => {
         if (b && !(res && !res.ok)) o.onShot(b, res, source);
-      }, "back"), leadWith(picker, true), picker),
+      }, o.checkAs || "back"), leadWith(picker, true), picker),
       preview,
       el("div", { class: "row" }, tips)].filter(Boolean));
   };
@@ -866,7 +897,7 @@ async function checkShot(o, file, source, again) {
   if (stopCamera) { stopCamera(); stopCamera = null; }
   const wait = el("div", { class: "thumb" }, el("p", { class: "muted", role: "status" }, "Preparing photo…"));
   show(el("section", { class: "stack shot-review" }, o.step, wait));
-  const out = await checkPhoto(o.role, "back", file, b => wait.replaceChildren(
+  const out = await checkPhoto(o.role, o.checkAs || "back", file, b => wait.replaceChildren(
     el("img", { src: URL.createObjectURL(b), alt: "Your photo" }),
     el("p", { class: "muted", role: "status" }, "Checking the photo…")));
   if (!out) return;

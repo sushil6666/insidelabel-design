@@ -233,10 +233,16 @@ def test_label_photos_come_in_steps():                                   # D-171
     assert 'pending.barcode ? el("div", {}, el("dt", {}, "Barcode"),' in tips
     assert "packBack()" in tips and '"Photograph these"' in app and '"NUTRITION"' in app
     assert app.count('"Not needed"') == 1                           # only the licence
-    # D-100's front is no longer asked on the label steps; the result offers it (catalogue).
-    steps = app[app.index("function photo() {"):app.index("function tipsSheet(")]
-    assert "front" not in steps.lower()
-    assert '"Add the front of the pack?"' in app
+    # D-100's front is a link on the answer screens, not a step (Sushil, 2026-10-07: a new pack
+    # must not lose it; the reviewer reads brand, name and claims from it). It rides the one /scan.
+    review = app[app.index("function shotReview("):app.index("function frontShot(")]
+    assert 'pending.frontWanted && !pending.front &&\n      button("Add the front of the pack too (optional)", () => show(frontShot()), "link")' in review
+    assert '" Both photos are of the same pack"' in review                    # D-035's pairing
+    assert '" All these photos are of the same pack"' in review
+    front = app[app.index("function frontShot("):app.index("// One photo of the label.")]
+    assert 'role: "front", checkAs: "front"' in front and "show(shotReview(undefined, res))" in front
+    assert 'button("Not now", back, "link")' in front and "const back = () => show(shotReview());" in front
+    assert '"Add the front of the pack?"' in app                              # the result's offer stays
     # D-168 and D-133's table photos use the same step 3 camera.
     assert "return labelShot(o);" in app[app.index("function tablephoto("):]
     assert "return tableShot(" in app[app.index("function table() {"):]

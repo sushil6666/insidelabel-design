@@ -3354,10 +3354,15 @@ the shutter is switched on." Built by Claude.
   in 3 parts has no table step (as D-168).
 - **Tips:** D-163's Barcode line (only with a barcode), D-167's Light line, the Frame line and the D-153 drawing move to
   a "Tips" sheet. D-153's opener ("1 or 2 photos", why we read the pack) goes; D-167's result line says it.
-- **The front photo** (D-100) is no longer asked for on the steps. The result's existing offer ("Add the front of the
-  pack?") shows it for a pack in the catalogue without a front. **Not built:** the offer on a new pack's first result
-  (the mockup said so): `/scan` takes a front alone only for a published pack (`back_required` otherwise), and adding it
-  for a pending version is server work not asked for here. A new pack's front is asked for once it is published.
+- **The front photo** (D-100) is not a step. **Sushil, 2026-10-07, before merging:** "a new pack must not lose its front
+  photo (the reviewer reads brand, name and claims from it). /scan already takes the front together with the back, so
+  no server work": the answer screens (step 2's question and step 3's) carry a link, "Add the front of the pack too
+  (optional)", which takes one front photo ("Optional", "Photograph the front", "Not now") and returns to the same
+  screen, showing the front beside the label photos with D-035's "Both photos are of the same pack" box and "Retake
+  the front". A link, not a step: skipping it costs no tap. The front goes up with the back in the one `/scan`, as
+  before. Shown while `frontWanted` (D-100: not for a re-check of a pack whose front is on file). The result's offer
+  ("Add the front of the pack?") stays for a catalogue pack without a front. (The mockup's front offer on a new
+  pack's first result isn't built: `/scan` takes a front alone only for a published pack.)
 - **D-133's and D-168's table photos** use the step 3 screen (D-168 with its server words, `screen.TABLE_OFFER`).
 - **The camera.** With the switch off (the default), each step takes its photo with the phone's camera app
   (`capture="environment"`) or an upload, as before. With `INSIDELABEL_LIVE_SHUTTER=on` (read on `/access` as
@@ -3374,7 +3379,8 @@ the shutter is switched on." Built by Claude.
 - Walked in headless Chromium (Playwright, 390 x 844, light and dark, a fake camera stream, `/scan` answered from a
   replayed reading, `/check-photo` the real server): one photo with the table; list then table; no table; a 2-part list
   then the table (3 photos); upload instead of the camera; the switch off; camera permission refused; D-168's table
-  photo; the "Too dark" hint. No console errors. Not walked: a real phone's camera.
+  photo; the "Too dark" hint; the front link on step 2's answer (live, with "Not now" and the pairing box) and on
+  step 3's (switch off). No console errors. Not walked: a real phone's camera.
 web-48. `tests/test_web.py`, `tests/test_photo_source.py`, `tests/test_deploy.py`.
 
 ---
