@@ -3157,6 +3157,27 @@ the bare "(n)" fallback, as before; the D-160 gate still catches it.
 | Preservative (211), Colour (150d) | unchanged | unchanged |
 `tests/test_recovery_brackets.py`; `tests/test_lost_words_gate.py` now expects the raising agents scan to go through.
 
+
+### D-165 · /how says there is no score `LOCKED` (2026-10-07)
+Refines D-064's wording on the public page. **Decided by Sushil 2026-10-07.** Built by Claude.
+Why: testers, and a future help bot, will ask "what's this pack's score?". D-064 keeps the 0-100 score admin-only, but
+the "How we check" page (`web/site/how.html`, `/how`) never said so, and twice said a note or the nutrition table
+"doesn't change the score", as if there were one.
+- **A new section,** right after the intro, "No score": "InsideLabel doesn't give a pack a score, a grade or stars. One
+  number can't say what matters in your family: the same biscuit can be on one person's avoid list and not another's.
+  So we show what the label says, person by person, with the source for each line, and you decide."
+- **"Ingredients worth knowing"** now ends: "A note is information only: it never changes what we say about your
+  avoid list or an additive. Its tile means the headline says "A few things worth knowing" rather than "No concerns
+  found"."
+- **"Nutrition table"** now ends: "The table is information only, the same way: its tiles can change "No concerns
+  found" to "A few things worth knowing". It adds a line only for a child under 2 in your household, when salt or added
+  sugar is over that threshold."
+- **Checked against the code first:** notes (D-132) and the table (D-133) move no score, band, allergen answer or
+  additive finding; `screen._hfss()` only feeds `baby_lines()` (D-140). But under D-123 a note's or the table's tile
+  turns a "No concerns found" headline into "A few things worth knowing", so the brief's "doesn't change the headline"
+  would have been untrue; Sushil chose (2026-10-07) wording that says what the code does.
+`tests/test_web.py` (the word "score" only inside the "No score" section).
+
 ---
 
 ## Open and pending

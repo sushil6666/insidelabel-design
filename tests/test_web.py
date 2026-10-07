@@ -177,6 +177,19 @@ def test_how_we_check_page_has_a_section_for_every_word():          # D-127
         assert f'id="{key}"' in r.text, key
 
 
+def test_how_we_check_says_there_is_no_score():                         # D-165, D-064
+    # Testers (and a help bot) ask for a pack's score: the page says there is none, and
+    # "score" appears nowhere else on it, so "doesn't change the score" can't come back.
+    r = c.get("/how")
+    start = r.text.index('<h2 id="score">No score</h2>')
+    end = r.text.index("<h2", start + 1)
+    section, rest = r.text[start:end], r.text[:start] + r.text[end:]
+    assert "doesn't give a pack a score, a grade or stars" in section
+    assert not re.search(r"\bscore\b", rest, re.I)
+    assert "doesn't change the score" not in r.text
+    assert start < r.text.index('<h2 id="avoid">')                    # right after the intro
+
+
 def test_photo_ask_names_the_panel_the_count_and_why():                # D-153
     """A tester didn't know which panel "the back" was, how many photos, or why."""
     app = JS["app.js"]
