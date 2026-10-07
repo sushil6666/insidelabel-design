@@ -299,21 +299,36 @@ sudo systemctl restart insidelabel
 curl -s "https://insidelabel.ai/access?device_id=x"   # expect "live_shutter":true
 ```
 
-The app reads the switch when it opens, so close and reopen it after a change. Each scan records
-where its photos came from (`live`, `camera` or `upload`). Side by side, newest first:
+The app reads the switch when it opens, so close and reopen it after a change. Reading
+`settings.env` needs `sudo` (`sudo grep LIVE_SHUTTER /etc/insidelabel/settings.env`); no line
+means off. With the shutter on, the list step shows a live view with a round button inside the
+app; if the phone's camera app opens instead, the app shows one line saying why.
+
+Each scan records where its photos came from (`live`, `camera` or `upload`). Side by side, by
+pack. The counts come from each scan's own model answer, not the catalogue version, because a
+pack's second scan matches the version its first one made:
 
 ```bash
-sudo -u insidelabel psql -d insidelabel -c "SELECT s.created_at, s.id,
-  s.request->'photo_sources'->>'back' AS source, s.outcome, s.error_code,
-  jsonb_array_length(coalesce(v.ingredients, '[]')) AS ingredients, v.nutrition IS NOT NULL AS table,
-  length(s.ocr->'back'->>'text') AS ocr_chars, s.ocr->'back'->>'reader' AS reader
-  FROM scans s LEFT JOIN product_versions v ON v.id = s.product_version_id
-  WHERE s.created_at > now() - interval '1 day' AND s.back_image_key IS NOT NULL
-  ORDER BY s.created_at DESC LIMIT 20"
+sudo -u insidelabel psql -d insidelabel -P pager=off -x -c "
+SELECT s.created_at::time(0) AS at, s.request->>'barcode' AS barcode,
+  s.request->'photo_sources'->>'back' AS source, s.request->>'back_parts' AS parts,
+  s.outcome, s.error_code, s.latency_ms,
+  m.j->>'ingredients_status' AS list, jsonb_array_length(m.j->'ingredients') AS ingredients,
+  m.j->'confidence'->>'ingredients' AS conf,
+  m.j->'nutrition'->>'status' AS table_read, jsonb_array_length(m.j->'nutrition'->'rows') AS table_rows,
+  length(s.ocr->'back'->>'text') AS ocr_chars, s.ocr->'back'->>'reader' AS reader,
+  left(s.model_error, 80) AS model_error
+FROM scans s
+CROSS JOIN LATERAL (SELECT CASE WHEN pg_input_is_valid(s.model_raw, 'jsonb')
+                               THEN s.model_raw::jsonb END AS j) m
+WHERE s.created_at > now() - interval '2 hours' AND s.back_image_key IS NOT NULL
+ORDER BY s.request->>'barcode', s.created_at"
 ```
 
 Each pack's two scans should have the same ingredient count, a table when the photo held one,
-and a similar `ocr_chars`. The review screen shows each scan's photo and reading.
+and a similar `ocr_chars`. The review screen shows each scan's photo and reading. A OnePlus
+camera app stamps "Shot on OnePlus" on its photos and Cloud Vision reads it as label text
+(harmless; the watermark can be turned off in the camera's settings; the app's shutter adds none).
 
 ### The review agents (D-117), in shadow
 
