@@ -3383,6 +3383,45 @@ the shutter is switched on." Built by Claude.
   step 3's (switch off). No console errors. Not walked: a real phone's camera.
 web-48. `tests/test_web.py`, `tests/test_photo_source.py`, `tests/test_deploy.py`.
 
+### D-172 · A label Gemini blocks is retried, then sent to a person; every model failure keeps its text `LOCKED` (2026-10-07)
+Found 2026-10-07, proposed by the advisor. **Accepted by Sushil 2026-10-07: "accepted"**, with his plan answers ("Send
+it to us" at once, the words of Set A, photos held only when sent) and one addition: "anything else that reads
+scans.model_raw (the review agent, health_report, eval or batch tools) must skip the {"_blocked": ...} marker, not
+try to parse it as a model answer; add a test." Built by Claude.
+- **What happened.** Problem report #7 (Sushil, 2026-10-07 18:04 UTC): Britannia 8901063367456, 2 list photos and the
+  front, every photo check passed; `/scan` answered 502 `vision_failed` after about 10 s, twice (scans 8ef0f68f... and
+  96337b79...). `model_raw` was empty and nothing was logged. Re-reading the stored photos on the server with
+  `gemini.analyze_images` gave `Empty response. Finish reason: RECITATION` (6062 input tokens, no output): Gemini's
+  recitation guard blocked the whole answer, since a word-for-word transcription of a widely published label looks
+  like recitation. Reproducible for this pack. `call_gemini_json()` raised a plain VisionError, and `/scan` turned it
+  into "Something went wrong on our side".
+- **The model call** (`gemini.py`): an empty answer whose finish reason is RECITATION, SAFETY, BLOCKLIST,
+  PROHIBITED_CONTENT or SPII raises `VisionBlocked` (a VisionError) with the reason, on the SDK and REST paths.
+  RECITATION is retried up to 2 more times at once, each recorded in `timings.vision_retries`; the others aren't. No
+  seed or temperature change: Gemini 3.x ignores temperature (prompt.py) and a seed isn't documented for 3.6; the
+  default sampling already varies the answer. The prompt and `PROMPT_VERSION` are unchanged (D-081).
+- **The answer** (`/scan`): a block that survives the retries is a refusal (422), never a 502: stored `refused`,
+  `error_code` `vision_blocked:<reason>`, allergens "couldn't confirm" (D-037). With a barcode, `can_send` and the new
+  `send_now` are true: the app shows "Send it to us" as the first button on the first refusal, and `/send-to-us` takes
+  that one scan (D-070's two attempts stay for every other refusal). Without a barcode, nothing can be sent (D-107).
+  Photos are kept as every refusal's (30 days, D-098) and held only when sent (D-080).
+- **The words** (`lenses/screen.py`, Sushil's Set A): headline "We couldn't read this pack automatically."; problem
+  label (D-170) "Our reader couldn't read this label"; fix "Your photos look fine. Send them to us and our team will read
+  the label and add this pack."; without a barcode "Your photos look fine, but our reader couldn't read this label. Try
+  one more photo, a little closer to the list."
+- **Every model failure keeps its text:** VisionError, VisionUnavailable, VisionConfigError and VisionBlocked store
+  `"<class>: <text>"` (first 1000 characters) in the new `scans.model_error` (migration 022) and log it with the request
+  id. Status codes for the others are unchanged (502, 503).
+- **Replay** (D-092): a blocked answer is stored as `model_raw` `{"_blocked": "RECITATION"}` and replays to the same
+  refusal. `gemini.blocked_reason()` is the one place that recognises it. Readers of `scans.model_raw`: `repro`
+  passes it back to `/scan` (a note says the model blocked its answer); `tools/repro.py show` prints `model error`, and
+  `--save` skips a blocked scan (no reading to keep). The review agent's `model_raw` is its own drafts table;
+  `health_report`, the barcode tools and retention don't read it. A test lists every file that mentions `model_raw` and
+  fails on a new one until it is checked. Report #7's two scans predate the marker: they stay "nothing to replay".
+- Walked in headless Chromium, 390 x 844, light and dark: the refusal with its label and fix line, "Send it to us"
+  first and "Retake the photo" second, the send screen with one scan, "Thank you". No console errors.
+web-49. Migration 022. `tests/test_vision_blocked.py`, `tests/test_web.py`.
+
 ---
 
 ## Open and pending

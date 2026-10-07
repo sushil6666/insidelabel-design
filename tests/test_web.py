@@ -459,3 +459,12 @@ def test_problem_labels_come_from_the_server():
     for label in set(screen.PROBLEM_LABEL.values()):
         assert all(label not in js for js in JS.values()), label
     assert "p.label" in JS["app.js"] and "e.body.label" in JS["app.js"] and "res.label" in JS["app.js"]
+
+
+def test_a_blocked_read_offers_send_it_to_us_at_once():                    # D-172
+    app = JS["app.js"]
+    assert 's.send_now && pending.refused.length >= 1 && button("Send it to us", () => go("send"), "primary")' in app
+    assert '}, s.send_now ? "" : "primary"),' in app                        # Retake steps back
+    assert '!s.send_now && pending.refused.length >= 2 && button("Send it to us", () => go("send")),' in app
+    assert "pending.sendNow = !!body.screen.send_now;" in app
+    assert "if (ids.length < (pending.sendNow ? 1 : 2))" in app

@@ -188,6 +188,46 @@ def _save_images(images):
         return {}
 
 
+def _model_error(tr, e):
+    """
+    D-172: a model failure's own words go with the scan (scans.model_error) and into the log
+    with the request id. Report #7's two failures left nothing to read: no text, no line.
+    """
+    tr["model_error"] = f"{type(e).__name__}: {e}"[:1000]
+    log.warning("model failed, request %s: %s", tr.get("request_id"), tr["model_error"])
+
+
+def _blocked_refusal(e, tr, *, t_vision, t0, keys, images, barcode, device_id, avoid_codes, who, people):
+    """
+    D-172: Gemini's guard stopped the answer after its retries. A refusal, never a 502: the
+    scan is stored as refused (vision_blocked:<reason>) with a replay marker (D-092), and a
+    pack with a barcode can go to a person at once ("Send it to us", D-096).
+    """
+    tr["timings"]["vision_ms"] = _ms(t_vision)
+    tr["model_raw"] = gemini.blocked_marker(e.reason)
+    _model_error(tr, e)
+    reliability = {"error": "vision_blocked", "reason": e.reason, "ingredients_complete": False,
+                   "verdict_safe_to_display": False, "caveats": []}
+    scan_id = _persist(STORE and STORE.record_failed_scan, "refused", error_code=f"vision_blocked:{e.reason}",
+                       device_id=device_id, latency_ms=_ms(t0), front_key=keys.get("front"),
+                       back_key=keys.get("back"), trace=tr)
+    return JSONResponse(status_code=422, content={
+        # A refused scan still answers the allergy question: "couldn't confirm" (D-037, D-072).
+        "allergens": allergen_block(avoid_codes, [], None, reliable=False, who=who),
+        "screen": result_screen.build(
+            verdict=None, display=None, claim_check=None, extracted=None,
+            reliability=reliability, profiles=people, allergen_confidence=0.0,
+            allergen_reliable=False, has_barcode=barcode is not None,
+            photos_sent=[r for _d, _m, r in images]),
+        "scan_id": _str(scan_id),
+        "request_id": tr["request_id"],
+        "verdict": None,
+        "product": None,
+        "reliability": reliability,
+        "engine_version": ENGINE_VERSION,
+    })
+
+
 def _setup_alarm(signature, message):
     """
     A setup problem (key, billing, credit) as a 'server' problem report, at most
@@ -1437,10 +1477,16 @@ async def scan(
     try:
         vision, corrections = await run_in_threadpool(gemini.analyze_images, images, raw_response=replay,
                                                       on_attempt=on_retry)
+    except gemini.VisionBlocked as e:
+        # D-172: a guard stopped the answer (report #7: RECITATION on a Britannia pack), after
+        # D-172's retries. Not the photo and not a 502: a refusal a person can read instead.
+        return _blocked_refusal(e, tr, t_vision=t_vision, t0=t0, keys=keys, images=images, barcode=barcode,
+                                device_id=device_id, avoid_codes=avoid_codes, who=who, people=people)
     except gemini.VisionConfigError as e:
         # Our setup (key, credit, billing), not the label and not a busy moment.
         # The user is told it's unavailable; the developer gets an alarm.
         tr["timings"]["vision_ms"] = _ms(t_vision)
+        _model_error(tr, e)
         status = getattr(e, "status", None) or "no_key"
         log.error("model setup problem: %s", e)
         _persist(STORE and STORE.record_failed_scan, "vision_failed", error_code=f"vision_config:{status}",
@@ -1454,6 +1500,7 @@ async def scan(
         })
     except gemini.VisionUnavailable as e:
         tr["timings"]["vision_ms"] = _ms(t_vision)
+        _model_error(tr, e)
         _persist(STORE and STORE.record_failed_scan, "vision_unavailable",
                  device_id=device_id, latency_ms=_ms(t0),
                  front_key=keys.get("front"), back_key=keys.get("back"), trace=tr)
@@ -1469,6 +1516,7 @@ async def scan(
     except gemini.VisionError as e:
         tr["timings"]["vision_ms"] = _ms(t_vision)
         tr["model_raw"] = getattr(e, "raw_text", None)
+        _model_error(tr, e)
         _persist(STORE and STORE.record_failed_scan, "vision_failed",
                  device_id=device_id, latency_ms=_ms(t0),
                  front_key=keys.get("front"), back_key=keys.get("back"), trace=tr)
