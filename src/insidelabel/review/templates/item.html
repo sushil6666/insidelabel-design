@@ -56,12 +56,22 @@
     {% for role in ("back", "front") %}
       {% if d.images[role] %}
         <figure>
-          <figcaption>{{ role|capitalize }} of pack · <a href="/review/media/{{ d.images[role] }}" target="_blank">open full size</a></figcaption>
+          <figcaption>{{ "Nutrition table photo" if (q.kind == "nutrition" and role == "back") else role|capitalize ~ " of pack" }} · <a href="/review/media/{{ d.images[role] }}" target="_blank">open full size</a></figcaption>
           {{ source_note(sources.get(role)) }}
           <a href="/review/media/{{ d.images[role] }}" target="_blank"><img src="/review/media/{{ d.images[role] }}" alt="{{ role }} of pack"></a>
         </figure>
       {% endif %}
     {% endfor %}
+    {% if q.kind == "nutrition" and d.current %}{# D-168: the published pack, to check the table photo is the same pack #}
+      {% for role in ("back", "front") %}{% set key = d.current[role ~ "_image_key"] %}
+        {% if key and key != d.images[role] %}
+          <figure>
+            <figcaption>Published version · {{ role }} of pack · <a href="/review/media/{{ key }}" target="_blank">open full size</a></figcaption>
+            <a href="/review/media/{{ key }}" target="_blank"><img src="/review/media/{{ key }}" alt="published {{ role }} photo"></a>
+          </figure>
+        {% endif %}
+      {% endfor %}
+    {% endif %}
     {% for a in d.attempts %}{% for role in ("back", "front") %}{% set key = a[role ~ "_image_key"] %}
       {% if key %}
         <figure>
@@ -88,7 +98,8 @@
     {% if q.kind == "nutrition" %}
       <div class="panel" style="margin-bottom:12px">
         <b>Nutrition table for a published product</b> (D-133). The ingredients are already reviewed; a new scan
-        read the nutrition table. Check its numbers below against the back photo. Publish only if every number
+        read the nutrition table. Check its numbers below against the table photo, and the table photo against the
+        published pack's photos (D-168: it may be a photo of the table alone). Publish only if every number
         matches; if any doesn't, or the photo is another pack, reject it.
       </div>
     {% endif %}

@@ -73,6 +73,8 @@ def form_for(request, model_raw):
         data["barcode_answer"] = request["barcode_answer"]              # D-146
     if request.get("screen_pack"):
         data["screen_pack"] = json.dumps(request["screen_pack"])          # D-130
+    if request.get("table_only"):
+        data["table_only"] = "true"                                       # D-168
     return data
 
 

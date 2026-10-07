@@ -162,6 +162,17 @@ class Store:
                            WHERE fq.kind = 'front_photo' AND fq.product_version_id = v.id
                              AND fq.status IN ('open', 'claimed')) AS front_wanted"""
 
+    # D-168: a published pack without a nutrition table, and none on its way: no
+    # `nutrition` item waiting and no pending version that already carries one.
+    _TABLE_WANTED = """v.nutrition IS NULL AND NOT EXISTS (
+                          SELECT 1 FROM review_queue tq JOIN product_versions tv ON tv.id = tq.product_version_id
+                           WHERE tv.product_id = p.id AND tq.kind = 'nutrition'
+                             AND tq.status IN ('open', 'claimed'))
+                       AND NOT EXISTS (
+                          SELECT 1 FROM product_versions pv
+                           WHERE pv.product_id = p.id AND pv.status = 'pending_review'
+                             AND pv.nutrition IS NOT NULL) AS table_wanted"""
+
     def adds_version(self, barcode, ingredients):
         """
         Would save_scan() add a catalogue version for this pack (a new product
@@ -187,7 +198,7 @@ class Store:
                           p.net_qty_value, p.net_qty_unit,
                           v.id AS product_version_id, v.version_no, v.ingredients,
                           v.allergen_statement, v.front_claims, v.verified_at, v.nutrition,
-                          v.pack_kind, v.pack_kind_evidence, k.code AS category_code, """ + self._FRONT_WANTED + """
+                          v.pack_kind, v.pack_kind_evidence, k.code AS category_code, """ + self._FRONT_WANTED + ", " + self._TABLE_WANTED + """
                      FROM products p
                      JOIN product_versions v ON v.product_id = p.id AND v.is_current
                      LEFT JOIN brands b ON b.id = p.brand_id
@@ -213,7 +224,7 @@ class Store:
                           p.net_qty_value, p.net_qty_unit,
                           v.id AS product_version_id, v.version_no, v.ingredients,
                           v.allergen_statement, v.front_claims, v.verified_at, v.nutrition,
-                          v.pack_kind, v.pack_kind_evidence, k.code AS category_code, """ + self._FRONT_WANTED + """
+                          v.pack_kind, v.pack_kind_evidence, k.code AS category_code, """ + self._FRONT_WANTED + ", " + self._TABLE_WANTED + """
                      FROM product_versions v
                      JOIN products p ON p.id = v.product_id
                      LEFT JOIN brands b ON b.id = p.brand_id
@@ -254,6 +265,68 @@ class Store:
             self._set_trace(conn, sid, trace)
             queued = self._queue_front(conn, hit["product_version_id"], sid, uid)
             return {"scan_id": str(sid), "queued": queued}
+
+    def _table_version(self, conn, current, table, back_key, verdict, model_name, prompt_version,
+                       engine_version):
+        """
+        D-133, D-168: a pending version with the published content unchanged and the
+        checked nutrition table added; `back_key` is the photo the table was read from.
+        """
+        n = conn.execute("SELECT COALESCE(max(version_no), 0) + 1 AS n FROM product_versions "
+                         "WHERE product_id = %s", (current["product_id"],)).fetchone()["n"]
+        vid = conn.execute(
+            """INSERT INTO product_versions
+                 (product_id, version_no, ingredient_lines, ingredients, allergen_statement,
+                  front_claims, raw_extraction, ingredients_hash, claims_hash,
+                  model_name, prompt_version, engine_version, source, status,
+                  front_image_key, back_image_key, nutrition, pack_kind, pack_kind_evidence)
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'scan', 'pending_review', %s, %s, %s,
+                       %s, %s)
+               RETURNING id""",
+            (current["product_id"], n, Jsonb(current["ingredient_lines"]), Jsonb(current["ingredients"]),
+             current["allergen_statement"], Jsonb(current["front_claims"]),
+             Jsonb({"derived_from_version": current["id"], "nutrition_from_scan": True}),
+             current["ingredients_hash"], current["claims_hash"], model_name, prompt_version,
+             engine_version, current["front_image_key"], back_key, Jsonb(table),
+             current["pack_kind"], current["pack_kind_evidence"] and Jsonb(current["pack_kind_evidence"]))
+        ).fetchone()["id"]
+        self._insert_findings(conn, vid, engine_version, build_findings(
+            current["ingredients"], verdict, None, engine_version))
+        return vid
+
+    def add_table(self, hit, *, table, back_key, verdict, model_name, prompt_version, engine_version,
+                  device_id=None, latency_ms=None, trace=None):
+        """
+        D-168: a photo of the nutrition table for a published pack that has none. The
+        ingredient list isn't read again or changed: the new version copies the published
+        one and adds the checked table, queued as `nutrition` for a reviewer. Returns
+        {"scan_id", "product_version_id", "queued"}, or None when the table is no longer
+        wanted (one arrived meanwhile); the caller then records the scan as refused.
+        """
+        with self._connect() as conn:
+            uid = self._user(conn, device_id)
+            current = conn.execute(
+                "SELECT * FROM product_versions WHERE id = %s AND is_current FOR UPDATE",
+                (hit["product_version_id"],)).fetchone()
+            if current is None:
+                return None
+            wanted = conn.execute(
+                "SELECT " + self._TABLE_WANTED + " FROM product_versions v JOIN products p ON p.id = v.product_id "
+                "WHERE v.id = %s", (current["id"],)).fetchone()
+            if not (wanted and wanted["table_wanted"]):
+                return None
+            conn.execute("UPDATE products SET scan_count = scan_count + 1 WHERE id = %s", (current["product_id"],))
+            vid = self._table_version(conn, current, table, back_key, verdict, model_name, prompt_version,
+                                      engine_version)
+            sid = conn.execute(
+                """INSERT INTO scans (user_id, product_version_id, resolved_via, cache_hit, outcome,
+                                      latency_ms, back_image_key)
+                   VALUES (%s, %s, 'barcode', false, 'verdict', %s, %s) RETURNING id""",
+                (uid, vid, latency_ms, back_key)).fetchone()["id"]
+            self._set_trace(conn, sid, trace)
+            conn.execute("""INSERT INTO review_queue (kind, scan_id, product_version_id, notify_user_id)
+                            VALUES ('nutrition', %s, %s, %s)""", (sid, vid, uid))
+            return {"scan_id": str(sid), "product_version_id": vid, "queued": "nutrition"}
 
     @staticmethod
     def _queue_front(conn, vid, sid, uid):
@@ -389,27 +462,9 @@ class Store:
             elif same:
                 # D-133: a published pack without a table, and this scan read one. A
                 # new version, the same content plus the table, waits for a reviewer.
-                n = conn.execute("SELECT COALESCE(max(version_no), 0) + 1 AS n FROM product_versions "
-                                 "WHERE product_id = %s", (pid,)).fetchone()["n"]
-                vid = conn.execute(
-                    """INSERT INTO product_versions
-                         (product_id, version_no, ingredient_lines, ingredients, allergen_statement,
-                          front_claims, raw_extraction, ingredients_hash, claims_hash,
-                          model_name, prompt_version, engine_version, source, status,
-                          front_image_key, back_image_key, nutrition, pack_kind, pack_kind_evidence)
-                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'scan', 'pending_review', %s, %s, %s,
-                               %s, %s)
-                       RETURNING id""",
-                    (pid, n, Jsonb(current["ingredient_lines"]), Jsonb(current["ingredients"]),
-                     current["allergen_statement"], Jsonb(current["front_claims"]),
-                     Jsonb({"derived_from_version": current["id"], "nutrition_from_scan": True}),
-                     current["ingredients_hash"], current["claims_hash"], model_name, prompt_version,
-                     engine_version, current["front_image_key"], back_key, Jsonb(table),
-                     current["pack_kind"], current["pack_kind_evidence"] and Jsonb(current["pack_kind_evidence"]))
-                ).fetchone()["id"]
+                vid = self._table_version(conn, current, table, back_key, verdict,
+                                          model_name, prompt_version, engine_version)
                 vstatus = "pending_review"
-                self._insert_findings(conn, vid, engine_version, build_findings(
-                    current["ingredients"], verdict, None, engine_version))
                 queued = "nutrition"
             else:
                 n = conn.execute("SELECT COALESCE(max(version_no), 0) + 1 AS n FROM product_versions "
