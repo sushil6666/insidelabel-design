@@ -97,7 +97,7 @@ pytest -q                                    # 375 pass, 1 skipped; DB tests use
 | `INSIDELABEL_ALLOW_REPLAY` | the `replay` form field on `/scan` (D-101) | default off (403); `repro.py`, tools and tests switch it on in-process |
 | `INSIDELABEL_PROXY_HOPS` | rate limits behind a reverse proxy (D-095) | number of proxies; unset → the socket address, `X-Forwarded-For` ignored |
 | `INSIDELABEL_INVITE_ONLY` | the invite-only web beta (D-102) | `on` at deploy: only phones that joined with a code can scan; default off |
-| `INSIDELABEL_LIVE_SHUTTER` | the app's own shutter for the label photos (D-171) | default `off` (the phone's camera app); `on` after the comparison on real packs |
+| `INSIDELABEL_LIVE_SHUTTER` | the app's own shutter for the label photos (D-171) | default `off` (the phone's camera app); **`on` on the server since 2026-10-07** while the comparison runs (§8) |
 | `INSIDELABEL_PUBLIC_URL` | join links printed by `tools/beta.py invite` | e.g. `https://yourdomain.in`; or pass `--base` |
 | `INSIDELABEL_TEST_PG` | run DB tests on a real server | must name a `*_test` database |
 | `INSIDELABEL_CLAIMS_TO_USERS` | show the claim check to users (D-051) | default `off`; turn on only after ≥ 5 claim packs with 0 false contradictions |
@@ -663,6 +663,26 @@ setup alarms.
 
 **NEXT SESSION STARTS HERE (2026-10-01).** Where things stand, newest first:
 
+- **2026-10-07 evening (hand-off, docs only).**
+  - **D-174 is live:** merged (#126) and `update.sh` run (migration 023).
+    - Optional: measure the table read on item #71's photos with `il tools/table_read.py 71`. Export `GEMINI_API_KEY` in that shell first; it costs about Rs 0.75.
+    - The blocked #71 scan stored no Cloud Vision text (it predates D-174), so this measurement pays for a new Cloud Vision read too.
+  - **D-171 shutter comparison, in progress: the shutter is ON for everyone.**
+    - `INSIDELABEL_LIVE_SHUTTER=on` was added to `/etc/insidelabel/settings.env`, and `/access` reports `live_shutter: true`.
+    - Before that the line was missing, which means off. Every scan earlier on 2026-10-07 was `camera`: the photos carry the OnePlus camera app's "Shot on OnePlus" watermark, which Cloud Vision reads as label text.
+    - First shutter scan, 21:01 UTC: 8906112660519, `live`, 2 parts, a result (verdict), list read (1 ingredient, confidence 1.0), table read (12 rows), 889 Cloud Vision characters, 9.4 s.
+    - **Waiting on Sushil:**
+      - that pack again with "Upload a photo" and the camera app;
+      - the other two packs both ways;
+      - which pack was the tiny text, the glossy pouch and the curved bottle, and how the shutter felt to use (focus, glare, lining up the frame);
+      - then the side-by-side query (OPERATIONS.md "The label shutter").
+    - Then keep it on, or set the line to `off` and restart. The result goes in a new DECISIONS.md entry, since D-171 is append-only and says "Result: pending".
+  - **Seen in the same query, not shutter-related:**
+    - **Doodh Marie Gold (8901063371101):** refused 3 times as "no ingredient list found", correctly. Cloud Vision's text holds the price block, the manufacturer and the nutrition paragraph, but no list, so the list is on a face that wasn't photographed. Not a bug.
+    - **8901928222401:** refused twice as `independent_read_failed` with 12 entries read, then a result with 13 entries. Probably Cloud Vision's check catching an entry the model missed. Not investigated.
+    - **8901030949678:** fell back to Tesseract once and took 44.6 s.
+    - **Maska Chaska:** `vision_failed` before D-172 was deployed, then correctly `vision_blocked:recitation` at 19:04, then its table photo (item #72) at 19:18.
+
 - **`d174-sent-table` (2026-10-07, web-51, migration 023), from `main` 6d2283b (#125).** D-174 (LOCKED, Sushil: "yes", after items #71 and #72):
   - **What changed:** a pack sent to us has its nutrition table read once from the photos we hold:
     - an earlier answer that copied the table is checked again, for free;
@@ -683,7 +703,7 @@ setup alarms.
 
 - **`d172-recitation` (2026-10-07, web-49, migration 022), from `main` 529cf47 (#123).** D-172 (LOCKED, Sushil: "accepted"): problem report #7's 502s were Gemini's RECITATION guard blocking the answer (Britannia 8901063367456, reproducible). A blocked answer is now `VisionBlocked`; RECITATION is retried twice; one that survives is a refusal (`vision_blocked:<reason>`), never a 502, with "Send it to us" at once when there is a barcode (one scan is enough; photos held only when sent). Words in `screen.py` (Set A). Every model failure stores its text in `scans.model_error` (migration 022) and logs it with the request id; `repro.py show` prints it. A blocked answer replays from the `{"_blocked": ...}` marker, which every other reader of `model_raw` leaves alone (test lists them). **Waiting on Sushil:** merge; `update.sh` (runs migration 022); rescan the Britannia pack: expect the refusal and "Send it to us", or a result if a retry passes.
 
-- **`d171-label-steps` (2026-10-07, web-48, no migration), from `main` f1bc6e0 (#122).** D-171 (LOCKED, Sushil accepted the mockups 2026-10-07): the label photos come in steps, one job per screen ("Step n of 3"): the ingredient list, then "Is the nutrition table in this photo too?" (Yes reads the pack; No asks for the table as the next part; "The list continues" for D-119's parts; "This pack has no table"). Tips hold D-163/D-167's hints and the drawing; the front photo (D-100) is an optional link on the answer screens, "Add the front of the pack too (optional)", sent with the back in the one `/scan` (Sushil, before merging: a new pack must not lose its front). D-133's and D-168's table photos use the step 3 screen. The app's own shutter (live view, `ImageCapture.takePhoto()`, "Too dark"/"Hold still" on the phone) is behind `INSIDELABEL_LIVE_SHUTTER`, **off**: the camera app until Sushil compares the two. Photos taken with it are recorded as `live`. **Waiting on Sushil:** merge; `update.sh`; switch the shutter on, scan 3 packs both ways (about 6 paid reads, Rs 4, accepted), compare (OPERATIONS.md "The label shutter"); then on for everyone or off, recorded in D-171.
+- **`d171-label-steps` (2026-10-07, web-48, no migration), from `main` f1bc6e0 (#122).** D-171 (LOCKED, Sushil accepted the mockups 2026-10-07): the label photos come in steps, one job per screen ("Step n of 3"): the ingredient list, then "Is the nutrition table in this photo too?" (Yes reads the pack; No asks for the table as the next part; "The list continues" for D-119's parts; "This pack has no table"). Tips hold D-163/D-167's hints and the drawing; the front photo (D-100) is an optional link on the answer screens, "Add the front of the pack too (optional)", sent with the back in the one `/scan` (Sushil, before merging: a new pack must not lose its front). D-133's and D-168's table photos use the step 3 screen. The app's own shutter (live view, `ImageCapture.takePhoto()`, "Too dark"/"Hold still" on the phone) is behind `INSIDELABEL_LIVE_SHUTTER`, **off**: the camera app until Sushil compares the two. Photos taken with it are recorded as `live`. **Merged and deployed; the shutter is on and the comparison is in progress (see the 2026-10-07 evening entry above).** Originally waiting on: merge; `update.sh`; switch the shutter on, scan 3 packs both ways (about 6 paid reads, Rs 4, accepted), compare (OPERATIONS.md "The label shutter"); then on for everyone or off, recorded in D-171.
 
 - **`d170-photo-problems` (2026-10-07, web-47, no migration), from `main` 5c2602d (#121).** D-170 (LOCKED, Sushil: "Accept, no hint line"): a refused photo is shown back to the user (the photo still on the phone) with its problem named in a short label (`screen.PROBLEM_LABEL`), the existing sentence as the fix line, and Retake; the same for the partial read's card and for the photo check before the read (with a Retake button). "Report a mistake" is off the refusal screen. **Waiting on Sushil:** merge; `update.sh`.
 
