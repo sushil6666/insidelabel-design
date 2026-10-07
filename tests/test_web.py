@@ -177,6 +177,14 @@ def test_how_we_check_page_has_a_section_for_every_word():          # D-127
         assert f'id="{key}"' in r.text, key
 
 
+def test_the_light_hint_is_for_pouches_and_shiny_packs():             # D-167
+    # A tester's glossy, curved ketchup pouch with tiny text (Sushil, 2026-10-07, "yes pls").
+    app = JS["app.js"]
+    assert ("Hold the phone close and steady. On a pouch or a shiny pack, lay it on a table, smooth it "
+            "flat and tilt it away from the light.") in app
+    assert "Hold the pack flat and close, without glare." not in app
+
+
 def test_how_we_check_says_there_is_no_score():                         # D-165, D-064
     # Testers (and a help bot) ask for a pack's score: the page says there is none, and
     # "score" appears nowhere else on it, so "doesn't change the score" can't come back.

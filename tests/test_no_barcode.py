@@ -102,7 +102,9 @@ def test_with_a_barcode_the_pack_goes_to_review_as_before(env):
     r = scan(barcode=gtin())
     assert r.status_code == 200 and r.json()["catalogue"]["queued_for_review"] == "new_product"
     assert counts(env) == (before[0] + 1, before[1] + 1, before[2] + 1)
-    assert "catalogue_note" not in r.json()["screen"]
+    # Not the no-barcode note; since D-167, the note a pack we haven't checked yet gets.
+    from insidelabel.lenses import screen
+    assert r.json()["screen"]["catalogue_note"] == screen.UNCHECKED_NOTE != screen.UNLISTED_NOTE
 
 
 def test_an_unlisted_scan_can_be_replayed(env):

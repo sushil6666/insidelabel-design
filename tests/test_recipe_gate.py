@@ -144,3 +144,12 @@ def test_a_refused_recipe_scan_is_stored_and_replays_the_same(env):
     assert out["status"] == 422
     assert out["body"]["reliability"]["error"] == "no_ingredient_list_found"
     assert out["screen"]["retake"] == first.json()["screen"]["retake"] == screen.RETAKE_RECIPE
+
+
+def test_unicode_fractions_are_measures():                              # D-166, added 2026-10-07
+    for entry in ("\u00bd tsp Turmeric powder", "\u00bc cup Curd", "1 \u00bd cups Water", "1\u00bd cups Water"):
+        assert gates.recipe_entries([entry]) == [entry], entry
+    for entry in ("Dry fruits (Cashew 2%)", "Raising agent (500(ii))", "Cup cake mix"):
+        assert gates.recipe_entries([entry]) == [], entry
+    written = ["\u00bd tsp Turmeric powder", "\u00bc cup Curd", "1 \u00bd cups Water", "Salt to taste", "2 Tomatoes"]
+    assert gates.is_recipe(written)

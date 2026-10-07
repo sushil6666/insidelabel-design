@@ -3211,6 +3211,24 @@ Curd, fresh, ..., 8 Cashews, whole (Optional)"). That scan read the pack right f
   every gate refusal, and `tools/repro.py` replays it to the same refusal.
 - With it, `/how` quotes the headlines in the app's own words ("No concerns found in the ingredients").
 `tests/test_recipe_gate.py`.
+- **Added 2026-10-07 (the advisor's queue):** Unicode fractions count as the number of a measure: "½ tsp", "¼ cup",
+  "1 ½ cups", "1½ cups" (`gates._MEASURE`). Percentages and INS numbers still never do.
+
+
+### D-167 · "We haven't checked this pack yet" on the result; a "Light" hint for pouches `LOCKED` (2026-10-07)
+**Decided by Sushil 2026-10-07** (the words and when they show; the hint: "yes pls"). Built by Claude.
+- **Why the line:** review item 66: a tester used "Report a mistake" to ask why the review screen came up after
+  scanning a pack we hadn't seen. Nothing on the result said it was read from their photo and goes to our team.
+- **The line** (`screen.UNCHECKED_NOTE`, in the result's catalogue note card): "We haven't checked this pack yet, so
+  this result is read from your photo. Our team checks it next, and then the next scan of this barcode is instant,
+  for everyone." Shown on every result for a barcode with no checked (published) version yet: the scan that adds it
+  and any scan of it before review (`save_scan()` now returns `checked`). Never without a barcode (D-107, its own
+  note), from a screen (D-130, its own note), for a pack that isn't food (a supplement, infant food or medicine), for a
+  refusal, or for a pack with a checked version (a catalogue hit, a re-read, or a reformulation waiting for review).
+- **The hint** (the photo screen, "Light"; Sushil accepted 2026-10-07, "yes pls"), after a tester's glossy, curved
+  Kissan Chef Solutions Ketchup pouch with tiny text: "Hold the phone close and steady. On a pouch or a shiny pack, lay
+  it on a table, smooth it flat and tilt it away from the light." A hint only, no new step (web-44).
+`tests/test_unchecked_note.py`, `tests/test_web.py`.
 
 ---
 

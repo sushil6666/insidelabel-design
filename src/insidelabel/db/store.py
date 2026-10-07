@@ -448,8 +448,10 @@ class Store:
                 conn.execute(
                     """INSERT INTO review_queue (kind, scan_id, product_version_id, notify_user_id)
                        VALUES (%s, %s, %s, %s)""", (queued, sid, vid, uid))
+            # D-167: `checked` says whether the pack has a published version, so the result can
+            # say "We haven't checked this pack yet" on every scan before its first review.
             return {"scan_id": str(sid), "product_id": pid, "product_version_id": vid,
-                    "version_status": vstatus, "queued": queued}
+                    "version_status": vstatus, "queued": queued, "checked": bool(current)}
 
     _TRACE_COLS = ("request_id", "build", "data_version", "engine_version", "prompt_version",
                    "model_raw", "request", "timings", "ocr", "barcode_check")
