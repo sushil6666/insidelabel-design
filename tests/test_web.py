@@ -188,6 +188,10 @@ def test_how_we_check_says_there_is_no_score():                         # D-165,
     assert not re.search(r"\bscore\b", rest, re.I)
     assert "doesn't change the score" not in r.text
     assert start < r.text.index('<h2 id="avoid">')                    # right after the intro
+    # The headlines are quoted in the app's own words (lenses/screen.py BAND_LABEL).
+    from insidelabel.lenses import screen
+    assert f'"{screen.BAND_LABEL["clean"]}"' in r.text and f'"{screen.BAND_LABEL["mixed"]}"' in r.text
+    assert '"No concerns found"' not in r.text
 
 
 def test_photo_ask_names_the_panel_the_count_and_why():                # D-153

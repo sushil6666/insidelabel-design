@@ -117,8 +117,11 @@ RULES
      printed (e.g. "Tastemaker:").
    - These are NOT ingredients: allergen statements, "may contain traces of",
      storage instructions, nutrition tables, marketing text, serving
-     suggestions. Put an allergen statement in allergen_statement as printed;
-     discard the rest.
+     suggestions, and a recipe printed on the pack (its ingredients, method or
+     serving suggestion). Put an allergen statement in allergen_statement as
+     printed; discard the rest. If the only "Ingredients" heading in the photos
+     belongs to a recipe, set ingredients_status to "not_found" and return an
+     empty ingredients list.
 
 5. FRONT-OF-PACK CLAIMS.
    - front_claims are the marketing claims printed on the front, VERBATIM,

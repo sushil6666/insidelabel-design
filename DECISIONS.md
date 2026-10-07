@@ -3178,6 +3178,40 @@ the "How we check" page (`web/site/how.html`, `/how`) never said so, and twice s
   would have been untrue; Sushil chose (2026-10-07) wording that says what the code does.
 `tests/test_web.py` (the word "score" only inside the "No score" section).
 
+
+### D-166 · A recipe's list is refused as "no ingredient list found" `LOCKED` (2026-10-07)
+Proposed by the advisor; **accepted by Sushil 2026-10-07**, including new retake words for this case. Built by Claude.
+Why: Saffola Soya Chunks (8901088072236), reviewed 2026-10-06. The tester's back photo was the cooking side, whose "SOYA
+MASALA GRAVY RECIPE" box has its own "INGREDIENTS:" heading ("2 cups cooked Saffola Soya Chunks, 3 tsp Oil, ..., 1/4 cup
+Curd, fresh, ..., 8 Cashews, whole (Optional)"). That scan read the pack right from a second photo (version 62:
+"Defatted Soya"), so it **reached no user**; but a scan with the recipe photo alone could have shown a family "Curd"
+(milk) and "Cashews" (tree nut) as the pack's contents and missed the real list.
+- **The rule (D-004),** in `reliability/gates.py` beside the empty-list refusal, so every caller of the gate has it:
+  a list is a recipe's when at least 3 entries, and at least half of all entries, carry a recipe's marker. Then it is
+  refused with the existing `no_ingredient_list_found`, `reason: "recipe"`, a detail naming the count and a hint to
+  photograph the pack's own list.
+- **The markers are data** (`data/recipe_markers.json`, its own file: `normalization.json` is the tokenizer's alias
+  table, this one only the gate's): a measure, a number then a unit (cup, tsp, tbsp, teaspoon, tablespoon, inch,
+  clove, pinch: "2 cups", "1/2 tsp", "1-inch", "3 cloves"), or a cooking word at an entry's end ("finely chopped",
+  "thinly sliced", "crushed", "to taste", "(optional)", "fresh"). Narrow on purpose: "Cup cake mix", "8 Cashews",
+  "Chopped nuts (Cashew 5%)", "Fresh cream", "Tomato paste (28%)" and INS numbers carry none; no g or ml.
+- **Measured:** the Saffola recipe, split as the model returns it, has 21 of 26 entries marked (the other 5 are counts
+  of whole items, "1 Bay leaf", "8 Cashews"). Every list we hold (6 in `gold/`, 8 in `predictions_archive/`, 13 in
+  `tests/fixtures`) has none marked, so the 3-and-half threshold has a wide margin, and one stray measure never
+  refuses. The laptop's `predictions/` is checked by the same test where it exists.
+- **Retake words** (Sushil chose them; the existing ones point to "the part that starts with "Ingredients"", which the
+  recipe box also does): "This looks like a recipe printed on the pack, not its own ingredient list. Look for the
+  list that starts with "Ingredients" near the nutrition table, usually on the back or a side, and photograph that."
+  (`screen.RETAKE_RECIPE`). The headline and "Send it to us" are as for any `no_ingredient_list_found`.
+- **The prompt:** rule 4's "These are NOT ingredients" now names a recipe printed on the pack (its ingredients, method
+  or serving suggestion), and says that if the only "Ingredients" heading belongs to a recipe, `ingredients_status`
+  is "not_found" with an empty list. **`PROMPT_VERSION` changes** (4efbe2214842 to 01696584efa3): the next paid gold run reads with it (only when
+  Sushil says "run the gold set").
+- **Trace (D-092):** the refusal goes through `record_failed_scan(..., trace=tr)` with the model's raw answer, like
+  every gate refusal, and `tools/repro.py` replays it to the same refusal.
+- With it, `/how` quotes the headlines in the app's own words ("No concerns found in the ingredients").
+`tests/test_recipe_gate.py`.
+
 ---
 
 ## Open and pending

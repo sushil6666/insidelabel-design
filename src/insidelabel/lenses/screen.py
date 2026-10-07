@@ -102,6 +102,11 @@ RETAKE_BACK = {
                        "ingredient list, the part that starts with \"Ingredients\".",
 }
 RETAKE_DEFAULT = "We couldn't read this label. Retake the photo of the ingredient list."
+# D-166: the only list read was a recipe's printed on the pack. It has its own
+# "Ingredients" heading, so RETAKE's words could send the user back to it.
+RETAKE_RECIPE = ("This looks like a recipe printed on the pack, not its own ingredient list. Look for the "
+                 "list that starts with \"Ingredients\" near the nutrition table, usually on the back or a "
+                 "side, and photograph that.")
 RETAKE_PARTIAL = "Part of the ingredient list was cut off or hard to read. Retake it to check the rest."
 
 _STRONGEST = {"contains": 0, "may_contain": 1, "cannot_confirm": 2, "uncertain": 3, "not_listed": 4}
@@ -1194,7 +1199,8 @@ def build(*, verdict, display, claim_check, extracted, reliability, profiles,
             "headline": {"text": (HEADLINE_BACK.get(error) if "front" in photos_sent else None)
                                  or HEADLINE.get(error, "We couldn't read this label clearly."),
                          "source": {"kind": "reliability", "ref": error}},
-            "retake": (RETAKE_BACK.get(error) if "front" in photos_sent else None)
+            "retake": (RETAKE_RECIPE if reliability.get("reason") == "recipe" else None)
+                      or (RETAKE_BACK.get(error) if "front" in photos_sent else None)
                       or RETAKE.get(error, RETAKE_DEFAULT),
             # D-096/D-103: a pack we couldn't read can go to a reviewer; a photo
             # that isn't a pack can't, and neither can a pack without a barcode (D-107).

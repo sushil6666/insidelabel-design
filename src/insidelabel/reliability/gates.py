@@ -17,6 +17,12 @@ are really there - but "clean" is unsupported, because the evidence that would
 have overturned it is exactly the evidence you could not read.
 """
 
+import json
+import os
+import re
+
+from insidelabel.trace import DATA_DIR
+
 # (back_status, ingredients_status) -> hard refusal reason
 _REFUSE = {
     "not_found": "no_ingredient_list_found",
@@ -36,6 +42,30 @@ SCREEN_CAVEAT = {
     "code": "read_from_screen",
     "detail": "The ingredient list was read from a photo of a screen, not from the pack.",
 }
+
+
+# D-166: a recipe printed on the pack, read as if it were the pack's list. The
+# markers are data (data/recipe_markers.json); the rule is here, so the model's
+# reading never decides it alone (D-004).
+with open(os.path.join(DATA_DIR, "recipe_markers.json"), encoding="utf-8") as _f:
+    _RECIPE = json.load(_f)
+_MEASURE = re.compile(r"(?<![\w.])\d+(?:[./]\d+)?(?:\s*-\s*|\s+)(?:%s)\b"
+                      % "|".join(map(re.escape, _RECIPE["measure_units"])), re.I)
+_COOKING = re.compile(r"(?:^|[,\s])(?:%s)\s*\.?$"
+                      % "|".join(map(re.escape, _RECIPE["cooking_words"])), re.I)
+
+
+def recipe_entries(ingredients):
+    """The entries that carry a recipe's marker: a measure ("2 cups", "1/2 tsp", "1-inch")
+    or a cooking word at the entry's end ("finely chopped", "Salt to taste")."""
+    return [e for e in ingredients or [] if _MEASURE.search(e) or _COOKING.search(e.strip())]
+
+
+def is_recipe(ingredients):
+    """D-166: a clear share of the entries carry a recipe's marker (data/recipe_markers.json)."""
+    t = _RECIPE["threshold"]
+    n = len(recipe_entries(ingredients))
+    return n >= t["min_entries"] and n >= t["min_share"] * len(ingredients or [])
 
 
 def drop_unusable_front(vision):
@@ -117,6 +147,18 @@ def _assess(vision):
             "error": "no_ingredients_extracted",
             "detail": "Ingredient array is empty.",
             "hint": "An empty list scores 100/100 CLEAN. Refused rather than returned.",
+        }
+    if is_recipe(vision["ingredients"]):
+        # D-166: the only list read is a recipe's (its own "Ingredients:" heading).
+        # The same refusal as no list at all; `reason` lets the screen say why.
+        marked = len(recipe_entries(vision["ingredients"]))
+        return False, {
+            "error": "no_ingredient_list_found",
+            "reason": "recipe",
+            "detail": (f"The list read is a recipe's printed on the pack ({marked} of "
+                       f"{len(vision['ingredients'])} entries carry a measure or a cooking word), "
+                       "not the pack's own ingredient list."),
+            "hint": "Photograph the pack's own ingredient list, not a recipe printed on it.",
         }
 
     # 2. Partial read -> verdict returned, but a CLEAN result is not displayable.
