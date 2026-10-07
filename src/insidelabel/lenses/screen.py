@@ -109,6 +109,55 @@ RETAKE_RECIPE = ("This looks like a recipe printed on the pack, not its own ingr
                  "side, and photograph that.")
 RETAKE_PARTIAL = "Part of the ingredient list was cut off or hard to read. Retake it to check the rest."
 
+# D-170 (Sushil, 2026-10-07, "Accept, no hint line"): a refused or rejected photo is shown
+# back to the user with its problem named in a short label; the fix line is the sentence
+# above (RETAKE and friends), unchanged. Keyed by what the server already knows: the
+# reliability error, the photo check's code (photo_check.MESSAGES, CHECK_MESSAGES,
+# barcode.MESSAGES), "partial", "recipe" (D-166) and "screen_unread" (D-130).
+_NO_LIST = "No ingredient list in this photo"
+_BARCODE_UNCLEAR = "Barcode not clear"
+PROBLEM_LABEL = {
+    "photo_too_small": "Too small",
+    "photo_blank": "Too dark or blank",
+    "not_an_image": "Not a photo we can read",
+    "ingredient_list_unreadable": "Too blurred or dark to read",
+    "partial": "Part of the list is cut off",
+    "no_ingredient_list_found": _NO_LIST,
+    "back_not_read": _NO_LIST,
+    "no_ingredients_extracted": _NO_LIST,
+    "recipe": "This is a recipe, not the pack's list",
+    "back_is_a_screen": "This is a screen, not a pack",
+    "screen_unread": "No list we can read on this screen",
+    "not_a_food_pack": "Not a food pack",
+    "product_mismatch": "Front and back look like different packs",
+    "independent_read_failed": "One clearer photo, please",
+    "unknown": "We couldn't read this label",
+    # A barcode photo (D-104). A code that fails its length or check digit was misread.
+    "no_barcode": "No barcode found",
+    "several_barcodes": "More than one barcode",
+    "case_code": "A carton's barcode",
+    "store_code": "A shop's own label",
+    "not_a_product": "Not a food pack's barcode",
+    "barcode_unsure": _BARCODE_UNCLEAR,
+    "length": _BARCODE_UNCLEAR,
+    "check_digit": _BARCODE_UNCLEAR,
+}
+
+
+def problem(code, fix):
+    """D-170: one photo problem for the app to draw: its code, short label and fix line."""
+    if code not in PROBLEM_LABEL:
+        code = "unknown"
+    return {"code": code, "label": PROBLEM_LABEL[code], "fix": fix}
+
+
+def _partial_problem(out, reliability):
+    """D-170: a partial read's retake card names its problem. Added only then, so a full
+    read's screen block is exactly as before."""
+    if not reliability.get("ingredients_complete", True):
+        out["problem"] = problem("partial", RETAKE_PARTIAL)
+
+
 _STRONGEST = {"contains": 0, "may_contain": 1, "cannot_confirm": 2, "uncertain": 3, "not_listed": 4}
 
 # D-111: one badge per additive, each a fact from its row in data/additives.json
@@ -1216,20 +1265,24 @@ def build(*, verdict, display, claim_check, extracted, reliability, profiles,
             "headline": {"text": SCREEN_HEADLINE_UNREAD,
                          "source": {"kind": "reliability", "ref": reliability.get("error")}},
             "retake": SCREEN_RETAKE,
+            "problem": problem("screen_unread", SCREEN_RETAKE),
             "can_send": False,
         }
 
     if verdict is None:
         error = reliability.get("error")
+        recipe = reliability.get("reason") == "recipe"
+        retake = ((RETAKE_RECIPE if recipe else None)
+                  or (RETAKE_BACK.get(error) if "front" in photos_sent else None)
+                  or RETAKE.get(error, RETAKE_DEFAULT))
         return {
             "state": "retake",
             "people": people,
             "headline": {"text": (HEADLINE_BACK.get(error) if "front" in photos_sent else None)
                                  or HEADLINE.get(error, "We couldn't read this label clearly."),
                          "source": {"kind": "reliability", "ref": error}},
-            "retake": (RETAKE_RECIPE if reliability.get("reason") == "recipe" else None)
-                      or (RETAKE_BACK.get(error) if "front" in photos_sent else None)
-                      or RETAKE.get(error, RETAKE_DEFAULT),
+            "retake": retake,
+            "problem": problem("recipe" if recipe else error, retake),     # D-170
             # D-096/D-103: a pack we couldn't read can go to a reviewer; a photo
             # that isn't a pack can't, and neither can a pack without a barcode (D-107).
             "can_send": error not in NOT_A_PACK and error != "product_mismatch" and has_barcode,
@@ -1287,6 +1340,7 @@ def build(*, verdict, display, claim_check, extracted, reliability, profiles,
         "ingredients": ingredients,
         "retake": None if reliability.get("ingredients_complete", True) else RETAKE_PARTIAL,
     }
+    _partial_problem(out, reliability)
     # D-111: every additive as a card with its badge, most serious first. The same
     # items stay in worth_knowing / ordinary for older app versions.
     adds = sorted((i for i in worth + ordinary if i["source"]["kind"] == "additive"),
@@ -1617,6 +1671,7 @@ def _kind_screen(kind, *, people, ingredients, reliability, nutra_input=None, pr
         "more_title": MORE_TITLE,
         "checked": "We checked the ingredients against your avoid lists.",
     }
+    _partial_problem(out, reliability)
     if code == "supplement":
         tiles, details, sections, summary = _supplement_parts(
             kind, ingredients=ingredients, vision=(nutra_input or {}).get("vision"),

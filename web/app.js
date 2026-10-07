@@ -834,8 +834,13 @@ function photoPicker(role, label, preview, onPick, checkAs = role) {
       ? kinded("p", "problem", { class: "check unknown", role: "status" },
           role === "barcode" ? "We couldn't check this photo just now. Try again in a moment."
                              : "We couldn't check this photo just now. It will be checked when you continue.")
-      : kinded("p", res.ok ? "done" : "problem", { class: "check " + (res.ok ? "ok" : "bad"), role: "status" },
-          res.message);
+      : !res.ok && res.label
+        // D-170: the problem named over the server's sentence, and a way straight back to the camera.
+        ? kinded("div", "problem", { class: "check bad", role: "status" },
+            el("strong", { class: "problem-label" }, res.label), el("p", {}, res.message),
+            button("Retake", () => document.getElementById("pick-" + role)?.click()))
+        : kinded("p", res.ok ? "done" : "problem", { class: "check " + (res.ok ? "ok" : "bad"), role: "status" },
+            res.message);
     preview.replaceChildren(img, line);
     onPick(blob, res, source);
   };
@@ -1120,7 +1125,9 @@ function result(id, sub, tileId) {
 
   if (s.state === "retake") {
     put(
-      kinded("p", "problem", { class: "card" }, s.retake),
+      // D-170: the user's own photo with its problem named; older results keep the one line.
+      s.problem ? photoProblem(s.problem, heldPhotos(h, s.problem.code === "product_mismatch"))
+                : kinded("p", "problem", { class: "card" }, s.retake),
       button("Retake the photo", () => {
         pending.back = null;
         pending.parts = []; pending.partSources = [];
@@ -1139,7 +1146,8 @@ function result(id, sub, tileId) {
         "Still not working? Try daylight, or another pack. Some labels are printed too small or too shiny to read."),
       // D-070: after two refusals, a person reads the photos instead.
       pending.refused.length >= 2 && button("Send it to us", () => go("send")),
-      reportLink(h), problemLink());
+      // D-170: nothing was read, so there is no mistake to report; an app problem still can be.
+      problemLink());
     return view;
   }
 
@@ -1155,7 +1163,7 @@ function result(id, sub, tileId) {
     (s.sections || []).forEach(x => put(el("div", { class: "card section" },
       el("h2", {}, x.title), x.lines.map(t => el("p", {}, t)),
       x.sources?.length > 0 && el("details", { class: "more" }, el("summary", {}, "Sources"), sourceList(x.sources)))));
-    if (s.retake) put(kinded("div", "problem", { class: "card" }, el("p", {}, s.retake),
+    if (s.retake) put(partialRetake(s, h,
       button("Retake the ingredients photo", () => { pending = { ...pending, back: null, barcode: h.barcode }; go("photo"); })));
     if (s.recheck) put(el("div", { class: "card note" }, el("p", {}, s.recheck),
       button("Photograph the ingredients list", () => { resetPending(); pending.barcode = h.barcode; go("photo"); })));
@@ -1191,7 +1199,7 @@ function result(id, sub, tileId) {
 
   // A partial read, the table photo and the D-073 re-check ask for something now,
   // with the pack in hand, so they stay on the first screen.
-  if (s.retake) put(kinded("div", "problem", { class: "card" }, el("p", {}, s.retake),
+  if (s.retake) put(partialRetake(s, h,
     button("Retake the ingredients photo", () => { pending = { ...pending, back: null, barcode: h.barcode }; go("photo"); })));
   const askTable = s.nutrition && canAskTable(s.nutrition, h);
   if (askTable) put(el("div", { class: "card note" }, el("p", {}, s.nutrition.text),
@@ -1723,6 +1731,31 @@ function kinded(tag, kind, attrs, ...kids) {
   return el(tag, { ...attrs, class: `${attrs.class || ""} kmsg k-${kind}`.trim() }, kindIcon(kind), ...kids);
 }
 
+// D-170: a photo the server couldn't use, shown back to the user: their own photo (still on this
+// phone, nothing uploaded again), the problem's short label, then the fix line. Every word is the
+// server's (screen.PROBLEM_LABEL and the RETAKE lines); the photo shows only while it is held.
+function photoProblem(p, photos = [], ...after) {
+  return el("div", { class: "card k-problem photo-problem", role: "note" },
+    photos.length > 0 && el("div", { class: "problem-photos" },
+      photos.map(([b, alt]) => el("img", { src: URL.createObjectURL(b), alt }))),
+    el("p", { class: "problem-label" }, kindIcon("problem"), p.label),
+    el("p", {}, p.fix), ...after);
+}
+
+// The photos this result was read from, while this phone still holds them (pending is
+// cleared on a new scan and lost on a reload). Different packs: the front beside the back.
+function heldPhotos(h, both = false) {
+  if (pending.resultId !== h.id || !pending.back) return [];
+  return [both && pending.front && [pending.front, "Your front photo"], [pending.back, "Your back photo"]]
+    .filter(Boolean);
+}
+
+// A partial read (D-066): its retake card names the problem over the photo too (D-170).
+function partialRetake(s, h, ...after) {
+  return s.problem ? photoProblem(s.problem, heldPhotos(h), ...after)
+                   : kinded("div", "problem", { class: "card" }, el("p", {}, s.retake), ...after);
+}
+
 // A form's error line is a problem, never red. Every form sets its words with textContent,
 // so setting it redraws the symbol beside them; "" empties the line (.error:empty hides it).
 function errorLine() {
@@ -1754,6 +1787,8 @@ function apiErrorView(e, retry) {
   return el("section", { class: "stack" },
     problemSpot(e instanceof ApiError && e.status === 0 ? "wifi" : "retake"),
     el("h1", {}, "That didn't work"),
+    // D-170: a photo /scan turned down before the read names its problem (the server's label).
+    e.body?.label && el("p", { class: "problem-label k-problem" }, kindIcon("problem"), e.body.label),
     el("p", {}, apiMessage(e)),
     retry && button("Try again", retry, "primary"),
     problemLink(),

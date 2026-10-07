@@ -959,6 +959,12 @@ CHECK_MESSAGES = {
 }
 
 
+def _photo_problem(role, code, message):
+    """A photo the check turned down: the code and message as before, and D-170's short label."""
+    return {"role": role, "ok": False, "problem": code, "message": message,
+            "label": result_screen.problem(code, message)["label"], "barcode": None}
+
+
 @app.post("/check-photo")
 async def check_photo(
     request: Request,
@@ -982,21 +988,18 @@ async def check_photo(
     data, mime, _role = img
     bad = photo_check.check(data, mime, role, min_size=role != "barcode")
     if bad:
-        return {"role": role, "ok": False, "problem": bad[0], "message": bad[1], "barcode": None}
+        return _photo_problem(role, bad[0], bad[1])
     good, reasons = await run_in_threadpool(barcode_rules.read_from_photo, data)
     code = good[0] if len(good) == 1 else None
     if role == "barcode":
         if len(good) > 1:
-            return {"role": role, "ok": False, "problem": "several_barcodes",
-                    "message": CHECK_MESSAGES["several_barcodes"], "barcode": None}
+            return _photo_problem(role, "several_barcodes", CHECK_MESSAGES["several_barcodes"])
         if code:
             return {"role": role, "ok": True, "problem": None,
                     "message": CHECK_MESSAGES["barcode_ok"].format(code=code), "barcode": code}
         if reasons:                               # a barcode, but not a retail pack's (a book, a carton…)
-            return {"role": role, "ok": False, "problem": reasons[0],
-                    "message": barcode_rules.MESSAGES[reasons[0]], "barcode": None}
-        return {"role": role, "ok": False, "problem": "no_barcode",
-                "message": CHECK_MESSAGES["no_barcode"], "barcode": None}
+            return _photo_problem(role, reasons[0], barcode_rules.MESSAGES[reasons[0]])
+        return _photo_problem(role, "no_barcode", CHECK_MESSAGES["no_barcode"])
     msg = CHECK_MESSAGES[f"{role}_ok"] + (CHECK_MESSAGES["barcode_too"].format(code=code) if code else "")
     return {"role": role, "ok": True, "problem": None, "message": msg, "barcode": code}
 
@@ -1320,7 +1323,8 @@ async def scan(
             if bad:
                 log.warning("photo refused: %s %s", role, bad[0])
                 raise HTTPException(status_code=415 if bad[0] == "not_an_image" else 422, detail={
-                    "error": bad[0], "role": role, "detail": bad[1]})
+                    "error": bad[0], "role": role, "detail": bad[1],
+                    "label": result_screen.PROBLEM_LABEL[bad[0]]})                 # D-170
 
     # D-119: a long list in parts becomes one back photo here; from now on
     # the scan is ordinary (one image for Gemini, Cloud Vision, storage, replay).

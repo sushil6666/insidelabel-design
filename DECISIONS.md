@@ -3301,6 +3301,41 @@ Style and markup only: no finding or word changes (D-004, D-091).
 `tests/test_web.py` (every kind's symbol, name, class and light and dark tokens; no error or refusal uses `--stop`;
 the avoid list and `not_permitted` still do), `tests/test_table_photo.py`.
 
+### D-170 · A refused photo is shown back with its problem named `LOCKED` (2026-10-07)
+A tester's feedback via Sushil, 2026-10-07: "if ingredients are not clear user should get information what went
+wrong". A refusal gave one sentence and never showed the user their own photo, so the tester didn't know what to
+change. **Accepted by Sushil 2026-10-07: "Accept, no hint line"** (the words below and light and dark samples).
+Built by Claude.
+- **The refusal screen** shows the user's own photo (still on the phone; nothing is uploaded again), the problem's
+  short label with the D-169 photo-problem symbol and colour, the fix line, and Retake. For "different packs" the
+  front sits beside the back. After a reload or on an older result, the label and fix line show without the photo.
+  The partial read's retake card does the same. "Report a mistake" is dropped from the refusal screen (nothing was
+  read, so there is nothing to correct); "Something not working? Report a problem" stays.
+- **The photo check** (`/check-photo`, before the read) shows the label over its sentence, with a Retake button
+  that opens the same camera or file picker. `/scan`'s own photo-check refusals carry the label too.
+- **Words** (`lenses/screen.py` `PROBLEM_LABEL`, D-091; the fix lines are the existing sentences, unchanged), each
+  from what the server already knows:
+
+| Source | Label |
+|---|---|
+| `photo_too_small` / `photo_blank` / `not_an_image` (photo_check.py) | Too small / Too dark or blank / Not a photo we can read |
+| `ingredient_list_unreadable` | Too blurred or dark to read |
+| partial read (`ingredients_complete` false) | Part of the list is cut off |
+| `no_ingredient_list_found`, `back_not_read`, `no_ingredients_extracted` | No ingredient list in this photo |
+| `reason: "recipe"` (D-166) | This is a recipe, not the pack's list |
+| `back_is_a_screen` (D-103) / a screen we couldn't read (D-130) | This is a screen, not a pack / No list we can read on this screen |
+| `not_a_food_pack` | Not a food pack |
+| `product_mismatch` | Front and back look like different packs |
+| `independent_read_failed` (D-118) | One clearer photo, please |
+| any other code | We couldn't read this label |
+| barcode photo: `no_barcode`, `several_barcodes`, `case_code`, `store_code`, `not_a_product`, `barcode_unsure` (and a misread `length` / `check_digit`) | No barcode found, More than one barcode, A carton's barcode, A shop's own label, Not a food pack's barcode, Barcode not clear |
+
+- **Not built** (Sushil's answer): a line naming glare, a cut edge or blur from the model's `extraction_notes`.
+- No new step, check, screen, model call or prompt change. The `screen` block gains `problem` ({code, label, fix});
+  `retake` is unchanged, so older app versions and replays (D-092) read as before.
+`tests/test_photo_problems.py` (every refusal code has a label: the codes are gathered from gates.py, photo_check,
+`CHECK_MESSAGES` and barcode.MESSAGES), `tests/test_web.py`.
+
 ---
 
 ## Open and pending
