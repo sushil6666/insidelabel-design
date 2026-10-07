@@ -3443,7 +3443,30 @@ day. Built by Claude. App only.
 - Walked in headless Chromium, 390 x 844, light and dark, live shutter on: list and table, refused, Retake, step 2,
   the kept table sent as back2 (the same bytes as before the retake); "Retake the table too" goes to step 3; a not-a-pack
   refusal asks for the table again; a partial read's retake keeps the table. No console errors.
-web-50. `tests/test_web.py`.
+- **Follow-up to D-165, on this branch (Sushil, 2026-10-07: "find all scores and remove"):** a user saw "Sugar, salt
+  and fat quantities on the nutrition panel are not part of the score." under "What this check covers"
+  (`reliability/gates.py` `ALWAYS_DISCLOSE[0]`). It broke D-064/D-165 and was out of date since D-133. Now: "The
+  headline and findings come from the ingredient list. When we can read the nutrition table, its numbers are shown
+  beside ICMR-NIN's guide, as information." The partial-list caveat now says "finding nothing here doesn't mean there
+  is nothing to find"; the single-read caveat no longer says "grade band"; the empty-list hints no longer say "scores
+  100/100". `tests/test_no_score_words.py`: no shown text (every /scan screen, disclosures, caveat details, the
+  screen's word tables, the data tables' shown fields, the app's strings) says "score" or "grade". /how's "No score"
+  section (D-165) is the one place the word belongs.
+- **Follow-up to D-111, on this branch (Sushil, 2026-10-07: "yes"):** the scope line said "20 ingredients checked" for
+  50 50 Maska Chaska, which prints 11 entries: the count was the engine's parsed parts (palm, palmolein, 503, 341 ...
+  each on its own). Every count of ingredients on a result is now the list's printed entries:
+  - the scope line (`screen.py` "scope"): "We checked the 11 ingredients on the list against 69 additives and 17
+    processing markers in our tables." (", and the claims on the front." when claims are shown, D-051). It replaces the
+    separate "We checked the ingredients." line (`checked` is now empty), which would have said it twice;
+  - "N other ingredients look ordinary": now the glance ring's "other" count, the printed entries nothing else on the
+    screen names (was parsed parts minus the named ones);
+  - already printed entries, unchanged: the glance ring (D-127) and the sugar chip ("2nd of 11");
+  - not counts of ingredients, so they stay: the additives' count ("Additives on this pack (5)", "The other 4 are
+    permitted"), which counts additives (one entry "Raising agents [503(ii), 500(ii), 341(i)]" holds three); the
+    processing row's "N more", which counts industrial ingredient names; the tallies (D-123), which are sentences with
+    no count. `tests/test_screen.py` with a list shaped like Maska Chaska's (11 entries, 23 parsed parts; the exact
+    printed list isn't in the repo).
+web-50. `tests/test_web.py`, `tests/test_screen.py`, `tests/test_no_score_words.py`.
 
 ---
 

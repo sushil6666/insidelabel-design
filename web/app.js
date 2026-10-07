@@ -1622,7 +1622,7 @@ function moreAbout(h, askTable) {
   // What this covers - stated, never silent (D-037).
   put(el("details", { class: "item" }, el("summary", {}, "What this check covers"),
     el("ul", { class: "plain small" }, (h.disclosures || []).map(d => el("li", {}, d)))));
-  put(el("p", { class: "muted small" }, s.checked, " ", s.scope));
+  put(el("p", { class: "muted small" }, s.checked ? [s.checked, " "] : null, s.scope));
   return out;
 }
 

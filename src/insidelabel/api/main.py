@@ -408,7 +408,7 @@ def guard_ingredients(raw: str) -> None:
             detail={
                 "error": "empty_ingredients",
                 "detail": "raw_ingredients is empty.",
-                "hint": "An empty list scores 100/100 CLEAN. Refused rather than returned.",
+                "hint": "An empty list would read as nothing found. Refused rather than returned.",
             },
         )
     if not engine.tokenize(raw):
@@ -417,7 +417,7 @@ def guard_ingredients(raw: str) -> None:
             detail={
                 "error": "no_ingredient_tokens",
                 "detail": "No ingredient tokens could be parsed from the input.",
-                "hint": "An unparseable list scores 100/100 CLEAN. Refused rather than returned.",
+                "hint": "An unparseable list would read as nothing found. Refused rather than returned.",
             },
         )
 

@@ -26,6 +26,7 @@ from test_nutrition import scan as table_scan
 from test_wording import assert_clean, strings
 
 from insidelabel.api import main
+from insidelabel.reliability import gates
 from insidelabel.core import pack_kind
 from insidelabel.extraction.providers import gemini, prompt
 from insidelabel.lenses import screen
@@ -83,6 +84,20 @@ def test_the_six_gold_labels_come_out_exactly_as_before(name):
             # That question is the only addition; everything captured before is unchanged.
             assert got["band_question"]["refs"] == ["p1"]
             got = {k: v for k, v in got.items() if k != "band_question"}
+            # D-173's follow-up to D-111: the scope line and "other ingredients" count the list's
+            # printed entries (were the engine's parsed parts); one sentence says what was checked.
+            n = len(got["ingredients"])                  # the entries the screen lists (and the glance ring)
+            assert got["checked"] is None and got["scope"].startswith(f"We checked the {n} ingredients on the list ")
+            assert got["ordinary"]["count"] == got["glance"]["counts"].get("other", 0) < before["ordinary"]["count"]
+            got = {k: v for k, v in got.items() if k not in ("checked", "scope")}
+            got["ordinary"] = {k: v for k, v in got["ordinary"].items() if k not in ("count", "text")}
+            before = {k: v for k, v in before.items() if k not in ("checked", "scope")}
+            before["ordinary"] = {k: v for k, v in before["ordinary"].items() if k not in ("count", "text")}
+        if key == "disclosures":
+            # D-173's follow-up to D-165: "What this check covers" no longer speaks of a score.
+            old = [d for d in before if "not part of the score" in d]
+            assert len(old) == 1 and gates.ALWAYS_DISCLOSE[0] in got
+            before = [gates.ALWAYS_DISCLOSE[0] if d in old else d for d in before]
         assert got == before, f"{name}: {key} changed"
 
 
