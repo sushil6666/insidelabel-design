@@ -3422,6 +3422,29 @@ try to parse it as a model answer; add a test." Built by Claude.
   first and "Retake the photo" second, the send screen with one scan, "Thank you". No console errors.
 web-49. Migration 022. `tests/test_vision_blocked.py`, `tests/test_web.py`.
 
+### D-173 · A retake keeps the table photo `LOCKED` (2026-10-07)
+**Sushil, 2026-10-07:** "i scanned barcode, then ingredients then table, then it asked to scan again ingredients; when i
+added it asks again table, it should reuse as it reads properly in previous photo". Plan shown and accepted the same
+day. Built by Claude. App only.
+- **Why it was so:** "Retake the photo" cleared the back photo and every part, so D-171's table photo went with the
+  list and the steps started again (the list, the table question, step 3).
+- **Now** (`retakeList()` in `web/app.js`): the refusal's "Retake the photo" (also D-118's "One clearer photo") and the
+  partial read's "Retake the ingredients photo" drop the list's photos only. The table photo and the front stay; the
+  front still goes after "two packs" (D-108); "use this one anyway" resets as before. A refusal is about the list
+  (the gates, D-118, D-166; D-172's block is about the read); a table that can't be read never refuses a scan (D-133).
+- **Not kept, as before:** `back_is_a_screen`, `not_a_food_pack` and `screen_unread` (D-103, D-130): the photos aren't
+  of a pack, so the table photo goes too (the front stays, as before). On a result whose photos this phone no longer
+  holds (another scan's, or after a reload), nothing is kept.
+- **After the retake:** step 2 only. The answer screen shows the new list photo with the kept table (and front), "Both
+  photos are in", "Check this pack", "Retake" (the list photo), "Retake the table too" (drops it, step 3) and "The list
+  continues" while under 3 photos. No table question, no step 3.
+- **Server unchanged:** the same roles in the same order (back, back2, back3, front); the table is always the last
+  part. One read per scan; D-070, "Send it to us" and D-172's `send_now` unchanged.
+- Walked in headless Chromium, 390 x 844, light and dark, live shutter on: list and table, refused, Retake, step 2,
+  the kept table sent as back2 (the same bytes as before the retake); "Retake the table too" goes to step 3; a not-a-pack
+  refusal asks for the table again; a partial read's retake keeps the table. No console errors.
+web-50. `tests/test_web.py`.
+
 ---
 
 ## Open and pending
