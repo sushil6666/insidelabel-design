@@ -1065,6 +1065,10 @@ FRONT_NOT_USED = ("We couldn't confirm that the front and back photos are of the
 # D-107: shown under a result for a pack without a barcode.
 UNLISTED_NOTE = ("This pack has no barcode, so it isn't added to our catalogue. The result above "
                  "is from your photo, just for you.")
+# D-167 (Sushil, 2026-10-07): a pack with a barcode and no checked (published) version yet,
+# on its first scan and every scan before review. Review item 66: a tester asked why.
+UNCHECKED_NOTE = ("We haven't checked this pack yet, so this result is read from your photo. Our team "
+                  "checks it next, and then the next scan of this barcode is instant, for everyone.")
 
 
 # D-130: a result read from a photo of a screen (a shop listing, a laptop).
@@ -1159,7 +1163,7 @@ SINCE_UNREAD = "We couldn't read this pack clearly enough to compare it with the
 def build(*, verdict, display, claim_check, extracted, reliability, profiles,
           allergen_confidence, allergen_reliable, catalogue=None, has_barcode=True,
           photos_sent=("back",), pack=None, screen_pack=None, nutrition=None, parts_sent=1, kind=None,
-          nutra_input=None, barcode_answer=None):
+          nutra_input=None, barcode_answer=None, unchecked=False):
     """
     The `screen` block of a /scan response. verdict=None means the scan was refused.
     pack: for a result read from a screen (D-130), our catalogue's version of the
@@ -1170,6 +1174,7 @@ def build(*, verdict, display, claim_check, extracted, reliability, profiles,
     kind: core/pack_kind.decide()'s answer (D-139, D-140), or None for ordinary food.
     barcode_answer: D-146's digit check answered in this scan ("confirmed", "rescanned"),
     so no second question is asked on its result.
+    unchecked: D-167, the scan saved a version of a barcode that has no checked one yet.
     """
     ingredients = (extracted or {}).get("ingredients") or []
     statement = (extracted or {}).get("allergen_statement")
@@ -1318,12 +1323,12 @@ def build(*, verdict, display, claim_check, extracted, reliability, profiles,
                                    allergen_confidence=allergen_confidence, allergen_reliable=allergen_reliable,
                                    from_screen=from_screen, pack=pack, has_barcode=has_barcode,
                                    reliability=reliability, parts=pack_kind.PARTS["food"],
-                                   barcode_answer=barcode_answer)
+                                   barcode_answer=barcode_answer, unchecked=unchecked)
 
 
 def _notes_for_every_result(out, *, catalogue, profiles, screen_pack, ingredients, statement,
                             allergen_confidence, allergen_reliable, from_screen, pack, has_barcode,
-                            reliability, parts, barcode_answer=None):
+                            reliability, parts, barcode_answer=None, unchecked=False):
     """What any result says about where it came from, whatever the kind of pack."""
     # D-140: an infant or special medical result stays exactly as decided; the question waits.
     question = _band_question(profiles, barcode_answer)
@@ -1350,6 +1355,8 @@ def _notes_for_every_result(out, *, catalogue, profiles, screen_pack, ingredient
             out["shop_list"] = True           # the app offers "Add to my shop list"
     elif not has_barcode:
         out["catalogue_note"] = UNLISTED_NOTE
+    elif unchecked:
+        out["catalogue_note"] = UNCHECKED_NOTE
     # D-108: a front that couldn't be tied to this back is not used; say so.
     if any(c.get("code") == "product_pairing_unverified" for c in reliability.get("caveats", [])):
         out["front_note"] = FRONT_NOT_USED

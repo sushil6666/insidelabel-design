@@ -49,7 +49,10 @@ SCREEN_CAVEAT = {
 # reading never decides it alone (D-004).
 with open(os.path.join(DATA_DIR, "recipe_markers.json"), encoding="utf-8") as _f:
     _RECIPE = json.load(_f)
-_MEASURE = re.compile(r"(?<![\w.])\d+(?:[./]\d+)?(?:\s*-\s*|\s+)(?:%s)\b"
+# A number: "2", "1/2", "1.5", a Unicode fraction ("½"), or both ("1 ½", "1½").
+_FRACTIONS = "\u00bc\u00bd\u00be\u2153\u2154\u215b"
+_MEASURE = re.compile(r"(?<![\w.])(?:\d+(?:[./]\d+)?(?:\s?[%s])?|[%s])(?:\s*-\s*|\s+)(?:%%s)\b"
+                      % (_FRACTIONS, _FRACTIONS)
                       % "|".join(map(re.escape, _RECIPE["measure_units"])), re.I)
 _COOKING = re.compile(r"(?:^|[,\s])(?:%s)\s*\.?$"
                       % "|".join(map(re.escape, _RECIPE["cooking_words"])), re.I)

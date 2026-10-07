@@ -761,7 +761,7 @@ function photo() {
       el("figcaption", { class: "src" }, "The back of a pack. Photograph the green blocks: in one photo if they fit, or two.")),
     el("dl", { class: "ruled hints" },
       el("div", {}, el("dt", {}, "Frame"), el("dd", {}, "The whole ingredient list, from \"Ingredients:\" to the last word, and the whole nutrition table.")),
-      el("div", {}, el("dt", {}, "Light"), el("dd", {}, "Hold the pack flat and close, without glare.")),
+      el("div", {}, el("dt", {}, "Light"), el("dd", {}, "Hold the phone close and steady. On a pouch or a shiny pack, lay it on a table, smooth it flat and tilt it away from the light.")),
       // D-163: a barcode the photos also show is confirmed by the server (D-143), so a
       // reviewer needn't check it by hand. A hint only: no extra photo or step.
       pending.barcode ? el("div", {}, el("dt", {}, "Barcode"),

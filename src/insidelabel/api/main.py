@@ -1718,7 +1718,10 @@ async def scan(
             screen_pack=None if from_screen else screen_pack, nutrition=panel,
             parts_sent=max(1, len(parts)), kind=kind,
             nutra_input={"vision": vision, "ocr_text": ocr_result.get("ocr_text")},
-            barcode_answer=barcode_answer),
+            barcode_answer=barcode_answer,
+            # D-167: a food pack with a barcode and no checked version yet, before its review.
+            unchecked=bool(saved and saved["version_status"] == "pending_review"
+                           and not saved.get("checked") and kind["code"] == "food")),
         "pack_kind": {k: kind[k] for k in ("code", "evidence", "review")},
         "scan_id": saved["scan_id"] if saved else _str(unlisted_id),
         "catalogue": ({"source": "scan", "product_version_id": saved["product_version_id"],
