@@ -15,7 +15,7 @@ import {
   updatesRequest, forgetRequest, clearTrail,
 } from "./lib.js";
 import { barcodeSupported, startScanner } from "./camera.js";
-import { icon, spot } from "./icons.js";
+import { icon, kindIcon, spot } from "./icons.js";
 
 const main = document.getElementById("main");
 let stopCamera = null;
@@ -189,7 +189,7 @@ function agree() {
   const view = el("section", { class: "stack", "aria-busy": "true" }, el("p", { class: "muted" }, "Loading…"), skeleton(5));
   termsRequest().then(({ body: t }) => {
     const box = el("input", { type: "checkbox", id: "agree" });
-    const err = el("p", { class: "error", role: "alert" });
+    const err = errorLine();
     const go_ = el("button", { type: "button", class: "btn primary", disabled: true }, t.button);
     box.addEventListener("change", () => { go_.disabled = !box.checked; });
     go_.addEventListener("click", async () => {
@@ -224,7 +224,7 @@ function agree() {
 function join(code) {
   const input = el("input", { id: "invite", autocomplete: "off", autocapitalize: "characters",
                               maxlength: "12", placeholder: "e.g. K7PM4QXT", value: code || "" });
-  const err = el("p", { class: "error", role: "alert" });
+  const err = errorLine();
   const go_ = el("button", { type: "submit", class: "btn primary" }, "Join the beta");
   const form = el("form", { class: "stack" },
     el("h1", {}, "Welcome to the InsideLabel beta"),
@@ -255,7 +255,7 @@ function join(code) {
 function feedback() {
   const from = store.get("lastScreen", "home");
   const comment = el("textarea", { id: "fb", maxlength: "4000", rows: "5", required: true });
-  const err = el("p", { class: "error", role: "alert" });
+  const err = errorLine();
   let rating = null;
   const stars = el("div", { class: "row rating", role: "radiogroup", "aria-label": "How useful is it so far?" },
     [1, 2, 3, 4, 5].map(n => {
@@ -347,7 +347,7 @@ async function home() {
       el("li", {}, el("a", { href: `#/result/${encodeURIComponent(h.id)}` },
         el("strong", {}, productName(h.product)),
         h.screen?.summary?.length
-          ? el("span", { class: "chips" }, h.screen.summary.map(r => el("span", { class: `chip tone-${r.tone}` }, r.chip)))
+          ? el("span", { class: "chips" }, h.screen.summary.map(toneChip))
           : el("span", { class: "muted" }, peopleSummary(h.screen) || h.screen?.headline?.text || ""))))));
 }
 
@@ -430,7 +430,7 @@ function updateLine(r) {
 // (DPDP Act s.12(3)). Works before joining: a tester whose code was revoked
 // can still erase.
 function data() {
-  const err = el("p", { class: "error", role: "alert" });
+  const err = errorLine();
   const confirmBox = el("div", { class: "stack", hidden: true },
     el("p", {}, el("strong", {}, "Delete everything we keep about this phone?")),
     el("p", {}, "We delete your feedback, problem reports, any invite link and the photos you took. Your scans " +
@@ -505,7 +505,7 @@ async function person(ref) {
   const nameInput = !isMe && el("input", { id: "nick", maxlength: "20", required: true,
                                            value: p.nickname, autocomplete: "off" });
   const consent = !isMe && el("input", { type: "checkbox", id: "consent", checked: !!p.consent_at });
-  const err = el("p", { class: "error", role: "alert" });
+  const err = errorLine();
 
   form.append(...[
     el("h1", {}, isMe ? "What do you avoid?" : isNew ? "Add a child" : `Edit ${p.nickname}`),
@@ -718,7 +718,7 @@ function photo() {
     parts.replaceChildren();
     if (!pending.back) return;
     pending.parts.forEach((_b, i) => parts.append(
-      el("p", { class: "check ok", role: "status" }, icon("check"), `Photo ${i + 2} added.`)));
+      kinded("p", "done", { class: "check ok", role: "status" }, `Photo ${i + 2} added.`)));
     if (pending.parts.length >= 2 || more === null) return;
     const n = pending.parts.length + 2;
     const ask = n === 2 ? "Are the whole ingredient list and the nutrition table in this photo?" : "Is everything in now?";
@@ -831,11 +831,11 @@ function photoPicker(role, label, preview, onPick, checkAs = role) {
     }
     record("photo_check", { role, ok: res ? res.ok : null, problem: res?.problem || null, barcode: !!res?.barcode });
     const line = res === null
-      ? el("p", { class: "check unknown", role: "status" },
+      ? kinded("p", "problem", { class: "check unknown", role: "status" },
           role === "barcode" ? "We couldn't check this photo just now. Try again in a moment."
                              : "We couldn't check this photo just now. It will be checked when you continue.")
-      : el("p", { class: "check " + (res.ok ? "ok" : "bad"), role: "status" },
-          icon(res.ok ? "check" : "cross"), res.message);
+      : kinded("p", res.ok ? "done" : "problem", { class: "check " + (res.ok ? "ok" : "bad"), role: "status" },
+          res.message);
     preview.replaceChildren(img, line);
     onPick(blob, res, source);
   };
@@ -919,7 +919,7 @@ function tablephoto(id) {
       }
       show(el("section", { class: "stack" },
         el("h1", {}, w.title),
-        el("p", { class: "lead" }, t.text),
+        kinded("p", t.kind || "problem", { class: "lead" }, t.text),
         button("Back to the result", () => go("result/" + encodeURIComponent(id)))));
     } catch (e) {
       show(apiErrorView(e, () => go("tablephoto/" + encodeURIComponent(id))));
@@ -1057,7 +1057,8 @@ function nutritionView(n, h, ask = true) {
   return el("div", { class: "card nutrition" },
     el("h2", {}, n.title),
     n.basis && el("p", { class: "muted small" }, n.basis),
-    n.rows.map(r => el("div", { class: `nut-row tone-${r.tone}` }, el("p", {}, r.text))),
+    n.rows.map(r => el("div", { class: `nut-row tone-${r.tone}` },
+      el("p", {}, r.tone === "worth" && kindIcon("worth"), r.text))),
     n.servings.map(x => el("p", { class: "nut-serving" }, x.text)),
     n.adults && el("p", { class: "muted small" }, n.adults),
     n.also && el("p", { class: "muted small" }, n.also),
@@ -1106,7 +1107,7 @@ function result(id, sub, tileId) {
   if (s.band_question && s.state === "result") put(bandQuestion(s.band_question));
 
   // D-130: read from a screen. Said before anything about the product.
-  if (s.from_screen) put(el("div", { class: "card warn", role: "note" },
+  if (s.from_screen) put(kinded("div", "info", { class: "card", role: "note" },
     el("strong", {}, s.from_screen.title), el("p", {}, s.from_screen.text),
     s.from_screen.pack && el("p", {}, s.from_screen.pack)));
 
@@ -1114,12 +1115,12 @@ function result(id, sub, tileId) {
   put(el("h2", { class: "headline h-serif" }, s.headline.text));
 
   // D-130: this pack, scanned from the shop list, against the screenshot.
-  if (s.since_screen) put(el("div", { class: `card ${s.since_screen.differs ? "warn" : "note"}`, role: "note" },
+  if (s.since_screen) put(kinded("div", s.since_screen.differs ? "worth" : "info", { class: "card", role: "note" },
     el("h2", {}, s.since_screen.title), s.since_screen.lines.map(t => el("p", {}, t))));
 
   if (s.state === "retake") {
     put(
-      el("p", { class: "card warn" }, s.retake),
+      kinded("p", "problem", { class: "card" }, s.retake),
       button("Retake the photo", () => {
         pending.back = null;
         pending.parts = []; pending.partSources = [];
@@ -1154,7 +1155,7 @@ function result(id, sub, tileId) {
     (s.sections || []).forEach(x => put(el("div", { class: "card section" },
       el("h2", {}, x.title), x.lines.map(t => el("p", {}, t)),
       x.sources?.length > 0 && el("details", { class: "more" }, el("summary", {}, "Sources"), sourceList(x.sources)))));
-    if (s.retake) put(el("div", { class: "card warn" }, el("p", {}, s.retake),
+    if (s.retake) put(kinded("div", "problem", { class: "card" }, el("p", {}, s.retake),
       button("Retake the ingredients photo", () => { pending = { ...pending, back: null, barcode: h.barcode }; go("photo"); })));
     if (s.recheck) put(el("div", { class: "card note" }, el("p", {}, s.recheck),
       button("Photograph the ingredients list", () => { resetPending(); pending.barcode = h.barcode; go("photo"); })));
@@ -1190,7 +1191,7 @@ function result(id, sub, tileId) {
 
   // A partial read, the table photo and the D-073 re-check ask for something now,
   // with the pack in hand, so they stay on the first screen.
-  if (s.retake) put(el("div", { class: "card warn" }, el("p", {}, s.retake),
+  if (s.retake) put(kinded("div", "problem", { class: "card" }, el("p", {}, s.retake),
     button("Retake the ingredients photo", () => { pending = { ...pending, back: null, barcode: h.barcode }; go("photo"); })));
   const askTable = s.nutrition && canAskTable(s.nutrition, h);
   if (askTable) put(el("div", { class: "card note" }, el("p", {}, s.nutrition.text),
@@ -1261,7 +1262,7 @@ function result(id, sub, tileId) {
 // D-139, D-140: the kind of pack, in the server's words, with what the pack prints.
 function kindView(s) {
   const k = s.kind;
-  return el("div", { class: "card kind", role: "note" },
+  return kinded("div", "info", { class: "card kind", role: "note" },
     k.lines.map(t => el("p", {}, t)),
     k.evidence.length > 0 && el("p", { class: "muted small" }, "On the pack: ",
       k.evidence.map((e, i) => [i ? ", " : "", el("q", {}, e.text)])),
@@ -1271,7 +1272,7 @@ function kindView(s) {
 // D-134: a tile. Its words (title, chip) are the server's; the icon is decoration.
 function tileLink(h, t) {
   return el("a", { class: `tile tile-${t.tone}`, href: `#/result/${encodeURIComponent(h.id)}/look/${encodeURIComponent(t.id)}` },
-    el("span", { class: "add-icon tile-icon", "aria-hidden": "true" }, icon(t.kind === "not_permitted" ? "cross" : "alert")),
+    el("span", { class: "tile-icon" }, kindIcon(t.kind === "not_permitted" ? "notpermitted" : "worth")),
     el("span", { class: "tile-text" }, el("strong", {}, t.title), el("span", { class: "tile-chip" }, t.chip)),
     el("span", { class: "tile-arrow", "aria-hidden": "true" }, icon("chevron-right")));
 }
@@ -1286,8 +1287,9 @@ function lookView(h, tileId) {
   return el("section", { class: "stack look-page", ...back },
     el("p", { class: "product" }, productName(h.product)),
     el("h1", {}, d.title),
-    el("span", { class: `chip ${d.kind === "not_permitted" ? "tone-alert" : "tone-worth"}` }, d.chip),
-    d.note && el("p", { class: `card ${d.kind === "not_permitted" ? "stop" : "warn"}` }, d.note),
+    el("span", { class: `chip ${d.kind === "not_permitted" ? "tone-alert" : "tone-worth"}` },
+      kindIcon(d.kind === "not_permitted" ? "notpermitted" : "worth", true), d.chip),
+    d.note && kinded("p", d.kind === "not_permitted" ? "notpermitted" : "worth", { class: "card" }, d.note),
     d.what_it_is && part("What it is", el("p", {}, d.what_it_is)),
     d.what_research_found?.length > 0 && part("What the sources say", d.what_research_found.map(t => el("p", {}, t))),
     d.who_it_concerns && part("Who it concerns", el("p", {}, d.who_it_concerns)),
@@ -1314,7 +1316,7 @@ function answersView(summary) {
           r.more.body.map(t => el("p", {}, t)), sourceList(r.more.sources))));
       panel.hidden = false;
     },
-  }, el("span", { class: "q" }, r.label), el("span", { class: `chip tone-${r.tone}` }, r.chip)));
+  }, el("span", { class: "q" }, r.label), toneChip(r)));
   return el("div", { class: "answers-compact" }, el("div", { class: "answer-chips" }, chips), panel);
 }
 
@@ -1323,7 +1325,7 @@ function answersView(summary) {
 function legacyLooks(s) {
   const look = (heading, more, body) => el("details", { class: "look" },
     el("summary", {},
-      el("span", { class: "add-icon look-icon", "aria-hidden": "true" }, icon("alert")),
+      el("span", { class: "look-icon" }, kindIcon("worth")),
       el("span", {}, el("strong", {}, heading), el("span", { class: "look-more" }, more)),
       el("span", { class: "look-arrow", "aria-hidden": "true" }, el("span", {}, icon("chevron-right")))),
     el("div", { class: "look-body" }, body));
@@ -1331,7 +1333,7 @@ function legacyLooks(s) {
     el("p", { class: "muted small" }, "On the label: ", el("q", {}, n.label_line)), sourceList(n.sources)];
   return [
     s.additive_alert && el("div", { class: "add-alert", role: "note" },
-      el("span", { class: "add-icon", "aria-hidden": "true" }, icon("alert")),
+      el("span", { class: "add-icon" }, kindIcon("notpermitted")),
       el("div", {}, el("strong", {}, s.additive_alert.text), el("p", {}, s.additive_alert.detail))),
     ...(s.alerts || []).map(a => look(a.title, a.more, [a.body.map(t => el("p", {}, t)),
       el("p", { class: "muted small" }, "On the label: ", el("q", {}, a.label_line)),
@@ -1357,8 +1359,8 @@ function moreAbout(h, askTable) {
       sourceList(n.sources))))));
   if (s.band?.note && s.summary?.length) put(el("details", { class: "item" },
     el("summary", {}, "What does \"industrial\" mean?"), el("p", {}, s.band.note)));
-  if (s.catalogue_note) put(el("p", { class: "card note" }, s.catalogue_note));      // D-107
-  if (s.front_note) put(el("p", { class: "card note" }, s.front_note));              // D-108
+  if (s.catalogue_note) put(kinded("p", "info", { class: "card" }, s.catalogue_note));  // D-107
+  if (s.front_note) put(kinded("p", "problem", { class: "card" }, s.front_note));       // D-108
   if (s.last_verified) put(el("p", { class: "muted" }, s.last_verified));
 
   // Claim check, once released (D-051).
@@ -1408,9 +1410,9 @@ function moreAbout(h, askTable) {
   // is still the reviewed record.
   const frontSent = h.catalogue?.front_received || h.catalogue?.queued_for_review === "front_photo";
   if (frontSent) {
-    put(el("p", { class: "muted" }, "Thanks. Our team has the front photo and will record what the pack says."));
+    put(kinded("p", "done", { class: "muted" }, "Thanks. Our team has the front photo and will record what the pack says."));
   } else if (h.catalogue?.queued_for_review) {
-    put(el("p", { class: "muted" },
+    put(kinded("p", "info", { class: "muted" },
       "Our team will check this pack. After that, scanning its barcode gives the result straight away."));
   }
   if (h.catalogue?.front_wanted && h.barcode && !frontSent) {
@@ -1478,13 +1480,18 @@ function glanceView(g, compact = false) {
 // amber for what couldn't be confirmed; calm otherwise. The words carry it all (D-060).
 const PERSON_TONE = { contains: "stop", may_contain: "stop",
                       cannot_confirm: "unsure", uncertain: "unsure", worth_knowing: "unsure" };
+// D-169: the symbol beside the line. The avoid list's cross only for "contains" and "may
+// contain"; "worth a look" for the amber lines; the calm lines have none.
+const PERSON_KIND = { contains: "avoid", may_contain: "avoid",
+                      cannot_confirm: "worth", uncertain: "worth", worth_knowing: "worth" };
 function personCard(p) {
   const who = profileByRef(p.ref);
   // D-140: a baby line carries its source; the cite is the server's words.
   const detail = [...p.allergens.slice(1).map(a => ({ text: a.text })), ...p.child_facts];
+  const kind = PERSON_KIND[p.status];
   return el("div", { class: `person-line ${PERSON_TONE[p.status] || "calm"}`, "data-status": p.status },
     el("span", { class: "who" }, who ? who.nickname : "Someone in your household"),
-    el("b", { class: "line" }, fill(p.line, p.ref)),
+    el("b", { class: "line" }, kind && kindIcon(kind), fill(p.line, p.ref)),
     detail.length > 0 && el("details", {}, el("summary", {}, "More"),
       el("ul", { class: "plain small" }, detail.map(f => el("li", {}, fill(f.text, p.ref),
         f.sources?.length > 0 && el("span", { class: "src" }, " ",
@@ -1525,14 +1532,17 @@ function bandQuestion(q) {
 
 // D-111: one additive, laid out from the server's item. The badge words and the
 // kind come from lenses/screen.py; the icon is decoration (aria-hidden).
-const BADGE_ICON = { not_permitted: "cross", worth_knowing: "alert", permitted: "dot" };
+// D-169: "Not permitted in India" and "Worth knowing" take their kind's symbol; the badge's
+// words say the same, so the symbol is decoration there. "Permitted" keeps its dot.
+const BADGE_KIND = { not_permitted: "notpermitted", worth_knowing: "worth" };
 function additiveCard(a) {
   const kind = a.badge?.kind || "none";
   return el("article", { class: `add add-${kind}` },
     el("div", { class: "add-top" },
       el("p", { class: "add-name" }, a.ins && el("small", {}, "INS " + a.ins), a.name),
       a.badge && el("span", { class: "badge" },
-        el("span", { class: "add-icon", "aria-hidden": "true" }, BADGE_ICON[kind] ? icon(BADGE_ICON[kind]) : ""),
+        BADGE_KIND[kind] ? kindIcon(BADGE_KIND[kind], true)
+          : el("span", { class: "add-icon", "aria-hidden": "true" }, kind === "permitted" ? icon("dot") : ""),
         a.badge.text)),
     el("p", { class: "muted small" }, "On the label: ", el("q", {}, a.label_line || a.label_text)),
     el("p", { class: "small" }, a.why),
@@ -1565,7 +1575,7 @@ function report(id) {
   const field = el("select", { id: "field" }, REPORT_FIELDS.map(([v, t]) => el("option", { value: v }, t)));
   const said = el("textarea", { id: "said", maxlength: "4000", rows: "3" });
   const note = el("textarea", { id: "note", maxlength: "2000", rows: "3" });
-  const err = el("p", { class: "error", role: "alert" });
+  const err = errorLine();
   // D-109: one of the two boxes needs real text; the server says the same sentence.
   const needText = "Tell us what the pack says, or what looks wrong. One of the two is enough.";
   const form = el("form", { class: "stack" },
@@ -1628,7 +1638,7 @@ function compare() {
       });
       out.replaceChildren(compareResult(body, whoRef));
     } catch (e) {
-      out.replaceChildren(el("p", { class: "error" }, apiMessage(e)));
+      out.replaceChildren(kinded("p", "problem", { class: "error" }, apiMessage(e)));
     }
   };
 
@@ -1705,12 +1715,44 @@ function apiMessage(e) {
   return "Something went wrong on our side. Try again in a minute.";
 }
 
+// ------------------------------------------------------------------ message kinds (D-169)
+// One symbol and one colour per kind of message, on every screen (icons.js KINDS, app.css
+// .k-*): a photo or app problem, the avoid list, not permitted in India, worth a look,
+// information, done. The kind comes from the server's fields; the words are unchanged.
+function kinded(tag, kind, attrs, ...kids) {
+  return el(tag, { ...attrs, class: `${attrs.class || ""} kmsg k-${kind}`.trim() }, kindIcon(kind), ...kids);
+}
+
+// A form's error line is a problem, never red. Every form sets its words with textContent,
+// so setting it redraws the symbol beside them; "" empties the line (.error:empty hides it).
+function errorLine() {
+  const p = el("p", { class: "error kmsg k-problem", role: "alert" });
+  const text = Object.getOwnPropertyDescriptor(Node.prototype, "textContent");
+  Object.defineProperty(p, "textContent", {
+    get() { return text.get.call(p); },
+    set(v) { p.replaceChildren(...(v ? [kindIcon("problem"), el("span", {}, v)] : [])); },
+  });
+  return p;
+}
+
+// A D-123 answer chip: "worth" carries the worth-a-look symbol; "calm" stays plain.
+function toneChip(r) {
+  return el("span", { class: `chip tone-${r.tone}` }, r.tone === "worth" && kindIcon("worth"), r.chip);
+}
+
+// The error and limit screens' drawing, in the problem colour.
+function problemSpot(...names) {
+  const box = spot(...names);
+  box.classList.add("k-problem");
+  return box;
+}
+
 function apiErrorView(e, retry) {
   const gate = accessProblem(e);             // D-102/D-105: not joined, or rules not agreed
   if (gate) return gate === "join" ? join() : agree();
   if (e instanceof ApiError && e.status === 429 && e.body?.photo_limit) return photoLimit(e.body.photo_limit);
   return el("section", { class: "stack" },
-    spot(e instanceof ApiError && e.status === 0 ? "wifi" : "alert"),
+    problemSpot(e instanceof ApiError && e.status === 0 ? "wifi" : "retake"),
     el("h1", {}, "That didn't work"),
     el("p", {}, apiMessage(e)),
     retry && button("Try again", retry, "primary"),
@@ -1724,7 +1766,7 @@ function apiErrorView(e, retry) {
 function photoLimit(w) {
   record("photo_limit", {});
   return el("section", { class: "stack" },
-    spot("pack", "clock"),
+    problemSpot("pack", "clock"),
     el("h1", {}, w.title),
     el("p", {}, w.text),
     el("p", {}, w.barcode),
@@ -1734,7 +1776,7 @@ function photoLimit(w) {
 }
 
 function errorView(text) {
-  return el("section", { class: "stack" }, spot("pack"), el("h1", {}, "Sorry"), el("p", {}, text),
+  return el("section", { class: "stack" }, problemSpot("pack"), el("h1", {}, "Sorry"), el("p", {}, text),
     button("Home", () => go(""), "primary"), problemLink());
 }
 
@@ -1748,7 +1790,7 @@ function problemLink() {
 function problem() {
   const incident = lastIncident();
   const comment = el("textarea", { id: "comment", maxlength: "2000", rows: "3" });
-  const err = el("p", { class: "error", role: "alert" });
+  const err = errorLine();
   const preview = el("pre", { class: "tech preview" });
   const form = el("form", { class: "stack" },
     el("h1", {}, "Report a problem"),
@@ -1788,7 +1830,7 @@ function problem() {
 function send() {
   const ids = pending.refused.slice(-6);
   if (ids.length < 2) return errorView("Take the photo twice first; then you can send it to us.");
-  const err = el("p", { class: "error", role: "alert" });
+  const err = errorLine();
   const go_ = el("button", { type: "button", class: "btn primary" }, "Send the photos");
   const view = el("section", { class: "stack" },
     el("h1", {}, "Send it to us"),

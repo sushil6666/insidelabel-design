@@ -699,6 +699,9 @@ TABLE_ANSWER = {
     "unclear": "We couldn't read every number on that table clearly, so nothing was added.",
     "different_barcode": "That photo shows a different barcode, so nothing was added.",
 }
+# D-169: the kind of message each answer is, so the app draws it with that kind's symbol
+# and colour without reading the words: "done" for the thanks, "problem" for a photo to retake.
+TABLE_ANSWER_KIND = {"added": "done", "no_table": "problem", "unclear": "problem", "different_barcode": "problem"}
 NUTRITION_CHECKED = "As printed on the pack, each number checked against a second reading of the photo."
 NUTRITION_ADULTS = "The daily amounts are for adults."
 MAX_PARTS = 3                            # D-119: the list and the table share the three back photos

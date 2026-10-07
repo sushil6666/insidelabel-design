@@ -29,6 +29,8 @@
   --stop: #c92324; --stop-bg: #ffe5e0;                              /* on the avoid list / may contain */
   --unsure: #6c380d; --unsure-bg: #ffefcd; --unsure-line: #f59e3b;  /* couldn't confirm / uncertain */
   --calm: #194860; --calm-bg: #d5f7f4;                              /* not listed / nothing extra */
+  /* D-169: a photo or app problem, never red. 6.88:1 on --bg, 7.26:1 on --surface, 6.14:1 on its tint. */
+  --problem: #3e5a6e; --problem-bg: #e6edf2;
   /* D-127 "At a glance": validated categorical slots (dataviz validator, both modes) + status red. */
   --g-worth: #d03b3b; --g-sugar: #eb6834; --g-industrial: #2a78d6; --g-additive: #1baf7a; --g-other: #d3dde3;
   --surface-2: #f4f2e6;                    /* pressed rows, skeletons */
@@ -63,6 +65,7 @@
     --brand: #66c189; --brand-ink: #042234; --accent: #66c189; --ring: #7dccda; --mint: #28523c;
     --stop: #ffbdb5; --stop-bg: #6c3530; --unsure: #ffd791; --unsure-bg: #674420; --unsure-line: #f7ac4d;
     --calm: #d9f0f3; --calm-bg: #265368;
+    --problem: #c6d6e2; --problem-bg: #2e4a60;        /* D-169: 9.14:1 on --bg, 7.26:1 on --surface, 6.23:1 on its tint */
     --g-worth: #e66767; --g-sugar: #d95926; --g-industrial: #3987e5; --g-additive: #199e70; --g-other: #4a6275;
     --surface-2: #2b4b64; --field-line: #7a9db1;      /* 3.74:1 on --surface, 4.71:1 on --bg */
     --shadow: 0 1px 2px rgba(0, 0, 0, .2), 0 12px 32px -12px rgba(0, 0, 0, .45);
@@ -148,7 +151,7 @@ p { margin: 0; }
 .muted { color: var(--muted); }
 .small { font-size: .92rem; }
 .tech { color: var(--muted); font-size: .85rem; font-family: ui-monospace, "Roboto Mono", monospace; }
-.error { color: var(--stop); font-weight: 600; min-height: 0; }
+.error { color: var(--problem); font-weight: 600; min-height: 0; }
 .error:empty { display: none; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }   /* wraps at 200% text */
@@ -349,8 +352,8 @@ body.ready .foot { visibility: visible; }
 .check { display: flex; align-items: flex-start; gap: 6px; margin: 6px 0 0; padding: 8px 12px; border-radius: var(--r-md); font-weight: 600; }
 .check .icon { width: 20px; height: 20px; margin-top: 1px; stroke-width: 2.4; }
 .check.ok { background: var(--mint); color: var(--ink); }
-.check.bad { background: var(--stop-bg); color: var(--stop); }
-.check.unknown { background: var(--unsure-bg); color: var(--unsure); font-weight: 400; }
+.check.bad { background: var(--problem-bg); color: var(--problem); }
+.check.unknown { background: var(--problem-bg); color: var(--problem); font-weight: 400; }
 
 /* D-105: "Before you start". */
 .rules { padding-left: 22px; } .rules li { margin: 8px 0; }
@@ -398,12 +401,12 @@ body.ready .foot { visibility: visible; }
 .tallies { display: grid; gap: 10px; }
 .tally { display: grid; gap: 4px; }
 
-/* D-125: "Worth a look": a red row, closed until tapped; the arrow nudges until opened. */
-.look { background: var(--stop-bg); color: var(--stop); border-radius: var(--radius); border: 1px solid var(--stop); }
+/* D-125: "Worth a look": an amber row (D-169; red before), closed until tapped; the arrow nudges until opened. */
+.look { background: var(--unsure-bg); color: var(--unsure); border-radius: var(--radius); border: 1px solid var(--unsure-line); }
 .look > summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; padding: 12px 14px; }
 .look > summary::-webkit-details-marker { display: none; }
 .look strong { display: block; }
-.look-icon { background: var(--stop); color: var(--surface); width: 26px; height: 26px; }
+.look-icon { display: flex; }
 .look-more { display: block; font-size: .85rem; opacity: .9; }
 .look[open] .look-more { display: none; }
 .look-arrow { font-size: 1.5rem; font-weight: 800; line-height: 1; }
@@ -456,12 +459,11 @@ body.ready .foot { visibility: visible; }
         background: var(--unsure-bg); border: 1px solid var(--unsure-line); border-left-width: 6px; }
 .tile strong { display: block; line-height: 1.25; }
 .tile-chip { display: block; font-size: .82rem; color: var(--unsure); font-weight: 600; }
-.tile-icon { background: var(--unsure-line); color: #3a1f06; width: 24px; height: 24px; }
+.tile-icon { display: flex; }
 .tile-arrow { display: flex; color: var(--unsure); }
 .tile-arrow .icon, .look-arrow .icon { width: 20px; height: 20px; stroke-width: 2.4; }
 .tile-alert { background: var(--stop-bg); border-color: var(--stop); }
 .tile-alert .tile-chip, .tile-alert .tile-arrow { color: var(--stop); }
-.tile-alert .tile-icon { background: var(--stop); color: var(--surface); }
 .tile:active { transform: translateY(1px); }
 /* Three across on a phone; fewer when the text is large (200%, WCAG 1.4.4). */
 .answer-chips { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 6.5rem), 1fr)); gap: 6px; }
@@ -705,3 +707,42 @@ details[open]:not(.look) > summary::after { transform: rotate(180deg); }
                     min-height: var(--tap); color: var(--ink); text-decoration: none; padding: 0; margin: 0; }
 .notes .note-link .tile-arrow { color: var(--muted); }
 .result-next { display: grid; gap: var(--sp-2); justify-items: center; }
+
+/* ==== D-169: one symbol and one colour per kind of message (web/icons.js KINDS) ====
+   Each kind's symbol is drawn in its own ink wherever it appears, so the same kind looks the
+   same on every screen; the words beside it carry the meaning, never colour alone.
+     problem       retake arrow   --problem   blurry, dark, wrong side, no list, network, limits
+     avoid         circled cross  --stop      the allergen "contains" / "may contain" lines only
+     notpermitted  triangle       --stop      the not_permitted badge, tile and alert
+     worth         circled !      --unsure    notes, sugar, worth knowing, couldn't confirm
+     info          circled i      --calm      where a result came from, catalogue notes
+     done          check          --brand     photo accepted, saved, sent
+   Symbols (3:1 needed): --unsure-line is 2.0:1 on the light --bg, so "worth" draws in --unsure. */
+.kind-icon { width: 1.25em; height: 1.25em; stroke-width: 2.2; vertical-align: -.25em; }
+.ki-problem { color: var(--problem); }
+.ki-avoid, .ki-notpermitted { color: var(--stop); }
+.ki-worth { color: var(--unsure); }
+.ki-info { color: var(--calm); }
+.ki-done { color: var(--brand); }
+.kmsg { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0 10px; align-items: start; }
+.kmsg > .kind-icon { grid-row: 1 / span 20; margin-top: .05em; }
+.kmsg > :not(.kind-icon) { grid-column: 2; }
+.kmsg > .kind-icon + * { margin-top: 0; }
+.k-problem { background: var(--problem-bg); color: var(--problem); border-color: var(--problem); }
+.k-avoid, .k-notpermitted { background: var(--stop-bg); color: var(--ink); border-color: var(--stop); }
+.k-worth { background: var(--unsure-bg); color: var(--unsure); border-color: var(--unsure-line); }
+.k-info { background: var(--calm-bg); color: var(--calm); border-color: var(--calm); }
+.k-done { background: var(--mint); color: var(--ink); border-color: var(--brand); }
+.card.k-problem, .card.k-notpermitted, .card.k-worth, .card.k-info { border-left-width: 6px; }
+.kmsg:not(.card):not(.check) { background: none; }     /* a line of text: the symbol and ink only */
+.error.kmsg:empty { display: none; }
+.spot.k-problem { background: var(--problem-bg); }
+.spot.k-problem .icon { color: var(--problem); }
+/* Inline: a chip, a badge, a person's line, a nutrition row. */
+.chip .kind-icon, .badge .kind-icon { width: 1.15em; height: 1.15em; margin-right: 3px; stroke-width: 2.4; }
+.badge .kind-icon { margin-left: 4px; }
+.person-line .line .kind-icon { margin-right: 6px; stroke-width: 2.6; }
+.nut-row .kind-icon { margin-right: 6px; }
+.tile-icon .kind-icon, .look-icon .kind-icon, .add-alert > .add-icon .kind-icon { width: 26px; height: 26px; }
+.add-alert > .add-icon { background: none; width: auto; height: auto; }
+

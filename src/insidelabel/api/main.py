@@ -716,8 +716,9 @@ async def _table_answer(hit, panel, barcode, barcode_source, images, keys, ocr_r
     scan_id = saved["scan_id"] if saved else _persist(
         STORE and STORE.record_failed_scan, "refused", error_code=f"table_{status}", device_id=device_id,
         latency_ms=_ms(t0), back_key=keys.get("back"), trace=tr)
-    words = result_screen.TABLE_ANSWER["added" if status == "already_waiting" else status]
-    return {"table": {"status": status, "text": words}, "scan_id": _str(scan_id),
+    answer = "added" if status == "already_waiting" else status
+    words = result_screen.TABLE_ANSWER[answer]
+    return {"table": {"status": status, "text": words, "kind": result_screen.TABLE_ANSWER_KIND[answer]}, "scan_id": _str(scan_id),
             "request_id": tr["request_id"], "nutrition": nutrition.public(panel),
             "catalogue": {"source": "scan", "queued_for_review": saved and saved["queued"]}}
 

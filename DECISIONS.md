@@ -3266,6 +3266,41 @@ published without a table never got one (a catalogue hit never asked; a table-on
   labels; asked before any paid call).
 `tests/test_table_photo.py`, `tests/test_web.py`.
 
+### D-169 · One symbol and one colour per kind of message `LOCKED` (2026-10-07)
+A tester's feedback via Sushil, 2026-10-07 ("all", colours and symbols first): a blurry photo was drawn in the same red
+as the strongest findings about the food, the retake card in the same amber as "worth knowing", and some messages
+leaned on colour alone. A red photo problem makes the pack look bad when only the photo was. **Accepted by Sushil
+2026-10-07: "Accept as shown"** (the table below, with light and dark screenshots of each kind). Built by Claude.
+Style and markup only: no finding or word changes (D-004, D-091).
+
+| Kind | Symbol (`web/icons.js` `KINDS`) | Colour | For |
+|---|---|---|---|
+| Photo or app problem | retake arrow (new) | `--problem` (new), grey-blue, never red | blurry, dark, wrong side, no list, network, limits, form errors |
+| On your avoid list | cross in a circle | `--stop` | the allergen "contains" / "may contain" lines only |
+| Not permitted in India | warning triangle (new) | `--stop` | the `not_permitted` badge, tile, chip and alert |
+| Worth a look | ! in a circle | amber, `--unsure` | notes, sugar, worth knowing, couldn't confirm |
+| Information | i in a circle (new) | blue, `--calm` | where a result came from, catalogue notes |
+| Done | check | green, `--brand` on `--mint` | photo accepted, saved, sent |
+
+- **Names:** each symbol has an accessible name ("Photo problem", "On your avoid list", "Not permitted in India",
+  "Worth a look", "Information", "Done"), or is decoration beside words that say the same (the badges and the look
+  page's chip). Never colour alone.
+- **Contrast (WCAG):** `--problem` text is light #3e5a6e on #e6edf2, 6.88:1 on `--bg`, 7.26:1 on `--surface`, 6.14:1
+  on its tint; dark #c6d6e2 on #2e4a60, 9.14:1, 7.26:1 and 6.23:1. Symbols on `--bg` / `--surface`: `--stop` light
+  5.3 / 5.6, dark 8.5 / 6.8; `--unsure` light 9.0 / 9.5, dark 10.0 / 7.9; `--calm` light 9.3 / 9.8, dark 11.5 / 9.1;
+  `--brand` light 4.69 / 4.95, dark 6.2 / 4.9 (4.1 / 4.0 on `--mint`). `--unsure-line` is only 2.0:1 on the light
+  `--bg`, so the worth symbol draws in `--unsure`; `--unsure-line` stays a border colour.
+- **The kind comes from the server's fields:** `screen.state`/`retake`, `badge.kind`, the tile's and look page's
+  `kind`, the chip's `tone`, `people[].status`, `catalogue_note`, `front_note`, `from_screen`, `since_screen.differs`,
+  the photo check's `ok`. One field was added: D-168's table answer carries `kind` ("done" or "problem",
+  `screen.TABLE_ANSWER_KIND`). The JS never reads `score` or the words to pick a kind.
+- **D-060 unchanged:** the allergen-state tokens and the person lines' classes keep their meanings; the lines gain the
+  avoid-list or worth symbol. The legacy D-125 "Worth a look" rows (results kept from before web-27) turn amber.
+- **Kept as they are** (Sushil's answer to the open choice): the `permitted` badge's green dot and the calm "not
+  listed" person lines take no new symbol.
+`tests/test_web.py` (every kind's symbol, name, class and light and dark tokens; no error or refusal uses `--stop`;
+the avoid list and `not_permitted` still do), `tests/test_table_photo.py`.
+
 ---
 
 ## Open and pending
