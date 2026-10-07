@@ -97,6 +97,7 @@ pytest -q                                    # 375 pass, 1 skipped; DB tests use
 | `INSIDELABEL_ALLOW_REPLAY` | the `replay` form field on `/scan` (D-101) | default off (403); `repro.py`, tools and tests switch it on in-process |
 | `INSIDELABEL_PROXY_HOPS` | rate limits behind a reverse proxy (D-095) | number of proxies; unset → the socket address, `X-Forwarded-For` ignored |
 | `INSIDELABEL_INVITE_ONLY` | the invite-only web beta (D-102) | `on` at deploy: only phones that joined with a code can scan; default off |
+| `INSIDELABEL_LIVE_SHUTTER` | the app's own shutter for the label photos (D-171) | default `off` (the phone's camera app); `on` after the comparison on real packs |
 | `INSIDELABEL_PUBLIC_URL` | join links printed by `tools/beta.py invite` | e.g. `https://yourdomain.in`; or pass `--base` |
 | `INSIDELABEL_TEST_PG` | run DB tests on a real server | must name a `*_test` database |
 | `INSIDELABEL_CLAIMS_TO_USERS` | show the claim check to users (D-051) | default `off`; turn on only after ≥ 5 claim packs with 0 false contradictions |
@@ -661,6 +662,8 @@ food categories, PWA built, D-092 reproduction, D-093 Cloud Vision, scan speed,
 setup alarms.
 
 **NEXT SESSION STARTS HERE (2026-10-01).** Where things stand, newest first:
+
+- **`d171-label-steps` (2026-10-07, web-48, no migration), from `main` f1bc6e0 (#122).** D-171 (LOCKED, Sushil accepted the mockups 2026-10-07): the label photos come in steps, one job per screen ("Step n of 3"): the ingredient list, then "Is the nutrition table in this photo too?" (Yes reads the pack; No asks for the table as the next part; "The list continues" for D-119's parts; "This pack has no table"). Tips hold D-163/D-167's hints and the drawing; the front photo (D-100) is an optional link on the answer screens, "Add the front of the pack too (optional)", sent with the back in the one `/scan` (Sushil, before merging: a new pack must not lose its front). D-133's and D-168's table photos use the step 3 screen. The app's own shutter (live view, `ImageCapture.takePhoto()`, "Too dark"/"Hold still" on the phone) is behind `INSIDELABEL_LIVE_SHUTTER`, **off**: the camera app until Sushil compares the two. Photos taken with it are recorded as `live`. **Waiting on Sushil:** merge; `update.sh`; switch the shutter on, scan 3 packs both ways (about 6 paid reads, Rs 4, accepted), compare (OPERATIONS.md "The label shutter"); then on for everyone or off, recorded in D-171.
 
 - **`d170-photo-problems` (2026-10-07, web-47, no migration), from `main` 5c2602d (#121).** D-170 (LOCKED, Sushil: "Accept, no hint line"): a refused photo is shown back to the user (the photo still on the phone) with its problem named in a short label (`screen.PROBLEM_LABEL`), the existing sentence as the fix line, and Retake; the same for the partial read's card and for the photo check before the read (with a Retake button). "Report a mistake" is off the refusal screen. **Waiting on Sushil:** merge; `update.sh`.
 

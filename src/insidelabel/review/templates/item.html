@@ -9,7 +9,8 @@
 {% macro source_note(src) %}
   {% if src == "upload" %}<div class="upload-warn">Uploaded, not taken with the camera. Before publishing, look closely
     for signs of editing, an AI-made picture or a photo of a screen: it has to be a real pack.</div>
-  {% elif src == "camera" %}<div class="muted" style="font-size:12px;margin-bottom:4px">Taken with the app's camera.</div>{% endif %}
+  {% elif src == "camera" %}<div class="muted" style="font-size:12px;margin-bottom:4px">Taken with the app's camera.</div>
+  {% elif src == "live" %}<div class="muted" style="font-size:12px;margin-bottom:4px">Taken with the app's own shutter (D-171).</div>{% endif %}
 {% endmacro %}
 <style>
   .grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 16px; align-items: start; }

@@ -126,6 +126,18 @@ def _invite_only():
     return os.environ.get("INSIDELABEL_INVITE_ONLY", "off").lower() == "on"
 
 
+# D-171: the app's own shutter for the label photos (ImageCapture at the camera's full
+# resolution). Off until Sushil has compared it with the phone's camera app on real packs;
+# off, the steps take the photo with the camera app as before. The app reads it from /access.
+LIVE_SHUTTER = None            # None: follow the environment, read per request
+
+
+def _live_shutter():
+    if LIVE_SHUTTER is not None:
+        return LIVE_SHUTTER
+    return os.environ.get("INSIDELABEL_LIVE_SHUTTER", "off").lower() == "on"
+
+
 # D-105: "Before you start", the rules every tester agrees to before a first
 # scan. The text is data (wording-linted); a new version asks everyone again.
 with open(os.path.join(os.path.dirname(__file__), "..", "..", "..", "data", "terms.json"), encoding="utf-8") as _f:
@@ -1020,7 +1032,7 @@ def access(device_id: str = ""):
     joined = bool(STORE and device_id and _persist(STORE.invite_of, device_id))
     agreed = bool(STORE and device_id and _persist(STORE.has_agreed, device_id, TERMS["version"]))
     return {"invite_only": _invite_only(), "joined": joined, "agreed": agreed,
-            "terms_version": TERMS["version"]}
+            "terms_version": TERMS["version"], "live_shutter": _live_shutter()}
 
 
 @app.get("/terms")
@@ -1215,7 +1227,8 @@ async def scan(
     compare_regulators: bool = Form(False, description="Also return EU and US status. Information only."),
     barcode: Optional[str] = Form(None, examples=[""], description="EAN/UPC digits from the pack, if the camera read one."),
     back_source: Optional[str] = Form(None, examples=[""],
-                                      description='D-106: "camera" (taken in the app) or "upload" (gallery, computer).'),
+                                      description='D-106: "camera" (taken in the app) or "upload" (gallery, computer); '
+                                                  'D-171: "live" (the app\'s own shutter).'),
     front_source: Optional[str] = Form(None, examples=[""], description='D-106: as back_source.'),
     back2_source: Optional[str] = Form(None, examples=[""], description='D-106: as back_source, for back2.'),
     back3_source: Optional[str] = Form(None, examples=[""], description='D-106: as back_source, for back3.'),
@@ -1310,9 +1323,10 @@ async def scan(
         said = said.strip() if said and said.strip() else None
         if said is None:
             continue
-        if said not in ("camera", "upload"):
+        # D-171: "live" is the app's own shutter; "camera" the phone's camera app.
+        if said not in ("camera", "live", "upload"):
             raise HTTPException(status_code=422, detail={
-                "error": "bad_photo_source", "detail": f'{role}_source is "camera" or "upload".'})
+                "error": "bad_photo_source", "detail": f'{role}_source is "camera", "live" or "upload".'})
         if any(r == role for _d, _m, r in images):
             photo_sources[role] = said
     # D-103: a file that can't be a readable label never costs a model read.

@@ -276,6 +276,36 @@ sudo -u insidelabel psql -d insidelabel -c "SELECT created_at::date AS day,
   count(*) AS scans FROM scans GROUP BY 1 ORDER BY 1 DESC LIMIT 14"
 ```
 
+### The label shutter (D-171)
+
+The label steps take their photos with the phone's camera app unless the server switches on
+the app's own shutter (a live view, full-resolution still). It ships **off**. To compare the two
+on real packs, switch it on, scan each pack twice on your phone (once with the round shutter,
+once with "Upload a photo" and the camera app: Android's picker offers the camera), then switch
+it back off or leave it on:
+
+```bash
+sudoedit /etc/insidelabel/settings.env      # INSIDELABEL_LIVE_SHUTTER=on (off: the camera app)
+sudo systemctl restart insidelabel
+curl -s "https://insidelabel.ai/access?device_id=x"   # expect "live_shutter":true
+```
+
+The app reads the switch when it opens, so close and reopen it after a change. Each scan records
+where its photos came from (`live`, `camera` or `upload`). Side by side, newest first:
+
+```bash
+sudo -u insidelabel psql -d insidelabel -c "SELECT s.created_at, s.id,
+  s.request->'photo_sources'->>'back' AS source, s.outcome, s.error_code,
+  jsonb_array_length(coalesce(v.ingredients, '[]')) AS ingredients, v.nutrition IS NOT NULL AS table,
+  length(s.ocr->'back'->>'text') AS ocr_chars, s.ocr->'back'->>'reader' AS reader
+  FROM scans s LEFT JOIN product_versions v ON v.id = s.product_version_id
+  WHERE s.created_at > now() - interval '1 day' AND s.back_image_key IS NOT NULL
+  ORDER BY s.created_at DESC LIMIT 20"
+```
+
+Each pack's two scans should have the same ingredient count, a table when the photo held one,
+and a similar `ocr_chars`. The review screen shows each scan's photo and reading.
+
 ### The review agents (D-117), in shadow
 
 Gemini drafts each new queue item (category, ingredients, claims, note); a rules checker confirms

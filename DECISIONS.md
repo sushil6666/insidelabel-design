@@ -3336,6 +3336,53 @@ Built by Claude.
 `tests/test_photo_problems.py` (every refusal code has a label: the codes are gathered from gates.py, photo_check,
 `CHECK_MESSAGES` and barcode.MESSAGES), `tests/test_web.py`.
 
+### D-171 · The label photos in steps, one job per screen; the app's own shutter behind a switch `LOCKED` (2026-10-07)
+A tester's feedback via Sushil, 2026-10-07: he liked the barcode scan; the ingredients and the nutrition table should
+come next the same way, step by step; the photo page carried too much at once. **Accepted by Sushil 2026-10-07:
+"accepted"** (mockups of every screen, light and dark, 390 x 844), **with one change to the order:** "the in-app shutter
+can't be tested before it exists. Build it with a setting that keeps today's camera-app button as the default unless
+the shutter is switched on." Built by Claude.
+- **The steps** (`web/app.js`), each with "Step n of 3": 1, the barcode (as before; "No barcode?" unchanged, D-107; the
+  D-146 digit check still follows and is not a step). 2, the ingredient list, one line under the camera: "Fit the list,
+  from "Ingredients" to the last word". After the shot, the photo and the D-104 check, then "Is the nutrition table in
+  this photo too?" [Yes, check this pack] [No, photograph the table], and "The list continues" (D-119's next part).
+  Not answering is Yes: a pack whose list and table fit one photo costs the shutter and one tap. 3 (only on No), the
+  nutrition table: "Fit the whole table, from its title to the last row", and "This pack has no table". Then the one
+  read and the result.
+- **Limits unchanged:** 3 photos in all. The table travels as the next part (back2 or back3), so `/scan`'s roles, the
+  join (D-119), one Gemini and one Cloud Vision read, replay (D-092) and the daily limit (D-148) are as before. A list
+  in 3 parts has no table step (as D-168).
+- **Tips:** D-163's Barcode line (only with a barcode), D-167's Light line, the Frame line and the D-153 drawing move to
+  a "Tips" sheet. D-153's opener ("1 or 2 photos", why we read the pack) goes; D-167's result line says it.
+- **The front photo** (D-100) is not a step. **Sushil, 2026-10-07, before merging:** "a new pack must not lose its front
+  photo (the reviewer reads brand, name and claims from it). /scan already takes the front together with the back, so
+  no server work": the answer screens (step 2's question and step 3's) carry a link, "Add the front of the pack too
+  (optional)", which takes one front photo ("Optional", "Photograph the front", "Not now") and returns to the same
+  screen, showing the front beside the label photos with D-035's "Both photos are of the same pack" box and "Retake
+  the front". A link, not a step: skipping it costs no tap. The front goes up with the back in the one `/scan`, as
+  before. Shown while `frontWanted` (D-100: not for a re-check of a pack whose front is on file). The result's offer
+  ("Add the front of the pack?") stays for a catalogue pack without a front. (The mockup's front offer on a new
+  pack's first result isn't built: `/scan` takes a front alone only for a published pack.)
+- **D-133's and D-168's table photos** use the step 3 screen (D-168 with its server words, `screen.TABLE_OFFER`).
+- **The camera.** With the switch off (the default), each step takes its photo with the phone's camera app
+  (`capture="environment"`) or an upload, as before. With `INSIDELABEL_LIVE_SHUTTER=on` (read on `/access` as
+  `live_shutter`), a phone that has `ImageCapture.takePhoto()` (Chrome on Android) gets a live view with a frame and a
+  round shutter; the shot is the camera's full-resolution still, then the app's resize (1600 px) and `/check-photo` as
+  before. "Too dark" (mean brightness) and "Hold still" (frame difference) are worked out on the phone from a 64 x 48
+  copy of the view; nothing is sent before the shutter, and a hint never blocks it. A refused camera permission, or a
+  browser without ImageCapture, falls back to the camera app with one line saying why. Photos from the shutter are sent
+  as `back_source` "live" (D-106 gains a third value; the review screen says "Taken with the app's own shutter"), so
+  the stored scans tell the two apart.
+- **The comparison (to record here):** Sushil switches the shutter on, scans 3 packs (tiny text, a glossy pouch, a
+  curved bottle) both ways, about 6 normal paid reads (about Rs 4, accepted), and compares the stored scans
+  (OPERATIONS.md "The label shutter"). Then the shutter goes on for everyone or stays off. **Result: pending.**
+- Walked in headless Chromium (Playwright, 390 x 844, light and dark, a fake camera stream, `/scan` answered from a
+  replayed reading, `/check-photo` the real server): one photo with the table; list then table; no table; a 2-part list
+  then the table (3 photos); upload instead of the camera; the switch off; camera permission refused; D-168's table
+  photo; the "Too dark" hint; the front link on step 2's answer (live, with "Not now" and the pairing box) and on
+  step 3's (switch off). No console errors. Not walked: a real phone's camera.
+web-48. `tests/test_web.py`, `tests/test_photo_source.py`, `tests/test_deploy.py`.
+
 ---
 
 ## Open and pending
