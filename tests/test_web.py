@@ -352,7 +352,8 @@ def test_no_error_or_refusal_is_red():
     assert 'el("p", { class: "error", role: "alert" })' not in app
     assert '"card warn"' not in app                                     # the retake card was amber
     for retake in re.findall(r"\(s\.retake\)[^\n]*|\n[^\n]*s\.retake\),", app):
-        assert '"problem"' in retake, retake
+        assert '"problem"' in retake or "partialRetake(" in retake, retake       # D-170: both draw a problem
+    assert 'kinded("div", "problem", { class: "card" }, el("p", {}, s.retake)' in app
     assert 'icon(res.ok ? "check" : "cross")' not in app
     assert re.search(r'kinded\("p", res\.ok \? "done" : "problem"', app)
     assert 'problemSpot(e instanceof ApiError && e.status === 0 ? "wifi" : "retake")' in app
@@ -379,3 +380,34 @@ def test_the_kind_comes_from_the_server_never_from_words_or_score():
     body = JS["app.js"]
     for call in re.findall(r"kinded\([^\n]*|kindIcon\([^\n]*", body):
         assert "score" not in call and ".text ===" not in call, call
+
+
+# ---------------------------------------------------------------- D-170: the photo problem
+def _retake_branch(app):
+    start = app.index('if (s.state === "retake") {')
+    return app[start:app.index("return view;", start)]
+
+
+def test_the_refusal_shows_the_photo_and_its_problem_without_report_a_mistake():
+    app = JS["app.js"]
+    branch = _retake_branch(app)
+    assert "photoProblem(s.problem, heldPhotos(h" in branch
+    assert "reportLink(h)" not in branch and "problemLink()" in branch          # nothing was read to correct
+    # The photo is the one still on this phone: no request, no upload.
+    held = app[app.index("function heldPhotos("):app.index("function partialRetake(")]
+    assert "pending.resultId !== h.id" in held and "Request(" not in held
+    assert app.count("put(partialRetake(s, h,") == 2                               # the partial read's card too
+    assert 'class: "card k-problem photo-problem"' in app
+
+
+def test_the_photo_check_names_its_problem_and_offers_retake():
+    app = JS["app.js"]
+    assert re.search(r'res\.label\s*\n\s*//[^\n]*\n\s*\? kinded\("div", "problem", \{ class: "check bad"', app)
+    assert 'button("Retake", () => document.getElementById("pick-" + role)?.click())' in app
+
+
+def test_problem_labels_come_from_the_server():
+    from insidelabel.lenses import screen
+    for label in set(screen.PROBLEM_LABEL.values()):
+        assert all(label not in js for js in JS.values()), label
+    assert "p.label" in JS["app.js"] and "e.body.label" in JS["app.js"] and "res.label" in JS["app.js"]
