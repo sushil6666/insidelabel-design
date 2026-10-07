@@ -99,7 +99,8 @@ def test_headline_is_a_finding_with_its_source():                   # D-061
 def test_nothing_wrong_is_a_designed_state():                       # D-062
     s = scan(PLAIN, profiles=[]).json()["screen"]
     assert s["headline"]["text"] == "No concerns found in the ingredients."
-    assert s["checked"] == "We checked the ingredients."            # claims are in shadow
+    # D-173 follow-up: one sentence says what was checked; claims are in shadow.
+    assert s["checked"] is None and s["scope"].startswith("We checked the 4 ingredients on the list against ")
     assert s["worth_knowing"] == [] and s["ordinary"]["count"] == 4
     assert s["people"] == []                                        # adult, no avoid list
 
@@ -365,3 +366,28 @@ def test_the_sugar_card_quotes_the_label_and_names_its_source():
     tartrazine = next(w for w in s["worth_knowing"] if "INS 102" in w["technical"])
     assert "Southampton study (Lancet 2007)" in tartrazine["technical"]
     assert "SOUTHAMPTON" not in tartrazine["technical"]
+
+
+# D-173 follow-up (Sushil, 2026-10-07, "yes"): 50 50 Maska Chaska prints 11 entries and the
+# result said "20 ingredients checked", the engine's parsed parts. A list shaped like its own
+# (palm and palmolein in one entry, raising agents and emulsifiers grouped by INS number); the
+# exact printed list isn't in the repo.
+MASKA_CHASKA = ["Refined wheat flour (Maida)", "Edible vegetable oil (Palm, Palmolein)", "Sugar",
+                "Invert sugar syrup", "Iodised salt", "Raising agents [503(ii), 500(ii), 341(i)]",
+                "Milk solids", "Yeast", "Emulsifiers [322(i), 471]", "Dough conditioner [223]",
+                "Flavours (Natural, nature identical and artificial (Butter) flavouring substances)"]
+
+
+def test_every_ingredient_count_is_the_printed_entries():           # D-111, D-173 follow-up
+    from insidelabel.core import engine
+    assert engine.analyze(", ".join(MASKA_CHASKA))["ingredient_count_parsed"] > 11   # the old unit
+    s = scan(MASKA_CHASKA, profiles=[]).json()["screen"]
+    assert s["scope"] == (f"We checked the 11 ingredients on the list against {len(engine._ADDITIVE_BY_INS)} "
+                          f"additives and {len(engine.NOVA['markers'])} processing markers in our tables.")
+    # The glance ring counts the same 11; "other ingredients look ordinary" is its "other".
+    assert s["glance"]["total"] == 11 and sum(s["glance"]["counts"].values()) == 11
+    assert s["ordinary"]["count"] == s["glance"]["counts"].get("other", 0) <= 11
+    assert s["ordinary"]["text"] == f"{s['ordinary']['count']} other ingredients look ordinary."
+    # The sugar chip counts printed entries too ("3rd of 11").
+    sugar = next(r for r in s["summary"] if r["key"] == "sugar")
+    assert sugar["chip"].endswith("of 11")

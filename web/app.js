@@ -709,7 +709,8 @@ function photo() {
 
 // The ingredient list, or its next part (D-119).
 function listShot() {
-  const n = pending.back ? pending.parts.length + 2 : 1;
+  // D-173: counts the list's photos only; a kept table photo stays after them.
+  const n = pending.back ? partRows().filter(r => r[2] === "list").length + 2 : 1;
   return labelShot({
     role: n === 1 ? "back" : "back" + n,
     step: stepLine(2, n === 1 ? "Ingredients" : `Ingredients, part ${n}`),
@@ -733,17 +734,46 @@ function tableShot(after = null) {
   });
 }
 
+// The parts that are the table (D-171), as [blob, source, kind] rows, and the list's.
+const partRows = () => pending.parts.map((b, i) => [b, pending.partSources[i], (pending.partKinds || [])[i] || "list"]);
+function setParts(rows) {
+  pending.parts = rows.map(r => r[0]);
+  pending.partSources = rows.map(r => r[1]);
+  pending.partKinds = rows.map(r => r[2]);
+}
+
 function addShot(n, kind, b, source, res) {
+  pending.lastKind = kind;
+  // D-173: a table photo kept from before stays the last part, after the list's photos.
+  const tables = partRows().filter(r => r[2] === "table");
   if (n === 1) {
     pending.back = b;
     pending.backSource = source;
-    pending.parts = []; pending.partSources = []; pending.partKinds = [];     // a new first photo starts again
+    setParts(tables);                                   // a new first photo starts the list again
     if (res?.barcode && !pending.barcode) { pending.barcode = res.barcode; pending.barcodeSource = "photo"; }
     return;
   }
-  pending.parts = [...pending.parts.slice(0, n - 2), b];
-  pending.partSources = [...pending.partSources.slice(0, n - 2), source];
-  pending.partKinds = [...(pending.partKinds || []).slice(0, n - 2), kind];
+  if (kind === "list") {
+    const list = partRows().filter(r => r[2] === "list");
+    return setParts([...list.slice(0, n - 2), [b, source, "list"], ...tables]);
+  }
+  setParts([...partRows().slice(0, n - 2), [b, source, kind]]);
+}
+
+// D-173 (Sushil, 2026-10-07: "it should reuse as it reads properly in previous photo"): a
+// refusal or a partial read is about the ingredient list, so a retake drops the list's photos
+// and keeps the table's and the front. Not for photos that aren't a pack (a screen, not food,
+// D-103, D-130): the table photo goes too, as before. D-108: two packs, the front goes.
+// h: the result being retaken; its photos are kept only while this phone still holds them.
+const NOT_A_PACK = ["back_is_a_screen", "not_a_food_pack", "screen_unread"];
+function retakeList(h, code = null) {
+  const mine = pending.resultId === h.id;
+  setParts(mine && !NOT_A_PACK.includes(code) ? partRows().filter(r => r[2] === "table") : []);
+  pending.back = null;
+  pending.acceptUnconfirmed = false;
+  if (!mine) pending.barcode = h.barcode;              // photos from another scan aren't this pack's
+  if (!mine || code === "product_mismatch") { pending.front = null; pending.pairing = false; }
+  go("photo");
 }
 
 // After a shot: the photos in hand, the check's line for the last one, and what's next.
@@ -757,14 +787,20 @@ function shotReview(res = undefined, frontRes = undefined) {
   const names = kinds.map((k, i) => k === "table" ? "Nutrition table" : i === 0 ? "Ingredients" : `Ingredients, part ${i + 1}`);
   const shown = pending.front ? [...photos, pending.front] : photos;
   const shownNames = pending.front ? [...names, "Front"] : names;
+  // D-173: a table kept from before a retake sits last; the shot just taken is the last list photo.
+  const kept = tableIn && pending.lastKind === "list";
+  const lists = kinds.filter(k => k === "list").length;
   const retake = () => {
-    if (n === 1) { pending.back = null; return show(listShot()); }
-    const kind = kinds[n - 1];
-    pending.parts = pending.parts.slice(0, n - 2);
-    pending.partSources = pending.partSources.slice(0, n - 2);
-    pending.partKinds = (pending.partKinds || []).slice(0, n - 2);
-    show(kind === "table" ? tableShot() : listShot());
+    if (!kept && kinds[n - 1] === "table") {
+      setParts(partRows().slice(0, -1));
+      return show(tableShot());
+    }
+    if (lists === 1) { pending.back = null; return show(listShot()); }
+    const list = partRows().filter(r => r[2] === "list");
+    setParts([...list.slice(0, -1), ...partRows().filter(r => r[2] === "table")]);
+    show(listShot());
   };
+  const dropTable = () => { setParts(partRows().filter(r => r[2] !== "table")); show(tableShot()); };
   const pics = el("div", { class: shown.length === 1 ? "thumb" : "taken" },
     shown.map((b, i) => shown.length === 1
       ? el("img", { src: URL.createObjectURL(b), alt: "Your photo of the ingredient list" })
@@ -775,15 +811,16 @@ function shotReview(res = undefined, frontRes = undefined) {
   const ask = !tableIn && n < MAX_PHOTOS;          // the table question, while there's room for its photo
   const check = button(ask ? "Yes, check this pack" : "Check this pack", () => sendPhotos(), "primary");
   return el("section", { class: "stack shot-review" },
-    stepLine(tableIn ? 3 : 2, names[n - 1]),
+    stepLine(tableIn && !kept ? 3 : 2, kept ? names[lists - 1] : names[n - 1]),
     pics, line,
     ask ? el("h1", {}, "Is the nutrition table in this photo too?")
       : el("h1", {}, n === 2 ? "Both photos are in" : "All three photos are in"),
     check,
     ask && button("No, photograph the table", () => show(tableShot())),
     el("div", { class: "row between" },
-      ask ? button("The list continues", () => show(listShot()), "link") : el("span", {}),
-      button(tableIn ? "Retake the table" : "Retake", retake, "link")),
+      ask || (kept && n < MAX_PHOTOS) ? button("The list continues", () => show(listShot()), "link") : el("span", {}),
+      button(tableIn && !kept ? "Retake the table" : "Retake", retake, "link")),
+    kept && button("Retake the table too", dropTable, "link"),
     // D-100: the reviewer reads the brand, name and claims from the front. A link, not a step:
     // skipping it costs no tap (Sushil, 2026-10-07). Sent with the back in the one /scan.
     pending.frontWanted && !pending.front &&
@@ -1275,14 +1312,9 @@ function result(id, sub, tileId) {
                 : kinded("p", "problem", { class: "card" }, s.retake),
       // D-172: Gemini's guard blocked the read; the photos are fine, so a person reads them now.
       s.send_now && pending.refused.length >= 1 && button("Send it to us", () => go("send"), "primary"),
-      button("Retake the photo", () => {
-        pending.back = null;
-        pending.parts = []; pending.partSources = []; pending.partKinds = [];
-        pending.acceptUnconfirmed = false;
-        // D-108: after "these look like different packs", neither photo can be trusted.
-        if (s.headline?.source?.ref === "product_mismatch") { pending.front = null; pending.pairing = false; }
-        go("photo");
-      }, s.send_now ? "" : "primary"),
+      // D-173: the list is retaken; the table photo and the front stay (D-108: not after two packs).
+      button("Retake the photo", () => retakeList(h, s.problem?.code || s.headline?.source?.ref),
+             s.send_now ? "" : "primary"),
       // D-118: our second reader couldn't confirm a new pack's list. The person
       // can still have their result from these photos.
       s.can_use_anyway && pending.back && button("Use this one anyway", () => {
@@ -1311,7 +1343,7 @@ function result(id, sub, tileId) {
       el("h2", {}, x.title), x.lines.map(t => el("p", {}, t)),
       x.sources?.length > 0 && el("details", { class: "more" }, el("summary", {}, "Sources"), sourceList(x.sources)))));
     if (s.retake) put(partialRetake(s, h,
-      button("Retake the ingredients photo", () => { pending = { ...pending, back: null, barcode: h.barcode }; go("photo"); })));
+      button("Retake the ingredients photo", () => retakeList(h, "partial"))));
     if (s.recheck) put(el("div", { class: "card note" }, el("p", {}, s.recheck),
       button("Photograph the ingredients list", () => { resetPending(); pending.barcode = h.barcode; go("photo"); })));
     put(el("div", { class: "row wrap" }, button("Scan another", () => { resetPending(); go("scan"); }, "primary")),
@@ -1347,7 +1379,7 @@ function result(id, sub, tileId) {
   // A partial read, the table photo and the D-073 re-check ask for something now,
   // with the pack in hand, so they stay on the first screen.
   if (s.retake) put(partialRetake(s, h,
-    button("Retake the ingredients photo", () => { pending = { ...pending, back: null, barcode: h.barcode }; go("photo"); })));
+    button("Retake the ingredients photo", () => retakeList(h, "partial"))));
   const askTable = s.nutrition && canAskTable(s.nutrition, h);
   if (askTable) put(el("div", { class: "card note" }, el("p", {}, s.nutrition.text),
     button(s.nutrition.ask, () => go("table"))));
@@ -1590,7 +1622,7 @@ function moreAbout(h, askTable) {
   // What this covers - stated, never silent (D-037).
   put(el("details", { class: "item" }, el("summary", {}, "What this check covers"),
     el("ul", { class: "plain small" }, (h.disclosures || []).map(d => el("li", {}, d)))));
-  put(el("p", { class: "muted small" }, s.checked, " ", s.scope));
+  put(el("p", { class: "muted small" }, s.checked ? [s.checked, " "] : null, s.scope));
   return out;
 }
 

@@ -3422,6 +3422,52 @@ try to parse it as a model answer; add a test." Built by Claude.
   first and "Retake the photo" second, the send screen with one scan, "Thank you". No console errors.
 web-49. Migration 022. `tests/test_vision_blocked.py`, `tests/test_web.py`.
 
+### D-173 · A retake keeps the table photo `LOCKED` (2026-10-07)
+**Sushil, 2026-10-07:** "i scanned barcode, then ingredients then table, then it asked to scan again ingredients; when i
+added it asks again table, it should reuse as it reads properly in previous photo". Plan shown and accepted the same
+day. Built by Claude. App only.
+- **Why it was so:** "Retake the photo" cleared the back photo and every part, so D-171's table photo went with the
+  list and the steps started again (the list, the table question, step 3).
+- **Now** (`retakeList()` in `web/app.js`): the refusal's "Retake the photo" (also D-118's "One clearer photo") and the
+  partial read's "Retake the ingredients photo" drop the list's photos only. The table photo and the front stay; the
+  front still goes after "two packs" (D-108); "use this one anyway" resets as before. A refusal is about the list
+  (the gates, D-118, D-166; D-172's block is about the read); a table that can't be read never refuses a scan (D-133).
+- **Not kept, as before:** `back_is_a_screen`, `not_a_food_pack` and `screen_unread` (D-103, D-130): the photos aren't
+  of a pack, so the table photo goes too (the front stays, as before). On a result whose photos this phone no longer
+  holds (another scan's, or after a reload), nothing is kept.
+- **After the retake:** step 2 only. The answer screen shows the new list photo with the kept table (and front), "Both
+  photos are in", "Check this pack", "Retake" (the list photo), "Retake the table too" (drops it, step 3) and "The list
+  continues" while under 3 photos. No table question, no step 3.
+- **Server unchanged:** the same roles in the same order (back, back2, back3, front); the table is always the last
+  part. One read per scan; D-070, "Send it to us" and D-172's `send_now` unchanged.
+- Walked in headless Chromium, 390 x 844, light and dark, live shutter on: list and table, refused, Retake, step 2,
+  the kept table sent as back2 (the same bytes as before the retake); "Retake the table too" goes to step 3; a not-a-pack
+  refusal asks for the table again; a partial read's retake keeps the table. No console errors.
+- **Follow-up to D-165, on this branch (Sushil, 2026-10-07: "find all scores and remove"):** a user saw "Sugar, salt
+  and fat quantities on the nutrition panel are not part of the score." under "What this check covers"
+  (`reliability/gates.py` `ALWAYS_DISCLOSE[0]`). It broke D-064/D-165 and was out of date since D-133. Now: "The
+  headline and findings come from the ingredient list. When we can read the nutrition table, its numbers are shown
+  beside ICMR-NIN's guide, as information." The partial-list caveat now says "finding nothing here doesn't mean there
+  is nothing to find"; the single-read caveat no longer says "grade band"; the empty-list hints no longer say "scores
+  100/100". `tests/test_no_score_words.py`: no shown text (every /scan screen, disclosures, caveat details, the
+  screen's word tables, the data tables' shown fields, the app's strings) says "score" or "grade". /how's "No score"
+  section (D-165) is the one place the word belongs.
+- **Follow-up to D-111, on this branch (Sushil, 2026-10-07: "yes"):** the scope line said "20 ingredients checked" for
+  50 50 Maska Chaska, which prints 11 entries: the count was the engine's parsed parts (palm, palmolein, 503, 341 ...
+  each on its own). Every count of ingredients on a result is now the list's printed entries:
+  - the scope line (`screen.py` "scope"): "We checked the 11 ingredients on the list against 69 additives and 17
+    processing markers in our tables." (", and the claims on the front." when claims are shown, D-051). It replaces the
+    separate "We checked the ingredients." line (`checked` is now empty), which would have said it twice;
+  - "N other ingredients look ordinary": now the glance ring's "other" count, the printed entries nothing else on the
+    screen names (was parsed parts minus the named ones);
+  - already printed entries, unchanged: the glance ring (D-127) and the sugar chip ("2nd of 11");
+  - not counts of ingredients, so they stay: the additives' count ("Additives on this pack (5)", "The other 4 are
+    permitted"), which counts additives (one entry "Raising agents [503(ii), 500(ii), 341(i)]" holds three); the
+    processing row's "N more", which counts industrial ingredient names; the tallies (D-123), which are sentences with
+    no count. `tests/test_screen.py` with a list shaped like Maska Chaska's (11 entries, 23 parsed parts; the exact
+    printed list isn't in the repo).
+web-50. `tests/test_web.py`, `tests/test_screen.py`, `tests/test_no_score_words.py`.
+
 ---
 
 ## Open and pending

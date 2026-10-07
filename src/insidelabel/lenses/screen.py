@@ -1318,19 +1318,14 @@ def build(*, verdict, display, claim_check, extracted, reliability, profiles,
     claims = _claim_rows(claim_check)
     complete = reliability.get("ingredients_complete", True)
     sugar_found = kids.sugar_positions(ingredients)
-    # Same unit as `scope` (parsed items, sub-ingredients included): everything
-    # not already named under worth knowing, counting each item once.
-    named = {f["ingredient"].lower() for f in verdict["flags"]
-             if f["type"] == "nova_marker" or f["concern"] in ("moderate", "high")}
-    for w in worth:
-        if w["source"]["kind"] == "hidden_sugar":
-            named |= set(w["source"]["ref"])
-    # D-111: low-concern additives now have their own cards, so "other ingredients"
-    # leaves them out too; every count on the screen stays in one unit.
-    named |= {f["ingredient"].lower() for f in verdict["flags"] if f["type"] != "nova_marker"}
-    n_ord = max(verdict.get("ingredient_count_parsed", 0) - len(named), 0)
-    checked = ("We checked the ingredients and the claims on the front." if claims
-               else "We checked the ingredients.")
+    # D-111: every count of ingredients on the screen is in one unit, and since D-173's
+    # follow-up (Sushil, 2026-10-07: "yes") that unit is the list's printed entries, as the
+    # pack shows them: 50 50 Maska Chaska prints 11, where the engine parses 20 parts
+    # (palm, palmolein, 503, 341 ... each on its own). "Other" is the glance ring's own
+    # count of entries nothing else on the screen names (sugar, industrial, additive).
+    glance = _glance(ingredients, sugar_found)
+    n_ord = ((glance or {}).get("counts") or {}).get("other", 0)
+    n_list = len(ingredients)
     out = {
         "state": "result",
         "people": people,                                     # D-060: first
@@ -1340,14 +1335,15 @@ def build(*, verdict, display, claim_check, extracted, reliability, profiles,
         "band": {"code": "mixed" if band == "clean" and worth else band,
                  "label": BAND_LABEL["mixed"] if band == "clean" and worth else BAND_LABEL.get(band, band),
                  "note": NOVA_NOTE if band == "ultra-processed" else None},
-        "checked": checked,
-        "scope": (f"{verdict.get('ingredient_count_parsed', 0)} ingredients checked against "
+        # The scope line says what was checked; the claims (in shadow, D-051) join it.
+        "checked": None,
+        "scope": (f"We checked the {n_list} ingredient{'s' if n_list != 1 else ''} on the list against "
                   f"{len(engine._ADDITIVE_BY_INS)} additives and {len(engine.NOVA['markers'])} "
-                  f"processing markers in our tables."),
+                  f"processing markers in our tables" + (", and the claims on the front." if claims else ".")),
         "claims": claims,
         "worth_knowing": worth,
         "ordinary": {"count": n_ord,
-                     "text": (f"{n_ord} other ingredient{'s' if n_ord != 1 else ''} look ordinary."
+                     "text": (f"{n_ord} other ingredient{'s look' if n_ord != 1 else ' looks'} ordinary."
                               if n_ord else None),
                      "additives": ordinary},
         "ingredients": ingredients,
@@ -1396,7 +1392,7 @@ def build(*, verdict, display, claim_check, extracted, reliability, profiles,
     if tile and out["headline"]["source"]["kind"] == "none":
         out["headline"] = {"text": BAND_LABEL["mixed"] + ".", "source": tile["source"]}
         out["band"] = {**out["band"], "code": "mixed", "label": BAND_LABEL["mixed"]}
-    out["glance"] = _glance(ingredients, sugar_found)
+    out["glance"] = glance
     out["glossary"] = _glossary(summary, out["glance"], adds, people)
     # D-134: the one-screen result. The allergen lines (people) stay first and apart.
     out["tiles"], out["details"] = _tiles(adds, notes, nut)

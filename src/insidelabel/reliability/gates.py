@@ -149,7 +149,7 @@ def _assess(vision):
         return False, {
             "error": "no_ingredients_extracted",
             "detail": "Ingredient array is empty.",
-            "hint": "An empty list scores 100/100 CLEAN. Refused rather than returned.",
+            "hint": "An empty list would read as nothing found. Refused rather than returned.",
         }
     if is_recipe(vision["ingredients"]):
         # D-166: the only list read is a recipe's (its own "Ingredients:" heading).
@@ -181,9 +181,9 @@ def _assess(vision):
             "code": "partial_ingredient_list",
             "detail": (
                 "Part of the ingredient list could not be read. Missing "
-                "ingredients can only add flags, never remove them, so a "
-                "'clean' or high score here is unsupported. Flags that were "
-                "found are still real."
+                "ingredients can only add findings, never remove them, so "
+                "finding nothing here doesn't mean there is nothing to find. "
+                "Findings that were found are still real."
             ),
         })
 
@@ -200,8 +200,8 @@ def _assess(vision):
         reliability["caveats"].append({
             "code": "single_read",
             "detail": (
-                "Verdict built from one pass over the label. Repeat reads of the "
-                "same image have been observed to differ by a full grade band."
+                "Result built from one pass over the label. Repeat reads of the "
+                "same image have been seen to differ in what they find."
             ),
         })
     elif not meta.get("unanimous"):
@@ -341,7 +341,10 @@ _DISCLOSURE_TEXT = {
 }
 
 ALWAYS_DISCLOSE = [
-    "This looks only at the ingredient list. Sugar, salt and fat quantities on the nutrition panel are not part of the score.",
+    # D-165, D-173 follow-up (Sushil, 2026-10-07, "find all scores and remove"): there is no score
+    # (D-064), and since D-133 the table's numbers are shown, as information.
+    "The headline and findings come from the ingredient list. When we can read the nutrition table, its numbers are "
+    "shown beside ICMR-NIN's guide, as information.",
     "Ingredients not yet in the database are not flagged, so an absence of flags is not proof of absence.",
     "Ingredient facts only. This is not advice about whether a food is right for you.",
 ]

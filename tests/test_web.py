@@ -464,7 +464,32 @@ def test_problem_labels_come_from_the_server():
 def test_a_blocked_read_offers_send_it_to_us_at_once():                    # D-172
     app = JS["app.js"]
     assert 's.send_now && pending.refused.length >= 1 && button("Send it to us", () => go("send"), "primary")' in app
-    assert '}, s.send_now ? "" : "primary"),' in app                        # Retake steps back
+    assert 's.send_now ? "" : "primary"),' in app                           # Retake steps back
     assert '!s.send_now && pending.refused.length >= 2 && button("Send it to us", () => go("send")),' in app
     assert "pending.sendNow = !!body.screen.send_now;" in app
     assert "if (ids.length < (pending.sendNow ? 1 : 2))" in app
+
+
+def test_a_retake_keeps_the_table_photo_and_the_front():                     # D-173
+    """Sushil, 2026-10-07: "it should reuse as it reads properly in previous photo"."""
+    app = JS["app.js"]
+    fn = app[app.index("function retakeList("):app.index("// After a shot: the photos in hand")]
+    # The list's photos go; the table's stay, unless the photos aren't of a pack at all.
+    assert 'setParts(mine && !NOT_A_PACK.includes(code) ? partRows().filter(r => r[2] === "table") : []);' in fn
+    assert 'const NOT_A_PACK = ["back_is_a_screen", "not_a_food_pack", "screen_unread"];' in app
+    assert "pending.back = null;" in fn and "pending.acceptUnconfirmed = false;" in fn
+    # The front stays, except after two packs (D-108) or for another scan's photos.
+    assert 'if (!mine || code === "product_mismatch") { pending.front = null; pending.pairing = false; }' in fn
+    # Every retake of the list uses it: the refusal (and D-118's clearer photo) and both partial reads.
+    assert app.count("() => retakeList(h, ") == 3
+    assert 'retakeList(h, s.problem?.code || s.headline?.source?.ref)' in app
+    assert app.count('retakeList(h, "partial")') == 2
+    assert "pending.parts = []; pending.partSources = []; pending.partKinds = [];" not in app
+    # A new first photo keeps a kept table, and a list part goes before it: the table is the last part.
+    add = app[app.index("function addShot("):app.index("// D-173 (Sushil")]
+    assert "setParts(tables);" in add and 'setParts([...list.slice(0, n - 2), [b, source, "list"], ...tables]);' in add
+    # With a kept table: no table question, "Check this pack", and the table can still be retaken.
+    review = app[app.index("function shotReview("):app.index("function frontShot(")]
+    assert 'const kept = tableIn && pending.lastKind === "list";' in review
+    assert 'kept && button("Retake the table too", dropTable, "link")' in review
+    assert 'ask || (kept && n < MAX_PHOTOS) ? button("The list continues"' in review
