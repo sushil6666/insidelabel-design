@@ -248,6 +248,8 @@ MODEL_RAW_READERS = {
     "src/insidelabel/review/agent.py": "its own drafts' model_raw (review_drafts), not scans",
     "src/insidelabel/review/service.py": "review_drafts.model_raw; scan rows are shown, never parsed",
     "tools/review_agent.py": "review_drafts.model_raw (recheck), not scans",
+    # D-174: a sent pack's earlier answers are checked for a table; blocked_reason() first.
+    "src/insidelabel/review/table_read.py": "from_stored_answer() skips the marker (blocked_reason)",
 }
 
 

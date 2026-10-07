@@ -91,9 +91,29 @@
   <div>
     {% if q.kind == "send_to_us" %}
       <div class="panel" style="margin-bottom:12px">
-        <b>Sent to us after {{ d.attempts|length + 1 }} photos we couldn't read.</b>
-        Nothing was read automatically: type the label from the photos. If no photo shows the whole
-        ingredient list, reject it and say so. The person is told either way.
+        <b>Sent to us after {{ d.attempts|length + 1 }} photo{{ "s" if d.attempts else "" }} we couldn't read.</b>
+        Type the label from the photos. If no photo shows the whole ingredient list, reject it and say so.
+        The person is told either way.
+        {# D-174: the nutrition table, read from these photos so nobody is asked for it again #}
+        {% if sent_table %}
+          <div style="margin-top:6px">The nutrition table was read from these photos: check its numbers in the form
+            below and tick the box, or it is published without the table.</div>
+        {% else %}
+          {% if table_read and table_read.model_error %}
+            <div class="muted" style="margin-top:6px;font-size:12px">Table read failed: {{ table_read.model_error }}</div>
+          {% elif table_read %}
+            <div class="muted" style="margin-top:6px;font-size:12px">The table read found no numbers we could check
+              ({{ (table_read.panel or {}).get("status") or "nothing read" }}).</div>
+          {% endif %}
+          {% if q.status in ("open", "claimed") and (d.images.back or d.attempts) %}
+            <form method="post" action="/review/item/{{ q.id }}/read-table" style="margin-top:6px">
+              <input type="hidden" name="csrf" value="{{ csrf }}">
+              <button type="submit">Read the nutrition table from these photos</button>
+              <span class="muted" style="font-size:12px">{% if table_photo %}The app marked one photo as the table.
+                {% endif %}One paid read, about Rs 0.75.</span>
+            </form>
+          {% endif %}
+        {% endif %}
       </div>
     {% endif %}
     {% if q.kind == "nutrition" %}
@@ -269,7 +289,7 @@
         <input type="text" id="allergen_statement" name="allergen_statement" value="{{ form.allergen_statement }}">
         <label for="front_claims">Front-of-pack claims: one per line (only if the front photo is this pack)</label>
         <textarea id="front_claims" name="front_claims" rows="3">{{ form.front_claims }}</textarea>
-        {% set nt = (d.version or {}).get("nutrition") %}
+        {% set nt = (d.version or {}).get("nutrition") or sent_table %}
         {% if nt and nt.get("values") %}
           <div class="panel" style="margin:10px 0">
             <b>Nutrition table</b>, per {{ nt.basis }}{% if nt.serving %}, serving {{ nt.serving.printed }} {{ nt.serving.unit }}{% endif %}{% if nt.servings %}, {{ nt.servings }} servings{% endif %}.

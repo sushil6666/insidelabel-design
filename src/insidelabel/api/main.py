@@ -38,7 +38,7 @@ import traceback  # noqa: E402
 import uuid  # noqa: E402
 from typing import Optional  # noqa: E402
 
-from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile  # noqa: E402
+from fastapi import BackgroundTasks, FastAPI, File, Form, HTTPException, Request, UploadFile  # noqa: E402
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 from starlette.concurrency import run_in_threadpool  # noqa: E402
@@ -197,15 +197,22 @@ def _model_error(tr, e):
     log.warning("model failed, request %s: %s", tr.get("request_id"), tr["model_error"])
 
 
-def _blocked_refusal(e, tr, *, t_vision, t0, keys, images, barcode, device_id, avoid_codes, who, people):
+def _blocked_refusal(e, tr, *, back_read, back_bytes, t_vision, t0, keys, images, barcode, device_id,
+                     avoid_codes, who, people):
     """
     D-172: Gemini's guard stopped the answer after its retries. A refusal, never a 502: the
     scan is stored as refused (vision_blocked:<reason>) with a replay marker (D-092), and a
     pack with a barcode can go to a person at once ("Send it to us", D-096).
+    D-174: Cloud Vision's text of the back photo, when it has been read by now (it isn't
+    waited for), is kept as on any scan, so the table of a pack sent to us is checked
+    against it without paying for the same reading twice.
     """
     tr["timings"]["vision_ms"] = _ms(t_vision)
     tr["model_raw"] = gemini.blocked_marker(e.reason)
     _model_error(tr, e)
+    text = cloud_vision.cached(back_bytes) if back_bytes and back_read is not None else None
+    if text is not None:
+        tr["ocr"] = {"back": {"reader": "cloud_vision", "text": text}}
     reliability = {"error": "vision_blocked", "reason": e.reason, "ingredients_complete": False,
                    "verdict_safe_to_display": False, "caveats": []}
     scan_id = _persist(STORE and STORE.record_failed_scan, "refused", error_code=f"vision_blocked:{e.reason}",
@@ -970,8 +977,26 @@ _SEND_ERRORS = {
 }
 
 
+# D-174: the table-only read's model call; None is a paid Gemini call. Tests set a recorded answer.
+SENT_TABLE_CALL = None
+
+
+def _read_sent_table(review_id):
+    """
+    D-174: after the reply, so the sender never waits: the table of a pack sent to us,
+    from an earlier answer when one copied it (free), else one table-only read when the
+    photos include the table. Stored for the reviewer; a failure is stored, never raised.
+    """
+    from insidelabel.review import table_read
+    try:
+        if review_routes.SERVICE is not None:
+            table_read.read_for_item(review_routes.SERVICE, MEDIA, review_id, call=SENT_TABLE_CALL)
+    except Exception:                                            # noqa: BLE001 - the item still works without it
+        log.exception("table read for review item %s failed", review_id)
+
+
 @app.post("/send-to-us")
-def send_to_us(req: SendToUsRequest, request: Request):
+def send_to_us(req: SendToUsRequest, request: Request, background: BackgroundTasks):
     """
     After two refused scans (D-070): "Send it to us - we'll check this pack and
     tell you when it's ready." Queues the photos for a reviewer; /updates
@@ -993,6 +1018,8 @@ def send_to_us(req: SendToUsRequest, request: Request):
     if "error" in out:
         status, text = _SEND_ERRORS[out["error"]]
         raise HTTPException(status_code=status, detail={"error": out["error"], "detail": text})
+    if not out.get("duplicate"):
+        background.add_task(_read_sent_table, out["review_id"])
     return {"status": "received", **out}
 
 
@@ -1281,6 +1308,9 @@ async def scan(
     profiles: Optional[str] = Form(None, examples=[""],
                                    description='JSON [{"ref","age","avoid"}], up to 3. No names (D-074).'),
     accept_unconfirmed: bool = Form(False, description="D-118: 'use this one anyway' after a clearer-photo request."),
+    back_kinds: Optional[str] = Form(None, examples=[""],
+                                     description='D-174: what each back part shows, in order, comma separated: '
+                                                 '"list" or "table" (D-171 sends the table last).'),
     table_only: bool = Form(False, description="D-168: the back photo is a published pack's nutrition table; "
                                                "only the table is read and added for review."),
     screen_pack: Optional[str] = Form(None, examples=[""],
@@ -1369,6 +1399,16 @@ async def scan(
                 "error": "bad_photo_source", "detail": f'{role}_source is "camera", "live" or "upload".'})
         if any(r == role for _d, _m, r in images):
             photo_sources[role] = said
+    # D-174: which back part is the nutrition table, as the app says, so a person reading a
+    # pack sent to us knows the photos hold its table. Recorded, like photo_sources.
+    kinds = None
+    if back_kinds and back_kinds.strip():
+        kinds = [k.strip() for k in back_kinds.split(",")]
+        n_back = sum(1 for _d, _m, r in images if r in ("back", "back2", "back3"))
+        if len(kinds) != n_back or any(k not in ("list", "table") for k in kinds):
+            raise HTTPException(status_code=422, detail={
+                "error": "bad_back_kinds",
+                "detail": 'back_kinds names each back part in order: "list" or "table", comma separated.'})
     # D-103: a file that can't be a readable label never costs a model read.
     # Replayed answers skip it: they were read from photos checked at the time.
     if replay is None:
@@ -1403,6 +1443,7 @@ async def scan(
                     "profiles": people, "pairing_confirmed": pairing_confirmed,
                     "compare_regulators": compare_regulators,
                     "images": [r for _d, _m, r in images], "back_parts": max(1, len(parts)),
+                    "back_kinds": kinds,
                     "replay": replay is not None,
                     "accept_unconfirmed": accept_unconfirmed, "screen_pack": screen_pack,
                     "table_only": table_only},
@@ -1480,7 +1521,8 @@ async def scan(
     except gemini.VisionBlocked as e:
         # D-172: a guard stopped the answer (report #7: RECITATION on a Britannia pack), after
         # D-172's retries. Not the photo and not a 502: a refusal a person can read instead.
-        return _blocked_refusal(e, tr, t_vision=t_vision, t0=t0, keys=keys, images=images, barcode=barcode,
+        return _blocked_refusal(e, tr, back_read=back_read, back_bytes=back_bytes,
+                                t_vision=t_vision, t0=t0, keys=keys, images=images, barcode=barcode,
                                 device_id=device_id, avoid_codes=avoid_codes, who=who, people=people)
     except gemini.VisionConfigError as e:
         # Our setup (key, credit, billing), not the label and not a busy moment.

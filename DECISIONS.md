@@ -3468,6 +3468,53 @@ day. Built by Claude. App only.
     printed list isn't in the repo).
 web-50. `tests/test_web.py`, `tests/test_screen.py`, `tests/test_no_score_words.py`.
 
+### D-174 · A pack sent to us publishes with its nutrition table `LOCKED` (2026-10-07)
+**Sushil, 2026-10-07:** "yes", after review items #71 and #72. The plan was shown with options (a), (b) and (c), and
+he approved it the same day. Built by Claude.
+- **What happened:** Britannia 50 50 Maska Chaska (8901063367456).
+  - The scan took the ingredients and the table (D-171 steps), and Gemini blocked the read (RECITATION, D-172).
+  - Sushil sent it to us (item #71). A send_to_us item has no version, so `approve()` had no table to publish. The
+    pack went out without one, though the table photo was in the item.
+  - The next scan found "published, no table", and D-168 asked for the table (item #72). The user was asked for a
+    photo we already had.
+- **What the server knew:**
+  - `/scan` joins the back parts into one stored photo (D-119) and recorded only how many there were, not which was
+    the table.
+  - A refused scan stores the model's answer and Cloud Vision's text (D-092), so a table it copied can be checked
+    again for free.
+  - A blocked scan stored neither. Its Cloud Vision reading had been paid for, but not kept.
+- **Option (a), chosen:** a table-only read, with an earlier answer used first. Typing the table (b) is slow and
+  error-prone, and it would still need a second reader. When the read fails, the pack publishes without the table, as
+  before, and D-168's one-photo offer remains. (b) can follow if failures show up.
+- **Now:**
+  - **The app names each back part:** `back_kinds` = "list,table", stored with the request. web-51. A scan from before
+    this counts as having a table when its list came in two or more parts.
+  - **A blocked scan keeps Cloud Vision's text** of its photo when the text has been read by then. It isn't waited
+    for.
+  - **When a pack is sent to us**, after the reply (the sender never waits), `review/table_read.py` runs once:
+    1. **Free:** an earlier answer of the item's scans that copied the table is checked again by
+       `nutrition.check()`, using its stored Cloud Vision text.
+    2. **Paid**, only when the photos include the table: one read with the table-only prompt
+       (`extraction/providers/table_prompt.py`).
+       - The prompt is rule 10 of the label prompt, copied word for word, plus the net quantity. The answer is that
+         prompt's `nutrition` object.
+       - It has its own version, `table-<sha>`. The label prompt is unchanged (D-081).
+       - Cost: about Rs 0.6, plus 13 paise for Cloud Vision when no text was stored. One read per item, never per
+         page view.
+  - **Every attempt is stored** in `review_table_reads` (migration 023): its answer, its error (D-172's marker for a
+    block), the second reading and the checked table. None raises out.
+  - **On /review:**
+    - A sent item shows the checked numbers beside the photos, with D-133's tick.
+    - Ticked, `approve()` publishes the table. Unticked, the pack publishes without it, as before.
+    - A failed read shows its error in one line, plus a button ("Read the nutrition table from these photos", one paid
+      read). The button doesn't read again once a usable table is on file.
+  - **Published with its table**, the pack never gets D-168's offer.
+- **The D-133 rules hold:** a number is shown only where Cloud Vision's text of the same photo has it and the table
+  adds up. Publishing goes only through `ReviewService.approve()`.
+- **Measuring on item #71:** `tools/table_read.py 71`, on the server (one paid read). It stores the read and prints
+  what was kept. It never changes the catalogue.
+`tests/test_sent_table.py`.
+
 ---
 
 ## Open and pending

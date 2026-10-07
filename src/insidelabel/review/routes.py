@@ -22,13 +22,15 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse, Response
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.templating import Jinja2Templates
+from starlette.concurrency import run_in_threadpool
 
 from insidelabel import barcode as barcode_rules
 from insidelabel import ratelimit
 from insidelabel.core import engine
 from insidelabel.lenses import infant as infant_lens
+from insidelabel.lenses import nutrition
 from insidelabel.db.categories import COMMON
-from insidelabel.review import accounts, checker
+from insidelabel.review import accounts, checker, table_read
 from insidelabel.review.service import ReviewError, ReviewService
 
 router = APIRouter(prefix="/review", include_in_schema=False)
@@ -179,7 +181,14 @@ def item(request: Request, item_id: int, name: str = Depends(reviewer), error: s
     unsure = barcode_rules.unconfirmed((data["scan"] or {}).get("barcode_check"))
     # D-146: what the tester said about the digits on the phone; supporting evidence only.
     answer = BARCODE_ANSWER.get(((data["scan"] or {}).get("request") or {}).get("barcode_answer"))
+    # D-174: a pack sent to us: its table as read from its photos, and the last attempt.
+    reads = SERVICE.table_reads(item_id) if data["item"]["kind"] == "send_to_us" else []
+    sent_table = next((r["panel"] for r in reads
+                       if (r["panel"] or {}).get("status") in nutrition.SHOWN), None)
     return _page(request, "item.html", name, d=data, form=form, error=error, sources=sources,
+                 sent_table=sent_table, table_read=reads[0] if reads else None,
+                 table_photo=any(table_read.has_table_photo(s["request"])
+                                 for s in [data["scan"] or {}, *data["attempts"]] if s.get("back_image_key")),
                  verdict=verdict, raw=raw, reliability=raw.get("_reliability") or {},
                  diff=_diff(data["current"]["ingredients"], ingredients) if data["current"] else None,
                  mine=data["item"]["status"] == "claimed" and data["item"]["claimed_by"] == name,
@@ -210,6 +219,21 @@ async def _decide(request, item_id, name, action):
         from urllib.parse import quote
         return RedirectResponse(f"/review/item/{item_id}?error={quote(str(e))}", status_code=303)
     return RedirectResponse("/review", status_code=303)
+
+
+@router.post("/item/{item_id}/read-table")
+async def read_table(request: Request, item_id: int, name: str = Depends(reviewer)):
+    """
+    D-174: a person asks for a pack sent to us to have its nutrition table read from its
+    photos (one paid read). Not when a usable read is already stored.
+    """
+    await _form(request, name)
+    data = SERVICE.get(item_id)
+    if data is None or data["item"]["kind"] != "send_to_us" or data["item"]["status"] not in ("open", "claimed"):
+        raise HTTPException(status_code=404, detail={"error": "not_found"})
+    if not any((r["panel"] or {}).get("status") in nutrition.SHOWN for r in SERVICE.table_reads(item_id)):
+        await run_in_threadpool(table_read.read_for_item, SERVICE, MEDIA, item_id, requested_by=name)
+    return RedirectResponse(f"/review/item/{item_id}", status_code=303)
 
 
 @router.post("/item/{item_id}/approve")

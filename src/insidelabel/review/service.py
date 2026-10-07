@@ -256,7 +256,9 @@ class ReviewService:
                      src.get("back_image_key") or scan.get("back_image_key"),
                      Jsonb({"derived_from_version": src.get("id"), "review_item": item_id}))).fetchone()["id"]
                 self._write_version(c, vid, ingredients, statement, claims)
-                self._set_nutrition(c, vid, src.get("nutrition") if nutrition_ok else None, reviewer)
+                # D-174: a pack sent to us has no version; its table is the one read from its photos.
+                table = src.get("nutrition") or (self._sent_table(c, item_id) if q["kind"] == "send_to_us" else None)
+                self._set_nutrition(c, vid, table if nutrition_ok else None, reviewer)
                 c.execute("SELECT publish_version(%s, %s)", (vid, reviewer))
                 resolution = "published_new_version"
 
@@ -344,6 +346,52 @@ class ReviewService:
         with self._connect() as c:
             return c.execute("""SELECT * FROM review_drafts WHERE review_item_id = %s
                                  ORDER BY created_at DESC, id DESC LIMIT 1""", (item_id,)).fetchone()
+
+    # ---------------------------------------------------------------- D-174
+
+    def table_sources(self, item_id):
+        """
+        D-174: a pack sent to us, as its table reader needs it: the item and its scans
+        (the latest first) with their photo, the model's answer, Cloud Vision's text and
+        the request. None for no such item.
+        """
+        with self._connect() as c:
+            q = c.execute("SELECT * FROM review_queue WHERE id = %s", (item_id,)).fetchone()
+            if q is None:
+                return None
+            ids = [q["scan_id"], *(q.get("attempt_scan_ids") or [])]
+            scans = c.execute(
+                """SELECT id, back_image_key, model_raw, ocr, request, prompt_version, created_at FROM scans
+                    WHERE id = ANY(%s::uuid[]) ORDER BY created_at DESC, id DESC""",
+                ([str(i) for i in ids if i],)).fetchall()
+        return {"item": q, "scans": scans}
+
+    def save_table_read(self, item_id, *, source, scan_id=None, model=None, prompt_version=None, build=None,
+                        model_raw=None, model_error=None, ocr_reader=None, ocr_text=None, panel=None,
+                        requested_by=None):
+        """Store one attempt to read an item's table (never edited afterwards, D-092) and return it."""
+        with self._connect() as c:
+            return c.execute(
+                """INSERT INTO review_table_reads (review_item_id, scan_id, source, model, prompt_version, build,
+                                                   model_raw, model_error, ocr_reader, ocr_text, panel,
+                                                   requested_by)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING *""",
+                (item_id, scan_id, source, model, prompt_version, build, model_raw, model_error, ocr_reader,
+                 ocr_text, Jsonb(panel) if panel is not None else None, requested_by)).fetchone()
+
+    def table_reads(self, item_id):
+        """Every attempt to read an item's table, the newest first."""
+        with self._connect() as c:
+            return c.execute("""SELECT * FROM review_table_reads WHERE review_item_id = %s
+                                 ORDER BY created_at DESC, id DESC""", (item_id,)).fetchall()
+
+    @staticmethod
+    def _sent_table(c, item_id):
+        """D-174: the newest table read of an item that has numbers to show (read or partial), or None."""
+        r = c.execute("""SELECT panel FROM review_table_reads
+                          WHERE review_item_id = %s AND panel->>'status' IN ('read', 'partial')
+                          ORDER BY created_at DESC, id DESC LIMIT 1""", (item_id,)).fetchone()
+        return r and r["panel"]
 
     # ---------------------------------------------------------------- helpers
 
