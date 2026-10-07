@@ -29,6 +29,7 @@ sys.path.insert(0, os.path.join(ROOT, "src"))
 
 from insidelabel import repro  # noqa: E402
 from insidelabel.db.store import Store  # noqa: E402
+from insidelabel.extraction.providers import gemini  # noqa: E402
 from insidelabel.media import LocalMedia  # noqa: E402
 
 REGRESSIONS = os.path.join(ROOT, "tests", "regression", "problems")
@@ -90,6 +91,8 @@ def show(store, media, pid, save=None):
               f"prompt {s['prompt_version']} · timings {s['timings']}")
         print(f"    request {json.dumps(s['request'])}")
         print(f"    photos back={s['back_image_key']} front={s['front_image_key']} hold={s['evidence_hold']}")
+        if s.get("model_error"):                                           # D-172
+            print(f"    model error {s['model_error']}")
         check = ((s.get("ocr") or {}).get("back") or {}).get("independent_read")
         if check:                                                         # D-159: the D-118 gate's reading
             print(f"    independent read {json.dumps(check)}")
@@ -107,7 +110,8 @@ def show(store, media, pid, save=None):
         print("    same as what the user saw" if not diff else "    DIFFERS from what the user saw:")
         for d in diff:
             print(f"      {d}")
-        if save and s["model_raw"] and not s["cache_hit"]:
+        # D-172: a blocked answer has no reading to keep as a regression case.
+        if save and s["model_raw"] and not s["cache_hit"] and not gemini.blocked_reason(s["model_raw"]):
             saved.append(s)
 
     if save:

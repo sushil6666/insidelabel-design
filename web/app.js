@@ -1187,6 +1187,7 @@ function finish(body, { lookedUp = false } = {}) {
     pending.attempts += 1;
     // D-103: a photo that isn't a pack (a screen, anything else) can't be sent to a reviewer.
     if (body.scan_id && body.screen.can_send !== false) pending.refused.push(body.scan_id);
+    pending.sendNow = !!body.screen.send_now;                   // D-172: one blocked scan is enough
   }
   pending.resultId = id;           // D-133: the photos in hand belong to this result
   go("result/" + encodeURIComponent(id));
@@ -1272,6 +1273,8 @@ function result(id, sub, tileId) {
       // D-170: the user's own photo with its problem named; older results keep the one line.
       s.problem ? photoProblem(s.problem, heldPhotos(h, s.problem.code === "product_mismatch"))
                 : kinded("p", "problem", { class: "card" }, s.retake),
+      // D-172: Gemini's guard blocked the read; the photos are fine, so a person reads them now.
+      s.send_now && pending.refused.length >= 1 && button("Send it to us", () => go("send"), "primary"),
       button("Retake the photo", () => {
         pending.back = null;
         pending.parts = []; pending.partSources = []; pending.partKinds = [];
@@ -1279,7 +1282,7 @@ function result(id, sub, tileId) {
         // D-108: after "these look like different packs", neither photo can be trusted.
         if (s.headline?.source?.ref === "product_mismatch") { pending.front = null; pending.pairing = false; }
         go("photo");
-      }, "primary"),
+      }, s.send_now ? "" : "primary"),
       // D-118: our second reader couldn't confirm a new pack's list. The person
       // can still have their result from these photos.
       s.can_use_anyway && pending.back && button("Use this one anyway", () => {
@@ -1289,7 +1292,7 @@ function result(id, sub, tileId) {
       pending.attempts >= 2 && s.can_send !== false && el("p", { class: "muted" },
         "Still not working? Try daylight, or another pack. Some labels are printed too small or too shiny to read."),
       // D-070: after two refusals, a person reads the photos instead.
-      pending.refused.length >= 2 && button("Send it to us", () => go("send")),
+      !s.send_now && pending.refused.length >= 2 && button("Send it to us", () => go("send")),
       // D-170: nothing was read, so there is no mistake to report; an app problem still can be.
       problemLink());
     return view;
@@ -2008,14 +2011,15 @@ function problem() {
 // ------------------------------------------------------------------ send it to us (D-070)
 function send() {
   const ids = pending.refused.slice(-6);
-  if (ids.length < 2) return errorView("Take the photo twice first; then you can send it to us.");
+  if (ids.length < (pending.sendNow ? 1 : 2)) return errorView("Take the photo twice first; then you can send it to us.");
   const err = errorLine();
   const go_ = el("button", { type: "button", class: "btn primary" }, "Send the photos");
   const view = el("section", { class: "stack" },
     el("h1", {}, "Send it to us"),
     el("p", {}, "We'll read this pack's label by hand and tell you here when it's ready."),
     el("ul", { class: "plain small" },
-      el("li", {}, `We keep the ${ids.length} photos you took until our team has read them.`),
+      el("li", {}, ids.length === 1 ? "We keep the photos you took until our team has read them."
+                                    : `We keep the ${ids.length} photos you took until our team has read them.`),
       el("li", {}, "Nothing else is sent. Nicknames stay on this phone.")),
     err, go_,
     button("Cancel", () => window.history.back(), "link"));

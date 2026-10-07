@@ -99,6 +99,59 @@ class VisionConfigError(VisionError):
     retryable = False
 
 
+class VisionBlocked(VisionError):
+    """
+    D-172: the model answered with nothing because one of Google's guards stopped it, named
+    in the finish reason. Seen for real on 2026-10-07 (problem report #7, a Britannia pack):
+    RECITATION, the guard against reciting published text, on a word-for-word transcription
+    of a widely printed label. Not the photo and not our setup: a person can still read it.
+    `reason` is the finish reason in lower case ("recitation", "safety", ...).
+    """
+    retryable = False
+
+    def __init__(self, reason, message=None):
+        self.reason = reason
+        super().__init__(message or f"Gemini blocked its answer: finish reason {reason.upper()}")
+
+
+# The finish reasons that mean a guard stopped the answer (google-genai types.FinishReason).
+BLOCK_REASONS = {"RECITATION", "SAFETY", "BLOCKLIST", "PROHIBITED_CONTENT", "SPII"}
+# RECITATION is partly random: the same photos often pass on another try. Two more tries, at
+# once, with the request unchanged: Gemini 3.x ignores temperature (prompt.py) and a seed
+# isn't documented to work on 3.6, so the default sampling is what varies the answer.
+RECITATION_RETRIES = 2
+
+
+def _block_reason(candidates):
+    """The guard that stopped an empty answer, upper case, or None."""
+    for c in candidates or []:
+        fr = c.get("finishReason") if isinstance(c, dict) else getattr(c, "finish_reason", None)
+        name = getattr(fr, "name", None) or (str(fr).rsplit(".", 1)[-1] if fr is not None else None)
+        if name and name.upper() in BLOCK_REASONS:
+            return name.upper()
+    return None
+
+
+# D-172, D-092: a blocked answer is stored as this marker in scans.model_raw, so the scan
+# replays to the same refusal. blocked_reason() is the one place that recognises it: every
+# reader of model_raw either passes it back to /scan as a replay or asks this first.
+def blocked_marker(reason):
+    return json.dumps({"_blocked": reason.upper()})
+
+
+def blocked_reason(text):
+    """The lower-case reason when `text` is a D-172 blocked marker, else None."""
+    if not text or "_blocked" not in text:
+        return None
+    try:
+        obj = json.loads(text)
+    except (TypeError, ValueError):
+        return None
+    if isinstance(obj, dict) and set(obj) == {"_blocked"} and isinstance(obj["_blocked"], str):
+        return obj["_blocked"].lower()
+    return None
+
+
 CONFIG_STATUS = {401, 402, 403, 404}
 
 
@@ -256,8 +309,11 @@ def call_gemini_json(prompt_text, images, schema, api_key=None):
         })
 
     if not getattr(resp, "text", None):
-        raise VisionError(f"Empty response. Finish reason: "
-                          f"{getattr(resp, 'candidates', None)}")
+        candidates = getattr(resp, "candidates", None)
+        blocked = _block_reason(candidates)
+        if blocked:
+            raise VisionBlocked(blocked.lower(), f"Empty response. Finish reason: {candidates}")
+        raise VisionError(f"Empty response. Finish reason: {candidates}")
     return resp.text
 
 
@@ -302,6 +358,9 @@ def call_gemini_rest(images, api_key=None, timeout=90):
     try:
         text = payload["candidates"][0]["content"]["parts"][0]["text"]
     except (KeyError, IndexError) as e:
+        blocked = _block_reason(payload.get("candidates") if isinstance(payload, dict) else None)
+        if blocked:
+            raise VisionBlocked(blocked.lower(), f"Empty response. Finish reason: {blocked}") from e
         raise VisionError(f"Unexpected response envelope: {payload}") from e
     return text
 
@@ -797,11 +856,24 @@ def analyze_images(images, api_key=None, raw_response=None, on_attempt=None):
         sent_front = sent_back = True
 
     if raw_response is not None:
+        # D-172: a stored blocked answer replays to the same refusal; it is never parsed.
+        reason = blocked_reason(raw_response)
+        if reason:
+            raise VisionBlocked(reason)
         text = raw_response
     else:
         caller = (lambda: call_gemini_sdk(images, api_key)) if _HAVE_SDK else \
                  (lambda: call_gemini_rest(images, api_key))
-        text = _with_retries(caller, on_attempt=on_attempt)
+        for tries in range(1, RECITATION_RETRIES + 2):
+            try:
+                text = _with_retries(caller, on_attempt=on_attempt)
+                break
+            except VisionBlocked as e:
+                # D-172: only RECITATION is worth another try; the others are about content.
+                if e.reason != "recitation" or tries > RECITATION_RETRIES:
+                    raise
+                if on_attempt:
+                    on_attempt(tries, 0.0, e)
     # D-092: the raw answer is what makes a scan replayable, so it travels with
     # the result, and with the error when the answer can't be parsed.
     try:

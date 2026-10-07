@@ -509,7 +509,7 @@ class Store:
                     "version_status": vstatus, "queued": queued, "checked": bool(current)}
 
     _TRACE_COLS = ("request_id", "build", "data_version", "engine_version", "prompt_version",
-                   "model_raw", "request", "timings", "ocr", "barcode_check")
+                   "model_raw", "model_error", "request", "timings", "ocr", "barcode_check")
 
     @classmethod
     def _set_trace(cls, conn, sid, trace):
@@ -689,8 +689,9 @@ class Store:
     def send_to_us(self, *, device_id, scan_ids):
         """
         Queue a pack the app couldn't read. Checks what the app claims: the
-        scans are this install's own, every one was refused, at least two, and
-        the photos exist. Returns {"review_id", "duplicate"?} or {"error": code}.
+        scans are this install's own, every one was refused, at least two (one when
+        Gemini blocked its answer, D-172), and the photos exist. Returns
+        {"review_id", "duplicate"?} or {"error": code}.
         """
         with self._connect() as conn:
             uid = self._user(conn, device_id)
@@ -711,7 +712,10 @@ class Store:
             # D-107: the catalogue is filed by barcode; a reviewer can't file a pack without one.
             if not any((r["request"] or {}).get("barcode") for r in rows):
                 return {"error": "no_barcode"}
-            if len(rows) < 2:
+            # D-172: a pack Gemini's guard blocked reads the same way every time, so one scan is
+            # enough; every other refusal keeps D-070's two attempts.
+            blocked = all((r["error_code"] or "").startswith("vision_blocked") for r in rows)
+            if len(rows) < 2 and not blocked:
                 return {"error": "need_two_attempts"}
             if not rows[-1]["back_image_key"]:
                 return {"error": "no_photo"}

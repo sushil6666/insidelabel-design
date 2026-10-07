@@ -80,13 +80,21 @@ RETAKE.update({
                         "labels from real packs, so a website or app picture can't be used.",
     "not_a_food_pack": "This doesn't look like a food pack. Photograph the ingredient list on the back "
                        "of a packaged food or drink.",
+    # D-172 (Sushil, 2026-10-07, "Set A"): Gemini's guard blocked its answer. The photos aren't
+    # the problem, so the line says so; with a barcode a person reads it ("Send it to us" at once).
+    "vision_blocked": "Your photos look fine. Send them to us and our team will read the label and add "
+                      "this pack.",
 })
+# D-172: without a barcode there is nothing to send (D-107); another photo may pass.
+RETAKE_BLOCKED_NO_BARCODE = ("Your photos look fine, but our reader couldn't read this label. Try one more "
+                             "photo, a little closer to the list.")
 # The headline for refusals that aren't about legibility.
 HEADLINE = {
     "back_is_a_screen": "This is a photo of a screen, not a pack.",
     "not_a_food_pack": "This doesn't look like a food pack.",
     # D-118: we read the label, but a second reader couldn't confirm the list.
     "independent_read_failed": "One clearer photo, please.",
+    "vision_blocked": "We couldn't read this pack automatically.",              # D-172
 }
 NOT_A_PACK = ("back_is_a_screen", "not_a_food_pack")
 # When a front was sent too, say which photo is the problem: the front may be a
@@ -131,6 +139,7 @@ PROBLEM_LABEL = {
     "not_a_food_pack": "Not a food pack",
     "product_mismatch": "Front and back look like different packs",
     "independent_read_failed": "One clearer photo, please",
+    "vision_blocked": "Our reader couldn't read this label",                    # D-172
     "unknown": "We couldn't read this label",
     # A barcode photo (D-104). A code that fails its length or check digit was misread.
     "no_barcode": "No barcode found",
@@ -1272,7 +1281,9 @@ def build(*, verdict, display, claim_check, extracted, reliability, profiles,
     if verdict is None:
         error = reliability.get("error")
         recipe = reliability.get("reason") == "recipe"
+        blocked = error == "vision_blocked"                                       # D-172
         retake = ((RETAKE_RECIPE if recipe else None)
+                  or (RETAKE_BLOCKED_NO_BARCODE if blocked and not has_barcode else None)
                   or (RETAKE_BACK.get(error) if "front" in photos_sent else None)
                   or RETAKE.get(error, RETAKE_DEFAULT))
         return {
@@ -1286,6 +1297,8 @@ def build(*, verdict, display, claim_check, extracted, reliability, profiles,
             # D-096/D-103: a pack we couldn't read can go to a reviewer; a photo
             # that isn't a pack can't, and neither can a pack without a barcode (D-107).
             "can_send": error not in NOT_A_PACK and error != "product_mismatch" and has_barcode,
+            # D-172: a blocked read goes to a person after one scan, not D-070's two.
+            "send_now": blocked and has_barcode,
         }
 
     if kind and kind["code"] != "food":

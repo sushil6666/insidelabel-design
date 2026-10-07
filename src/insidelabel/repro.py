@@ -23,7 +23,7 @@ from fastapi.testclient import TestClient
 
 from insidelabel import ratelimit, trace
 from insidelabel.api import main
-from insidelabel.extraction.providers import cloud_vision, ocr_check
+from insidelabel.extraction.providers import cloud_vision, gemini, ocr_check
 
 # The 1x1 PNG the test suite uses: saved regressions carry no photos (photos can
 # hold the shop's location in EXIF, and they stay out of git).
@@ -129,6 +129,10 @@ def replay_scan(scan, media=None, hit=None):
         return {"status": None, "notes": notes + [
             f"nothing to replay: outcome {scan.get('outcome')}, the model never answered"]}
 
+    # D-172: a stored blocked answer replays to the same refusal; it is passed back, never parsed.
+    blocked = gemini.blocked_reason(scan["model_raw"])
+    if blocked:
+        notes.append(f"the model blocked its answer ({blocked})")
     ocr = scan.get("ocr") or {}
     files = {}
     for role, key in (("back", scan.get("back_image_key")), ("front", scan.get("front_image_key"))):

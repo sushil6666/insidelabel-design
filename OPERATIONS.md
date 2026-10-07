@@ -265,6 +265,15 @@ sudo -u insidelabel psql -d insidelabel -c "SELECT (created_at AT TIME ZONE 'Asi
 
 `no_reader` is a scan that ended before the cross-check (a refused photo, a model error).
 
+D-172: a scan whose `error_code` starts `vision_blocked:` is one Gemini's guard refused to answer
+(`recitation` so far: a widely published label), after two retries; the user was offered "Send it to us".
+Every model failure keeps its own words in `scans.model_error`, and `il tools/repro.py show <id>` prints them:
+
+```bash
+sudo -u insidelabel psql -d insidelabel -c "SELECT created_at, outcome, error_code, left(model_error, 120)
+  FROM scans WHERE model_error IS NOT NULL ORDER BY created_at DESC LIMIT 10"
+```
+
 **D-118, "One clearer photo, please":** a new pack whose list Cloud Vision can't confirm is asked
 for one clearer photo before the result. How often, and how often people chose "Use this one
 anyway" (watch it: if testers meet it often, revisit):
