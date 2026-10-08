@@ -34,9 +34,39 @@ body { margin: 0; min-height: 100vh; color: var(--ink); font: 17px/1.55 var(--fo
        background: var(--hero) no-repeat top / 100% 520px; }
 .wrap { max-width: 760px; margin: 0 auto; padding: 0 16px; }
 header.wrap { padding-top: 20px; padding-bottom: 4px; }   /* .wrap alone would zero it */
-/* site-desktop: the wordmark (web/wordmark.css), centred; the header keeps its height (65 px) so
-   nothing below it moves on a phone. */
-.site-top { text-align: center; }
+/* D-179 (supersedes D-152's centred website wordmark): the wordmark on the left, the site's links and
+   "Open the app" on the right from 768 px; on phones a menu button holds them. The header keeps its
+   height (65 px) so nothing below it moves. */
+.site-top { display: flex; align-items: center; gap: 8px; position: relative; min-height: 65px; }
+.site-top .wordmark { margin-right: auto; }
+.site-nav { display: none; gap: 4px; margin: -7px 0; }
+.site-nav a, .site-menu nav a { color: var(--ink); text-decoration: none; font-weight: 600; padding: 12px 10px;
+                                border-radius: 10px; white-space: nowrap; }
+.site-nav a[aria-current="page"] { color: var(--brand); }
+.site-nav a:hover, .site-menu nav a:hover { background: var(--surface); }
+.nav-cta { display: none; background: var(--brand); color: var(--brand-ink) !important; font-weight: 700;
+           text-decoration: none; padding: 10px 18px; border-radius: 999px; white-space: nowrap; }
+.site-menu summary { list-style: none; width: 48px; height: 48px; display: flex; align-items: center;
+                     justify-content: center; border-radius: 50%; cursor: pointer; color: var(--ink);
+                     margin: -7px -8px -7px 0; }   /* 48 px to tap, and the header keeps its 65 px */
+.site-menu summary::-webkit-details-marker { display: none; }
+.site-menu summary svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2;
+                         stroke-linecap: round; }
+.site-menu summary:focus-visible { outline: 3px solid var(--ring); }
+.site-menu nav { position: absolute; right: 16px; top: calc(100% + 4px); z-index: 10; min-width: 220px;
+                 display: flex; flex-direction: column; padding: 8px; background: var(--surface);
+                 border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); }
+.site-menu nav a[aria-current="page"] { color: var(--brand); }
+.site-menu .nav-cta { display: block; text-align: center; margin-top: 6px; }
+@media (prefers-reduced-motion: no-preference) {
+  .site-menu[open] nav { animation: menu-in 180ms cubic-bezier(.1, .7, .1, 1) both; transform-origin: top right; }
+}
+@keyframes menu-in { from { opacity: 0; transform: translateY(-6px) scale(.97); } }
+@media (min-width: 768px) {
+  .site-nav { display: flex; }
+  .site-top > .nav-cta { display: inline-block; margin: -7px 0 -7px 8px; }
+  .site-menu { display: none; }
+}
 /* The wordmark (made by tools/make_wordmark.py, inline in each page): the logo and "InsideLabel"
    in italic, the same on every page and screen. In running text the name stays plain. */
 .wordmark { position: relative; display: inline-flex; align-items: center; border-radius: 8px; }
@@ -64,8 +94,24 @@ h2 { font-size: 22px; margin: 36px 0 10px; }
 .draft { background: var(--note-bg); color: var(--note); border-radius: 16px; padding: 12px 16px; font-weight: 600; }
 a { color: var(--brand); }
 a:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
-footer { margin: 48px auto 32px; color: var(--muted); font-size: 15px; }
-footer a { color: var(--muted); }
+/* D-179: the footer, a deep band on every page: what it is, three short columns, the D-138 promise. */
+.site-foot { margin-top: 56px; padding: 40px 0 28px; background: var(--deep); color: var(--on-deep-muted);
+             font-size: 15px; }
+main:has(> .band-end:last-child) + .site-foot { margin-top: 0; border-top: 1px solid rgba(255, 255, 255, .12); }   /* after the last deep band */
+.site-foot a { color: var(--on-deep); text-decoration: none; display: block; padding: 8px 0; }
+.site-foot a:hover { text-decoration: underline; }
+.site-foot a:focus-visible { outline-color: var(--deep-action); }
+.foot-grid { display: grid; gap: 24px 16px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.foot-about { grid-column: 1 / -1; margin: 0; color: var(--on-deep); font-size: 17px; max-width: 34em; }
+.site-foot h2 { margin: 0 0 4px; font: 700 12px/1.4 var(--font); letter-spacing: .08em; text-transform: uppercase;
+                color: var(--on-deep-muted); }
+.foot-base { margin-top: 28px; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, .16);
+             display: flex; flex-wrap: wrap; gap: 4px 24px; justify-content: space-between; }
+.foot-base p { margin: 0; }
+@media (min-width: 768px) {
+  .foot-grid { grid-template-columns: minmax(0, 2fr) repeat(3, minmax(0, 1fr)); }
+  .foot-about { grid-column: auto; }
+}
 /* D-151: the hero. Text beside the film on landscape screens, above it on phones and portrait
    screens (the same rule picks the 9:16 or 16:9 file in index.html). The box is sized before
    anything loads, so nothing moves (CLS 0). */

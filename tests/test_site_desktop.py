@@ -181,3 +181,21 @@ def test_your_scans_lists_this_phones_results():
     fn = _fn("scans")
     assert "history()" in fn and "yourScans()" in fn and "scanList(all)" in fn
     assert "scans," in APP_JS[APP_JS.index("const routes = {"):APP_JS.index("};", APP_JS.index("const routes = {"))]
+
+
+def test_every_site_page_has_the_same_nav_and_footer():                 # D-179
+    navs, foots = set(), set()
+    for name, html in SITE.items():
+        header = re.search(r"<header.*?</header>", html, re.S).group(0)
+        assert 'class="site-nav"' in header and 'class="site-menu"' in header and 'href="/app/"' in header
+        nav = re.sub(r' aria-current="page"', "", re.search(r'<nav class="site-nav".*?</nav>', header, re.S).group(0))
+        navs.add(nav)
+        cur = re.findall(r'href="([^"]+)" aria-current="page"', header)
+        assert cur == ([] if name == "index" else [f"/{name}"] * 2)      # the page in view, in the bar and the menu
+        foot = re.search(r'<footer class="site-foot">.*?</footer>', html, re.S).group(0)
+        foots.add(foot)
+        assert "none can change what we show" in foot                   # D-138
+        assert 'href="/privacy"' in foot and 'href="/about"' in foot and "mailto:connect@insidelabel.ai" in foot
+    assert len(navs) == 1 and len(foots) == 1
+    assert 'id="how-title"' in SITE["index"]                             # "How it works" lands on its section
+    assert "<script" not in re.search(r"<header.*?</header>", SITE["about"], re.S).group(0)   # no JS for the menu

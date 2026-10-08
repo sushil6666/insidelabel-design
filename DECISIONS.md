@@ -2752,7 +2752,7 @@ waiting on Sushil's "accepted":
   (`web/app.js`) and the scan-speed query (OPERATIONS.md section 5), as in D-150.
 `tests/test_film.py`.
 
-### D-152 · One centred italic wordmark everywhere; the app's links behind a profile menu; "Scan here" first; the website's desktop layout `LOCKED` (2026-10-02); its app-header and menu parts `SUPERSEDED by D-176` (2026-10-08)
+### D-152 · One centred italic wordmark everywhere; the app's links behind a profile menu; "Scan here" first; the website's desktop layout `LOCKED` (2026-10-02); its app-header and menu parts `SUPERSEDED by D-176` (2026-10-08); its website header part `SUPERSEDED by D-179` (2026-10-08)
 **Accepted by Sushil 2026-10-02 ("accepted" for D-152)**, the details below included; built and merged in #91.
 **Sushil, 2026-10-02:** "italic name for brand name everywhere and logo and brand name each page in center"; "In
 the app's header, right corner we will keep user profile icon, once click that the links (Compare, Household
@@ -3671,6 +3671,23 @@ screens already showed (D-091), and nothing is sent anywhere new (D-074).
 - **Motion** (transform and opacity only, off under reduced motion): cards rise in one after another
   (`--stagger`, at most 6); a pressed card dips.
 `tests/test_web.py`.
+
+### D-179 · The website gets a header nav and a real footer `LOCKED` (2026-10-08)
+Step 4, the last, of the plan accepted in D-176 (**accepted by Sushil 2026-10-08**, "please proceed on UI design
+plan", taken as yes to every recommendation). Built by Claude. Supersedes D-152's centred wordmark on the website
+only; the app keeps D-176's header.
+
+- **Header** (every page, 65 px as before, so nothing below it moves): the wordmark on the left. From 768 px, How
+  it works, How we check, About, Privacy and an "Open the app" pill on the right, the page in view marked
+  `aria-current`. On phones one menu button (48 px) opens the same links in a panel; it is a `<details>`, so it
+  needs no script.
+- **Footer** (every page, the same): a deep band with one line on what InsideLabel is ("Each finding names the
+  FSSAI rule or primary document it comes from"), three short columns (Product: Open the app, How it works,
+  Compare packs; Trust: How we check, Report a problem, Privacy; Company: About, Contact), and D-138's "No company
+  whose labels we read pays us, and none can change what we show." The old one-line footers go.
+- Not added: a Google Play badge (the listing is not public yet).
+- Motion: the phone menu panel fades and drops in (transform and opacity, off under reduced motion).
+`tests/test_site_desktop.py`.
 
 ---
 
