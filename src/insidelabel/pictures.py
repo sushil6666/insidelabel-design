@@ -15,15 +15,22 @@ What is stored is a small copy: the long edge at most 480 px, JPEG, rotated by i
 EXIF orientation and then saved without any metadata (no camera, no place, no time).
 The copy has its own key, so the shopper's own photo still goes at 30 days (D-098).
 
+D-186: a reviewer may crop the photo to the pack first (a shopper's front held in a hand
+over a floor, Sushil, 2026-10-08). The crop is four fractions of the photo as shown,
+that is after its EXIF rotation; the order is rotate, crop, shrink, save. The ticks are
+about the cropped copy, and the rectangle is kept on the row. The original is not changed.
+
 The picture is never read for findings (D-004): it only shows what the pack looks like.
 """
 
 import datetime as dt
 import io
+import math
 
 import psycopg
 from PIL import Image, ImageOps
 from psycopg.rows import dict_row
+from psycopg.types.json import Jsonb
 
 LONG_EDGE = 480
 QUALITY = 80
@@ -33,15 +40,68 @@ QUALITY = 80
 TERMS_FROM = "2026-10-08"
 
 
+# D-186: a crop keeps at least this share of each side, and its shape stays between 1:3 and 3:1.
+CROP_MIN_SIDE = 0.2
+CROP_MAX_ASPECT = 3.0
+CROP_KEYS = ("left", "top", "width", "height")
+_EDGE = 1e-4                                     # slack for a box rounded to six places
+
+
 class PictureError(Exception):
     """A photo that can't become a pack picture (shown to the reviewer)."""
 
 
-def shrink(data):
-    """The small, metadata-free JPEG copy of a photo. PictureError if it can't be read."""
+def crop_from_form(form):
+    """
+    D-186: the crop a reviewer drew, from the form's crop_left, crop_top, crop_width and
+    crop_height (fractions 0 to 1 of the photo as shown). None when no crop was drawn.
+    PictureError when it is only partly there or not numbers; the photo checks the rest.
+    """
+    raw = [(form.get(f"crop_{k}") or "").strip() for k in CROP_KEYS]
+    if not any(raw):
+        return None
+    try:
+        crop = {k: float(v) for k, v in zip(CROP_KEYS, raw)}
+    except ValueError:
+        crop = None
+    if crop is None or not all(math.isfinite(v) for v in crop.values()):
+        raise PictureError("The crop couldn't be read. Draw the box again, or reset it.")
+    return crop
+
+
+def _crop_box(crop, size):
+    """The pixel box for a crop on an image of this size. PictureError if the crop isn't allowed."""
+    w, h = size
+    left, top, cw, ch = (crop.get(k) for k in CROP_KEYS)
+    if not all(isinstance(v, (int, float)) and math.isfinite(v) for v in (left, top, cw, ch)):
+        raise PictureError("The crop couldn't be read. Draw the box again, or reset it.")
+    if left < -_EDGE or top < -_EDGE or left + cw > 1 + _EDGE or top + ch > 1 + _EDGE:
+        raise PictureError("The crop goes outside the photo. Draw the box again.")
+    if cw < CROP_MIN_SIDE - _EDGE or ch < CROP_MIN_SIDE - _EDGE:
+        raise PictureError("The crop is too small: keep at least a fifth of the photo's width and height.")
+    aspect = (cw * w) / (ch * h)
+    if not (1 / CROP_MAX_ASPECT - _EDGE <= aspect <= CROP_MAX_ASPECT + _EDGE):
+        raise PictureError("The crop is too long and thin: keep it between 1 to 3 and 3 to 1.")
+    x0, y0 = max(0, round(left * w)), max(0, round(top * h))
+    x1, y1 = min(w, round((left + cw) * w)), min(h, round((top + ch) * h))
+    return x0, y0, x1, y1
+
+
+def shrink(data, crop=None):
+    """
+    The small, metadata-free JPEG copy of a photo, cropped first when a crop is given
+    (D-186). PictureError if it can't be read or the crop isn't allowed.
+    """
     try:
         im = Image.open(io.BytesIO(data))
         im = ImageOps.exif_transpose(im)
+    except Exception as e:                       # PIL raises many kinds for a file it can't read
+        raise PictureError("This photo can't be read. Use a JPEG or PNG.") from e
+    if crop is not None:
+        box = _crop_box(crop, im.size)           # D-186: after the EXIF rotation, before the resize
+    try:
+        if crop is not None:
+            im = im.crop(box)
         im.thumbnail((LONG_EDGE, LONG_EDGE))
         if im.mode not in ("RGB", "L"):
             bg = Image.new("RGB", im.size, (255, 255, 255))
@@ -85,14 +145,15 @@ def product_of(conninfo, *, barcode=None, version_id=None):
     return row and row["id"]
 
 
-def add(conninfo, media, *, product_id, data, source, approved_by, scan_id=None, taken_on=None):
-    """Store the small copy and show it for this product. Returns the new row."""
-    key = media.put(shrink(data), "image/jpeg")
+def add(conninfo, media, *, product_id, data, source, approved_by, scan_id=None, taken_on=None, crop=None):
+    """Store the small copy (cropped first when a crop is given, D-186) and show it for this product. Returns the new row."""
+    key = media.put(shrink(data, crop), "image/jpeg")
     with _connect(conninfo) as c:
         return c.execute(
-            """INSERT INTO pack_pictures (product_id, image_key, source, scan_id, taken_on, approved_by)
-               VALUES (%s, %s, %s, %s, %s, %s) RETURNING *""",
-            (product_id, key, source, scan_id, taken_on or dt.date.today(), approved_by)).fetchone()
+            """INSERT INTO pack_pictures (product_id, image_key, source, scan_id, taken_on, approved_by, crop)
+               VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING *""",
+            (product_id, key, source, scan_id, taken_on or dt.date.today(), approved_by,
+             Jsonb(crop) if crop is not None else None)).fetchone()
 
 
 def remove(conninfo, picture_id, by):
