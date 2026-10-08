@@ -25,6 +25,7 @@ from fastapi.templating import Jinja2Templates
 from starlette.concurrency import run_in_threadpool
 
 from insidelabel import barcode as barcode_rules
+from insidelabel import pictures
 from insidelabel import ratelimit
 from insidelabel.core import engine
 from insidelabel.lenses import infant as infant_lens
@@ -194,7 +195,40 @@ def item(request: Request, item_id: int, name: str = Depends(reviewer), error: s
                  mine=data["item"]["status"] == "claimed" and data["item"]["claimed_by"] == name,
                  correction=corr, categories=SERVICE.categories(), common=COMMON, draft=draft,
                  barcode_unsure=barcode_rules.check_text(unsure) if unsure else None, infant=infant,
-                 barcode_answer=answer)
+                 barcode_answer=answer, **_picture_offer(data))
+
+
+# ---------------------------------------------------------------- pack pictures (D-182)
+
+def _picture_offer(data):
+    """
+    D-182: may this item's front photo become the pack picture? Only a shopper's, from an
+    install that agreed to the terms saying so (pictures.TERMS_FROM). Reviewers' own photos
+    go up on /review/pictures.
+    """
+    front = data["images"]["front"]
+    if not front:
+        return {"picture_offer": None}
+    who = pictures.shopper_front(SERVICE.conninfo, front)
+    pid = (data["version"] or {}).get("product_id")
+    shown = pictures.current(SERVICE.conninfo, pid) if pid else None
+    return {"picture_offer": {"ok": bool(who), "shown": shown,
+                              "why": None if who else "the shopper agreed to terms older than the ones that say "
+                                                      "a front photo may be shown to others, or the photo isn't a "
+                                                      "shopper's. Upload your own on Pack pictures."}}
+
+
+def _make_picture(item_id, front, name):
+    """After a publish: the ticked front photo becomes the product's pack picture."""
+    who = pictures.shopper_front(SERVICE.conninfo, front)
+    got = MEDIA.get(front) if (who and MEDIA) else None
+    data = SERVICE.get(item_id)
+    pid = pictures.product_of(SERVICE.conninfo, version_id=data["item"]["product_version_id"]) if data else None
+    if not (got and pid):
+        raise ReviewError("Published, but the front photo couldn't be used as the pack picture.")
+    pictures.add(SERVICE.conninfo, MEDIA, product_id=pid, data=got[0], source="shopper_photo",
+                 approved_by=name, scan_id=who["scan_id"], taken_on=who["taken_on"])
+
 
 
 @router.post("/item/{item_id}/claim")
@@ -210,7 +244,20 @@ async def _decide(request, item_id, name, action):
     form = await _form(request, name)
     try:
         if action == "approve":
+            # D-182: a person ticks both boxes; the review agent never sets these (it calls approve() itself).
+            front = None
+            if form.get("pack_picture"):
+                if not form.get("pack_alone"):
+                    raise ReviewError("Pack picture: tick that the photo shows the pack alone, or untick it.")
+                data = SERVICE.get(item_id)
+                front = data and data["images"]["front"]
             SERVICE.approve(item_id, name, form)
+            if front:
+                try:
+                    _make_picture(item_id, front, name)
+                except (ReviewError, pictures.PictureError) as e:
+                    from urllib.parse import quote
+                    return RedirectResponse(f"/review/pictures?error={quote(str(e))}", status_code=303)
         elif action == "reject":
             SERVICE.reject(item_id, name, form.get("reason"))
         else:
@@ -249,6 +296,46 @@ async def reject(request: Request, item_id: int, name: str = Depends(reviewer)):
 @router.post("/item/{item_id}/release")
 async def release(request: Request, item_id: int, name: str = Depends(reviewer)):
     return await _decide(request, item_id, name, "release")
+
+
+@router.get("/pictures")
+def picture_list(request: Request, name: str = Depends(reviewer), error: str = None, done: str = None):
+    """D-182: the pack pictures being shown, and a form to upload one of your own."""
+    return _page(request, "pictures.html", name, pictures=pictures.recent(SERVICE.conninfo),
+                 error=error, done=done)
+
+
+@router.post("/pictures")
+async def picture_upload(request: Request, name: str = Depends(reviewer)):
+    """D-182: a reviewer's own photo of a pack's front, for a product in the catalogue."""
+    from urllib.parse import quote
+    form = await _form(request, name)
+    photo = form.get("photo")
+    data = await photo.read() if hasattr(photo, "read") else b""
+    code, reason = barcode_rules.check((form.get("barcode") or "").strip())
+    try:
+        if reason:
+            raise ReviewError(f"Barcode: {barcode_rules.MESSAGES[reason]}")
+        pid = pictures.product_of(SERVICE.conninfo, barcode=code)
+        if not pid:
+            raise ReviewError("No product in the catalogue has that barcode.")
+        if not data:
+            raise ReviewError("Choose a photo of the front of the pack.")
+        if not (form.get("pack_alone") and form.get("same_product")):
+            raise ReviewError("Tick both boxes: the photo shows the pack alone, and it is this product.")
+        pictures.add(SERVICE.conninfo, MEDIA, product_id=pid, data=data, source="reviewer_upload",
+                     approved_by=name)
+    except (ReviewError, pictures.PictureError) as e:
+        return RedirectResponse(f"/review/pictures?error={quote(str(e))}", status_code=303)
+    return RedirectResponse(f"/review/pictures?done={quote(code)}", status_code=303)
+
+
+@router.post("/pictures/{picture_id}/remove")
+async def picture_remove(request: Request, picture_id: int, name: str = Depends(reviewer)):
+    """D-182: stop showing a picture (the row stays, with who removed it)."""
+    await _form(request, name)
+    pictures.remove(SERVICE.conninfo, picture_id, name)
+    return RedirectResponse("/review/pictures", status_code=303)
 
 
 # ---------------------------------------------------------------- photos

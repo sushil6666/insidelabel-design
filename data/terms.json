@@ -1,9 +1,9 @@
 {
   "_meta": {
     "purpose": "The 'Before you start' agreement every beta tester accepts before a first scan (D-105). Change the text, change the version: everyone is asked again.",
-    "who": "Wording by Claude from Sushil's direction (2026-09-26): correct data first; no AI-made pictures; a real person."
+    "who": "Wording by Claude from Sushil's direction (2026-09-26): correct data first; no AI-made pictures; a real person. 2026-10-08 (Sushil, D-182): a shopper's front photo may become the pack picture others see, after a person checks it; and example photos as a suggestion."
   },
-  "version": "2026-09-26",
+  "version": "2026-10-08",
   "title": "Before you start",
   "intro": "InsideLabel only works if every photo is of a real pack. Each one is checked, by our rules and often by a person, before it joins the catalogue. Please agree to these few rules.",
   "points": [
@@ -11,8 +11,27 @@
     "I will only photograph real packs that I am holding or that are in front of me.",
     "I will not upload pictures made or changed by AI, edited photos, or screenshots of websites and apps.",
     "I understand that what I send may be checked by a person, and that made-up or altered pictures are removed and can close my invite.",
+    "I agree that a clear photo I take of the front of a pack may be shown to other InsideLabel users as that product's picture, after a person checks that it shows only the pack.",
     "I understand that InsideLabel shows ingredient facts from the label. It is not medical advice."
   ],
+  "examples": {
+    "title": "Photos that read best",
+    "items": [
+      {
+        "kind": "front",
+        "label": "Front of the pack"
+      },
+      {
+        "kind": "list",
+        "label": "Ingredient list"
+      },
+      {
+        "kind": "table",
+        "label": "Nutrition table"
+      }
+    ],
+    "note": "Flat, sharp, in good light, with the whole panel in the frame. This is a suggestion: any clear photo of the pack works."
+  },
   "agree_label": "I agree to these rules",
   "button": "Continue"
 }

@@ -3727,7 +3727,7 @@ the website; both are undone. Built by Claude.
   when it is still to take.
 `tests/test_web.py`.
 
-### D-182 · The pack picture: a reviewed front photo taken by the team, shown for that barcode `RECOMMENDED` (2026-10-08)
+### D-182 · The pack picture: a reviewed front photo taken by the team, shown for that barcode `RECOMMENDED` (2026-10-08); `ACCEPTED and widened by D-183` (2026-10-08)
 Sushil asked where the app can get real product images ("the UI looks great with a real image"). Options Claude
 checked on 2026-10-08:
 - **Verified by GS1** (gs1.org): the public search allows 30 lookups a day (GS1 UK's page) and shows the brand's
@@ -3759,6 +3759,43 @@ checked on 2026-10-08:
 - **Cost:** storage only, no model call.
 
 Needs Sushil's acceptance.
+
+### D-183 · Pack pictures from reviewers and shoppers, and example photos as a suggestion `LOCKED` (2026-10-08)
+**Sushil, 2026-10-08:** "yes" to D-182, "we will keep user informed as well in initial terms of first page and will
+show good example of front and back ingredient and nutrition table visually so user will follow same ... only
+suggestion we will give to take this way photo not restrict"; then, on the card "Show shoppers' front photos to
+everyone, once a reviewer approves them?", **"Shoppers too"**. Widens D-182's "team only". Built by Claude.
+
+- **What it is:** `pack_pictures` (migration 025): a small copy of a pack's front (`pictures.shrink`: long edge
+  480 px, JPEG, turned upright, saved with no metadata), its source (`reviewer_upload` or `shopper_photo`), the scan
+  it came from, when it was taken, who approved it and, once removed, who removed it. The newest one not removed is
+  shown. The copy has its own key: the shopper's photo still goes at 30 days (D-080, D-098) and stays private.
+- **Only a person makes one, on /review.** On a review item with a front photo, two boxes: "Show this front photo
+  to everyone who scans this barcode" and "It shows the pack alone (no hand, face, person or room) and it is
+  sharp"; the first without the second is refused. The picture is made after the publish, by the route, so the
+  review agent (D-117), which calls `ReviewService.approve()` itself, never makes one. `/review/pictures` lists the
+  pictures shown (with Remove) and takes a reviewer's own upload (barcode of a catalogue product, the photo, and
+  two boxes: the pack alone, this product).
+- **Whose photo:** a shopper's only from an install that agreed to terms `2026-10-08` or later
+  (`pictures.TERMS_FROM`); older photos say why they can't be shown. The terms gain one rule: "I agree that a clear
+  photo I take of the front of a pack may be shown to other InsideLabel users as that product's picture, after a
+  person checks that it shows only the pack." A new version, so everyone sees "Before you start" once more (D-105).
+- **Privacy page:** a paragraph under "Who reads your photos" (a small copy, no hidden details, never a name or
+  install id, never read for a result), and a line under "How long we keep it": kept while the product is in the
+  catalogue, with no link to the person, also after "Delete my data" (like a version's photos, D-129); ask and
+  we take it down.
+- **Served:** `GET /pack-picture/{key}` returns only a key being shown (404 otherwise, every other photo stays
+  private), cached as immutable (keys are content hashes). A catalogue result's `screen.pack_picture` has its URL,
+  alt text and caption ("Photo of the pack, checked by our team on 8 Oct 2026"), worded in `lenses/screen.py`
+  (D-091); absent when the product has none. A replay (`version_hit`) carries none.
+- **The app:** D-177's pack card, the "On the pack" tab and Your scans' thumbnail use the shopper's own photo, else
+  the pack picture with its caption. It is never read for findings (D-004).
+- **Example photos, a suggestion only:** a drawn pack (a made-up "Sample Co. Oat Biscuits", no real brand) in three
+  "good photos": front, ingredient list, nutrition table, each with a tick. "Before you start" shows all three
+  under "Photos that read best" with "This is a suggestion: any clear photo of the pack works" (`terms.json`
+  `examples`); each camera step shows its own above the picker, "Like this: flat, sharp, the whole panel" (the list
+  step's pack-back drawing stays in Tips). Nothing checks a photo against them.
+`tests/test_pack_pictures.py`, `tests/test_web.py`.
 
 ---
 

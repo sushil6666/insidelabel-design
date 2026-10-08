@@ -264,6 +264,11 @@ function agree() {
       el("h1", {}, t.title),
       el("p", { class: "lead" }, t.intro),
       el("ol", { class: "rules" }, t.points.map(p => el("li", {}, p))),
+      // Sushil, 2026-10-08: what a good photo looks like, as a suggestion (the server's words).
+      t.examples && el("section", { class: "examples" },
+        el("h2", {}, t.examples.title),
+        el("div", { class: "example-row" }, t.examples.items.map(x => exampleShot(x.kind, x.label))),
+        el("p", { class: "muted small" }, t.examples.note)),
       el("label", { class: "choice", for: "agree" }, box, " " + t.agree_label),
       err, go_);
     settled(view);
@@ -439,8 +444,15 @@ function scanList(items) {
 }
 
 function packThumb(h) {
+  const src = h?.photo || packPicture(h)?.url;
   return el("span", { class: "scan-thumb", "aria-hidden": "true" },
-    h?.photo ? el("img", { src: h.photo, alt: "" }) : icon("pack"));
+    src ? el("img", { src, alt: "" }) : icon("pack"));
+}
+
+// D-182: the pack picture the server sends for a catalogue pack (a reviewed photo of its front),
+// used only when this phone kept no photo of its own. The server words its alt text and caption.
+function packPicture(h) {
+  return h?.photo ? null : h?.screen?.pack_picture || null;
 }
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -1006,7 +1018,7 @@ function labelShot(o) {
     const preview = el("div", { class: "thumb" });
     let picker = null;
     shot.replaceChildren(...[
-      !o.table && !o.front && el("figure", { class: "pack-back" }, packBack()),
+      exampleShot(o.front ? "front" : o.table ? "table" : "list", "Like this: flat, sharp, the whole panel"),
       el("p", { class: "cam-line" }, o.line),
       why && kinded("p", "info", { class: "muted" }, why),
       (picker = photoPicker(o.role, "Take the photo", preview, (b, res, source) => {
@@ -1623,10 +1635,11 @@ function result(id, sub, tileId) {
 // phone, D-074), its name as the h1 (focus and a screen reader start here, D-153), and Share.
 function packHead(h) {
   const id = h.id;
+  const src = h.photo || packPicture(h)?.url || null;          // D-182: else the pack picture
   return el("div", { class: "pack-head" },
     el("div", { class: "pack-thumb" },
-      el("img", { "data-photo": id, alt: "", src: h.photo || null, hidden: !h.photo }),
-      el("span", { class: "pack-thumb-ph", "data-photo-ph": id, hidden: !!h.photo }, icon("pack"))),
+      el("img", { "data-photo": id, alt: "", src, hidden: !src }),
+      el("span", { class: "pack-thumb-ph", "data-photo-ph": id, hidden: !!src }, icon("pack"))),
     el("div", { class: "pack-name" },
       el("h1", { class: "product" }, productName(h.product)),
       h.product?.net_quantity && el("p", { class: "pack-meta" }, h.product.net_quantity)),
@@ -1686,11 +1699,15 @@ function tabBar(h, tabs, panels) {
 // was read, quoted, with the printed allergen line. Nothing here is our wording about the pack.
 function onThePack(h) {
   const s = h.screen;
+  const pic = packPicture(h);
   return [
     h.photo
       ? el("figure", { class: "pack-photo" }, el("img", { src: h.photo, alt: "Your photo of the pack" }),
           el("figcaption", { class: "muted small" }, "Your photo. It stays on this phone."))
-      : el("p", { class: "muted" }, "No photo of this pack is kept on this phone."),
+      : pic
+        ? el("figure", { class: "pack-photo" }, el("img", { src: pic.url, alt: pic.alt }),     // D-182
+            pic.caption && el("figcaption", { class: "muted small" }, pic.caption))
+        : el("p", { class: "muted" }, "No photo of this pack is kept on this phone."),
     el("div", { class: "card as-printed" },
       el("h2", {}, "The ingredient list as read"),
       el("ol", {}, s.ingredients.map(i => el("li", {}, i))),
@@ -2382,6 +2399,39 @@ window.addEventListener("unhandledrejection", e => {
 
 // D-068: a sample of which side to shoot. D-153: the back of a pack as panels, so "which part?"
 // has an answer. Built from elements (no markup strings); the words are the app's own.
+// Sushil, 2026-10-08: good example photos, shown on "Before you start" and on each camera step,
+// so a shopper sees what reads well. A suggestion, never a rule: any clear photo is accepted.
+// Drawn (a made-up pack), not a real brand's label. kind: "front", "list" or "table".
+const EXAMPLE_LABEL = { front: "Front of the pack", list: "Ingredient list", table: "Nutrition table" };
+function exampleShot(kind, caption = EXAMPLE_LABEL[kind]) {
+  const tiny = t => el("span", { class: "ex-text" }, t);
+  const art = kind === "front"
+    ? el("div", { class: "ex-front" },
+        el("span", { class: "ex-brand" }, "Sample Co."),
+        el("span", { class: "ex-name" }, "Oat Biscuits"),
+        el("span", { class: "ex-claim" }, "Baked with oats"),
+        el("span", { class: "ex-disc" }),
+        el("span", { class: "ex-net" }, "Net wt 100 g"))
+    : kind === "list"
+      ? el("div", { class: "ex-paper" },
+          el("b", { class: "ex-head" }, "INGREDIENTS:"),
+          tiny("Wheat flour (atta) (48%), oats (20%), sugar, edible vegetable oil (palm), invert syrup, " +
+               "milk solids, raising agents (500(ii), 503(ii)), iodised salt, emulsifier (322), flavour."),
+          el("b", { class: "ex-head" }, "ALLERGEN INFORMATION:"),
+          tiny("Contains wheat, oats, milk."))
+      : el("div", { class: "ex-paper" },
+          el("b", { class: "ex-head" }, "NUTRITION INFORMATION"),
+          tiny("Per 100 g"),
+          el("table", { class: "ex-table" }, el("tbody", {},
+            ...[["Energy", "468 kcal"], ["Protein", "7.2 g"], ["Carbohydrate", "68 g"], ["Total sugars", "21 g"],
+                ["Added sugars", "18 g"], ["Total fat", "18 g"], ["Sodium", "310 mg"]]
+              .map(([k, v]) => el("tr", {}, el("td", {}, k), el("td", {}, v))))));
+  return el("figure", { class: "example-shot" },
+    el("div", { class: "ex-photo " + kind, role: "img", "aria-label": `An example photo: the ${caption.toLowerCase()}, filling the frame, flat and sharp` },
+      art, el("span", { class: "ex-ok", "aria-hidden": "true" }, icon("check"))),
+    el("figcaption", {}, caption));
+}
+
 function packBack() {
   const lines = n => Array.from({ length: n }, () => el("span", { class: "pb-line" }));
   return el("div", { class: "pb", role: "img",
