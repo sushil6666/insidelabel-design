@@ -32,6 +32,9 @@ const SHAPES = {
   // D-177: Share on a result: three joined dots.
   share: [["circle", 17.5, 5.5, 2.5], ["circle", 6.5, 12, 2.5], ["circle", 17.5, 18.5, 2.5], "M8.7 10.8l6.6-4", "M8.7 13.2l6.6 4"],
   plus: ["M12 5.5v13", "M5.5 12h13"],
+  // D-185 Phase 2: the photo buttons on the camera steps, and the scanner's light.
+  camera: ["M4 9a2 2 0 0 1 2-2h1.8l1.5-2.2h5.4L16.2 7H18a2 2 0 0 1 2 2v8.5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z", ["circle", 12, 13, 3.6]],
+  torch: ["M8 3.5h8v3.2l-2.2 3.3v9.5a1 1 0 0 1-1 1h-1.6a1 1 0 0 1-1-1V10L8 6.7z", "M12 13.2v2.4"],
   compare: ["M4 4.5h6.5v15H4z", "M13.5 4.5H20v15h-6.5z", "M6.5 9h1.5", "M16 9h1.5", "M6.5 12.5h1.5", "M16 12.5h1.5"],
   // D-169: the message kinds' own symbols.
   retake: ["M18.5 12a6.5 6.5 0 1 1-1.9-4.6", "M18.6 4.6v3.6H15"],
@@ -58,6 +61,8 @@ export function icon(name, cls = "") {
       n = document.createElementNS(NS, "path");
       n.setAttribute("d", s);
     }
+    // D-185: every stroke is 1 long, so CSS can draw it in (stroke-dasharray: 1); no change at rest.
+    n.setAttribute("pathLength", "1");
     svg.append(n);
   }
   return svg;

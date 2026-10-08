@@ -94,8 +94,9 @@ def test_the_six_gold_labels_come_out_exactly_as_before(name):
             before = {k: v for k, v in before.items() if k not in ("checked", "scope")}
             before["ordinary"] = {k: v for k, v in before["ordinary"].items() if k not in ("count", "text")}
             # D-177: each nutrition row carries the numbers its bar is drawn from; its words are unchanged.
+            # D-185 Phase 2: and its own sentence cut in two (amount, why); `text` is still the whole.
             if got.get("nutrition"):
-                got["nutrition"] = {**got["nutrition"], "rows": [{k: v for k, v in r.items() if k != "bar"}
+                got["nutrition"] = {**got["nutrition"], "rows": [{k: v for k, v in r.items() if k not in ("bar", "amount", "why")}
                                                                 for r in got["nutrition"]["rows"]]}
         if key == "disclosures":
             # D-173's follow-up to D-165: "What this check covers" no longer speaks of a score.

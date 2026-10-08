@@ -217,7 +217,7 @@ def test_label_photos_come_in_steps():                                   # D-171
     # Step 2: one line under the camera; step 3 only when the table isn't in that photo.
     assert 'title: n === 1 ? "Photograph the ingredient list"' in app
     assert '"Fit the list, from \\"Ingredients\\" to the last word"' in app
-    assert 'el("h1", {}, "Is the nutrition table in this photo too?")' in app
+    assert 'el("h1", { class: "dock-q" }, "Is the nutrition table in this photo too?")' in app   # D-185: by its answers
     assert '"Yes, check this pack"' in app and '"No, photograph the table"' in app
     assert '"The list continues"' in app and '"This pack has no table"' in app
     assert 'title: "Photograph the nutrition table"' in app
@@ -305,7 +305,7 @@ def test_result_puts_people_first_and_folds_the_rest():                # D-153
     assert re.findall(r'(\w+): "stop"', tone) == ["contains", "may_contain"]
     # Everything else waits under "Worth knowing (n)", except a not-permitted additive (D-111).
     assert "Worth knowing (${notes.length})" in body
-    assert 't.kind === "not_permitted"' in body and 'class: "worth"' in body
+    assert 't.kind === "not_permitted"' in body and 'class: "worth card"' in body          # D-185 Phase 2: a card of rows
     # The result ends on the next pack (D-057), and says what isn't built yet.
     assert "Holding another pack? Scan it to compare" in body
     assert body.count('class: "pending"') == 2
@@ -515,7 +515,7 @@ def test_a_retake_keeps_the_table_photo_and_the_front():                     # D
     review = app[app.index("function shotReview("):app.index("function frontShot(")]
     assert 'const kept = tableIn && pending.lastKind === "list";' in review
     assert 'kept && button("Retake the table too", dropTable, "link")' in review
-    assert 'ask || (kept && n < MAX_PHOTOS) || (listOnly && n < MAX_PHOTOS)\n        ? button("The list continues"' in review
+    assert '(ask || (kept && n < MAX_PHOTOS) || (listOnly && n < MAX_PHOTOS))\n        && button("The list continues"' in review
 
 
 # ---------------------------------------------------------------- D-177: the result screen
