@@ -96,9 +96,8 @@ pytest -q                                    # 375 pass, 1 skipped; DB tests use
 | `INSIDELABEL_REVIEW_TOKEN` | reviewer screen **until the first account exists** (D-097) | then refused; accounts via `tools/reviewers.py` |
 | `INSIDELABEL_ALLOW_REPLAY` | the `replay` form field on `/scan` (D-101) | default off (403); `repro.py`, tools and tests switch it on in-process |
 | `INSIDELABEL_PROXY_HOPS` | rate limits behind a reverse proxy (D-095) | number of proxies; unset → the socket address, `X-Forwarded-For` ignored |
-| `INSIDELABEL_INVITE_ONLY` | the invite-only web beta (D-102) | `on` at deploy: only phones that joined with a code can scan; default off |
 | `INSIDELABEL_LIVE_SHUTTER` | the app's own shutter for the label photos (D-171) | default `off` (the phone's camera app); **`on` on the server since 2026-10-07** while the comparison runs (§8) |
-| `INSIDELABEL_PUBLIC_URL` | join links printed by `tools/beta.py invite` | e.g. `https://yourdomain.in`; or pass `--base` |
+| `INSIDELABEL_PUBLIC_URL` | the site's address in `settings.env` (D-114) | read by no tool since D-184 (the join links went with the invite codes) |
 | `INSIDELABEL_TEST_PG` | run DB tests on a real server | must name a `*_test` database |
 | `INSIDELABEL_CLAIMS_TO_USERS` | show the claim check to users (D-051) | default `off`; turn on only after ≥ 5 claim packs with 0 false contradictions |
 | `INSIDELABEL_DATA` | alternate `data/` dir | rarely needed |
@@ -654,14 +653,17 @@ Nothing was blocked; all five items were built. These need you:
 
 ---
 
-## 8. Next steps - the road to the closed beta (in order)
+## 8. Next steps - the road to release (in order)
 
 Run `python tools/release_check.py` (add `INSIDELABEL_DB=…` for catalogue gates)
 to see where each gate stands. §11 has the full list. Done today: D-051/52/55 decided,
 food categories, PWA built, D-092 reproduction, D-093 Cloud Vision, scan speed,
 setup alarms.
 
-**NEXT SESSION STARTS HERE (2026-10-01).** Where things stand, newest first:
+**NEXT SESSION STARTS HERE (2026-10-08).** No more beta (D-184) is on its branch; after it merges, Sushil pastes the redesign prompt. Where things stand, newest first:
+
+- **`claude/project-thread-naq2w8` (2026-10-08, no migration, web-60, terms 2026-10-08-2), from `main` 2c27878 (#138).** D-184 (LOCKED, Sushil): no more beta. The invite-only beta is removed (join screen, `/join`, the invite gate, `INSIDELABEL_INVITE_ONLY`, `tools/beta.py`; feedback is read with `tools/feedback.py`); the old invite tables stay, unused. No "beta" or "tester" in anything a user sees (`tests/test_no_beta.py`): the photo limit reads "Each phone can photograph {limit} packs in any 24 hours."; the site says "On Android: coming soon on Google Play." and "© 2026 InsideLabel"; the privacy page "Last updated 8 October 2026. A lawyer will review this policy, and we will update it here." "Before you start" loses "can close my invite" (new version: everyone sees it once more).
+  - **Waiting on Sushil:** merge; `update.sh`; the `INSIDELABEL_INVITE_ONLY` line in `/etc/insidelabel/settings.env` now does nothing and can be deleted. The Play listing text and track (Play Console). When the Play app is public, the site's line becomes the Play link.
 
 - **`claude/project-thread-viwmj6` again (2026-10-08, migration 025, web-59, terms 2026-10-08), from `main` cee2162 (#137).** D-183: pack pictures (a reviewer's upload on `/review/pictures`, or a shopper's front ticked on a review item), shown on the result card when the shopper has no photo; a new terms rule and privacy paragraph; example photos on "Before you start" and each camera step.
   - **Waiting on Sushil:** merge; `update.sh` (runs migration 025); everyone sees "Before you start" once more. Upload a few pack pictures on `/review/pictures`.

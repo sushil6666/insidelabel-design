@@ -12,8 +12,8 @@ Inside Label - API (v0.1)
                        (+ barcode: a reviewed catalogue entry skips the vision call)
     POST /report       "Report a mistake" on a scan (D-076)
     POST /send-to-us   two refused scans -> the review queue (D-070)
-    GET  /access       invite-only? joined?   POST /join   a tester's code (D-102)
-    POST /feedback     a tester's comment + optional rating (D-102)
+    GET  /access       rules agreed? the app's switches (D-105, D-171)
+    POST /feedback     a user's comment + optional rating (D-102)
     GET  /.well-known/assetlinks.json   the Play app's link to this site (D-148)
 
 THE GUARD THAT MATTERS
@@ -71,7 +71,6 @@ from insidelabel.extraction.schemas import (  # noqa: E402
     AgreeRequest,
     FeedbackRequest,
     ForgetRequest,
-    JoinRequest,
     ProblemRequest,
     ReportRequest,
     SendToUsRequest,
@@ -116,18 +115,6 @@ def _replay_allowed():
     return os.environ.get("INSIDELABEL_ALLOW_REPLAY", "off").lower() == "on"
 
 
-# D-102: the web beta is invite-only: ~50 named testers, one code each. On a
-# server with INSIDELABEL_INVITE_ONLY=on a phone must join with a code before
-# it can scan, send photos or give feedback. Tests set INVITE_ONLY directly.
-INVITE_ONLY = None             # None: follow the environment, read per request
-
-
-def _invite_only():
-    if INVITE_ONLY is not None:
-        return INVITE_ONLY
-    return os.environ.get("INSIDELABEL_INVITE_ONLY", "off").lower() == "on"
-
-
 # D-171: the app's own shutter for the label photos (ImageCapture at the camera's full
 # resolution). Off until Sushil has compared it with the phone's camera app on real packs;
 # off, the steps take the photo with the camera app as before. The app reads it from /access.
@@ -140,35 +127,10 @@ def _live_shutter():
     return os.environ.get("INSIDELABEL_LIVE_SHUTTER", "off").lower() == "on"
 
 
-# D-105: "Before you start", the rules every tester agrees to before a first
+# D-105: "Before you start", the rules every install agrees to before a first
 # scan. The text is data (wording-linted); a new version asks everyone again.
 with open(os.path.join(os.path.dirname(__file__), "..", "..", "..", "data", "terms.json"), encoding="utf-8") as _f:
     TERMS = {k: v for k, v in json.load(_f).items() if not k.startswith("_")}
-
-
-def _require_invite(device_id):
-    """
-    Refuse a phone that hasn't joined (D-102) or hasn't agreed to the current
-    "Before you start" (D-105), before anything is read or stored (like a 429,
-    D-095; logged, not a scan row). Without a database nobody can be checked,
-    so nobody gets in.
-    """
-    if not _invite_only():
-        return
-    if STORE is None:
-        raise HTTPException(status_code=503, detail={
-            "error": "storage_unavailable", "detail": "Invites need the database (INSIDELABEL_DB is not set)."})
-    code = _persist(STORE.invite_of, device_id) if device_id else None
-    if code is None:
-        log.warning("no invite: device=%s", device_id)
-        raise HTTPException(status_code=403, detail={
-            "error": "invite_required",
-            "detail": "This beta is by invitation. Open the link from your invite, or type its code."})
-    if not _persist(STORE.has_agreed, device_id, TERMS["version"]):
-        log.warning("terms not agreed: device=%s version=%s", device_id, TERMS["version"])
-        raise HTTPException(status_code=403, detail={
-            "error": "terms_required", "terms_version": TERMS["version"],
-            "detail": "Please read and agree to the rules for the beta first."})
 
 
 def _user_claim_check(cc, front_claims):
@@ -1072,7 +1034,6 @@ def send_to_us(req: SendToUsRequest, request: Request, background: BackgroundTas
     reports back when the item is decided.
     """
     _rate_limit(request, "send_to_us", req.device_id, ratelimit.SEND_TEXT)
-    _require_invite(req.device_id)
     if STORE is None:
         raise HTTPException(status_code=503, detail={
             "error": "storage_unavailable",
@@ -1127,7 +1088,6 @@ async def check_photo(
     No model call and nothing stored: this costs nothing but CPU.
     """
     _rate_limit(request, "check_photo", device_id, ratelimit.SCAN_TEXT)
-    _require_invite(device_id)
     if role not in ("barcode", "back", "front"):
         raise HTTPException(status_code=422, detail={"error": "bad_role", "detail": 'role is "barcode", "back" or "front".'})
     img = await _read_image(photo, role)
@@ -1153,22 +1113,13 @@ async def check_photo(
 
 
 # ---------------------------------------------------------------------------
-# Invite-only beta (D-102): join, access, feedback
+# Access, terms and feedback (D-105, D-102; no invite codes since D-184)
 # ---------------------------------------------------------------------------
-_JOIN_ERRORS = {
-    "bad_code": (404, "That code doesn't match an invite. Check it against your message."),
-    "revoked": (410, "That invite has been closed. Ask the person who sent it."),
-    "code_full": (409, "That code is already in use on three devices. Ask for it to be reset."),
-}
-
-
 @app.get("/access")
 def access(device_id: str = ""):
-    """Invite needed? Joined? Agreed to the current rules (D-105)? The app asks on open."""
-    joined = bool(STORE and device_id and _persist(STORE.invite_of, device_id))
+    """Agreed to the current rules (D-105)? The app's switches (D-171). The app asks on open."""
     agreed = bool(STORE and device_id and _persist(STORE.has_agreed, device_id, TERMS["version"]))
-    return {"invite_only": _invite_only(), "joined": joined, "agreed": agreed,
-            "terms_version": TERMS["version"], "live_shutter": _live_shutter()}
+    return {"agreed": agreed, "terms_version": TERMS["version"], "live_shutter": _live_shutter()}
 
 
 @app.get("/pack-picture/{key}")
@@ -1212,35 +1163,10 @@ def agree(req: AgreeRequest, request: Request):
     return {"status": "agreed", "terms_version": TERMS["version"]}
 
 
-@app.post("/join")
-def join(req: JoinRequest, request: Request):
-    """A tester's code, from their link or typed. One code serves up to three devices."""
-    if STORE is None:
-        raise HTTPException(status_code=503, detail={
-            "error": "storage_unavailable", "detail": "Invites need the database (INSIDELABEL_DB is not set)."})
-    try:
-        device = str(uuid.UUID(req.device_id))
-    except ValueError:
-        raise HTTPException(status_code=422, detail={"error": "bad_device_id"})
-    ip = ratelimit.client_ip(request)
-    wait = ratelimit.LIMITER.wait("join_fail", device=device, ip=ip)
-    if wait:
-        raise HTTPException(status_code=429, headers={"Retry-After": str(int(wait) + 1)}, detail={
-            "error": "rate_limited", "detail": ratelimit.JOIN_TEXT, "retryable": True,
-            "retry_after_s": int(wait) + 1})
-    out = STORE.join_invite(req.code, device)
-    if "error" in out:
-        ratelimit.LIMITER.hit("join_fail", device=device, ip=ip)       # only failures count
-        status, text = _JOIN_ERRORS[out["error"]]
-        raise HTTPException(status_code=status, detail={"error": out["error"], "detail": text})
-    return {"status": "joined"}
-
-
 @app.post("/feedback")
 def feedback(req: FeedbackRequest, request: Request):
-    """D-102 "Send feedback": a tester's comment and optional 1-5 rating, stored against their code."""
+    """D-102 "Send feedback": a user's comment and optional 1-5 rating."""
     _rate_limit(request, "feedback", req.device_id, ratelimit.FEEDBACK_TEXT)
-    _require_invite(req.device_id)
     if STORE is None:
         raise HTTPException(status_code=503, detail={
             "error": "storage_unavailable", "detail": "Feedback needs the database (INSIDELABEL_DB is not set)."})
@@ -1255,8 +1181,8 @@ def feedback(req: FeedbackRequest, request: Request):
 @app.post("/forget")
 def forget(req: ForgetRequest, request: Request):
     """
-    D-129 "Delete my data" (DPDP Act s.12(3)). No invite or agreement needed: a
-    tester whose code was revoked can still erase. The database goes first; a
+    D-129 "Delete my data" (DPDP Act s.12(3)). No agreement needed: anyone can
+    erase. The database goes first; a
     photo whose file can't be deleted now keeps its unlinked scan row, so the
     30-day job deletes it later.
     """
@@ -1427,7 +1353,6 @@ async def scan(
     # costs nothing and has its own budget.
     lookup_only = bool(barcode and barcode.strip()) and back is None and front is None and replay is None
     _rate_limit(request, "lookup" if lookup_only else "scan", device_id, ratelimit.SCAN_TEXT)
-    _require_invite(device_id)            # D-102, before any photo is read
     avoid = avoid if avoid and avoid.strip() else None
     avoid_codes = parse_avoid(avoid)
     people = parse_profiles(profiles)

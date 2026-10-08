@@ -839,6 +839,7 @@ the catalogue; it still fills the queue with junk at no cost to the sender.
 ### D-102 · The beta launches on the web first, invite-only, one code per tester `LOCKED` (2026-09-26)
 Its "on the web first" part superseded by D-148 (2026-10-01): the beta runs in the Play Store app; invite codes stay.
 Its invite-code part `SUPERSEDED by D-162` (2026-10-06): no codes; the gate stays in the code, off.
+`SUPERSEDED by D-184` (2026-10-08): no more beta; the invite gate, `/join` and the join screen are removed from the code.
 Direction from Sushil ("launch the website first, then the Android app"; "I will ask
 50 people to test and ask feedback"); design by Claude; accepted by Sushil 2026-09-26.
 
@@ -2663,6 +2664,7 @@ reviews or testers carried over. It is written in `android/twa-manifest.json`, `
 `tests/test_assetlinks.py` fail if any of them moves.
 
 ### D-148 · The beta runs in the Play Store app, free with a daily photo-scan limit; then Pro at Rs 51 a month through Play billing, with Google sign-in `LOCKED` (2026-10-01)
+Its limit screen's words amended by D-184 (2026-10-08): no "During the beta"; the 15-a-day limit stays.
 Direction from Sushil (2026-10-01): "Beta will go with apps, free, with a daily limit on photo scans. Then: Pro at Rs 51
 through Play billing, with Google sign-in that also carries data across." Earlier the same day he proposed ads for
 free users; Claude advised against them (below). Plan and numbers by Claude.
@@ -3796,6 +3798,42 @@ everyone, once a reviewer approves them?", **"Shoppers too"**. Widens D-182's "t
   `examples`); each camera step shows its own above the picker, "Like this: flat, sharp, the whole panel" (the list
   step's pack-back drawing stays in Tips). Nothing checks a photo against them.
 `tests/test_pack_pictures.py`, `tests/test_web.py`.
+
+### D-184 · No more beta: the invite-only beta removed, and no "beta" or "tester" in anything a user sees `LOCKED` (2026-10-08)
+**Sushil, 2026-10-08:** "before that remove all beta options anywhere in app and web, we are no more beta now".
+Plan by Claude, accepted by Sushil the same day with his choices below. Supersedes D-102 (the invite-only beta,
+already off by D-162); amends D-148's wording only (the daily photo limit stays, for cost).
+
+- **Removed:** the join screen ("Welcome to the InsideLabel beta", "Join the beta"), the `join` route and
+  FIRST_RUN step, `joinRequest` (`web/`); the server's invite gate (`_require_invite`, 403 `invite_required`),
+  `POST /join`, `INSIDELABEL_INVITE_ONLY`, `JoinRequest`, the `join_fail` rate limit; the Store's invite methods
+  and `beta_testers`; `tools/beta.py` (its feedback listing moves to `tools/feedback.py`); `tests/test_beta.py`
+  (its feedback tests move to `tests/test_feedback.py`). `/access` now returns `{agreed, terms_version,
+  live_shutter}`.
+- **No migration.** `invites`, `invite_devices` and `feedback.invite_code` stay in place, unused: codes made before
+  D-162 may still be on the server, and retention (D-128) and "Delete my data" (D-129) keep deleting them, so the
+  privacy page's "any invite code" and "any invite link" lines stay. Its "what we collect" line now says codes
+  stopped on 6 October 2026 and no new ones are given (it said "which tester sent a scan").
+- **"Before you start" (D-105) stays:** it is the terms of use every install agrees to, asked by the app. The
+  server only refused un-agreed scans when invite-only was on, so with the gate gone its check (and its "rules
+  for the beta" message) goes too; the live site already worked this way. A server-side check would be a new
+  decision. Rule 4 loses "and can close my invite" (there is none); the text changed, so the version is
+  `2026-10-08-2` and every phone sees it once more (Sushil's choice). `pictures.TERMS_FROM` stays `2026-10-08`,
+  which the new version still meets.
+- **The photo limit (D-148):** "During the beta, each phone can photograph {limit} packs in any 24 hours."
+  becomes "Each phone can photograph {limit} packs in any 24 hours." (`lenses/screen.py`, D-091).
+- **Website:** the meta description drops "In an early beta."; both "In an early beta. On Android, testers get it
+  through Google Play." lines become **"On Android: coming soon on Google Play."** (Sushil chose the public
+  version, as "coming soon" until the Play app is live; then the Play link); the footer "InsideLabel, in beta"
+  becomes **"© 2026 InsideLabel"** on every page (Sushil's choice).
+- **Privacy page:** "Beta version, last updated 6 October 2026. A lawyer will review it before the public
+  launch." becomes **"Last updated 8 October 2026. A lawyer will review this policy, and we will update it
+  here."** (Sushil chose the reworded line). Nothing else in substance changes.
+- **Kept:** DECISIONS.md history; comments naming testers as where an idea came from; migration and table names.
+  `tools/release_check.py` drops "beta" from its header and its access line.
+- **Checked by** `tests/test_no_beta.py`: no app string, screen.py table, website page or meta description,
+  "Before you start" text or server message says "beta" or "tester" ("beta-carotene" is a pigment and passes).
+- **Sushil's own steps:** the Play Store listing text and the Play Console track.
 
 ---
 

@@ -184,7 +184,7 @@ sudo install -m 0600 -o root -g root /opt/insidelabel/app/deploy/secrets.env.exa
 sudoedit /etc/insidelabel/secrets.env          # type the two keys after the = signs
 ```
 
-`settings.env` needs no edits: invite-only on (D-102), one proxy hop (D-095), the
+`settings.env` needs no edits: no invite codes (D-184), one proxy hop (D-095), the
 public address; replay, the claim check and the review token stay unset (D-101,
 D-051, D-097). `tests/test_deploy.py` keeps the template that way.
 
@@ -245,10 +245,7 @@ Checks from your computer:
 curl -s https://insidelabel.ai/health                    # "status":"ok", "build": the commit
 curl -sI https://insidelabel.in | grep -i location        # https://insidelabel.ai/
 curl -sI https://www.insidelabel.ai | grep -i location    # https://insidelabel.ai/
-# A scan without an invite is refused before anything is read (D-102):
-curl -s -X POST https://insidelabel.ai/scan -F device_id=check -F barcode=8901063010208
-#   -> "invite_required"
-# replay is off (D-101); it is refused even before the invite check:
+# replay is off (D-101); it is refused before anything is read:
 curl -s -X POST https://insidelabel.ai/scan -F device_id=check -F replay='{"x":1}'
 #   -> "replay_disabled"
 ```
@@ -280,14 +277,10 @@ manual gate "backups tested by restoring one").
 This is a **paid** Gemini and Cloud Vision call, made by Sushil from the phone.
 
 ```bash
-il tools/beta.py invite 1 --label sushil  # prints https://insidelabel.ai/app/#/join/CODE
-```
-
-On the phone: open the link, agree to "Before you start" (D-105), scan a real pack
+On the phone: open https://insidelabel.ai/app/, agree to "Before you start" (D-105), scan a real pack
 (barcode, then the back photo). Then on the server:
 
 ```bash
-il tools/beta.py list                     # the code: 1 device, 1 scan, agreed today
 sudo -u insidelabel psql -d insidelabel -c "SELECT created_at, outcome, latency_ms, build,
   ocr->'back'->>'reader' AS reader, length(ocr->'back'->>'text') AS ocr_chars
   FROM scans ORDER BY created_at DESC LIMIT 3"
@@ -298,8 +291,7 @@ journalctl -u insidelabel -n 50 --no-pager | grep -iE "SETUP ALARM|error" || ech
 
 (`il tools/repro.py list` shows problem reports, not scans.)
 
-The site is live. Invites to testers wait for the privacy page and the DPDP review
-(STATE.md §8).
+The site is live and open to everyone (D-184).
 
 ---
 
@@ -311,8 +303,7 @@ The site is live. Invites to testers wait for the privacy page and the DPDP revi
 | Roll back to a commit | `sudo /opt/insidelabel/app/deploy/update.sh <commit>` |
 | Follow the app's log | `journalctl -u insidelabel -f` |
 | Is it up? | `curl -s https://insidelabel.ai/health` |
-| Invite a tester | `il tools/beta.py invite 1 --label T07` |
-| Testers, scans, days active | `il tools/beta.py list` |
+| What people wrote in "Send feedback" | `il tools/feedback.py` |
 | A reported problem | `il tools/repro.py show <id>` (D-092) |
 | Add a reviewer | `il tools/reviewers.py add <name>` |
 | What retention would delete | `il tools/retention.py` |

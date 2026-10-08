@@ -163,7 +163,7 @@ def test_the_limit_messages_pass_the_wording_lint():
         r = scan(dev)
     assert "minute" in r.json()["detail"]
     test_wording.assert_clean([r.json()["detail"], ratelimit.PROBLEM_TEXT, ratelimit.SEND_TEXT,
-                                ratelimit.JOIN_TEXT, ratelimit.FEEDBACK_TEXT], "429 bodies")
+                                ratelimit.FEEDBACK_TEXT], "429 bodies")
 
 
 # ---------------------------------------------------------------- /problem

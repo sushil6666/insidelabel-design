@@ -27,8 +27,9 @@ def test_delete_my_data_erases_the_install_and_its_photos(env):
         json.dumps({"profiles": FAMILY, "avoid": ["milk"]}), refused)
     store.save_feedback(device_id=dev, comment="nice")
     store.save_problem(kind="user", device_id=dev, scan_id=refused, comment="odd")
-    [code] = store.create_invites(1, label="T98")
-    store.join_invite(code, dev)
+    # D-184: no new codes, but a code joined before D-162 can still be on the server.
+    sql(uri, "INSERT INTO invites (code) VALUES ('T98T98T9') RETURNING code")
+    sql(uri, "INSERT INTO invite_devices (user_id, code) VALUES (%s, 'T98T98T9') RETURNING code", dev)
 
     r = c.post("/forget", json={"device_id": dev})
     assert r.status_code == 200 and r.json()["status"] == "deleted"
@@ -67,8 +68,7 @@ def test_a_photo_another_install_also_sent_stays(env):
     assert exists(media, key)
 
 
-def test_no_invite_needed_and_a_bad_id_is_nothing(env, monkeypatch):
-    monkeypatch.setattr(main, "INVITE_ONLY", True)
+def test_a_new_or_bad_id_is_nothing(env):
     assert c.post("/forget", json={"device_id": str(uuid.uuid4())}).json() == {"status": "nothing_stored"}
     assert c.post("/forget", json={"device_id": "not-a-uuid"}).json() == {"status": "nothing_stored"}
 

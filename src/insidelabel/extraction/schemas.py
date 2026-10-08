@@ -84,13 +84,6 @@ class ReportRequest(BaseModel):
     note: Optional[str] = Field(None, max_length=2000)
 
 
-class JoinRequest(BaseModel):
-    """D-102: a tester's invite code, as typed or from their link."""
-
-    code: str = Field(..., max_length=40)
-    device_id: str = Field(..., max_length=64)
-
-
 class AgreeRequest(BaseModel):
     """D-105: this install accepts this version of "Before you start"."""
 
@@ -105,7 +98,7 @@ class ForgetRequest(BaseModel):
 
 
 class FeedbackRequest(BaseModel):
-    """D-102 "Send feedback": what a tester thinks. Not a mistake (D-076), not a problem (D-092)."""
+    """D-102 "Send feedback": what a user thinks. Not a mistake (D-076), not a problem (D-092)."""
 
     device_id: str = Field(..., max_length=64)
     comment: str = Field(..., max_length=4000)

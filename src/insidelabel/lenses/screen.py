@@ -1222,13 +1222,14 @@ def barcode_check(code):
             "yes": BARCODE_CHECK_YES, "again": BARCODE_CHECK_AGAIN}
 
 
-# D-148: the beta's daily photo-scan limit, shown in place of an error when an install
+# D-148: the daily photo-scan limit, shown in place of an error when an install
 # has used its photo scans. The window is a rolling 24 hours (ratelimit.py), so the
 # words give the time the next photo scan is free rather than "tomorrow". Barcode
-# lookups have their own budget and still work. No upsell in the beta, and no result
+# lookups have their own budget and still work. No upsell, and no result
 # exists on this screen, so it carries no allergen line (D-060 needs a reading).
 PHOTO_LIMIT_TITLE = "Photo scans used for now"
-PHOTO_LIMIT_TEXT = "During the beta, each phone can photograph {limit} packs in any 24 hours."
+# D-184: no "during the beta" any more; the limit stays (cost control).
+PHOTO_LIMIT_TEXT = "Each phone can photograph {limit} packs in any 24 hours."
 PHOTO_LIMIT_BARCODE = "Scanning a barcode still works for packs we already know."
 PHOTO_LIMIT_WHEN = "You can photograph another pack in about {n} {unit}."
 PHOTO_LIMIT_SCAN = "Scan a barcode"

@@ -61,9 +61,6 @@ RULES = {
     # Failed reviewer logins (D-097), counted per name and per address. Only
     # failures are counted; while locked, even the right password is refused.
     "review_login_fail": {"name": [(10, 900)], "ip": [(30, 900)]},
-    # Wrong invite codes (D-102): only failures count. Codes are 8 characters
-    # from 31, so this is about noise, not about guessing one.
-    "join_fail": {"device": [(10, 3_600)], "ip": [(30, 3_600)]},
     "feedback": {"device": [(20, 86_400)], "ip": [(100, 86_400)]},
     "agree": {"device": [(20, 3_600)], "ip": [(200, 3_600)]},
     # Checking a photo as it's picked (D-104): no model call, a few per scan.
@@ -78,7 +75,6 @@ SCAN_TEXT = ("You've checked a lot of packs in a short time. Please wait about {
              "minute{s} and try again.")
 PROBLEM_TEXT = "We've had a lot of reports from this phone just now. Please try again later."
 SEND_TEXT = "You've sent us a lot of packs today. Please try again tomorrow."
-JOIN_TEXT = "Too many codes tried from this phone. Please wait a while and check your invite."
 FEEDBACK_TEXT = "Thank you for all the feedback today. Please send more tomorrow."
 FORGET_TEXT = "That was tried a few times just now. Please try again in an hour."
 

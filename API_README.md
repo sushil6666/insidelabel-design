@@ -31,8 +31,8 @@ pip install -e . && uvicorn insidelabel.api.main:app --reload
 | `POST /report` | live (needs DB) | "Report a mistake": `{scan_id, field, proposed_value?, note?}` → correction + review queue (D-076); `proposed_value` or `note` needs 3+ characters, else 422 `empty_report` (D-109) |
 | `GET /app/` | live | the PWA (`web/`, D-090); `/` redirects here |
 | `POST /send-to-us` | live (needs DB) | "Send it to us" after two refused scans: `{device_id, scan_ids[]}` (this install's own, all refused, ≥ 2) → one `send_to_us` review item with every attempt's photos, held past retention; `/updates` reports back (D-070, D-096) |
-| `GET /access`, `POST /join` | live (join needs DB) | invite-only beta (D-102; off since D-162, `invite_only: false`): `?device_id=` → `{invite_only, joined}`; `{code, device_id}` → joined / 404 / 409 full / 410 revoked |
-| `POST /feedback` | live (needs DB) | "Send feedback": `{device_id, comment, rating?, screen?}` → stored against the tester's code (D-102) |
+| `GET /access` | live | `?device_id=` → `{agreed, terms_version, live_shutter}`: "Before you start" agreed (D-105), the app's switches (D-171). No invite codes and no `/join` since D-184 |
+| `POST /feedback` | live (needs DB) | "Send feedback": `{device_id, comment, rating?, screen?}` → stored with the install (D-102) |
 | `GET /`, `/privacy`, `/about` | live | public pages from `web/site/` (D-102); privacy and about are drafts |
 | `POST /problem` | live (needs DB) | "Report a problem" / app crash: `{kind, comment?, request_id?, scan_id?, client, events[]}` → problem report (D-092) |
 

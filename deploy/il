@@ -3,7 +3,7 @@
 # server's settings (settings.env only: no API keys are needed by the tools).
 #
 #   il tools/reviewers.py add sushil
-#   il tools/beta.py invite 5 --label T01
+#   il tools/feedback.py             # what people wrote in "Send feedback"
 #   il tools/retention.py            # list what would be deleted
 #   il tools/repro.py show <id>
 #   il migrate                       # apply migrations to the server database

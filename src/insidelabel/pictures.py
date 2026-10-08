@@ -28,7 +28,8 @@ from psycopg.rows import dict_row
 LONG_EDGE = 480
 QUALITY = 80
 # The first terms that tell a shopper their front photo may be shown to others.
-# Versions are ISO dates, so a later version compares greater.
+# Versions are ISO dates (a second one on a day adds "-2", D-184), so a later version
+# compares greater.
 TERMS_FROM = "2026-10-08"
 
 
