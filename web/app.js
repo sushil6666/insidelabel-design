@@ -172,6 +172,12 @@ function revealAfterPeople(view) {
     if (c.matches(".product, .rescan, .people, .result-top")) continue;
     c.classList.add("reveal");
     c.style.setProperty("--i", String(Math.min(i++, 6)));
+    // D-185 Phase 2 (Sushil, 2026-10-08: "result cards arriving"): a tab's own blocks arrive one after
+    // another, after the headline and the tabs.
+    if (c.matches(".tab-panel")) {
+      let j = 0;
+      for (const card of c.children) card.style.setProperty("--j", String(Math.min(j++, 5)));
+    }
   }
 }
 
@@ -278,7 +284,7 @@ function feedback() {
     if (!text) { err.textContent = "Write a few words first."; return; }
     try {
       await feedbackRequest({ comment: text, rating, screen: from });
-      show(el("section", { class: "stack" }, el("h1", {}, "Thank you"),
+      show(el("section", { class: "stack done-step" }, doneSpot(), el("h1", {}, "Thank you"),
         el("p", {}, "We read every note. It shapes what we build next."),
         button("Done", () => go(""), "primary")));
     } catch (ex) {
@@ -333,11 +339,11 @@ async function home() {
   // D-185: two columns from 1024 px; the recent scans take the second.
   return el("section", { class: "stack home" },
     el("div", { class: "home-a stack" },
-      el("button", { type: "button", class: "scan-cta", onclick: () => { resetPending(); go("scan"); } },
+      playWhileSeen(el("button", { type: "button", class: "scan-cta", onclick: () => { resetPending(); go("scan"); } },
         el("span", { class: "scan-cta-words" },
           el("span", { class: "scan-cta-title" }, "Scan here"),
           el("span", { class: "scan-cta-icon", "aria-hidden": "true" }, icon("forward"))),
-        scanLoop()),
+        scanLoop())),
       updates,
       checkingFor(),
       shopListCard(),
@@ -352,8 +358,7 @@ async function home() {
 // D-185: the drawing on "Scan here" (app.css .loop): a pack's barcode swept, its label read in the
 // logo's gold, a result card with a tick. Decoration only, so hidden from screen readers.
 function scanLoop() {
-  const tick = icon("check");
-  tick.querySelector("path").setAttribute("pathLength", "1");
+  const tick = icon("check");                            // its stroke is 1 long (icons.js), so it draws in
   return el("span", { class: "loop", "aria-hidden": "true" },
     el("span", { class: "pk" }, el("span", { class: "bars" }), el("span", { class: "sweep" }),
       ...[1, 2, 3].map(n => el("span", { class: "ln ln" + n }, el("i", {})))),
@@ -695,31 +700,42 @@ function scanAgain() {
 
 async function scan() {
   const video = el("video", { class: "viewfinder", muted: true, playsinline: true, "aria-label": "Camera" });
-  const status = el("p", { class: "muted", role: "status" }, "Starting the camera…");
+  // D-185 Phase 2: the camera's one line sits on the camera, where the eye already is.
+  const status = el("p", { class: "cam-status", role: "status" }, "Starting the camera…");
   // D-104: a barcode comes from the live scanner or from a photo read on the
   // server, never typed: a mistyped number would file a pack under someone
   // else's product.
   const preview = el("div", { class: "thumb" });
   const next = el("div", {});
-  const view = el("section", { class: "stack" },
+  // app-polish: corner guides say where the barcode goes; a slow gold line says the camera is looking.
+  const cam = el("div", { class: "viewfinder-wrap scan-cam" }, video,
+    el("div", { class: "frame", "aria-hidden": "true" }, el("i", {}), el("i", {}), el("i", {}), el("i", {}),
+      el("span", { class: "scanline" })),
+    status);
+  const view = el("section", { class: "stack scan-step" },
     stepLine(1, "Barcode"),                                       // D-171
     el("h1", {}, "Scan the barcode"),
-    // app-polish: corner guides say where the barcode goes; a slow line says the camera is looking.
-    el("div", { class: "viewfinder-wrap" }, video, el("div", { class: "frame", "aria-hidden": "true" },
-      el("i", {}), el("i", {}), el("i", {}), el("i", {}), el("span", { class: "scanline" }))),
-    status,
-    // D-107: a pack without a barcode can still be checked from its ingredients
-    // photo; it just isn't added to the catalogue. Kept near the top, where it's seen.
-    button("No barcode? Photograph the ingredients", () => { pending.barcode = null; go("photo"); }),
-    el("h2", {}, "Or use a photo of the barcode"),
-    photoPicker("barcode", "Take a photo of the barcode", preview, (_blob, res) => {
-      next.replaceChildren();
-      if (res?.ok && res.barcode) {
-        next.append(button("Look up this pack", () => lookUp(res.barcode, "photo"), "primary"));
-      }
-    }),
+    playWhileSeen(cam),
+    // D-185 Phase 2: the two other ways in, as two quiet buttons under the camera. D-107: a pack
+    // without a barcode can still be checked from its ingredients photo; it just isn't added to the
+    // catalogue. Kept first, where it's seen.
+    el("div", { class: "scan-alt" },
+      button("No barcode? Photograph the ingredients", () => { pending.barcode = null; go("photo"); }),
+      photoPicker("barcode", "Take a photo of the barcode", preview, (_blob, res) => {
+        next.replaceChildren();
+        if (res?.ok && res.barcode) {
+          next.append(button("Look up this pack", () => lookUp(res.barcode, "photo"), "primary"));
+        }
+      })),
     preview,
     next);
+  // No live scanner here: a drawing of a barcode takes the camera's place, so the line under it
+  // still has something to point at; the gold line stays still (nothing is being read).
+  const drawn = text => {
+    video.replaceWith(el("div", { class: "scan-drawn", "aria-hidden": "true" }, el("span", { class: "bars" })));
+    cam.classList.add("drawn");
+    status.textContent = text;
+  };
 
   const seq = navSeq;
   if (await barcodeSupported()) {
@@ -731,10 +747,16 @@ async function scan() {
       // D-124: a light for dim shelves, and help if nothing reads after a while.
       if (stop.hasTorch) {
         let on = false;
-        const t = button("Turn on the light", async () => {
-          if (await stop.torch(!on)) { on = !on; t.textContent = on ? "Turn off the light" : "Turn on the light"; }
-        }, "link");
-        status.after(t);
+        const t = el("button", { type: "button", class: "cam-light", "aria-pressed": String(on) },
+          icon("torch"), el("span", {}, "Turn on the light"));
+        t.addEventListener("click", async () => {
+          if (await stop.torch(!on)) {
+            on = !on;
+            t.setAttribute("aria-pressed", String(on));
+            t.lastChild.textContent = on ? "Turn off the light" : "Turn on the light";
+          }
+        });
+        cam.append(t);
       }
       setTimeout(() => {
         if (seq === navSeq && stopCamera === stop) {
@@ -744,13 +766,11 @@ async function scan() {
       }, 8000);
     }).catch(e => {
       record("camera", { started: false, error: String(e?.name || e) });
-      video.parentElement.remove();
-      status.textContent = "We couldn't open the camera here. Take or upload a photo of the barcode instead.";
+      drawn("We couldn't open the camera here. Take or upload a photo of the barcode instead.");
     });
   } else {
     record("camera", { barcode_detector: false });
-    video.parentElement.remove();
-    status.textContent = "This browser can't read barcodes live. Take or upload a photo of the barcode instead.";
+    drawn("This browser can't read barcodes live. Take or upload a photo of the barcode instead.");
   }
   return view;
 }
@@ -760,7 +780,7 @@ async function lookUp(code, how) {
   record("barcode", { how, digits: code.length });
   pending.barcode = code;
   pending.barcodeSource = how;
-  show(working("Looking up this pack…", false));
+  show(working("Looking up this pack…", false, null, "barcode"));
   try {
     const { body } = await scanRequest({ barcode: code, barcodeSource: how, screenPack: pending.screenPack,
                                          barcodeAnswer: pending.rescanned ? "rescanned" : null });
@@ -778,13 +798,14 @@ async function lookUp(code, how) {
 // D-146: a code for a pack we haven't checked, shown back before the ingredients photo,
 // its first 3 and last 4 digits large. Every word is the server's (lenses/screen.py, D-091).
 function digitCheck(c) {
-  return el("section", { class: "stack" },
+  return el("section", { class: "stack digit-check" },
+    stepLine(1, "Barcode"),                                       // D-185 Phase 2: still step 1
     el("h1", {}, c.title),
     el("p", {}, c.text),
     el("p", { class: "digits", "aria-label": c.code },
       el("span", { class: "big" }, c.first), el("span", { class: "small" }, c.middle),
       el("span", { class: "big" }, c.last)),
-    el("div", { class: "row wrap" },
+    el("div", { class: "dock" },                                  // D-185 Phase 2: in thumb reach
       button(c.yes, () => {
         pending.barcodeAnswer = pending.rescanned ? "rescanned" : "confirmed";
         record("barcode_check", { answer: pending.barcodeAnswer });
@@ -810,8 +831,15 @@ const MAX_PHOTOS = 3;                    // D-119's limit: back, back2, back3
 const frontNeeded = () => !!pending.frontWanted;
 const steps = () => frontNeeded() ? 4 : 3;
 
+// D-185 Phase 2: the steps as dots; the current one is a pill that moves over from the step before
+// (app.css .step-dots). The words say the same, so the dots are hidden from a screen reader.
 function stepLine(n, what) {
-  return el("p", { class: "kicker step" }, el("span", {}, `Step ${n} of ${steps()}`), el("span", {}, what));
+  const total = steps();
+  return el("p", { class: "kicker step" },
+    el("span", { class: "step-dots", "aria-hidden": "true", style: `--n:${n - 1}` },
+      Array.from({ length: total }, (_x, i) => el("i", { class: i < n - 1 ? "done" : i === n - 1 ? "now" : "" })),
+      el("b", { class: n === 1 ? "first" : "" })),
+    el("span", {}, `Step ${n} of ${steps()}`), el("span", { class: "step-what" }, what));
 }
 
 function photo() {
@@ -914,10 +942,11 @@ function shotReview(res = undefined, frontRes = undefined) {
     show(listShot());
   };
   const dropTable = () => { setParts(partRows().filter(r => r[2] !== "table")); show(tableShot()); };
+  // D-185 Phase 2: the photos in hand arrive one after another (app.css .taken figure).
   const pics = el("div", { class: shown.length === 1 ? "thumb" : "taken" },
     shown.map((b, i) => shown.length === 1
       ? el("img", { src: URL.createObjectURL(b), alt: "Your photo of the ingredient list" })
-      : el("figure", { class: "thumb" }, el("img", { src: URL.createObjectURL(b), alt: `Your photo: ${shownNames[i]}` }),
+      : el("figure", { class: "thumb", style: `--i:${i}` }, el("img", { src: URL.createObjectURL(b), alt: `Your photo: ${shownNames[i]}` }),
           el("figcaption", { class: "muted" }, shownNames[i]))));
   const line = frontRes !== undefined ? checkLine(frontRes, () => show(frontShot()), "front")
     : res === undefined ? null : checkLine(res, retake);
@@ -936,28 +965,34 @@ function shotReview(res = undefined, frontRes = undefined) {
   return el("section", { class: "stack shot-review" },
     frontIn ? stepLine(4, "Front")
       : stepLine(tableIn && !kept ? 3 : 2, kept ? names[lists - 1] : names[n - 1]),
-    pics, line,
-    ask ? el("h1", {}, "Is the nutrition table in this photo too?")
-      : el("h1", {}, m === 1 ? "The ingredient list is in" : m === 2 ? "Both photos are in"
+    pics,
+    // D-185 Phase 2: the retakes sit under the photos they act on.
+    el("div", { class: "retakes" },
+      (ask || (kept && n < MAX_PHOTOS) || (listOnly && n < MAX_PHOTOS))
+        && button("The list continues", () => show(listShot()), "link"),
+      button(tableIn && !kept ? "Retake the table" : "Retake", retake, "link"),
+      kept && button("Retake the table too", dropTable, "link"),
+      pending.front && button("Retake the front", () => show(frontShot()), "link")),
+    line,
+    // D-185 Phase 2: once the photos are in, a check draws itself beside the words. The table
+    // question sits in the dock, right above its two answers.
+    !ask && el("h1", { class: "photos-in" }, kindIcon("done", true), m === 1 ? "The ingredient list is in" : m === 2 ? "Both photos are in"
         : m === 3 ? "All three photos are in" : "All four photos are in"),
-    // D-100: the reviewer reads the brand, name and claims from the front. D-181: required while
-    // the catalogue wants it, so no "optional" link; the "same pack" box sits above the check
-    // it unlocks. Sent with the back in the one /scan.
-    pending.front && el("label", { class: "choice" },
-      el("input", { type: "checkbox", id: "pairing", checked: pending.pairing,
-                    onchange: e => {
-                      pending.pairing = e.target.checked;
-                      if (frontIn) check.disabled = !pending.pairing;
-                    } }),
-      m === 2 ? " Both photos are of the same pack" : " All these photos are of the same pack"),
-    check,
-    ask && button("No, photograph the table", () => show(tableShot())),
-    el("div", { class: "row between" },
-      ask || (kept && n < MAX_PHOTOS) || (listOnly && n < MAX_PHOTOS)
-        ? button("The list continues", () => show(listShot()), "link") : el("span", {}),
-      button(tableIn && !kept ? "Retake the table" : "Retake", retake, "link")),
-    kept && button("Retake the table too", dropTable, "link"),
-    pending.front && button("Retake the front", () => show(frontShot()), "link"));
+    // D-185 Phase 2 (D-171): the answer docks at the bottom on a phone, in thumb reach.
+    el("div", { class: "dock" },
+      ask && el("h1", { class: "dock-q" }, "Is the nutrition table in this photo too?"),
+      // D-100: the reviewer reads the brand, name and claims from the front. D-181: required while
+      // the catalogue wants it, so no "optional" link; the "same pack" box sits above the check
+      // it unlocks. Sent with the back in the one /scan.
+      pending.front && el("label", { class: "choice" },
+        el("input", { type: "checkbox", id: "pairing", checked: pending.pairing,
+                      onchange: e => {
+                        pending.pairing = e.target.checked;
+                        if (frontIn) check.disabled = !pending.pairing;
+                      } }),
+        m === 2 ? " Both photos are of the same pack" : " All these photos are of the same pack"),
+      check,
+      ask && button("No, photograph the table", () => show(tableShot()))));
 }
 
 // The front photo (D-100), then back to the same answer screen. D-181: a required step while
@@ -988,8 +1023,11 @@ function labelShot(o) {
     el("div", { class: "cam-title" }, el("h1", {}, o.title), tips));
   if (o.back) view.backTo = o.back;
   const shot = el("div", { class: "stack" });
-  view.append(shot);
-  if (o.after) view.append(o.after);
+  // D-185 Phase 2 (D-171, D-181): on a phone the step's action docks at the bottom of the screen,
+  // in thumb reach; what else the step offers (o.after) sits with it.
+  const dock = el("div", { class: "dock" });
+  view.append(shot, dock);
+  if (o.after) dock.append(o.after);
 
   // The phone's camera app (D-102's file inputs): the default, and the way back when the live
   // camera can't open. photoPicker shows the photo and the check's line, with Retake.
@@ -997,13 +1035,20 @@ function labelShot(o) {
     const preview = el("div", { class: "thumb" });
     let picker = null;
     shot.replaceChildren(...[
-      exampleShot(o.front ? "front" : o.table ? "table" : "list", "Like this: flat, sharp, the whole panel"),
-      el("p", { class: "cam-line" }, o.line),
+      el("div", { class: "card shot-card" },
+        exampleShot(o.front ? "front" : o.table ? "table" : "list", "Like this: flat, sharp, the whole panel"),
+        el("p", { class: "cam-line" }, o.line)),
       why && kinded("p", "info", { class: "muted" }, why),
-      (picker = photoPicker(o.role, "Take the photo", preview, (b, res, source) => {
-        if (b && !(res && !res.ok)) o.onShot(b, res, source);
-      }, o.checkAs || "back"), leadWith(picker, true), picker),
       preview].filter(Boolean));
+    picker = photoPicker(o.role, "Take the photo", preview, (b, res, source) => {
+      if (b && !(res && !res.ok)) o.onShot(b, res, source);
+    }, o.checkAs || "back");
+    leadWith(picker, true);
+    dock.prepend(picker);
+    // D-185 Phase 2: the step's other answer ("This pack has no table") right under the main one,
+    // "Upload a photo" last.
+    const take = o.after && picker.querySelector("label.btn:not(.link)");
+    if (take) take.after(o.after);
   };
   if (!liveOn()) {
     appCamera(null);
@@ -1066,7 +1111,7 @@ async function checkShot(o, file, source, again) {
   const wait = el("div", { class: "thumb" }, el("p", { class: "muted", role: "status" }, "Preparing photo…"));
   show(el("section", { class: "stack shot-review" }, o.step, wait));
   const out = await checkPhoto(o.role, o.checkAs || "back", file, b => wait.replaceChildren(
-    el("img", { src: URL.createObjectURL(b), alt: "Your photo" }),
+    el("span", { class: "shot reading" }, el("img", { src: URL.createObjectURL(b), alt: "Your photo" })),
     el("p", { class: "muted", role: "status" }, "Checking the photo…")));
   if (!out) return;
   const { blob, res } = out;
@@ -1160,11 +1205,13 @@ function photoPicker(role, label, preview, onPick, checkAs = role) {
     preview.replaceChildren(el("p", { class: "muted" }, "Preparing photo…"));
     let img = null;
     const out = await checkPhoto(role, checkAs, file, b => {
-      img = el("img", { src: URL.createObjectURL(b), alt: `Your ${role} photo` });
+      // D-185 Phase 2: a gold line passes over the photo while it is checked (app.css .shot.reading).
+      img = el("span", { class: "shot reading" }, el("img", { src: URL.createObjectURL(b), alt: `Your ${role} photo` }));
       preview.replaceChildren(img, el("p", { class: "muted", role: "status" }, "Checking the photo…"));
     });
     if (!out) return;
     const { blob, res } = out;
+    img?.classList.remove("reading");
     preview.replaceChildren(img, checkLine(res, () => document.getElementById("pick-" + role)?.click(), role));
     onPick(blob, res, source);
   };
@@ -1176,7 +1223,7 @@ function photoPicker(role, label, preview, onPick, checkAs = role) {
   };
   const box = TOUCH
     ? el("div", { class: "row" },
-        input("pick-" + role, true), el("label", { for: "pick-" + role, class: "btn" }, label),
+        input("pick-" + role, true), el("label", { for: "pick-" + role, class: "btn" }, icon("camera"), label),
         input("upload-" + role, false), el("label", { for: "upload-" + role, class: "btn link" }, "Upload a photo"))
     : el("div", { class: "drop" },
         input("pick-" + role, false), el("label", { for: "pick-" + role, class: "btn" }, "Choose a photo"),
@@ -1297,7 +1344,8 @@ async function sendPhotos() {
 // D-068: honest about speed. The API has no progress events, so we show time passing,
 // what a first read usually takes and, for one photo, the two stages the app knows
 // (app-polish): the photo going up, then the reading. No percentage, no invented steps.
-function working(text, reading, stages = null) {
+// D-185 Phase 2: a drawing of what is happening (readArt) above the track, moving from the first frame.
+function working(text, reading, stages = null, art = "label") {
   const secs = el("span", {}, "0");
   const slow = el("p", { class: "muted" });
   const t0 = Date.now();
@@ -1305,6 +1353,7 @@ function working(text, reading, stages = null) {
     if (!secs.isConnected) return clearInterval(timer);
     const n = Math.round((Date.now() - t0) / 1000);
     secs.textContent = String(n);
+    if (n >= 3) time.classList.remove("early");          // D-185 Phase 2: no "0 s" while it has only begun
     // D-124: a slow read should not look like a hang. D-154: no cause is named, because the
     // app can't see one (a slow scan is usually Gemini, or the fallback reader, not "busy").
     if (reading && n >= 20 && !slow.textContent) {
@@ -1312,14 +1361,16 @@ function working(text, reading, stages = null) {
     }
   }, 1000);
   const title = el("h1", {}, stages ? stages[0] : text);
+  const time = el("p", { class: "muted wait-time early", role: "timer" }, secs, " s");
   const parts = (stages || [text]).map((_s, i) => el("span", { class: i === 0 ? "now" : "" }));
-  const view = el("section", { class: "stack center wait", "aria-busy": "true" },
-    spot("pack"),
+  const view = el("section", { class: "stack center wait" + (reading ? " reading" : ""), "aria-busy": "true" },
+    art === "barcode" && stepLine(1, "Barcode"),                  // D-185 Phase 2: a lookup is still step 1
+    readArt(art),
     el("div", { class: "track", "aria-hidden": "true" }, parts),
     title,
-    reading && el("p", { class: "muted" },
+    reading && el("p", { class: "muted wait-note" },
       "The first read of a pack takes about 8 to 15 seconds. Once a pack is in our catalogue, its barcode gives the result at once."),
-    el("p", { class: "muted", role: "timer" }, secs, " s"),
+    time,
     slow);
   // The photo is up: the first stage is done and the reading is the one running.
   view.next = () => {
@@ -1328,6 +1379,20 @@ function working(text, reading, stages = null) {
     title.textContent = stages[1];
   };
   return view;
+}
+
+// D-185 Phase 2: the waiting screen's drawing. "label": a label whose lines light up in the logo's
+// gold, one after another, while a lens moves down them (a 4.8 s loop). "barcode": a barcode with
+// the gold line passing over it. Decoration only; the title says what is happening.
+function readArt(art) {
+  if (art === "barcode") {
+    return el("div", { class: "read-art barcode", "aria-hidden": "true" },
+      el("span", { class: "sheet" }, el("span", { class: "bars" }), el("span", { class: "sweep" })));
+  }
+  return el("div", { class: "read-art", "aria-hidden": "true" },
+    el("span", { class: "sheet" }, el("b", {}, "INGREDIENTS:"),
+      [100, 86, 94, 70, 90, 62, 80].map((w, i) => el("span", { class: "ln", style: `width:${w}%;--i:${i}` }, el("i", {})))),
+    el("span", { class: "lens" }));
 }
 
 function finish(body, { lookedUp = false } = {}) {
@@ -1387,13 +1452,20 @@ function table() {
 
 // D-133: the nutrition table beside ICMR-NIN's thresholds. Every sentence is the server's.
 // `ask`: offer the table photo here; off when the first screen already offers it (D-134).
+// D-185 Phase 2 (D-177): a row leads with its label and amount, then its bar, then the rest of its
+// sentence (`why`); the server cuts both from the sentence (screen.py), so no word is the app's.
+// A row without them (an older result) shows its sentence whole.
 function nutritionView(n, h, ask = true) {
   return el("div", { class: "card nutrition" },
-    el("h2", {}, n.title),
-    n.basis && el("p", { class: "muted small" }, n.basis),
-    n.rows.map(r => el("div", { class: `nut-row tone-${r.tone}` },
-      el("p", {}, r.tone === "worth" && kindIcon("worth"), r.text),
-      r.bar && nutBar(r))),
+    el("div", { class: "card-head" }, el("h2", {}, n.title), n.basis && el("span", { class: "chip basis" }, n.basis)),
+    n.rows.map((r, i) => el("div", { class: `nut-row tone-${r.tone}` },
+      r.amount && r.why
+        ? [el("p", { class: "nut-head" },
+            el("span", { class: "nut-label" }, r.tone === "worth" && kindIcon("worth"), r.label),
+            el("span", { class: "nut-amount" }, r.amount)),
+          r.bar && nutBar(r, i),
+          el("p", { class: "nut-why" }, r.why)]
+        : [el("p", {}, r.tone === "worth" && kindIcon("worth"), r.text), r.bar && nutBar(r, i)])),
     n.servings.map(x => el("p", { class: "nut-serving" }, x.text)),
     n.adults && el("p", { class: "muted small" }, n.adults),
     n.also && el("p", { class: "muted small" }, n.also),
@@ -1458,21 +1530,24 @@ function result(id, sub, tileId) {
       // D-170: the user's own photo with its problem named; older results keep the one line.
       s.problem ? photoProblem(s.problem, heldPhotos(h, s.problem.code === "product_mismatch"))
                 : kinded("p", "problem", { class: "card" }, s.retake),
-      // D-172: Gemini's guard blocked the read; the photos are fine, so a person reads them now.
-      s.send_now && pending.refused.length >= 1 && button("Send it to us", () => go("send"), "primary"),
-      // D-173: the list is retaken; the table photo and the front stay (D-108: not after two packs).
-      button("Retake the photo", () => retakeList(h, s.problem?.code || s.headline?.source?.ref),
-             s.send_now ? "" : "primary"),
-      // D-118: our second reader couldn't confirm a new pack's list. The person
-      // can still have their result from these photos.
-      s.can_use_anyway && pending.back && button("Use this one anyway", () => {
-        pending.acceptUnconfirmed = true;
-        sendPhotos();
-      }),
       pending.attempts >= 2 && s.can_send !== false && el("p", { class: "muted" },
         "Still not working? Try daylight, or another pack. Some labels are printed too small or too shiny to read."),
-      // D-070: after two refusals, a person reads the photos instead.
+      // D-070: after two refusals, a person reads the photos instead. Beside the hint, so the dock
+      // below stays one button high (D-185 Phase 2).
       !s.send_now && pending.refused.length >= 2 && button("Send it to us", () => go("send")),
+      // D-185 Phase 2: the way on stays in thumb reach, docked above the bar while the photo scrolls.
+      el("div", { class: "dock retake-dock" },
+        // D-172: Gemini's guard blocked the read; the photos are fine, so a person reads them now.
+        s.send_now && pending.refused.length >= 1 && button("Send it to us", () => go("send"), "primary"),
+        // D-173: the list is retaken; the table photo and the front stay (D-108: not after two packs).
+        button("Retake the photo", () => retakeList(h, s.problem?.code || s.headline?.source?.ref),
+               s.send_now ? "" : "primary"),
+        // D-118: our second reader couldn't confirm a new pack's list. The person
+        // can still have their result from these photos.
+        s.can_use_anyway && pending.back && button("Use this one anyway", () => {
+          pending.acceptUnconfirmed = true;
+          sendPhotos();
+        })),
       // D-170: nothing was read, so there is no mistake to report; an app problem still can be.
       problemLink());
     return view;
@@ -1529,9 +1604,9 @@ function result(id, sub, tileId) {
     : el("div", { class: `band band-${s.band.code}` },
         el("strong", {}, s.band.label),
         s.band.note && el("details", {}, el("summary", {}, "What does this mean?"), el("p", {}, s.band.note)));
-  if (notes.length) you(el("div", { class: "worth" },
+  if (notes.length) you(el("div", { class: "worth card" },
     el("h2", { class: "h-serif" }, `Worth knowing (${notes.length})`),
-    el("ol", { class: "notes" }, notes.map((t, i) => noteItem(h, t, i + 1)))));
+    el("ol", { class: "notes" }, notes.map(t => noteItem(h, t)))));
   you(el("details", { class: "item answers-fold" },
     el("summary", {}, "The three answers"),
     el("div", { class: "stack worth-body" }, !s.tiles && legacyLooks(s), answers, s.glance && glanceView(s.glance, true))));
@@ -1585,10 +1660,10 @@ function result(id, sub, tileId) {
     reportLink(h));
 
   // D-153: what's promised and not built yet, said plainly (D-058/D-059 alternatives, D-113 Ask).
-  you(el("div", { class: "pending" }, el("span", {}, "Other packs without what's on your avoid list"),
-      el("span", { class: "pending-tag" }, "In preparation")),
-    el("div", { class: "pending" }, el("span", {}, "Ask about this pack"),
-      el("span", { class: "pending-tag" }, "In preparation")));
+  // D-185 Phase 2 (D-177): one quiet line at the end, not two dashed boxes.
+  you(el("p", { class: "soon" }, el("span", { class: "pending-tag" }, "In preparation"),
+    el("span", { class: "pending" }, "Other packs without what's on your avoid list"),
+    el("span", { class: "pending" }, "Ask about this pack")));
 
   // What's inside: everything D-153 kept under "More about this pack", open.
   panels.inside.append(...moreAbout(h, !askTable, false));
@@ -1782,11 +1857,11 @@ function legacyLooks(s) {
 // (screen.py `bar`). Decoration: the sentence says the same, so the bar is hidden from a
 // screen reader. Amber only where the server's tone is "worth" (D-169); it fills in as it
 // scrolls into view.
-function nutBar(r) {
+function nutBar(r, i = 0) {
   const top = Math.max(r.bar.value, r.bar.line) * 1.25 || 1;
   const pct = x => `${Math.min(100, (x / top) * 100).toFixed(1)}%`;
   const fill = el("span", { class: "nut-fill", style: `--to:${(Math.min(r.bar.value, top) / top).toFixed(3)}` });
-  const bar = el("div", { class: `nut-bar nb-${r.tone}`, "aria-hidden": "true" },
+  const bar = el("div", { class: `nut-bar nb-${r.tone}`, "aria-hidden": "true", style: `--i:${Math.min(i, 5)}` },
     el("span", { class: "nut-track" }, fill),
     el("span", { class: "nut-line", style: `left:${pct(r.bar.line)}` }),
     el("span", { class: "nut-line-label", style: `left:${pct(r.bar.line)}` }, `${fmtNum(r.bar.line)} ${r.bar.unit}`));
@@ -1909,11 +1984,14 @@ function glanceView(g, compact = false) {
   const ring = svgEl("svg", { viewBox: "0 0 124 124", role: "img",
     "aria-label": order.map(t => `${g.labels[t]} ${g.counts[t]}`).join(", ") },
     svgEl("circle", { cx: 62, cy: 62, r, fill: "none", style: "stroke: var(--line)", "stroke-width": 18 }));
+  // D-185 Phase 2: each entry's arc starts its own circle (rotated to its place), so it can fill from
+  // its start: stroke-dashoffset from its length to 0, one after another (app.css .ring-seg).
   let off = 0;
-  order.forEach(t => {
+  order.forEach((t, i) => {
     const len = Math.max(c * g.counts[t] / g.total - (order.length > 1 ? 2 : 0), 1);
-    ring.append(svgEl("circle", { cx: 62, cy: 62, r, fill: "none", style: `stroke: var(--g-${t})`, "stroke-width": 18,
-      "stroke-dasharray": `${len} ${c}`, "stroke-dashoffset": -off, transform: "rotate(-90 62 62)" }));
+    ring.append(svgEl("circle", { cx: 62, cy: 62, r, fill: "none", class: "ring-seg",
+      style: `stroke: var(--g-${t}); --len: ${len.toFixed(2)}; --i: ${i}`, "stroke-width": 18,
+      "stroke-dasharray": `${len} ${c}`, transform: `rotate(${(-90 + off / c * 360).toFixed(2)} 62 62)` }));
     off += c * g.counts[t] / g.total;
   });
   ring.append(svgEl("text", { x: 62, y: 64, "text-anchor": "middle", "font-size": 22, "font-weight": 700 }, String(g.total)));
@@ -1943,7 +2021,9 @@ function personCard(p) {
   // D-140: a baby line carries its source; the cite is the server's words.
   const detail = [...p.allergens.slice(1).map(a => ({ text: a.text })), ...p.child_facts];
   const kind = PERSON_KIND[p.status];
+  // D-185 Phase 2 (D-177): the person's initial beside their line, the same disc as on home.
   return el("div", { class: `person-line ${PERSON_TONE[p.status] || "calm"}`, "data-status": p.status },
+    who && avatar(who),
     el("span", { class: "who" }, who ? who.nickname : "Someone in your household"),
     el("b", { class: "line" }, kind && kindIcon(kind), fill(p.line, p.ref)),
     detail.length > 0 && el("details", {}, el("summary", {}, "More"),
@@ -1952,19 +2032,22 @@ function personCard(p) {
           f.sources.map(x => el("a", { href: x.url, target: "_blank", rel: "noopener" }, x.cite))))))));
 }
 
-// D-153: a tile as a numbered note: the server's title and chip, its first source by name,
-// and the way to the tile's page (D-134).
-function noteItem(h, t, n) {
+// D-153: a tile as a note: the server's title and chip, its first source by name, and the way to the
+// tile's page (D-134). D-185 Phase 2 (D-177): a row led by its kind's symbol (D-169), the chip under
+// the title, and the first source's title on one line (its page and the full citations are on the
+// tile's page).
+function noteItem(h, t) {
   const d = h.screen.details?.[t.id];
-  const cites = (d?.sources || []).map(x => x.cite).filter(Boolean);
-  // The first source by name; the note's page lists every one in full.
-  const src = cites.length > 1 ? `${cites[0]} · and ${cites.length - 1} more` : cites[0];
+  const names = (d?.sources || []).map(x => x.title || x.cite).filter(Boolean);
+  const src = names.length > 1 ? `${names[0]} · and ${names.length - 1} more` : names[0];
+  const kind = t.tone === "worth" ? "worth" : "info";
   return el("li", {},
-    el("span", { class: "cite" }, `[${n}]`),
     el("a", { class: "note-link", href: `#/result/${encodeURIComponent(h.id)}/look/${encodeURIComponent(t.id)}` },
-      el("span", {}, el("strong", {}, t.title), " ", el("span", { class: "muted" }, t.chip)),
-      el("span", { class: "tile-arrow", "aria-hidden": "true" }, icon("chevron-right"))),
-    src && el("span", { class: "src" }, src));
+      el("span", { class: `note-icon k-${kind}` }, kindIcon(kind, true)),
+      el("span", { class: "note-text" }, el("strong", {}, t.title),
+        el("span", { class: `chip tone-${t.tone === "worth" ? "worth" : "calm"}` }, t.chip),
+        src && el("span", { class: "src" }, src)),
+      el("span", { class: "tile-arrow", "aria-hidden": "true" }, icon("chevron-right"))));
 }
 
 // D-140: one question, for one profile, until it's answered; every word is the server's.
@@ -2051,7 +2134,7 @@ function report(id) {
     try {
       await reportRequest({ scan_id: h.scan_id, field: field.value,
                             proposed_value: said.value.trim() || null, note: note.value.trim() || null });
-      show(el("section", { class: "stack" }, el("h1", {}, "Thank you"),
+      show(el("section", { class: "stack done-step" }, doneSpot(), el("h1", {}, "Thank you"),
         el("p", {}, "Our team will look at the pack. You'll see what they found on the home screen."),
         button("Done", () => go(""), "primary")));
     } catch (ex) {
@@ -2193,11 +2276,12 @@ function kinded(tag, kind, attrs, ...kids) {
 // phone, nothing uploaded again), the problem's short label, then the fix line. Every word is the
 // server's (screen.PROBLEM_LABEL and the RETAKE lines); the photo shows only while it is held.
 function photoProblem(p, photos = [], ...after) {
+  // D-185 Phase 2: the reason and the fix first, then the photo they are about.
   return el("div", { class: "card k-problem photo-problem", role: "note" },
-    photos.length > 0 && el("div", { class: "problem-photos" },
-      photos.map(([b, alt]) => el("img", { src: URL.createObjectURL(b), alt }))),
     el("p", { class: "problem-label" }, kindIcon("problem"), p.label),
-    el("p", {}, p.fix), ...after);
+    el("p", {}, p.fix),
+    photos.length > 0 && el("div", { class: "problem-photos" },
+      photos.map(([b, alt]) => el("img", { src: URL.createObjectURL(b), alt }))), ...after);
 }
 
 // The photos this result was read from, while this phone still holds them (pending is
@@ -2229,6 +2313,13 @@ function errorLine() {
 // A D-123 answer chip: "worth" carries the worth-a-look symbol; "calm" stays plain.
 function toneChip(r) {
   return el("span", { class: `chip tone-${r.tone}` }, r.tone === "worth" && kindIcon("worth"), r.chip);
+}
+
+// D-185 Phase 2: a screen that says something was sent opens on a check that draws itself (D-169's done).
+function doneSpot() {
+  const box = spot("check");
+  box.classList.add("k-done");
+  return box;
 }
 
 // The error and limit screens' drawing, in the problem colour.
@@ -2305,7 +2396,7 @@ function problem() {
     e.preventDefault();
     try {
       const { body } = await problemRequest({ kind: "user", comment: comment.value.trim() || null, ...incident });
-      show(el("section", { class: "stack" }, el("h1", {}, "Thank you"),
+      show(el("section", { class: "stack done-step" }, doneSpot(), el("h1", {}, "Thank you"),
         el("p", {}, `We've got it. Your reference is #${body.problem_id}.`),
         el("p", { class: "muted" }, "Quote it if you write to us about this."),
         button("Done", () => go(""), "primary")));
@@ -2323,21 +2414,20 @@ function send() {
   if (ids.length < (pending.sendNow ? 1 : 2)) return errorView("Take the photo twice first; then you can send it to us.");
   const err = errorLine();
   const go_ = el("button", { type: "button", class: "btn primary" }, "Send the photos");
-  const view = el("section", { class: "stack" },
+  const view = el("section", { class: "stack send-step" },
     el("h1", {}, "Send it to us"),
     el("p", {}, "We'll read this pack's label by hand and tell you here when it's ready."),
     el("ul", { class: "plain small" },
       el("li", {}, ids.length === 1 ? "We keep the photos you took until our team has read them."
                                     : `We keep the ${ids.length} photos you took until our team has read them.`),
       el("li", {}, "Nothing else is sent. Nicknames stay on this phone.")),
-    err, go_,
-    button("Cancel", () => window.history.back(), "link end"));
+    err, el("div", { class: "dock" }, go_, button("Cancel", () => window.history.back(), "link end")));
   go_.addEventListener("click", async () => {
     go_.disabled = true;
     try {
       await sendToUsRequest(ids);
       resetPending();
-      show(el("section", { class: "stack" }, el("h1", {}, "Thank you"),
+      show(el("section", { class: "stack done-step" }, doneSpot(), el("h1", {}, "Thank you"),
         el("p", {}, "Our team will read the label. You'll see it on the home screen when it's ready."),
         button("Done", () => go(""), "primary")));
     } catch (ex) {
@@ -2468,6 +2558,25 @@ function setupHeaderEdge() {
   set();
 }
 
+// D-185 (Sushil, 2026-10-08): the calm loops (home's drawing, the scan line, the reading) play on while
+// they are on screen. With the app in the background they hold still (app.css .app-away), and a loop
+// scrolled out of view holds where it is (playWhileSeen).
+function setupLoops() {
+  const away = () => document.documentElement.classList.toggle("app-away", document.hidden);
+  document.addEventListener("visibilitychange", away);
+  away();
+}
+
+function playWhileSeen(node) {
+  if (!("IntersectionObserver" in window)) return node;
+  const io = new IntersectionObserver(es => {
+    if (!node.isConnected) return io.disconnect();
+    node.classList.toggle("still", !es[es.length - 1].isIntersecting);
+  });
+  io.observe(node);
+  return node;
+}
+
 function setupTabbar() {
   const scanBtn = document.getElementById("tab-scan");
   if (scanBtn) scanBtn.addEventListener("click", () => { record("tab_scan"); resetPending(); go("scan"); });
@@ -2480,6 +2589,7 @@ function setupTabbar() {
 setupMenu();
 setupTabbar();
 setupHeaderEdge();
+setupLoops();
 window.addEventListener("hashchange", route);
 deviceId();
 record("start", { app_version: APP_VERSION });

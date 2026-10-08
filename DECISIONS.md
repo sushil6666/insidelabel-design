@@ -3338,7 +3338,7 @@ Built by Claude.
 `tests/test_photo_problems.py` (every refusal code has a label: the codes are gathered from gates.py, photo_check,
 `CHECK_MESSAGES` and barcode.MESSAGES), `tests/test_web.py`.
 
-### D-171 · The label photos in steps, one job per screen; the app's own shutter behind a switch `LOCKED` (2026-10-07)
+### D-171 · The label photos in steps, one job per screen; the app's own shutter behind a switch `LOCKED` (2026-10-07); where a step's action sits on a phone `SUPERSEDED by D-185` (2026-10-08)
 A tester's feedback via Sushil, 2026-10-07: he liked the barcode scan; the ingredients and the nutrition table should
 come next the same way, step by step; the photo page carried too much at once. **Accepted by Sushil 2026-10-07:
 "accepted"** (mockups of every screen, light and dark, 390 x 844), **with one change to the order:** "the in-app shutter
@@ -3627,7 +3627,7 @@ bars (D-169), "Buy on Amazon" and "better rated options" (D-088, D-138), and the
 - Unchanged: every word about a pack (D-091), D-146's digit check, the scan flow's steps, the result's layout.
 `tests/test_site_desktop.py`, `tests/test_web.py`.
 
-### D-177 · The result screen: a pack card with the user's photo, three tabs, nutrition bars, Share `LOCKED` (2026-10-08)
+### D-177 · The result screen: a pack card with the user's photo, three tabs, nutrition bars, Share `LOCKED` (2026-10-08); its person lines, Worth knowing list, nutrition rows, "In preparation" block and desktop layout `SUPERSEDED by D-185` (2026-10-08)
 Step 2 of the plan accepted in D-176 (**accepted by Sushil 2026-10-08**, "please proceed on UI design plan", taken as
 yes to every recommendation). Built by Claude. Layout and motion only: every word about the pack still comes from
 `lenses/screen.py` (D-091), and nothing new judges it (D-004, D-064).
@@ -3714,7 +3714,7 @@ the website; both are undone. Built by Claude.
 - Unchanged: D-179's footer, D-176's bottom bar and back arrow, the header heights (65 px on the website).
 `tests/test_site_desktop.py`.
 
-### D-181 · The front photo is required while the catalogue wants it `LOCKED` (2026-10-08)
+### D-181 · The front photo is required while the catalogue wants it `LOCKED` (2026-10-08); where its "Check this pack" sits on a phone `SUPERSEDED by D-185` (2026-10-08)
 **Sushil, 2026-10-08:** "make the front photo mandatory". Supersedes the front's "link, not a step" in D-171
 (Sushil, 2026-10-07). Built by Claude.
 
@@ -3978,6 +3978,50 @@ optional ask per scan; nothing new leaves the phone (D-074); no tracking or anal
     offline home 98, the other screens on a computer 97. Kept on purpose: "Delete my data" stays red (a
     destructive action behind a confirmation; D-169 governs messages about a pack).
 `tests/test_design_system.py`, `tests/test_web.py`, `tests/test_site_desktop.py`.
+
+**Phase 2, the scan flow and the result** (branch `claude/project-thread-n9uqxj` again, from `main` after #141,
+web-64, `il-shell-64`). **Sushil, 2026-10-08** (relayed in the project): "Start Phase 2. Also, Sushil
+(2026-10-08): the motion is too quiet; he couldn't see it. Make it more visible: 1. Home's "Scan here" loop keeps
+playing slowly while home is on screen (not 3 times then still); it pauses when the app is in the background, and
+is still with reduced motion. 2. The loop is bigger and easier to notice on a phone (it can take more of the
+button), without making the button taller than today. 3. In Phase 2, every screen in the scan flow and the result
+has motion a first-time user notices within 2 seconds (the scanner line, the label being read while waiting,
+result cards arriving, the tick drawing itself), still purposeful and calm, never blinking. Record it in D-185 with
+Sushil's words." So Phase 1's "three passes, then still" is replaced: the drawing plays an 8 s pass for as long as
+home is on screen, pauses while the app is in the background or the card is scrolled away, and is the finished
+still under reduced motion; it is laid out in `em` and sized to the card's width (container units), so at 390 px
+it is 165 by 155 px (was 132 by 124) in the same 168 px tall card.
+- **Barcode:** a torch glyph on the camera; corners in the logo's rounded shape that settle and breathe (2.6 s); a
+  gold line sweeping the frame (2.6 s each way); the camera's line on the camera; "No barcode? Photograph the
+  ingredients" and "Take a photo of the barcode" as two quiet buttons under it. Without a live reader, a drawn
+  barcode takes the camera's place in the same square frame, still and with no line. The steps as dots, the current one a pill that slides over from the
+  step before.
+- **Label steps:** the example in a card under the title, settling in, its tick (32 px) drawing itself and a gold
+  band reading it once; the step's action docks at the bottom of the screen on phones (D-171, D-181), with the
+  table question directly above its two answers; the drop zone shows only with a mouse. A photo being checked has
+  a gold band passing over it (1.3 s each way) in the example's place. "Both photos are in" (and the others) draw
+  their tick; the photos in hand arrive one after another in one frame style. The digit check (D-146) and Send it to us
+  also dock in thumb reach; on a refusal only Retake docks, and the second refusal's "Send it to us" sits under
+  its hint. A photo being checked shows a turning ring in place of the camera icon; the digits get a gold line
+  drawing under them.
+- **Waiting:** a sheet whose lines light up one by one under a moving lens that never crosses "INGREDIENTS:" (4.8
+  s), or a gold line over a barcode while a pack is looked up; the explanation smaller and narrower; the seconds
+  show from 3 s.
+- **Result:** the pack name 21 px; each person line with the person's initial; Worth knowing as rows with a kind
+  icon and a one-line source; "In preparation" as one quiet line; "Not this pack? Scan again" smaller; on a
+  computer the pack card and people stay on the left (sticky) and the tabs on the right. The cards after the
+  people block rise in order (70 ms apart; the people block is there at once, D-060), and again each time a tab
+  opens; the tab pill springs; the nutrition bars and the ring fill (600 ms). Nutrition rows: the server now sends
+  each row's `amount` and `why`, cut from the row's own sentence (no new words, `text` unchanged), so a row reads
+  "Energy 473.8 kcal", its bar, then the rest; amber only on the fill and the icon.
+- **Thank you** screens (Send it to us, a reported mistake, a problem) open on a filled green disc whose check draws itself. A
+  problem's retake arrow turns once.
+- A screen sliding in from the right could leave the page wider than the phone (the bottom bar ran past the edge on
+  a finding's page; on `main` too): the main column now clips it. On a computer the
+  reading screen already has the result's width, so the result arriving does not move the page (a 0.14 layout
+  shift before).
+Superseded, that part only: D-171's and D-181's action placement on a phone (now docked); D-177's person lines,
+Worth knowing list, nutrition rows, "In preparation" block and desktop layout (as above). Headers marked.
 
 ---
 

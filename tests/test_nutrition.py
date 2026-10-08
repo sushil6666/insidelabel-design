@@ -274,6 +274,22 @@ def test_the_two_sentences_in_the_decision():
     assert n["adults"] == "The daily amounts are for adults."
 
 
+def test_a_row_leads_with_its_amount_cut_from_its_own_sentence():        # D-185 Phase 2
+    """The app shows "Energy 473.8 kcal" over the rest of the sentence: both pieces are the sentence's
+    own words, so the split adds none, and an old phone still shows `text` whole."""
+    for name in ("maliban-wafer-cheese", "limca-pet-2250", "ziggy-donut-cake-choco-vanilla"):
+        for r in gold_scan(name)["screen"]["nutrition"]["rows"]:
+            assert r["amount"] and r["why"], r
+            assert r["text"].startswith(f'{r["label"]}: {r["amount"]} per 100 ')
+            assert r["text"].endswith(r["why"][1:]) and r["why"][1:] in r["text"]
+            assert_clean(r["why"], r["key"])
+    rows = {r["key"]: r for r in gold_scan("limca-pet-2250")["screen"]["nutrition"]["rows"]}
+    assert rows["energy"]["amount"] == "44 kcal"
+    assert rows["energy"]["why"] == "ICMR-NIN counts more than 70 kcal per 100 ml as high."
+    assert rows["salt"]["amount"] == "about 14 mg"
+    assert rows["salt"]["why"].startswith("From 5.6 mg of sodium (salt is 2.5 times the sodium). ICMR-NIN")
+
+
 def test_a_drink_uses_the_per_100_ml_thresholds():
     n = gold_scan("limca-pet-2250")["screen"]["nutrition"]
     rows = {r["key"]: r for r in n["rows"]}

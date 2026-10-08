@@ -213,13 +213,16 @@ p { margin: 0; }
 .btn:focus-visible, a:focus-visible, summary:focus-visible, input:focus-visible,
 select:focus-visible, textarea:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
 
-/* D-185: home's one big action. A green card, "Scan here" in the display face, and a small drawing
-   of what a scan does: the barcode swept, the label's lines read in the logo's gold, a result card
-   with a tick. Three passes of 7.2 s and it rests on the finished drawing; still under reduced motion.
-   Transform and opacity only. */
+/* D-185: home's one big action. A green card, "Scan here" in the display face, and a drawing of
+   what a scan does: the barcode swept, the label's lines read in the logo's gold, a result card with a
+   tick. Sushil, 2026-10-08 ("the motion is too quiet"): it plays on, slowly, while home is on screen
+   (8 s a pass), pauses when the card scrolls away or the app goes to the background, and fills more
+   of the card at the same height. Still (the finished drawing) under reduced motion. Transform and
+   opacity only. */
 .scan-cta {
-  position: relative; width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) 132px; align-items: center;
-  min-height: 168px; padding: 22px 18px 22px 22px; border: 0; border-radius: var(--r-xl); overflow: hidden; isolation: isolate;
+  position: relative; width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center;
+  gap: 8px; min-height: 168px; padding: 16px 14px 16px 22px; border: 0; border-radius: var(--r-xl); overflow: hidden;
+  isolation: isolate; container-type: inline-size;
   background: var(--brand); color: var(--brand-ink); text-align: left; cursor: pointer;
   box-shadow: 0 18px 36px -18px rgba(3, 66, 37, .9);
 }
@@ -235,41 +238,49 @@ select:focus-visible, textarea:focus-visible { outline: 3px solid var(--ring); o
   .scan-cta { background: #17603c; color: #ffffff; box-shadow: 0 18px 36px -18px rgba(0, 0, 0, .8); }
   .scan-cta-icon { background: rgba(255, 255, 255, .14); }
 }
-.loop { position: relative; width: 132px; height: 124px; }
-.loop .pk { position: absolute; inset: 6px 14px 0 14px; border-radius: 14px; background: #fffdf6; overflow: hidden;
-            box-shadow: 0 14px 24px -14px rgba(0, 0, 0, .55); transform: rotate(4deg); }
-.loop .bars { position: absolute; left: 14px; right: 14px; top: 16px; height: 34px;
-  background: repeating-linear-gradient(90deg, #163450 0 2px, transparent 2px 4px, #163450 4px 7px, transparent 7px 9px, #163450 9px 10px, transparent 10px 13px); }
-.loop .sweep { position: absolute; left: 8px; right: 8px; top: 12px; height: 2px; border-radius: 2px; opacity: 0;
-               background: var(--gold); box-shadow: 0 0 12px 2px rgba(242, 182, 50, .8); transform: translateY(40px); }
-.loop .ln { position: absolute; left: 14px; height: 5px; border-radius: 3px; background: #d9d3bd; }
-.loop .ln i { position: absolute; inset: 0; border-radius: 3px; background: #f2b632; transform-origin: left; }
-.loop .ln1 { top: 62px; width: 62px; } .loop .ln2 { top: 72px; width: 48px; } .loop .ln3 { top: 82px; width: 56px; }
-.loop .res { position: absolute; left: 0; right: 0; bottom: 4px; display: flex; align-items: center; gap: 8px; padding: 8px 10px;
-             border-radius: 12px; background: #ffffff; box-shadow: 0 10px 18px -10px rgba(0, 0, 0, .5); }
-.loop .tick { flex: none; width: 20px; height: 20px; border-radius: 50%; background: #e2f4e8; color: #047a45;
+/* The drawing is laid out in em, so one font-size sets its size: as wide as the card leaves beside
+   "Scan here" (about 137 px), up to 12.5 px a unit (165 by 155 px on a 390 px phone, 132 by 124 before).
+   It reaches into the card's padding, so the card stays 168 px tall. */
+.loop { position: relative; width: 13.2em; height: 12.4em; margin-block: -10px; font-size: 10px;
+        font-size: clamp(8px, (100cqi - 150px) / 13.2, 12.5px); }
+.loop .pk { position: absolute; inset: .6em 1.4em 0 1.4em; border-radius: 1.4em; background: #fffdf6; overflow: hidden;
+            box-shadow: 0 1.4em 2.4em -1.4em rgba(0, 0, 0, .55); transform: rotate(4deg); }
+.loop .bars { position: absolute; left: 1.4em; right: 1.4em; top: 1.6em; height: 3.4em;
+  background: repeating-linear-gradient(90deg, #163450 0 .2em, transparent .2em .4em, #163450 .4em .7em, transparent .7em .9em,
+                                        #163450 .9em 1em, transparent 1em 1.3em); }
+.loop .sweep { position: absolute; left: .8em; right: .8em; top: 1.2em; height: .3em; border-radius: .2em; opacity: 0;
+               background: var(--gold); box-shadow: 0 0 1.2em .25em rgba(242, 182, 50, .85); transform: translateY(4em); }
+.loop .ln { position: absolute; left: 1.4em; height: .55em; border-radius: .3em; background: #d9d3bd; }
+.loop .ln i { position: absolute; inset: 0; border-radius: .3em; background: #f2b632; transform-origin: left; }
+.loop .ln1 { top: 6.2em; width: 6.2em; } .loop .ln2 { top: 7.2em; width: 4.8em; } .loop .ln3 { top: 8.2em; width: 5.6em; }
+.loop .res { position: absolute; left: 0; right: 0; bottom: .4em; display: flex; align-items: center; gap: .8em; padding: .8em 1em;
+             border-radius: 1.2em; background: #ffffff; box-shadow: 0 1em 1.8em -1em rgba(0, 0, 0, .5); }
+.loop .tick { flex: none; width: 2em; height: 2em; border-radius: 50%; background: #e2f4e8; color: #047a45;
               display: flex; align-items: center; justify-content: center; }
-.loop .tick .icon { width: 13px; height: 13px; stroke-width: 3; }
-.loop .rl { display: grid; gap: 4px; flex: 1; }
-.loop .rl i { height: 5px; border-radius: 3px; background: #c9d6e0; }
+.loop .tick .icon { width: 1.3em; height: 1.3em; stroke-width: 3; }
+.loop .rl { display: grid; gap: .4em; flex: 1; }
+.loop .rl i { height: .5em; border-radius: .3em; background: #c9d6e0; }
 .loop .rl i + i { width: 60%; }
 @media (prefers-reduced-motion: no-preference) {
-  .loop :is(.sweep, .ln i, .res, .tick path) { animation: 7.2s var(--ease-standard) -.72s 3 both; }
+  .loop :is(.sweep, .ln i, .res, .tick path) { animation: 8s var(--ease-standard) -.8s infinite both; }
   .loop .sweep { animation-name: loop-sweep; }
   .loop .ln1 i { animation-name: loop-read1; } .loop .ln2 i { animation-name: loop-read2; } .loop .ln3 i { animation-name: loop-read3; }
   .loop .res { animation-name: loop-res; animation-timing-function: var(--ease-enter); }
   .loop .tick path { stroke-dasharray: 1; animation-name: loop-tick; animation-timing-function: var(--ease-enter); }
+  /* Off screen (app.js watches the card) the drawing holds where it is. */
   .scan-cta.still .loop * { animation-play-state: paused; }
 }
-/* Each pass starts on the finished drawing, clears it, and draws it again (the negative delay skips
-   the clearing on the first pass), so the third pass ends where the reduced-motion still begins. */
-@keyframes loop-sweep { 0%, 10% { transform: translateY(0); opacity: 0 } 13% { opacity: 1 } 30% { transform: translateY(40px); opacity: 1 } 34%, 100% { transform: translateY(40px); opacity: 0 } }
+/* Each pass starts on the finished drawing, clears it, and draws it again; the negative delay skips the
+   clearing on the first pass, so the sweep starts within a second of home opening. The finished drawing
+   is also the reduced-motion still. */
+@keyframes loop-sweep { 0%, 10% { transform: translateY(0); opacity: 0 } 13% { opacity: 1 } 30% { transform: translateY(4em); opacity: 1 } 34%, 100% { transform: translateY(4em); opacity: 0 } }
 @keyframes loop-read1 { 0% { transform: none; opacity: 1 } 7% { opacity: 0 } 8%, 34% { transform: scaleX(0); opacity: 1 } 44%, 100% { transform: none; opacity: 1 } }
 @keyframes loop-read2 { 0% { transform: none; opacity: 1 } 7% { opacity: 0 } 8%, 42% { transform: scaleX(0); opacity: 1 } 52%, 100% { transform: none; opacity: 1 } }
 @keyframes loop-read3 { 0% { transform: none; opacity: 1 } 7% { opacity: 0 } 8%, 50% { transform: scaleX(0); opacity: 1 } 60%, 100% { transform: none; opacity: 1 } }
-@keyframes loop-res { 0% { opacity: 1; transform: none } 7% { opacity: 0; transform: translateY(-4px) } 8%, 62% { opacity: 0; transform: translateY(10px) scale(.96) } 70%, 100% { opacity: 1; transform: none } }
+@keyframes loop-res { 0% { opacity: 1; transform: none } 7% { opacity: 0; transform: translateY(-.4em) } 8%, 62% { opacity: 0; transform: translateY(1em) scale(.96) } 70%, 100% { opacity: 1; transform: none } }
 @keyframes loop-tick { 0%, 7% { stroke-dashoffset: 0 } 8%, 68% { stroke-dashoffset: 1 } 78%, 100% { stroke-dashoffset: 0 } }
-@media (max-width: 359px) { .scan-cta { grid-template-columns: minmax(0, 1fr) 104px; } .loop { transform: scale(.8); transform-origin: right center; } }
+/* With the app in the background (app.js sets .app-away on <html>), every loop holds still. */
+:root.app-away *, :root.app-away *::before, :root.app-away *::after { animation-play-state: paused !important; }
 
 /* One press state for everything tappable (Apple HIG, Buttons: "Always include a
    press state"). Transform only, 100 ms; a press never blocks or delays the tap. */
@@ -353,10 +364,17 @@ fieldset .choice + .choice { border-top: 1px solid var(--line); }   /* D-185: lo
 .frame i:nth-child(2) { top: -4px; right: -4px; border-left: 0; border-bottom: 0; border-top-right-radius: var(--r-md); }
 .frame i:nth-child(3) { bottom: -4px; left: -4px; border-right: 0; border-top: 0; border-bottom-left-radius: var(--r-md); }
 .frame i:nth-child(4) { bottom: -4px; right: -4px; border-left: 0; border-top: 0; border-bottom-right-radius: var(--r-md); }
-.scanline { position: absolute; left: 10%; right: 10%; top: calc(50% - 1px); height: 2px; border-radius: 2px;
-            background: var(--accent); box-shadow: 0 0 10px var(--accent);
-            animation: scanline 1.8s var(--ease-standard) infinite alternate; }
-@keyframes scanline { from { transform: translateY(-36px); } to { transform: translateY(36px); } }
+/* D-185 Phase 2: the line is the logo's gold (the colour of reading). The span is as tall as the frame,
+   its line drawn at its top, so moving it by its own height takes the line from the frame's top to its
+   bottom (2.6 s each way). Still in the middle under reduced motion. */
+.scanline { position: absolute; left: 6%; right: 6%; top: 0; height: 100%; pointer-events: none;
+            transform: translateY(calc(50% - 1.5px)); }
+.scanline::before { content: ""; display: block; height: 3px; border-radius: 2px; background: var(--gold);
+                    box-shadow: 0 0 14px 3px rgba(242, 182, 50, .7); }
+@media (prefers-reduced-motion: no-preference) {
+  .scanline { animation: scanline 2.6s cubic-bezier(.45, 0, .55, 1) infinite alternate; }
+}
+@keyframes scanline { from { transform: translateY(6%); } to { transform: translateY(calc(94% - 3px)); } }
 
 /* Photo step */
 .sample { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; text-align: center; }
@@ -514,8 +532,10 @@ ol.rules > li::before { content: counter(rule); position: absolute; left: 0; top
 .note-line > * + * { margin-top: 6px; }
 /* D-133: the nutrition table. A row above ICMR-NIN's threshold gets a coloured edge, not coloured text. */
 .nutrition > * + * { margin-top: 8px; }
-.nut-row { border-left: 4px solid var(--line); padding: 2px 0 2px 10px; }
-.nut-row.tone-worth { background: none; color: var(--ink); border-left-color: var(--unsure-line); }
+/* D-185 Phase 2: rows split by hairlines; a row over its line says so with D-169's symbol and an amber
+   bar, not an amber edge (four amber edges read as a wall of warnings). */
+.nut-row { padding: var(--sp-3) 0; }
+.nut-row + .nut-row { border-top: 1px solid var(--line); }
 .nut-serving { font-weight: 600; }
 @media (prefers-reduced-motion: no-preference) {
   .look:not([open]) .look-arrow span { display: inline-block; animation: look-nudge 1.1s ease-in-out infinite; }
@@ -890,8 +910,8 @@ details[open]:not(.look) > summary::after { transform: rotate(180deg); }
 /* D-171: the label photos in steps. "Step n of 3" over each screen; the label camera is the
    barcode's viewfinder made taller, with a frame for the list (wide) or the table (squarer),
    a hint chip, one line and a shutter. White on the dimmed view, so it reads on any pack. */
-.kicker.step { display: flex; justify-content: space-between; gap: var(--sp-3); }
-.kicker.step span + span { text-align: right; }
+/* D-185 Phase 2: the dots first, then "Step n of 4 · What" (app.js stepLine). */
+.kicker.step { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; }
 .label-cam.stack > * + *, .shot-review.stack > * + * { margin-top: var(--sp-3); }
 .label-cam h1, .shot-review h1 { margin: 0; font-size: var(--fs-xl); line-height: 1.2; }
 .cam-title { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); }
@@ -928,7 +948,7 @@ details[open]:not(.look) > summary::after { transform: rotate(180deg); }
 .shot-review > .thumb img { width: 100%; max-height: 300px; object-fit: cover; }
 .taken { display: flex; gap: var(--sp-2); }
 .taken figure { margin: 0; flex: 1 1 0; min-width: 0; }
-.taken img { width: 100%; height: 150px; object-fit: cover; }
+.taken img { width: 100%; height: 150px; object-fit: cover; object-position: 0 0; }
 .taken figcaption { font-size: var(--fs-sm); margin-top: 4px; }
 .sheet { width: 100%; max-width: 560px; max-height: 88vh; margin: auto auto 0; border: 0; padding: var(--sp-5) var(--sp-4) var(--sp-6);
          border-radius: var(--r-xl) var(--r-xl) 0 0; background: var(--surface); color: var(--ink); box-shadow: var(--e-2); }
@@ -993,7 +1013,7 @@ html:has(body.has-tabbar) { scroll-padding-bottom: calc(88px + env(safe-area-ins
 .pack-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .pack-thumb img[hidden], .pack-thumb-ph[hidden] { display: none; }
 .pack-thumb-ph .icon { width: 34px; height: 34px; stroke-width: 1.6; opacity: .7; }
-.result-top .pack-head h1.product { font: 800 clamp(1.5rem, 6.4vw, 2rem)/1.08 var(--display); letter-spacing: -.02em;
+.result-top .pack-head h1.product { font: 800 var(--fs-xl)/1.15 var(--display); letter-spacing: -.015em;
                                     color: var(--on-deep); margin: 0; overflow-wrap: break-word; }
 .pack-meta { margin: 4px 0 0; color: var(--on-deep-muted); font-size: var(--fs-sm); }
 .share-btn { width: var(--tap); height: var(--tap); border-radius: 50%; border: 1px solid rgba(255, 255, 255, .25);
@@ -1006,15 +1026,15 @@ html:has(body.has-tabbar) { scroll-padding-bottom: calc(88px + env(safe-area-ins
 @keyframes thumb-in { from { opacity: 0; transform: rotate(-12deg) scale(1.25) translateY(10px); } }
 
 /* D-177: the three tabs. A dark pill slides under the chosen one (transform only). */
+/* D-185 Phase 2: a raised white pill on a sunken track, sliding with the spring. */
 .tabs { position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 4px;
-        border-radius: var(--r-pill); background: var(--surface-2); border: 1px solid var(--line); }
+        border-radius: var(--r-pill); background: var(--surface-2); }
 .tabs-pill { position: absolute; top: 4px; bottom: 4px; left: 4px; width: calc((100% - 8px) / 3); border-radius: var(--r-pill);
-             background: var(--deep); transform: translateX(calc(var(--tab, 0) * 100%));
-             transition: transform var(--d-reveal) var(--ease-enter); }
+             background: var(--surface); box-shadow: var(--e-2), inset 0 0 0 1px var(--line);
+             transform: translateX(calc(var(--tab, 0) * 100%)); transition: transform var(--d-reveal) var(--ease-spring); }
 .tabs [role=tab] { position: relative; min-height: var(--tap); border: 0; background: transparent; border-radius: var(--r-pill);
-                   font: 600 var(--fs-sm)/1.2 var(--font); color: var(--ink); cursor: pointer; padding: 0 4px;
-                   transition: color var(--d-fast) var(--ease-standard); }
-.tabs [role=tab][aria-selected="true"] { color: var(--on-deep); font-weight: 700; }
+                   font: 600 var(--fs-sm)/1.2 var(--font); color: var(--ink-2); cursor: pointer; padding: 0 4px; }
+.tabs [role=tab][aria-selected="true"] { color: var(--ink); font-weight: 700; }
 .tabs [role=tab]:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
 .tab-panel:focus-visible { outline: 3px solid var(--ring); outline-offset: 4px; border-radius: var(--r-md); }
 .tab-panel[hidden] { display: none; }
@@ -1173,7 +1193,7 @@ body:not(.has-tabbar) .top :is(.topnav, .btn.topscan) { display: none; }
 .welcome-art::before { content: ""; position: absolute; inset: 0; z-index: -1; background:
   radial-gradient(120% 90% at 100% 0%, rgba(255, 255, 255, .16), transparent 55%),
   repeating-linear-gradient(90deg, rgba(255, 255, 255, .05) 0 2px, transparent 2px 9px); }
-.welcome-art .loop { transform: scale(1.1); }
+.welcome-art .loop { font-size: 11px; }
 @media (prefers-color-scheme: dark) { .welcome-art { background: #17603c; } }
 ul.points > li { position: relative; padding-left: 22px; }
 ul.points > li::before { content: ""; position: absolute; left: 4px; top: .6em; width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
@@ -1223,4 +1243,381 @@ main > .stack:has(> .spot:first-child) > :is(.btn.link, p:has(> a)) { margin-inl
   .btn.primary.dock { position: sticky; bottom: calc(6px + env(safe-area-inset-bottom)); z-index: 1;
                       box-shadow: 0 0 0 6px var(--bg), 0 10px 22px -8px rgba(4, 122, 69, .7); }
   body.has-tabbar .btn.primary.dock { bottom: calc(78px + env(safe-area-inset-bottom)); }
+}
+
+/* ==== D-185 Phase 2: the scan flow and the result ====
+   Sushil, 2026-10-08: "every screen in the scan flow and the result has motion a first-time user
+   notices within 2 seconds (the scanner line, the label being read while waiting, result cards
+   arriving, the tick drawing itself), still purposeful and calm, never blinking". Transform, opacity
+   and an SVG stroke only; loops are 2.6 s or slower a pass and hold still off screen or in the
+   background; under reduced motion each one shows its still. */
+
+/* The steps: a pill on the current dot moves over from the step before (a dot grows into it on step 1). */
+.step-dots { position: relative; display: inline-flex; gap: 6px; flex: none; }
+.step-dots i { width: 8px; height: 8px; border-radius: 4px; background: var(--line-2); }
+.step-dots i.done { background: var(--brand); }
+.step-dots i.now { width: 24px; }
+.step-dots b { position: absolute; top: 0; left: calc(var(--n, 0) * 14px); width: 24px; height: 8px; border-radius: 4px;
+               background: var(--brand); transform-origin: left; }
+.step-what::before { content: ""; display: inline-block; width: 4px; height: 4px; margin-right: 10px; border-radius: 50%;
+                     background: currentColor; vertical-align: .2em; }
+@media (prefers-reduced-motion: no-preference) {
+  .step-dots b { animation: dot-move var(--d-reveal) var(--ease-spring) 120ms both; }
+  .step-dots b.first { animation-name: dot-grow; }
+}
+@keyframes dot-move { from { transform: translateX(-14px); } }
+@keyframes dot-grow { from { transform: scaleX(.34); } }
+/* 8 px more air between the dots and the screen's title. */
+:is(.scan-step, .label-cam, .shot-review) > .kicker.step + * { margin-top: var(--sp-5); }
+.scan-step h1 { font-size: var(--fs-xl); line-height: 1.2; }
+
+/* Step 1, the barcode: a square camera, its one line on it, the light in its corner. The corners close
+   in once and then breathe, 2.6 s each way, so the eye goes to where the barcode belongs. */
+.scan-cam { aspect-ratio: 1 / 1; max-height: min(54vh, 440px); width: 100%; border-radius: var(--r-xl); }
+.scan-cam.drawn { aspect-ratio: 4 / 3; background: linear-gradient(160deg, #2b3a45, #121c25); }
+.scan-drawn { position: absolute; inset: 0; display: grid; place-items: center; padding-bottom: 8%; }
+.scan-drawn .bars { width: 52%; height: 30%; padding: 9px 11px 16px; border-radius: 6px; background:
+  repeating-linear-gradient(90deg, #111 0 2px, transparent 2px 4px, #111 4px 7px, transparent 7px 9px, #111 9px 10px,
+                            transparent 10px 13px, #111 13px 16px, transparent 16px 17px) content-box, #fffdf6;
+  box-shadow: 0 10px 24px -10px rgba(0, 0, 0, .7); }
+.scan-cam.drawn .frame { inset: 26% 16% 34%; }
+.scan-cam.drawn .scanline { animation: none; }
+.frame i:nth-child(1) { --dx: -1; --dy: -1; } .frame i:nth-child(2) { --dx: 1; --dy: -1; }
+.frame i:nth-child(3) { --dx: -1; --dy: 1; } .frame i:nth-child(4) { --dx: 1; --dy: 1; }
+@media (prefers-reduced-motion: no-preference) {
+  .frame i { animation: corner-in var(--d-draw) var(--ease-enter) both,
+                        corner-breathe 2.6s cubic-bezier(.45, 0, .55, 1) var(--d-draw) infinite alternate; }
+}
+@keyframes corner-in { from { opacity: 0; transform: translate(calc(var(--dx) * 16px), calc(var(--dy) * 16px)); } }
+@keyframes corner-breathe { to { transform: translate(calc(var(--dx) * 4px), calc(var(--dy) * 4px)); } }
+.still :is(.frame i, .scanline) { animation-play-state: paused; }
+.cam-status { position: absolute; left: 12px; right: 12px; bottom: 12px; margin: 0; padding: 10px 14px;
+              border-radius: var(--r-md); background: rgba(8, 20, 32, .7); color: #ffffff;
+              font-size: var(--fs-sm); line-height: 1.4; text-align: center; }
+.cam-light { display: inline-flex; align-items: center; gap: 6px; }
+.cam-light .icon { width: 18px; height: 18px; }
+.scan-alt { display: grid; gap: var(--sp-2); }
+.scan-alt > .btn { width: 100%; }
+.scan-alt .row { display: grid; justify-items: center; gap: 0; }
+.scan-alt .row > label.btn:not(.link) { width: 100%; }
+label.btn .icon { width: 20px; height: 20px; }
+label.btn:has(> .icon) { gap: 8px; }
+
+/* Steps 2 to 4: the example in a card that takes the room the screen has; the action docked at the
+   bottom on a phone (D-171, D-181). The example's tick pops in and draws itself. */
+.shot-card { display: grid; justify-items: center; gap: var(--sp-3); padding: var(--sp-5) var(--sp-4); text-align: center; }
+.shot-card > * + * { margin-top: 0; }
+.label-cam .shot-card .example-shot .ex-photo { max-width: min(210px, 54vw, 30vh); }
+/* While a photo is checked it takes the example's place, so the docked action never covers it. */
+.label-cam > .stack:has(.shot.reading) > .shot-card { display: none; }
+.label-cam .thumb:has(> .shot.reading) { display: grid; justify-items: center; gap: var(--sp-2); }
+.label-cam .shot.reading img { max-height: 46vh; width: auto; }
+/* The links under the photos in hand: one row, read left to right. */
+.retakes { display: flex; flex-wrap: wrap; gap: 0 var(--sp-5); }
+.retakes > .btn.link { padding-inline: 0; }
+.dock { display: grid; gap: 6px; }
+.dock:empty { display: none; }
+.dock > .btn, .dock label.btn:not(.link) { width: 100%; }
+.dock > .row { display: grid; justify-items: center; gap: 0; }
+.dock > .row > .btn:not(.link) { width: 100%; }
+.dock > .row > label.btn + .btn:not(.link) { margin-top: 6px; }
+.dock > .choice { margin-bottom: 4px; }
+.dock > .drop { display: grid; justify-items: center; gap: 6px; text-align: center; }
+@media (max-width: 1023px) {
+  body:is([data-screen="photo"], [data-screen="front"], [data-screen="table"], [data-screen="tablephoto"]) main.wrap {
+    padding-bottom: 12px; }
+  :is(.label-cam, .shot-review, .digit-check, .send-step):has(> .dock) { display: flex; flex-direction: column;
+    min-height: calc(100vh - 88px); min-height: calc(100dvh - 88px); }
+  :is(.label-cam, .shot-review, .digit-check, .send-step) > .dock { position: sticky; bottom: 0; z-index: 1; margin-top: auto;
+    padding: var(--sp-5) 0 calc(4px + env(safe-area-inset-bottom));
+    background: linear-gradient(to bottom, rgba(249, 247, 239, 0), var(--bg) var(--sp-5)); }
+  .label-cam > .stack { flex: 1; display: flex; flex-direction: column; }
+}
+@media (max-width: 1023px) and (prefers-color-scheme: dark) {
+  :is(.label-cam, .shot-review, .digit-check, .send-step) > .dock, .retake-dock { background: linear-gradient(to bottom, rgba(15, 33, 51, 0), var(--bg) var(--sp-5)); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .shot-card :is(.ex-paper, .ex-front) { animation: ex-settle var(--d-draw) var(--ease-enter) 100ms both; }
+  .shot-card .ex-ok { animation: pill-in var(--d-reveal) var(--ease-spring) 420ms both; }
+  .shot-card .ex-ok path { stroke-dasharray: 1; animation: stroke-draw var(--d-draw) var(--ease-enter) 560ms both; }
+}
+@keyframes ex-settle { from { opacity: 0; transform: scale(1.08) rotate(-2deg); } }
+@keyframes stroke-draw { from { stroke-dashoffset: 1; } }
+
+/* A photo being checked: a gold band passes over it, 1.3 s each way, until the answer comes. */
+.shot { position: relative; display: block; width: fit-content; max-width: 100%; border-radius: 12px; overflow: hidden; }
+.shot.reading::after { content: ""; position: absolute; inset: 0; pointer-events: none; transform: translateY(calc(50% - 9px));
+  background: linear-gradient(to bottom, rgba(242, 182, 50, 0), rgba(242, 182, 50, .45) 40%, var(--gold) 50%,
+                              rgba(242, 182, 50, .45) 60%, rgba(242, 182, 50, 0)) 0 0 / 100% 18px no-repeat; }
+@media (prefers-reduced-motion: no-preference) {
+  .shot.reading::after { animation: shot-read 1.3s cubic-bezier(.45, 0, .55, 1) infinite alternate; }
+}
+@keyframes shot-read { from { transform: translateY(-9px); } to { transform: translateY(calc(100% - 9px)); } }
+
+/* The photos in hand arrive one after another; done draws its check; a photo problem's retake arrow
+   turns once (grey-blue, D-169: never red, never a shake). */
+.photos-in { display: flex; align-items: center; gap: 10px; }
+.photos-in .kind-icon { width: 1.1em; height: 1.1em; stroke-width: 2.6; flex: none; vertical-align: 0; }
+.spot.k-done { background: var(--brand-soft); }
+.spot.k-done .icon { color: var(--brand); stroke-width: 2.4; }
+@media (prefers-reduced-motion: no-preference) {
+  .shot-review :is(.taken figure, > .thumb) { animation: photo-in var(--d-reveal) var(--ease-enter) both;
+                                               animation-delay: calc(var(--i, 0) * 90ms); }
+  :is(.check.ok, .photos-in, .k-done) .kind-icon path, .spot.k-done .icon path {
+    stroke-dasharray: 1; animation: stroke-draw var(--d-draw) var(--ease-enter) 220ms both; }
+  :is(.check, .photo-problem) .ki-problem { animation: turn-once 700ms var(--ease-standard) 200ms both; }
+  .photo-problem .problem-photos img { animation: photo-in var(--d-reveal) var(--ease-enter) both; }
+}
+@keyframes photo-in { from { opacity: 0; transform: translateY(10px) scale(.96); } }
+@keyframes turn-once { from { transform: rotate(-360deg); } }
+
+/* Waiting: what is happening, drawn. A label's lines light up in gold one after another while a lens
+   moves down them (4.8 s a pass); for a barcode, the gold line passes over it. Under reduced motion
+   the label shows half read. */
+.wait { padding-top: var(--sp-5); }
+.wait h1 { font-size: var(--fs-2xl); line-height: 1.15; text-wrap: balance; }
+.wait .wait-note { max-width: 34ch; margin-inline: auto; font-size: var(--fs-sm); }
+.wait .wait-time { font-variant-numeric: tabular-nums; }
+.read-art { position: relative; width: 210px; height: 236px; margin: 0 auto; }
+.read-art .sheet { position: absolute; inset: 0; display: grid; align-content: start; gap: 14px; padding: 26px 22px;
+                   border-radius: var(--r-lg); background: var(--surface); text-align: left;
+                   box-shadow: var(--e-3), inset 0 0 0 1px var(--line); }
+.read-art .sheet > * { margin: 0; }
+.read-art .sheet b { font: 800 .75rem/1 var(--font); letter-spacing: .08em; color: var(--ink); margin-bottom: 4px; }
+.read-art .ln { position: relative; display: block; height: 8px; border-radius: 4px; background: var(--surface-2); overflow: hidden; }
+.read-art .ln i { position: absolute; inset: 0; border-radius: 4px; background: var(--gold); transform-origin: left; transform: scaleX(0); }
+.read-art .lens { position: absolute; left: 0; top: 0; width: 52px; height: 52px; border-radius: 50%; border: 5px solid var(--gold);
+                  box-shadow: var(--e-2); transform: translate(118px, 80px); }
+.read-art .lens::after { content: ""; position: absolute; right: -11px; bottom: -18px; width: 7px; height: 22px; border-radius: 4px;
+                         background: var(--gold); transform: rotate(-45deg); }
+.read-art.barcode { width: 230px; height: 168px; }
+.read-art.barcode .sheet { padding: 30px 28px; }
+.read-art.barcode .bars { display: block; height: 108px; border-radius: 3px; background:
+  repeating-linear-gradient(90deg, var(--ink) 0 3px, transparent 3px 6px, var(--ink) 6px 10px, transparent 10px 13px,
+                            var(--ink) 13px 15px, transparent 15px 19px); }
+.read-art.barcode .sweep { position: absolute; left: 16px; right: 16px; top: 22px; height: 124px; transform: translateY(calc(50% - 1.5px)); }
+.read-art.barcode .sweep::before { content: ""; display: block; height: 3px; border-radius: 2px; background: var(--gold);
+                                   box-shadow: 0 0 14px 3px rgba(242, 182, 50, .7); }
+@media (prefers-reduced-motion: no-preference) {
+  .read-art .ln i { animation: read-line 4.8s var(--ease-standard) infinite; animation-delay: calc(var(--i, 0) * 420ms); }
+  .read-art .lens { animation: lens 4.8s cubic-bezier(.45, 0, .55, 1) infinite; }
+  .read-art.barcode .sweep { animation: scanline 1.3s cubic-bezier(.45, 0, .55, 1) infinite alternate; }
+}
+@media (prefers-reduced-motion: reduce) { .read-art .ln:nth-of-type(-n+4) i { transform: none; } }
+@keyframes read-line { 0% { transform: scaleX(0); opacity: 1; } 12% { transform: none; } 70% { transform: none; opacity: 1; }
+                       85%, 100% { transform: none; opacity: 0; } }
+@keyframes lens { 0%, 100% { transform: translate(16px, 44px); } 30% { transform: translate(118px, 80px); }
+                  62% { transform: translate(36px, 136px); } 82% { transform: translate(124px, 108px); } }
+
+/* The result. The pack card's name at 21 px, so the people's lines stay the largest words (D-060);
+   each person's initial beside their line; "Not this pack? Scan again" quieter. */
+.result-top .rescan { margin: 0; font-size: var(--fs-sm); }
+.result-top .rescan .btn.link { min-height: 40px; }
+.person-line:has(> .avatar) { grid-template-columns: auto minmax(0, 1fr); column-gap: var(--sp-3); }
+.person-line > :not(.avatar) { grid-column: -2; }
+.person-line > .avatar { grid-row: 1 / span 3; align-self: start; width: 36px; height: 36px; font-size: 1rem; margin-top: 2px; }
+.person-line > .avatar:not(.av-me) { background: var(--surface); }
+@media (prefers-color-scheme: dark) { .tabs { background: var(--surface); } .tabs-pill { background: var(--line-2); box-shadow: var(--e-2); } }
+
+/* Worth knowing: a card of rows, each led by its kind's symbol (D-169), the chip under the title and
+   the first source's title on one line. */
+.result .worth.card { padding: 0; overflow: hidden; }
+.result .worth.card > h2 { padding: var(--sp-4) var(--sp-4) var(--sp-1); font-size: var(--fs-lg); }
+.worth.card .notes { margin: 0; }
+.worth.card .notes > li { display: block; padding: 0; border-bottom: 0; }
+.worth.card .notes > li + li { border-top: 1px solid var(--line); }
+.worth.card .notes .note-link { display: grid; grid-template-columns: 36px minmax(0, 1fr) 20px; gap: var(--sp-3);
+                                align-items: center; padding: var(--sp-3) var(--sp-3) var(--sp-3) var(--sp-4); }
+.note-icon { width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; }
+.note-icon .kind-icon { width: 20px; height: 20px; vertical-align: 0; }
+.note-text { display: grid; gap: 4px; justify-items: start; min-width: 0; }
+.note-text strong { line-height: 1.3; }
+.note-text .src { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.answers-fold { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--e-1);
+                padding: 0 var(--sp-4); }
+.answers-fold > summary { font-weight: 700; }
+.result .worth.card + .answers-fold { margin-top: var(--sp-3); }
+
+/* "In preparation": one quiet line at the end. */
+.soon { margin: 0; font-size: var(--fs-sm); line-height: 1.6; color: var(--muted); }
+.soon .pending-tag { margin-right: 10px; }
+.soon .pending { display: inline; padding: 0; border: 0; border-radius: 0; }
+.soon .pending + .pending::before { content: ""; display: inline-block; width: 3px; height: 3px; margin: 0 8px;
+                                    border-radius: 50%; background: currentColor; vertical-align: .25em; }
+
+/* Nutrition: the label and the amount first, then the bar, then the rest of the sentence. */
+.card-head { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); }
+.card-head h2 { margin: 0; }
+.chip.basis { background: var(--surface-2); color: var(--ink); font-weight: 600; }
+.nut-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-3); margin: 0; }
+.nut-label { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; }
+.nut-label .kind-icon { margin: 0; }
+.nut-amount { font: 700 var(--fs-lg)/1.2 var(--display); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.nut-why { margin: 2px 0 0; font-size: var(--fs-sm); color: var(--ink-2); }
+/* Amber on the fill and the icon only; the row itself stays on the card (D-169: amber is a look, not a block). */
+.nut-row:is(.tone-worth, .tone-calm) { background: none; color: inherit; }
+.nut-row.tone-worth .nut-label .kind-icon { color: var(--unsure); }
+.nut-head + .nut-bar { height: 42px; margin-bottom: 0; }
+@media (prefers-reduced-motion: no-preference) {
+  .nut-bar .nut-fill { transition-delay: calc(var(--i, 0) * 80ms); }
+  .ring-seg { animation: ring-fill var(--d-fill) var(--ease-enter) both; animation-delay: calc(150ms + var(--i, 0) * 90ms); }
+}
+@keyframes ring-fill { from { stroke-dashoffset: var(--len, 0); } }
+
+/* Result cards arriving (Sushil, 2026-10-08): the people are there at once (D-060); the headline and
+   the tabs rise after them, then the open tab's cards, 70 ms apart. */
+@media (prefers-reduced-motion: no-preference) {
+  .result > .tab-panel.reveal { animation: none; }
+  .result > .tab-panel.reveal > * { animation: card-in var(--d-draw) var(--ease-enter) both;
+                                    animation-delay: calc(160ms + var(--j, 0) * 70ms); }
+}
+@keyframes card-in { from { opacity: 0; transform: translateY(24px); } }
+
+/* From 1024 px the pack card and the people stay on the left while the rest scrolls on the right. */
+@media (min-width: 1024px) {
+  body[data-screen="result"] main.wrap { max-width: 1040px; padding-top: 24px; }
+  .result:has(> .result-top) { display: grid; grid-template-columns: minmax(0, 400px) minmax(0, 1fr); column-gap: 32px; align-items: start; }
+  .result:has(> .result-top) > * { grid-column: 2; min-width: 0; }
+  .result:has(> .result-top) > .result-top { grid-column: 1; grid-row: 1 / span 40; position: sticky; top: 92px; }
+  .result:has(> .result-top) > .result-top + * { margin-top: 0; }
+}
+
+/* A screen sliding in from the right (a finding's page) must not widen the page while it moves: on a
+   phone the browser kept the wider layout afterwards, and the bottom bar ran past the edge. clip, not
+   hidden, so the docked actions stay sticky. */
+main.wrap { overflow-x: clip; }
+
+/* Review round 1 (D-185 Phase 2). The table question sits right above its two answers. */
+.dock > .dock-q { margin: 0 0 var(--sp-2); font-size: var(--fs-xl); line-height: 1.2; text-wrap: balance; }
+/* Every photo in hand in the same frame. */
+.taken img, .shot-review > .thumb img { border-radius: var(--r-md); background: var(--surface);
+                                        box-shadow: inset 0 0 0 1px var(--line), var(--e-1); }
+/* A check that waits for the "same pack" box reads as waiting, not as a faded button. */
+.dock > .btn.primary:disabled { opacity: 1; background: var(--surface-2); border-color: var(--line-2);
+                                color: var(--muted); box-shadow: none; }
+/* The digit check: its two answers stacked, the first one filled. */
+.digit-check > .dock .btn { width: 100%; }
+/* The waiting screens show their seconds only once a few have passed. */
+.wait-time.early { visibility: hidden; }
+/* A refusal: Retake and Send stay above the bottom bar on a phone while the photo scrolls. */
+.retake-dock > .btn { width: 100%; }
+.retake-dock > .muted { margin: 0; text-align: center; }
+@media (max-width: 1023px) {
+  .result .retake-dock { position: sticky; bottom: calc(80px + env(safe-area-inset-bottom)); z-index: 1;
+    padding: var(--sp-5) 0 var(--sp-2); background: linear-gradient(to bottom, rgba(249, 247, 239, 0), var(--bg) var(--sp-5)); }
+}
+/* The example's tick is big enough to see arriving, and a gold band reads the example once. */
+.shot-card .ex-ok { width: 32px; height: 32px; top: 4px; right: 4px; }
+.shot-card .ex-ok .icon { width: 19px; height: 19px; }
+.shot-card .ex-photo { position: relative; overflow: hidden; }
+.shot-card .ex-photo::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 22px; opacity: 0; pointer-events: none;
+  background: linear-gradient(to bottom, rgba(242, 182, 50, 0), rgba(242, 182, 50, .5) 45%, var(--gold) 50%,
+                              rgba(242, 182, 50, .5) 55%, rgba(242, 182, 50, 0)); }
+@media (prefers-reduced-motion: no-preference) {
+  .shot-card .ex-photo::after { animation: ex-read 1.6s var(--ease-standard) 500ms both; }
+  /* A tab's cards rise in order each time the tab opens. */
+  .result > .tab-panel:not(.reveal):not([hidden]) > * { animation: card-in var(--d-reveal) var(--ease-enter) both;
+    animation-delay: calc(var(--j, 0) * 50ms); }
+}
+@keyframes ex-read { 0% { opacity: 0; transform: translateY(0); } 12% { opacity: 1; }
+                     88% { opacity: 1; } 100% { opacity: 0; transform: translateY(var(--ex-h, 260px)); } }
+@media (max-width: 1023px) {
+  /* Send it to us keeps the bottom bar: its dock rests just above it. */
+  body.has-tabbar .send-step:has(> .dock) { min-height: calc(100dvh - 88px - 104px - env(safe-area-inset-bottom)); }
+  body.has-tabbar .send-step > .dock { bottom: calc(80px + env(safe-area-inset-bottom)); }
+}
+.stack > p { text-wrap: pretty; }
+.send-step > ul.small { display: grid; gap: 4px; margin: 0; font-size: 1rem; color: var(--ink-2); }
+
+/* Review round 2 (D-185 Phase 2). */
+/* While a photo is checked, the step's own action waits. */
+.label-cam:has(.shot.reading) > .dock { pointer-events: none; }
+.label-cam:has(.shot.reading) > .dock .btn:not(.link) { background: var(--surface-2); border-color: var(--line-2);
+  color: var(--ink-2); box-shadow: none; }
+.label-cam .thumb:has(> .shot.reading) > .muted { color: var(--ink-2); }
+/* The instruction lines and a person's line break evenly, no word alone on its last line. */
+.cam-line, .wait h1 { text-wrap: balance; }
+.person-line > b { text-wrap: pretty; }
+/* A check that waits for the box has a dashed edge, so it never reads as a second button. */
+.dock > .btn.primary:disabled { border-style: dashed; }
+/* A thank-you screen: the drawn check, the words, and Done in thumb reach. */
+.done-step { text-align: center; justify-items: center; }
+.done-step > .btn { width: 100%; }
+@media (max-width: 1023px) {
+  .done-step { display: flex; flex-direction: column; align-items: center;
+               min-height: calc(100dvh - 88px - 104px - env(safe-area-inset-bottom)); }
+  .done-step > .btn:last-child { margin-top: auto; }
+}
+/* Dark: the avoid list's card keeps an edge against the navy pack card. */
+@media (prefers-color-scheme: dark) {
+  .person-line.stop { box-shadow: inset 0 0 0 1px rgba(255, 180, 168, .35); }
+}
+.wait:has(> .kicker.step) { padding-top: 0; }
+.wait > .kicker.step { justify-content: flex-start; margin: 0 0 var(--sp-6); }
+/* Every photo in hand shown whole, on the card's ground, so no word is cut. */
+.taken img { height: auto; aspect-ratio: 3 / 4; object-fit: cover; object-position: 0 0; }
+@media (prefers-reduced-motion: no-preference) {
+  .done-step > .spot { animation: pill-in var(--d-reveal) var(--ease-spring) both; }
+}
+@media (min-width: 1024px) { .result .tabs { max-width: 480px; } }
+@media (max-width: 380px) { .person-line:has(> .avatar) { padding-inline: var(--sp-4); column-gap: 10px; } }
+/* Round 4. */
+.digits .small { color: var(--ink-2); }
+.dock > .btn.primary:disabled { border-color: var(--muted); }
+.as-printed ol { font-variant-numeric: tabular-nums; padding-left: 2.4em; }
+.as-printed { padding-bottom: var(--sp-5); }
+.retakes { margin-top: calc(var(--sp-2) * -1); }
+.result .retake-dock + * { margin-top: var(--sp-3); }
+/* Round 5. The camera's line in the app's navy, frosted; the drawn barcode has no reading line
+   (nothing is being read there), only its corners breathing. */
+.cam-status { background: rgba(23, 52, 77, .85); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+              border-radius: var(--r-pill); }
+.scan-cam.drawn .scanline { display: none; }
+/* The pack's own photo settles into the card when it has loaded. */
+@media (prefers-reduced-motion: no-preference) {
+  .pack-thumb img:not([hidden]) { animation: img-settle 240ms var(--ease-enter) both; }
+}
+/* A thank-you's check: done's green, filled. */
+.spot.k-done { background: var(--brand); }
+.spot.k-done .icon { color: var(--brand-ink); }
+/* Worth knowing's source line in the secondary text colour. */
+.note-text .src { color: var(--ink-2); }
+@media (prefers-color-scheme: dark) { .person-line.stop details summary { color: var(--ink); } }
+@keyframes img-settle { from { opacity: 0; transform: translateY(8px); } }
+/* Round 6. The drawn barcode in the same square frame as the live camera. */
+.scan-cam.drawn { aspect-ratio: 1 / 1; }
+.scan-cam.drawn .frame { inset: 30% 14% 38%; }
+/* While a photo is checked, the step's button turns its camera into a turning ring: busy, not waiting. */
+.label-cam:has(.shot.reading) > .dock label.btn .icon { visibility: hidden; position: relative; }
+.label-cam:has(.shot.reading) > .dock label.btn:has(> .icon) { position: relative; }
+.label-cam:has(.shot.reading) > .dock label.btn:has(> .icon)::before { content: ""; width: 18px; height: 18px; flex: none;
+  margin-right: -26px; border-radius: 50%; border: 2.5px solid currentColor; border-right-color: transparent;
+  animation: spin 900ms linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+/* The docked question a step lighter than a screen title. */
+.dock > .dock-q { font-size: var(--fs-lg); }
+.shot-review > .retakes + * { margin-top: var(--sp-3); }
+/* "Same pack": done's green, and the check wakes with a short fade when it is ticked. */
+#pairing { accent-color: var(--brand); }
+.dock > .btn.primary:disabled { border-color: var(--ink-2); }
+@media (prefers-reduced-motion: no-preference) {
+  .shot-review > .dock > .btn.primary:not(:disabled) { animation: fade-in 200ms var(--ease-enter) both; }
+  .digits { position: relative; }
+  .digits::after { content: ""; position: absolute; left: 0; right: 0; bottom: -6px; height: 3px; border-radius: 2px;
+    background: var(--gold); transform-origin: left; animation: digits-line var(--d-draw) var(--ease-enter) 150ms both; }
+}
+@keyframes digits-line { from { transform: scaleX(0); } }
+/* A finding's page: room above each part. */
+.look-page > .look-part { margin-top: var(--sp-6); }
+.send-step > ul.small { color: var(--ink); }
+.nut-line-label { color: var(--ink-2); }
+.nut-why { text-wrap: pretty; }
+.result .retake-dock { padding-top: var(--sp-3); }
+@media (min-width: 1024px) { .result .tabs [role="tab"] { font-size: var(--fs-md, 1rem); } }
+
+/* D-185 Phase 2: from 1024 px the read already has the result's width, so the result arriving on its
+   own (no tap) does not move the page (it was a 0.14 layout shift on desktop). */
+@media (min-width: 1024px) {
+  body:has(main > .wait.reading) main.wrap { max-width: 1040px; padding-top: 24px; }
+  main > .wait.reading { max-width: 528px; margin-inline: auto; }
 }

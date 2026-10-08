@@ -146,5 +146,5 @@ def test_the_no_barcode_button_is_easy_to_find():
     app_js = open(os.path.join(main.WEB_DIR, "app.js"), encoding="utf-8").read()
     start = app_js.index("async function scan()")
     body = app_js[start:app_js.index("\n}\n", start)]
-    assert body.index("No barcode? Photograph the ingredients") < body.index("Or use a photo of the barcode")
+    assert body.index("No barcode? Photograph the ingredients") < body.index("Take a photo of the barcode")
     assert 'Photograph the ingredients", () => { pending.barcode = null; go("photo"); }, "link")' not in body

@@ -356,10 +356,22 @@ pass starts on the finished drawing, which is also the reduced-motion still); ho
 order; the bottom bar's pill springs to the place in view; the Compare badge springs in; a state
 screen's disc springs in; "Start at home" fills its segments.
 
+D-185 Phase 2 (Sushil, 2026-10-08: the motion was too quiet to see): home's drawing now plays slowly
+for as long as home is on screen (8 s a pass) and takes more of the card at the same height; it pauses
+when the app is in the background or the card is scrolled away, and is still under reduced motion.
+In the scan flow every screen moves within 2 seconds: the barcode camera's corners settle and breathe
+while a gold line sweeps (2.6 s each way); the step dots' pill slides over from the step before; a
+step's example settles in and its tick draws itself; a photo being checked has a gold band passing over
+it (1.3 s each way); "Both photos are in" and "Thank you" draw their tick; a problem's retake arrow
+turns once; the waiting screen's sheet lights up line by line under a moving lens (4.8 s), or a gold
+line sweeps a barcode while a pack is looked up; on the result the cards after the people block rise
+in order (70 ms apart), the tab pill springs between tabs, and the nutrition bars and the ring fill
+(600 ms).
+
 ### 8.7 Icons
 Drawn for this app on a 24 px grid: 2 px strokes, round caps and joins, `currentColor`, no
 fill except a status disc behind a mark. Set: chevron right, chevron down, back, barcode in a
-frame, camera, alert (!), cross (not permitted), check (a photo is clear), clock, pack. Always
+frame, camera, torch, alert (!), cross (not permitted), check (a photo is clear), clock, pack. Always
 `aria-hidden`; the words beside them carry the meaning. A check means only "this photo is
 readable", never anything about the food.
 
