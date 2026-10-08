@@ -32,7 +32,7 @@ def test_avoid_list_blocks_pack():
     j = post([ATTA, MILKY], avoid=["milk"], who="Aarav").json()
     assert j["best"] == "c"
     assert j["blocked"] == ["m"]
-    assert j["allergen_lines"] and j["who"] == "Aarav"
+    assert j["allergen_lines"] == [] and j["who"] == "Aarav"          # D-188: no "not listed" line
     milky = next(p for p in j["packs"] if p["id"] == "m")
     assert milky["allergens"][0]["state"] == "contains"
     assert "Aarav" in milky["allergens"][0]["text"]

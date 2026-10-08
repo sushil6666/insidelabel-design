@@ -227,3 +227,65 @@ def test_composition_is_shown_to_reviewers_beside_the_types_range(env):
     assert raw["_infant"]["composition"][0]["where"] == "above"
     _item, _c, page = item_page(env, vid)
     assert "The pack prints 8 mg" in page and "set 3.0 to 7.0 mg" in page and "(above that)" in page
+
+
+def test_the_replay_tool_writes_only_with_apply_and_only_the_kind(env):
+    # D-188: version 74 (item #82) was fixed by hand; --apply does it with a `corrected` note.
+    import os
+    import subprocess
+    import sys
+    j = post(gtin(), reading(["Durum wheat semolina", "Wheat gluten"], [st("Vermicelli", "front")]))
+    vid = j["catalogue"]["product_version_id"]
+    assert j["pack_kind"]["code"] == "food"
+    # As stored under the old licence rule (D-187): not food.
+    with psycopg.connect(env) as c:
+        c.execute("UPDATE product_versions SET pack_kind = 'not_food', "
+                  "pack_kind_evidence = '{\"evidence\": [], \"review\": []}' WHERE id = %s", (vid,))
+    row = "SELECT to_jsonb(v) - 'pack_kind' - 'pack_kind_evidence' FROM product_versions v WHERE id = %s"
+    [(before,)] = q(env, row, vid)
+    tool = [sys.executable, os.path.join(os.path.dirname(__file__), "..", "tools", "pack_kind_replay.py")]
+    run = dict(os.environ, INSIDELABEL_DB=env)
+
+    out = subprocess.run(tool, env=run, capture_output=True, text=True, check=True).stdout
+    assert f"version {vid} " in out and "not_food -> food" in out and "nothing written" in out
+    assert q(env, "SELECT pack_kind FROM product_versions WHERE id = %s", vid) == [("not_food",)]
+
+    no_name = subprocess.run(tool + ["--apply"], env=run, capture_output=True, text=True)
+    assert no_name.returncode != 0 and "--by" in no_name.stderr
+    assert q(env, "SELECT pack_kind FROM product_versions WHERE id = %s", vid) == [("not_food",)]
+
+    out = subprocess.run(tool + ["--apply", "--by", "Sushil"], env=run, capture_output=True, text=True,
+                         check=True).stdout
+    assert f"written: version {vid}: pack_kind not_food -> food" in out
+    [(kind, evidence)] = q(env, "SELECT pack_kind, pack_kind_evidence FROM product_versions WHERE id = %s", vid)
+    assert kind == "food" and evidence["evidence"] == [] and evidence["review"] == []
+    assert re.fullmatch(r"D-187: was not_food; pack_kind_replay gives food\. Applied with --apply by Sushil, "
+                        r"\d{4}-\d\d-\d\d", evidence["corrected"])
+    assert q(env, row, vid) == [(before,)]                     # nothing else on the version moved
+
+    out = subprocess.run(tool + ["--apply", "--by", "Sushil"], env=run, capture_output=True, text=True,
+                         check=True).stdout
+    assert f"version {vid} " not in out                          # done once: no longer changed
+
+
+def test_a_barcode_hit_says_the_pack_we_checked_not_the_photo(env):
+    # D-188 part 2: no photo was taken on a catalogue hit; the words come from the reviewed record.
+    bc = gtin()
+    j = post(bc, reading(["Durum wheat semolina", "Wheat gluten"], [st("Vermicelli", "front")]))
+    vid = j["catalogue"]["product_version_id"]
+    item_id, c, page = item_page(env, vid)
+    token = re.search(r'name="csrf" value="([0-9a-f]+)"', page).group(1)
+    c.post(f"/review/item/{item_id}/claim", data={"csrf": token})
+    r = c.post(f"/review/item/{item_id}/approve", follow_redirects=False, data={
+        "csrf": token, "name": "Vermicelli", "brand": "Testco", "variant": "", "barcode": "",
+        "ingredients": "Durum wheat semolina\nWheat gluten", "allergen_statement": "", "front_claims": "",
+        "note": "", "category": "6.4.2"})
+    assert r.status_code == 303 and "error=" not in r.headers["location"], r.headers["location"]
+    profiles = json.dumps([{"ref": "p1", "age": "kid", "avoid": ["milk"]}])
+    hit = TestClient(main.app).post("/scan", data={"barcode": bc, "profiles": profiles}).json()
+    assert hit["catalogue"]["source"] == "catalogue"
+    assert hit["screen"]["people"] == [] and "for_you" not in hit["screen"]
+    assert hit["screen"]["for_you_note"] == ("We didn't see a \"may contain\" line on the pack we checked, "
+                                             "so check the pack for one.")
+    [row] = hit["allergens"]["results"]
+    assert "on the pack we checked" in row["text"] and "photo" not in row["text"]

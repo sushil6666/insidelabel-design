@@ -1,7 +1,7 @@
 // sw.js - keeps the app shell available offline and loading fast on slow networks.
 // Only files under /app/ are cached. API calls (/scan, /compare, …) always go
 // to the network: a stale verdict must never be served from a cache here.
-const VERSION = "il-shell-65";   // bump with APP_VERSION in lib.js
+const VERSION = "il-shell-66";   // bump with APP_VERSION in lib.js
 // D-185: two faces now, both used by the first screen, so both are precached (the D-153 report
 // faces they replace were cached on first use, because precaching them cost the first screen).
 const SHELL = ["./", "index.html", "app.css", "app.js", "lib.js", "camera.js", "icons.js",

@@ -157,16 +157,17 @@ def test_a_pack_photo_is_unchanged(env):
 
 # ---------------------------------------------------------------- allergen lines: cases A, B, C
 
-def test_case_c_no_pack_the_line_carries_the_caution(env):
-    [p] = scan(vision(NO_MILK), barcode=gtin()).json()["screen"]["people"]
-    assert p["status"] == "not_listed"
-    assert p["line"] == ("Milk, soy: not listed in the ingredients on this screen. Listings can differ "
-                         "from the pack in the shop. Check the pack before buying for {name}.")
+def test_case_c_no_pack_no_match_shows_nothing_and_the_screen_card_cautions(env):
+    # D-188 (option B): no match, no line; the from_screen card says to check the pack in the shop.
+    s = scan(vision(NO_MILK), barcode=gtin()).json()["screen"]
+    assert s["people"] == [] and "for_you" not in s
+    assert s["from_screen"]["text"] == result_screen.SCREEN_TEXT
+    assert "Check the pack in the shop before you buy." in s["from_screen"]["text"]
 
 
 def test_case_c_for_your_own_list(env):
-    [p] = scan(vision(NO_MILK), barcode=gtin(), profiles=ME).json()["screen"]["people"]
-    assert p["line"].endswith("Check the pack before you buy.")
+    s = scan(vision(NO_MILK), barcode=gtin(), profiles=ME).json()["screen"]
+    assert s["people"] == [] and "for_you" not in s
 
 
 def test_what_the_screen_lists_is_shown_as_the_screen_says(env):
@@ -188,13 +189,12 @@ def test_case_a_the_pack_lists_what_an_old_listing_does_not(env):
 
 
 def test_case_b_the_pack_and_the_screen_agree(env):
+    # D-188 (option B): they agree nothing on the avoid list is listed: no line; the card names the pack's day.
     bc = published(env, NO_MILK, statement="Contains wheat.")
     j = scan(vision(NO_MILK), barcode=bc).json()
-    [p] = j["screen"]["people"]
     day = result_screen._day(j["catalogue"]["pack_verified_on"])
-    assert p["status"] == "not_listed"
-    assert p["line"] == (f"Milk, soy: not listed, on this screen and on the pack we checked on {day}. "
-                         f"Check the pack when you buy.")
+    assert j["screen"]["people"] == []
+    assert j["screen"]["from_screen"]["pack"].startswith(f"We also checked this pack in a shop on {day}")
 
 
 def test_a_low_confidence_screen_read_cannot_confirm(env):

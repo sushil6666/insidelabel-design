@@ -474,9 +474,10 @@ def parse_profiles(raw):
         raise HTTPException(status_code=422, detail={"error": "bad_profiles", "detail": str(e)})
 
 
-def allergen_block(codes, ingredients, statement, confidence=1.0, reliable=True, who=None):
+def allergen_block(codes, ingredients, statement, confidence=1.0, reliable=True, who=None, where="photo"):
     """
     The first thing a client renders when the profile has an avoid list (D-060).
+    where="pack": a catalogue hit, so no line says "in the photo" (D-188).
     Results are sorted strongest state first, so results[0] is the headline.
     """
     if not codes:
@@ -494,7 +495,7 @@ def allergen_block(codes, ingredients, statement, confidence=1.0, reliable=True,
                 "state": r.state,
                 "evidence": r.evidence or None,
                 "statement_seen": r.statement_seen,
-                "text": r.parent_text(who) if who else r.parent_text(),
+                "text": r.parent_text(who or "your child", where),
             }
             for r in rows
         ],
@@ -915,7 +916,8 @@ def _catalogue_result(hit, avoid_codes, who, compare_regulators, profiles=(), sc
     }
     return _withhold(kind, {
         # Reviewed data: read in full by a person, so the allergen gate is met.
-        "allergens": allergen_block(avoid_codes, ingredients, hit["allergen_statement"], who=who),
+        "allergens": allergen_block(avoid_codes, ingredients, hit["allergen_statement"], who=who,
+                                    where="pack"),
         "screen": result_screen.build(
             verdict=verdict, display=display, claim_check=claim_check, extracted=extracted,
             reliability=reliability, profiles=profiles, allergen_confidence=1.0,

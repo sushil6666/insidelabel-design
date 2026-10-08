@@ -74,8 +74,9 @@ class AllergenResult:
     evidence: str = ""
     statement_seen: bool = False
 
-    def parent_text(self, who="your child"):
+    def parent_text(self, who="your child", where="photo"):
         # who="you" is the user's own profile (D-074): "your avoid list", not "you's".
+        # where="pack": a catalogue hit, read from the pack we checked; no photo was taken (D-188).
         a = ALLERGENS[self.code]
         label, short = a["label"], a["short"]
         whose = "your" if who == "you" else f"{who}'s"
@@ -94,7 +95,9 @@ class AllergenResult:
         if self.statement_seen:
             text += " or the allergen line."
         else:
-            text += ". We didn't see a \"may contain\" line in the photo, so check the pack."
+            text += (". We didn't see a \"may contain\" line on the pack we checked, so check the pack."
+                     if where == "pack" else
+                     ". We didn't see a \"may contain\" line in the photo, so check the pack.")
         if not a.get("fssai_mandatory", True):
             text += f" Brands don't have to declare {short}, so this check is weaker."
         return text

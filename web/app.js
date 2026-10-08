@@ -415,10 +415,21 @@ function scanList(items) {
       packThumb(h),
       el("span", { class: "scan-text" },
         el("strong", {}, productName(h.product)),
+        scanPerson(h.screen),
         h.screen?.summary?.length
           ? el("span", { class: "chips" }, cardChips(h.screen.summary).map(toneChip))
           : el("span", { class: "muted" }, peopleSummary(h.screen) || h.screen?.headline?.text || ""),
         h.at && el("span", { class: "scan-when" }, whenText(h.at)))))));
+}
+
+// D-188: a scan card names a match (or a line we can't confirm) for the first person it concerns,
+// in the result's colour; a person with no match isn't named.
+function scanPerson(screen) {
+  const p = cardPeople(screen)[0];
+  if (!p || !screen.summary?.length) return null;          // without chips, peopleSummary says it
+  const who = profileByRef(p.ref);
+  return el("span", { class: `scan-person ${PERSON_TONE[p.status] || "calm"}` },
+    who && el("b", {}, who.nickname + " "), fill(p.line, p.ref));
 }
 
 // D-185: a card shows at most two of the server's chips, those worth a look first, in the server's
@@ -504,8 +515,14 @@ function yourScans() {
 }
 
 function peopleSummary(screen) {
-  const p = screen?.people?.[0];
+  const p = cardPeople(screen)[0];
   return p ? fill(p.line, p.ref) : "";
+}
+
+// D-188: the people with a card: a match, or a line we can't confirm. A result kept on this phone
+// from before web-66 still lists everyone; its "not listed" lines don't show.
+function cardPeople(screen) {
+  return (screen?.people || []).filter(p => LISTED.includes(p.status) || p.status === "cannot_confirm");
 }
 
 // D-070: "we'll tell you when it's ready" - checked on open; push comes later.
@@ -1508,7 +1525,7 @@ function result(id, sub, tileId) {
     // D-146: a catalogue hit names the product; if it isn't this pack, back to the scanner.
     s.rescan && h.looked_up && el("p", { class: "rescan" }, s.rescan.text, " ",
       button(s.rescan.button, () => { resetPending(); scanAgain(); }, "link")),
-    s.people?.length > 0 && el("div", { class: "people" }, s.people.map(personCard))));
+    cardPeople(s).length > 0 && el("div", { class: "people" }, cardPeople(s).map(p => personCard(p, h)))));
   // D-140: an older toddler profile is asked once whether the child is under 2. The
   // server leaves it out after D-146's digit check, so a scan never asks twice.
   if (s.band_question && s.state === "result") put(bandQuestion(s.band_question));
@@ -1557,7 +1574,7 @@ function result(id, sub, tileId) {
   // isn't food: the allergen lines above, then the server's lines, and nothing that
   // judges it as a food. Which parts show is the server's (screen.parts).
   if (s.kind) {
-    put(kindView(s));
+    put(kindView(s), forYouLines(s));
     // D-139: a supplement's own tiles, each opening its page, its sugar chip for a food
     // format, and its sections (amounts, statements, additives), all in the server's words.
     if (s.tiles?.length) put(el("ul", { class: "tiles" }, s.tiles.map(t => el("li", {}, tileLink(h, t)))));
@@ -1597,6 +1614,7 @@ function result(id, sub, tileId) {
   const tiles = s.tiles || [];
   const serious = tiles.filter(t => t.kind === "not_permitted");
   const notes = tiles.filter(t => t.kind !== "not_permitted");
+  you(forYouLines(s));
   if (serious.length) you(el("ul", { class: "tiles" }, serious.map(t => el("li", {}, tileLink(h, t)))));
   const answers = s.summary?.length
     ? answersView(s.summary)
@@ -1613,8 +1631,10 @@ function result(id, sub, tileId) {
 
   // A partial read, the table photo and the D-073 re-check ask for something now,
   // with the pack in hand, so they stay on the first tab.
+  // D-188: an amber allergen card above carries the retake button; the card here keeps its words.
+  const cardRetake = cardPeople(s).some(p => p.status === "cannot_confirm") && !h.looked_up;
   if (s.retake) you(partialRetake(s, h,
-    button("Retake the ingredients photo", () => retakeList(h, "partial"))));
+    !cardRetake && button("Retake the ingredients photo", () => retakeList(h, "partial"))));
   const askTable = s.nutrition && canAskTable(s.nutrition, h);
   if (askTable) you(el("div", { class: "card note" }, el("p", {}, s.nutrition.text),
     button(s.nutrition.ask, () => go("table"))));
@@ -1702,7 +1722,8 @@ function packHead(h) {
 // phone (D-074): the lines name "your child", as they do before the nickname is filled in.
 function shareResult(h) {
   const s = h.screen || {};
-  const text = [productName(h.product), ...(s.people || []).map(p => fill(p.line)), s.headline?.text,
+  // D-188: a match or a line we can't confirm, as on the result's top; nothing for a person with no match.
+  const text = [productName(h.product), ...cardPeople(s).map(p => fill(p.share || p.line)), s.headline?.text,
                 "Read with InsideLabel: https://insidelabel.ai"].filter(Boolean).join("\n");
   record("share", { via: navigator.share ? "share" : "copy" });
   if (navigator.share) return navigator.share({ title: productName(h.product), text }).catch(() => {});
@@ -2016,20 +2037,46 @@ const PERSON_TONE = { contains: "stop", may_contain: "stop",
 // contain"; "worth a look" for the amber lines; the calm lines have none.
 const PERSON_KIND = { contains: "avoid", may_contain: "avoid",
                       cannot_confirm: "worth", uncertain: "worth", worth_knowing: "worth" };
-function personCard(p) {
+// D-188: a card only for a match (red) or a line we can't confirm (amber); the server sends no
+// other. Any further match stays in view under the first line; a child's facts sit in More.
+// A photo scan's amber card offers the retake (D-170, D-173); a barcode-only hit took no photo.
+const LISTED = ["contains", "may_contain", "uncertain"];
+function personCard(p, h) {
   const who = profileByRef(p.ref);
+  const also = p.allergens.slice(1).filter(a => LISTED.includes(a.state));
   // D-140: a baby line carries its source; the cite is the server's words.
-  const detail = [...p.allergens.slice(1).map(a => ({ text: a.text })), ...p.child_facts];
+  const detail = p.status === "cannot_confirm" ? [] : p.child_facts;
   const kind = PERSON_KIND[p.status];
+  const retake = h && p.status === "cannot_confirm" && h.screen?.state === "result" && !h.looked_up;
   // D-185 Phase 2 (D-177): the person's initial beside their line, the same disc as on home.
   return el("div", { class: `person-line ${PERSON_TONE[p.status] || "calm"}`, "data-status": p.status },
     who && avatar(who),
     el("span", { class: "who" }, who ? who.nickname : "Someone in your household"),
     el("b", { class: "line" }, kind && kindIcon(kind), fill(p.line, p.ref)),
+    also.length > 0 && el("ul", { class: "plain also" }, also.map(a => el("li", {}, fill(a.text, p.ref)))),
+    retake && button("Retake the ingredients photo", () => retakeList(h, "partial")),
     detail.length > 0 && el("details", {}, el("summary", {}, "More"),
       el("ul", { class: "plain small" }, detail.map(f => el("li", {}, fill(f.text, p.ref),
         f.sources?.length > 0 && el("span", { class: "src" }, " ",
           f.sources.map(x => el("a", { href: x.url, target: "_blank", rel: "noopener" }, x.cite))))))));
+}
+
+// D-188: "For you" opens with a child's age line for anyone without a card, then the one "may
+// contain" reminder. A person with no match has no line here (Sushil, 2026-10-08, option B).
+// Every word is the server's (screen.for_you, screen.for_you_note).
+function forYouLines(s) {
+  const rows = s.for_you || [];
+  if (!rows.length && !s.for_you_note) return null;
+  return el("ul", { class: "plain for-you-lines" }, rows.map(r => {
+    const who = profileByRef(r.ref);
+    return el("li", {},
+      who && avatar(who),
+      el("div", {}, r.lines.map(t => el("p", {}, fill(t, r.ref))),
+        r.child_facts?.length > 0 && el("details", {}, el("summary", {}, "More"),
+          el("ul", { class: "plain small" }, r.child_facts.map(f => el("li", {}, fill(f.text, r.ref),
+            f.sources?.length > 0 && el("span", { class: "src" }, " ",
+              f.sources.map(x => el("a", { href: x.url, target: "_blank", rel: "noopener" }, x.cite)))))))));
+  }), s.for_you_note && el("li", { class: "note-line" }, el("p", {}, s.for_you_note)));
 }
 
 // D-153: a tile as a note: the server's title and chip, its first source by name, and the way to the

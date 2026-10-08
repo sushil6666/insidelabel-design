@@ -297,7 +297,9 @@ def compare(products, age="kid", avoid=(), who=None, strict_may_contain=True):
 
     result["best"] = best
     result["others"] = checked[1:]
-    result["allergen_lines"] = [best.allergens[c].parent_text(who_label) for c in avoid]
+    # D-188: a line only when it matters (a match, or one we can't confirm); "not listed" stays out.
+    result["allergen_lines"] = [best.allergens[c].parent_text(who_label) for c in avoid
+                                if best.allergens[c].state != "not_listed"]
     if not checked[1:]:
         result["why_best"] = [f"The only pack here that passed {who_label}'s avoid list"
                               if blocked else "The only pack here we could fully check"]

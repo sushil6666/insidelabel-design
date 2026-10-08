@@ -322,6 +322,9 @@
                 Show this front photo to everyone who scans this barcode</label>
               <label class="choice"><input type="checkbox" name="pack_alone" value="1">
                 It shows the pack alone (no hand, face, person or room) and it is sharp</label>
+              {# D-188: a back of pack (list, table, QR code) was once published as a pack picture #}
+              <label class="choice"><input type="checkbox" name="pack_front" value="1">
+                It is the front of the pack</label>
               <div class="muted" style="font-size:12px">Ticked about what will be shown: the cropped copy, when you crop.</div>
             {% else %}
               <div class="muted" style="margin-top:4px">This front photo can't be shown: {{ picture_offer.why }}</div>

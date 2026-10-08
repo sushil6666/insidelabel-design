@@ -4134,6 +4134,67 @@ vermicelli pack with a nutrition table and category 6.4.2. The review agent had 
   stored version whose kind or reviewer notes change, with its review item.
 - **Tests:** `tests/test_pack_kind.py` (item #82's lines, the Chyawanprash-style licence, the food signals, the
   checker, the replay tool) and `tests/test_pack_kind_db.py` (the /review note).
+- **Follow-up (2026-10-08): version 74.** The replay found version 74 (Bambino Vermicelli, 8904287001052, item #82)
+  published as `not_food`; users saw the not-food screen. Sushil fixed it by hand on the server the same day:
+  `UPDATE product_versions SET pack_kind = 'food', pack_kind_evidence = jsonb_build_object('evidence', '[]'::jsonb,
+  'corrected', 'D-187: was not_food from a plain Lic No. (thumb hid the last digits); pack_kind_replay gives food.
+  Sushil, 2026-10-08') WHERE id = 74`. D-188 adds `--apply` to the replay tool so the next one is not by hand.
+
+### D-188 · Allergen lines show only when they matter; a front tick; "on the pack we checked"; replay --apply `LOCKED` (2026-10-08)
+**Sushil, 2026-10-08,** after a Bambino Vermicelli result whose top card said "JOO: Milk, soy, fish: not in the
+ingredients. We didn't see a "may contain" line in the photo, so check the pack.": "if any list matches then we should
+see JOO's allergen line first; with warning, unnecessary it's not required", then "will show only Match ... unnecessary
+panic don't do. if Cannot confirm ... suggest", then "yes" to the advisor's table (match: a calm red card; cannot
+confirm: an amber card with Retake on a photo scan; no match: nothing at the top). On the plan's screenshots, the same
+day: "i thought it won't show anything, but it says not listed"; he chose **option B**: on no match, nothing for that
+person anywhere on the result. **Accepted by Sushil 2026-10-08** (his option B message names the plan's matches,
+cannot-confirm and age lines "as accepted"). Built by Claude. Changes how D-060 shows on the result screen only.
+
+**1. The people block on the result screen (`lenses/screen.py`, D-091).**
+
+| Situation | At the top | Colour |
+|---|---|---|
+| Listed in the ingredients | `Milk is listed: "Milk solids".` (the label quoted) | red (D-169) |
+| Listed in the allergen line | `Milk is listed in the allergen line: "Contains wheat, milk".` | red |
+| The pack says "may contain" | `The pack says it may contain soy: "May contain traces of soy".` | red |
+| A source we can't tell (`uncertain`) | unchanged: `We can't tell whether "lecithin" comes from soy. Check with the brand ...` | amber |
+| Cannot confirm, partial read | `Part of the list couldn't be read, so we can't confirm milk, soy, fish. Check the pack.` | amber |
+| Cannot confirm, otherwise (below 0.95, unclear) | `The list wasn't clear enough to confirm milk, soy, fish. Check the pack.` | amber |
+| No match | nothing, here or in "For you" | none |
+
+- One card per person; the person's name is on the card above the line. A second match for the same person shows under
+  the first line, not folded. No "warning", no exclamation mark.
+- **"May contain" is red:** today's states rank it with "contains" and D-169 gives both the avoid cross; the pack
+  itself names the allergen. Amber stays for what is about our read ("can't tell", "can't confirm").
+- **Retake** on an amber cannot-confirm card of a photo scan (D-170, D-173's retake flow); none on a barcode-only hit.
+- **"For you"** opens with a child's age line for a person without a card ("1 thing worth knowing for {name}.",
+  "Nothing extra for {name}'s age came up."), then one reminder when something on an avoid list isn't listed and no
+  allergen line was read: `We didn't see a "may contain" line in the photo, so check the pack for one.` on a photo
+  scan, `We didn't see a "may contain" line on the pack we checked, so check the pack for one.` on a barcode-only hit.
+  No "Not listed for ..." line (option B); never "safe", "free from" or "no milk" (D-042/D-071).
+- **Your scans, Compare, Share** follow the same rule: a scan card names a match in its colour; Compare's allergen
+  lines leave out "not listed"; Share sends `For your child, milk is listed: "Milk solids".` (no nickname, D-074,
+  D-177) and nothing for a person with no match.
+- **The /scan answer is unchanged:** `allergens` stays the first key with every state (D-060). `screen.people` now
+  holds only the cards; `screen.for_you` holds age lines and `screen.for_you_note` the reminder. A result kept on a
+  phone from before web-66 still lists everyone; the app hides its "not listed" lines.
+
+**2. "In the photo" on a barcode scan.** On a catalogue hit no photo was taken; the words come from the reviewed
+record. `allergens.py` and the reminder say "on the pack we checked" there and keep "in the photo" for a photo scan.
+
+**3. /review pack picture: a front tick.** A published pack picture (TATA Sampann LUXE DRY FRUIT & NUT MIX,
+8904043906393) was the back of the pack. The item's pack picture block and /review/pictures have a third required
+tick, "It is the front of the pack"; a picture is not saved without it. The ticks are about the cropped copy (D-186).
+
+**4. `tools/pack_kind_replay.py --apply --by <name>`.** Off by default; the default run stays read-only. With it, each
+changed version gets today's `pack_kind` and `pack_kind_evidence` (evidence and review notes, plus a `corrected` note:
+the rule's decision number, old and new kind, who ran it, the date); each written row is printed; nothing else on the
+version changes. D-187's follow-up line records version 74, fixed by hand before this existed.
+
+- **Tests:** `tests/test_screen.py` (match, cannot-confirm, no match, a household of three with one match, the
+  reminder's two wordings), `tests/test_web.py` (cards, For you, scan cards, Share, Retake), `tests/test_pack_kind.py`
+  (the gold labels' cards), `tests/test_pack_kind_db.py` (a barcode hit says "on the pack we checked"; `--apply`
+  writes only the two columns, the default run writes nothing), `tests/test_pack_pictures.py` (the front tick).
 
 ---
 

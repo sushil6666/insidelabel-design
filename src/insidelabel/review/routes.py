@@ -262,6 +262,9 @@ async def _decide(request, item_id, name, action):
             if form.get("pack_picture"):
                 if not form.get("pack_alone"):
                     raise ReviewError("Pack picture: tick that the photo shows the pack alone, or untick it.")
+                # D-188: a back of pack (8904043906393: list, table, QR code) was published once.
+                if not form.get("pack_front"):
+                    raise ReviewError("Pack picture: tick that the photo is the front of the pack, or untick it.")
                 data = SERVICE.get(item_id)
                 front = data and data["images"]["front"]
                 # D-186: the ticks are about the cropped copy; a bad crop stops the publish too.
@@ -340,8 +343,9 @@ async def picture_upload(request: Request, name: str = Depends(reviewer)):
             raise ReviewError("No product in the catalogue has that barcode.")
         if not data:
             raise ReviewError("Choose a photo of the front of the pack.")
-        if not (form.get("pack_alone") and form.get("same_product")):
-            raise ReviewError("Tick both boxes: the photo shows the pack alone, and it is this product.")
+        if not (form.get("pack_alone") and form.get("same_product") and form.get("pack_front")):     # D-188
+            raise ReviewError("Tick all three boxes: the photo shows the pack alone, it is this product, "
+                              "and it is the front of the pack.")
         pictures.add(SERVICE.conninfo, MEDIA, product_id=pid, data=data, source="reviewer_upload",
                      approved_by=name, crop=pictures.crop_from_form(form))     # D-186: cropped as drawn
     except (ReviewError, pictures.PictureError) as e:

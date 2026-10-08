@@ -76,7 +76,8 @@ def test_allergen_blocks_best_pick():
     r = compare([MILKY, CREAM], age="kid", avoid=["milk"], who="Riya")
     assert MILKY in r["blocked"]
     assert r["best"].id == "a"
-    assert r["allergen_lines"][0].startswith("Milk isn't listed")
+    # D-188: a "not listed" line isn't shown; the pick says it passed the avoid list.
+    assert r["allergen_lines"] == []
     assert "RIYA" in render(r)
 
 
