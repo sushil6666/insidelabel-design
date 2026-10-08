@@ -665,7 +665,9 @@ setup alarms.
 
 - **`d175-count` (2026-10-08, no migration, server only), from `main` d720f93 (#129).** D-175 count follow-up: the re-check counts every comma on both sides and finds the list end by the last entry's final three words. The server's first run passed 20 of 57 packs, 28 failing on the count.
   - **Waiting on Sushil:** merge; `update.sh`; `il tools/recheck_measure.py` again.
-  - **Also from that run, for a person on /review:** six published packs whose label text names an allergen their record doesn't (Junior Horlicks, Mother's Plus, Women's Plus: sulphite; Gold: soy; one PEANUT BUTTER: milk; Rolled Oats: soy). Check each record against its photo.
+  - **Merged (#130); re-measured: 23 of 57.** Count tuning stopped there.
+- **`d175-allergen-numbers` (2026-10-08, server only), from `main` 4d0721f (#130).** The re-check's "no new allergen" test ignores bare numbers (sulphite's INS 220 to 228 matched nutrition values on three Horlicks packs). **Waiting on Sushil:** merge; `update.sh`.
+  - **For a person on /review, from the six allergen flags:** Rolled Oats (8904335601951) has no allergen line and its label has "soy" on a line of its own: check the photo for a "may contain" line. Gold (8901393024500): the line reads "Contains Milk and SoyMay Contains Barley and Wheat"; make it "Contains Milk and Soy. May Contain Barley and Wheat." PEANUT BUTTER (8901030980046): "of cow's milk" on the label, probably a comparison; glance at the photo. The three Horlicks packs are fine.
 
 - **`d175-recheck` (2026-10-08, migration 024, web-52), from `main` 4ded7eb (#128).** D-175: a published pack is checked again every 15 days.
   - A food pack last checked over 15 days ago shows one optional card: "Help keep this pack up to date: one photo of the ingredient list." The photo is compared with the published list for free first (`review/checker.unchanged`); only a "not clear" photo pays for the normal read.
