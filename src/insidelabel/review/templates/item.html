@@ -304,6 +304,22 @@
             <div class="muted" style="font-size:12px">Unticked, the pack is published without its nutrition table.</div>
           </div>
         {% endif %}
+        {% if picture_offer %}{# D-182: the pack picture everyone sees on a result for this barcode #}
+          <div class="panel" style="margin:10px 0">
+            <b>Pack picture</b>: shown on every result for this barcode, never read for findings.
+            {% if picture_offer.shown %}<div class="muted" style="margin-top:4px">This pack already has one
+              (approved by {{ picture_offer.shown.approved_by }} on {{ picture_offer.shown.approved_at.date() }});
+              ticking replaces it.</div>{% endif %}
+            {% if picture_offer.ok %}
+              <label class="choice" style="margin-top:8px"><input type="checkbox" name="pack_picture" value="1">
+                Show this front photo to everyone who scans this barcode</label>
+              <label class="choice"><input type="checkbox" name="pack_alone" value="1">
+                It shows the pack alone (no hand, face, person or room) and it is sharp</label>
+            {% else %}
+              <div class="muted" style="margin-top:4px">This front photo can't be shown: {{ picture_offer.why }}</div>
+            {% endif %}
+          </div>
+        {% endif %}
         <label for="note">Note (optional, kept with the decision)</label>
         <input type="text" id="note" name="note" value="{{ form.note }}">
         <div class="actions">

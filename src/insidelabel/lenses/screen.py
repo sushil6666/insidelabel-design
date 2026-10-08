@@ -1173,6 +1173,20 @@ RESCAN_BUTTON = "Scan again"
 # D-175 (Sushil, 2026-10-08: "15 days will keep"): a published pack whose last check is
 # older than this offers one optional photo of its ingredient list. The result comes first.
 RECHECK_AFTER_DAYS = 15
+
+# D-182: the pack picture, a reviewed photo of the pack's front shown when the shopper has no
+# photo of their own (a barcode hit). It shows what the pack looks like; nothing is read from it.
+PACK_PICTURE_ALT = "Photo of the front of the pack"
+PACK_PICTURE_CAPTION = "Photo of the pack, checked by our team on {day}"
+
+
+def pack_picture(picture, url_for):
+    """{url, alt, caption} for a stored pack picture ({key, taken_on}), or None."""
+    if not picture or not picture.get("key"):
+        return None
+    taken = str(picture.get("taken_on") or "")[:10]
+    return {"url": url_for(picture["key"]), "alt": PACK_PICTURE_ALT,
+            "caption": PACK_PICTURE_CAPTION.format(day=_day(taken)) if taken else None}
 RECHECK_CARD = {"text": "Help keep this pack up to date: one photo of the ingredient list.",
                 "button": "Photograph the ingredient list"}
 RECHECKED = "Pack checked again on {day}."

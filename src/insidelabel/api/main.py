@@ -40,13 +40,14 @@ import uuid  # noqa: E402
 from typing import Optional  # noqa: E402
 
 from fastapi import BackgroundTasks, FastAPI, File, Form, HTTPException, Request, UploadFile  # noqa: E402
-from fastapi.responses import FileResponse, JSONResponse, RedirectResponse  # noqa: E402
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 from starlette.concurrency import run_in_threadpool  # noqa: E402
 
 from insidelabel import barcode as barcode_rules  # noqa: E402
 from insidelabel import photo_check  # noqa: E402
 from insidelabel import photo_join  # noqa: E402
+from insidelabel import pictures  # noqa: E402
 from insidelabel import ratelimit  # noqa: E402
 from insidelabel import trace  # noqa: E402
 from insidelabel.core import engine, pack_kind  # noqa: E402
@@ -888,6 +889,12 @@ def _checked_at(hit):
     return max(d for d in (hit["verified_at"], hit.get("last_verified_at")) if d is not None)
 
 
+def _pack_picture(hit):
+    """D-182: the screen's pack picture, when the product has one: {"pack_picture": {...}} or {}."""
+    pic = result_screen.pack_picture(hit.get("pack_picture"), lambda key: f"/pack-picture/{key}")
+    return {"pack_picture": pic} if pic else {}
+
+
 def _catalogue_result(hit, avoid_codes, who, compare_regulators, profiles=(), screen_pack=None,
                       rechecked_on=None, now=None):
     """
@@ -953,7 +960,7 @@ def _catalogue_result(hit, avoid_codes, who, compare_regulators, profiles=(), sc
             allergen_reliable=True, catalogue=catalogue, screen_pack=screen_pack,
             nutrition=hit.get("nutrition"), kind=kind,
             # D-139: no reading from the catalogue; the published name still says tablet or powder.
-            nutra_input={"product": {"name": hit["name"], "variant": hit["variant"]}}),
+            nutra_input={"product": {"name": hit["name"], "variant": hit["variant"]}}) | _pack_picture(hit),
         "pack_kind": {k: kind[k] for k in ("code", "evidence", "review")},
         "catalogue": catalogue,
         "product": {"brand": hit["brand"], "name": hit["name"], "variant": hit["variant"]},
@@ -1162,6 +1169,22 @@ def access(device_id: str = ""):
     agreed = bool(STORE and device_id and _persist(STORE.has_agreed, device_id, TERMS["version"]))
     return {"invite_only": _invite_only(), "joined": joined, "agreed": agreed,
             "terms_version": TERMS["version"], "live_shutter": _live_shutter()}
+
+
+@app.get("/pack-picture/{key}")
+def pack_picture(key: str):
+    """
+    D-182: a pack picture, the small reviewed copy of a pack's front. Only a key that is a
+    picture being shown is served; every other stored photo stays private.
+    """
+    got = None
+    if STORE and MEDIA and _persist(pictures.shown, STORE.conninfo, key):
+        got = MEDIA.get(key)
+    if got is None:
+        raise HTTPException(status_code=404, detail={"error": "not_found"})
+    data, mime = got
+    # Keys are content hashes: the bytes behind one never change.
+    return Response(data, media_type=mime, headers={"Cache-Control": "public, max-age=604800, immutable"})
 
 
 @app.get("/terms")

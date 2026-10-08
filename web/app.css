@@ -672,6 +672,38 @@ details[open]:not(.look) > summary::after { transform: rotate(180deg); }
                letter-spacing: -.03em; overflow-wrap: break-word; }
 @media (min-width: 592px) { .deep.opener { margin: 0; border-radius: var(--r-2xl); } }
 
+/* Example photos (Sushil, 2026-10-08): a drawn pack, front, list and table, each "taken" well. The
+   label stays printed-paper light in dark mode too, as a real pack would. A suggestion, not a rule. */
+.example-shot { margin: 0; display: grid; gap: 6px; justify-items: center; }
+.example-shot figcaption { font-size: var(--fs-xs); font-weight: 600; color: var(--muted); text-align: center; }
+.ex-photo { position: relative; width: 100%; max-width: 220px; aspect-ratio: 4 / 5; border-radius: var(--r-md);
+            overflow: hidden; background: linear-gradient(160deg, #cfc6b4, #a99f8c); box-shadow: var(--e-1);
+            display: grid; place-items: center; padding: 8%; }
+.ex-paper { width: 100%; height: 100%; background: #fffdf6; color: #1d1d1b; border-radius: 4px; padding: 8%;
+            display: grid; align-content: start; gap: 4px; box-shadow: 0 1px 3px rgb(0 0 0 / .25); }
+.ex-head { font: 800 9px/1.2 var(--font); letter-spacing: .02em; }
+.ex-text { font: 500 7.5px/1.35 var(--font); }
+.ex-table { width: 100%; border-collapse: collapse; font: 500 7.5px/1.3 var(--font); margin-top: 2px; }
+.ex-table td { border-top: 1px solid #1d1d1b; padding: 2px 0; }
+.ex-table td + td { text-align: right; font-weight: 700; }
+.ex-front { width: 100%; height: 100%; border-radius: 6px; padding: 10% 9%; display: grid; align-content: start; gap: 5px;
+            background: linear-gradient(170deg, #e8702a, #b9461a); color: #fff8ec; box-shadow: 0 1px 3px rgb(0 0 0 / .3);
+            position: relative; overflow: hidden; }
+.ex-brand { font: 700 8px/1 var(--font); letter-spacing: .08em; text-transform: uppercase; opacity: .9; }
+.ex-name { font: 800 15px/1.05 var(--font); }
+.ex-claim { justify-self: start; font: 700 7.5px/1 var(--font); background: #fff8ec; color: #b9461a; padding: 3px 6px;
+            border-radius: 99px; }
+.ex-disc { position: absolute; right: -16%; bottom: 4%; width: 52%; aspect-ratio: 1; border-radius: 50%;
+           background: radial-gradient(circle at 40% 40%, #f6c58a, #d38a3c 60%, #a8642a); box-shadow: 0 2px 6px rgb(0 0 0 / .25); }
+.ex-net { position: absolute; left: 9%; bottom: 7%; font: 600 7px/1 var(--font); opacity: .9; }
+.ex-ok { position: absolute; top: 6px; right: 6px; width: 24px; height: 24px; border-radius: 50%; display: grid;
+         place-items: center; background: var(--brand); color: var(--brand-ink); box-shadow: var(--e-1); }
+.ex-ok .icon { width: 15px; height: 15px; stroke-width: 2.6; }
+.label-cam .example-shot .ex-photo { max-width: 150px; }
+.examples { display: grid; gap: var(--sp-2); }
+.examples h2 { margin: 0; font-size: var(--fs-lg); }
+.example-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-2); }
+
 /* The photo ask's drawing: the ingredients block marked, the other panels greyed and labelled. */
 .pack-back { margin: 0; display: grid; gap: var(--sp-2); }
 /* .pack-back and .ruled zero their own margins; between this screen's blocks the stack's gap wins. */

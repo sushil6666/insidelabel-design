@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Pack pictures{% endblock %}
+{% block body %}
+{# D-182: the pack pictures shown on results, and a reviewer's own upload. #}
+<div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:12px">
+  <h1 style="margin:0">Pack pictures</h1>
+  <a href="/review" style="margin-left:auto">Review queue</a>
+</div>
+{% if error %}<div class="error">{{ error }}</div>{% endif %}
+{% if done %}<div class="notice">Shown from now on for {{ done }}.</div>{% endif %}
+
+<p class="muted">A pack picture is a small copy (480 px, no photo metadata) of a pack's front, shown on every
+  result for its barcode when the shopper has no photo of their own. It is never read for findings. Use a photo
+  of the pack alone: no hand, face, person or room.</p>
+
+<form method="post" action="/review/pictures" enctype="multipart/form-data" class="panel" style="max-width:560px">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <label for="barcode">Barcode of a product in the catalogue</label>
+  <input type="text" id="barcode" name="barcode" inputmode="numeric" autocomplete="off" required>
+  <label for="photo">Photo of the front of the pack</label>
+  <input type="file" id="photo" name="photo" accept="image/jpeg,image/png,image/webp" required>
+  <label class="choice" style="margin-top:10px"><input type="checkbox" name="pack_alone" value="1">
+    It shows the pack alone (no hand, face, person or room) and it is sharp</label>
+  <label class="choice"><input type="checkbox" name="same_product" value="1">
+    It is the product with this barcode</label>
+  <div style="margin-top:12px"><button class="primary" type="submit">Show this picture</button></div>
+</form>
+
+<h2>Shown now</h2>
+{% if pictures %}
+<table>
+  <thead><tr><th>Picture</th><th>Product</th><th class="hide-sm">From</th><th class="hide-sm">Approved</th><th></th></tr></thead>
+  <tbody>
+  {% for p in pictures %}
+    <tr>
+      <td><img src="/pack-picture/{{ p.image_key }}" alt="Front of {{ p.product_name }}" style="width:72px;height:72px;object-fit:cover;border-radius:6px"></td>
+      <td>{{ p.brand or "" }} {{ p.product_name }}<div class="muted mono">{{ p.barcode }}</div></td>
+      <td class="hide-sm">{{ "A shopper's front photo" if p.source == "shopper_photo" else "Uploaded by a reviewer" }}</td>
+      <td class="hide-sm">{{ p.approved_by }}, {{ p.approved_at.date() }}</td>
+      <td><form method="post" action="/review/pictures/{{ p.id }}/remove">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <button class="danger" type="submit">Remove</button></form></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="muted">None yet.</p>
+{% endif %}
+{% endblock %}

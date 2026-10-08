@@ -190,6 +190,11 @@ class Store:
                       AND (is_current OR status = 'pending_review')""", (product["id"], ihash)).fetchone()
             return same is None
 
+    # D-182: the newest pack picture shown for the product (a photo, never read for findings).
+    _PACK_PICTURE = """(SELECT jsonb_build_object('key', pp.image_key, 'taken_on', pp.taken_on)
+                          FROM pack_pictures pp WHERE pp.product_id = p.id AND pp.removed_at IS NULL
+                         ORDER BY pp.approved_at DESC, pp.id DESC LIMIT 1) AS pack_picture"""
+
     def find_current(self, barcode):
         """The published, current version for a barcode, or None (D-024)."""
         with self._connect() as conn:
@@ -198,7 +203,7 @@ class Store:
                           p.net_qty_value, p.net_qty_unit,
                           v.id AS product_version_id, v.version_no, v.ingredients,
                           v.allergen_statement, v.front_claims, v.verified_at, v.last_verified_at, v.nutrition,
-                          v.pack_kind, v.pack_kind_evidence, k.code AS category_code, """ + self._FRONT_WANTED + ", " + self._TABLE_WANTED + """
+                          v.pack_kind, v.pack_kind_evidence, k.code AS category_code, """ + self._FRONT_WANTED + ", " + self._TABLE_WANTED + ", " + self._PACK_PICTURE + """
                      FROM products p
                      JOIN product_versions v ON v.product_id = p.id AND v.is_current
                      LEFT JOIN brands b ON b.id = p.brand_id

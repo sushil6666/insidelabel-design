@@ -587,3 +587,18 @@ def test_checking_for_and_household_keep_nicknames_on_the_phone():
 def test_compare_lays_the_packs_side_by_side_with_compare_py_words():
     fn = _fn(JS["app.js"], "compareResult")
     assert 'class: "compare-grid"' in fn and "p.facts" in fn and "score" not in fn
+
+
+def test_the_pack_picture_and_the_example_photos():                  # D-183
+    app, css = JS["app.js"], open(os.path.join(WEB_DIR, "app.css"), encoding="utf-8").read()
+    # The pack picture only stands in for the shopper's own photo; its words are the server's.
+    assert "return h?.photo ? null : h?.screen?.pack_picture || null;" in app
+    assert "const src = h.photo || packPicture(h)?.url || null;" in app
+    assert 'el("img", { src: pic.url, alt: pic.alt })' in app and "pic.caption &&" in app
+    assert "const src = h?.photo || packPicture(h)?.url;" in app             # Your scans' thumbnail
+    # Example photos (Sushil, 2026-10-08): on "Before you start" in the server's words, and on
+    # each camera step. A suggestion: nothing checks a photo against them.
+    assert "t.examples && el(\"section\", { class: \"examples\" }," in app
+    assert 'exampleShot(o.front ? "front" : o.table ? "table" : "list", "Like this: flat, sharp, the whole panel")' in app
+    assert ".example-row { display: grid; grid-template-columns: repeat(3, 1fr);" in css
+
