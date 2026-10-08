@@ -372,7 +372,7 @@ function who() {
 // ------------------------------------------------------------------ home
 async function home() {
   const done = history().filter(h => h.screen?.state === "result").length;
-  const recent = history().slice(0, 8);
+  const recent = history().slice(0, 5);
   const updates = el("div", {});
   loadUpdates(updates);
 
@@ -383,6 +383,7 @@ async function home() {
       el("span", { class: "scan-cta-icon", "aria-hidden": "true" }, icon("barcode")),
       el("span", {}, "Scan here")),
     updates,
+    checkingFor(),
     shopListCard(),
     done < 3 && el("div", { class: "card note" },
       el("h2", {}, "Start at home"),
@@ -392,17 +393,62 @@ async function home() {
         el("span", { style: `width:${(done / 3) * 100}%` })),
       el("p", { class: "muted" }, `${done} of 3 done`)),
     yourScans(),
-    recent.length > 0 && el("h2", {}, "Recent scans"),
+    recent.length > 0 && el("div", { class: "section-head" },
+      el("h2", {}, "Recent scans"),
+      history().length > recent.length && el("a", { href: "#/scans" }, "See all")),
     recent.length > 0 && scanList(recent));
 }
 
+// D-178: who every pack is checked for, on home, with a way to change it. Nicknames stay on
+// this phone (D-074); the avoid list is named with the server's own allergen labels.
+function checkingFor() {
+  const list = profiles();
+  return el("div", { class: "card checking" },
+    el("div", { class: "section-head" },
+      el("h2", {}, "Checking for"),
+      el("a", { href: "#/household" }, "Edit")),
+    el("ul", { class: "who-chips" }, list.map(p => el("li", {},
+      avatar(p),
+      el("span", {}, p.nickname),
+      el("span", { class: "muted" }, p.avoid.length ? avoidNames(p.avoid).join(", ") : "no avoid list")))));
+}
+
+function avatar(p) {
+  return el("span", { class: "avatar av-" + p.ref, "aria-hidden": "true" }, (p.nickname || "?").trim().charAt(0).toUpperCase());
+}
+
+// The labels saved the last time the allergen list was loaded (the avoid-list form loads it);
+// before that, the code itself.
+function avoidNames(codes) {
+  const known = new Map((store.get("allergens", null) || []).map(a => [a.code, a.label]));
+  return codes.map(c => known.get(c) || c.replace(/_/g, " "));
+}
+
+// D-178: a scan as a card: the user's own photo of the pack (D-177) or a drawn pack, the
+// name, the server's chips or first person line (D-091), and when it was scanned.
 function scanList(items) {
-  return el("ul", { class: "list" }, items.map(h =>
-    el("li", {}, el("a", { href: `#/result/${encodeURIComponent(h.id)}` },
-      el("strong", {}, productName(h.product)),
-      h.screen?.summary?.length
-        ? el("span", { class: "chips" }, h.screen.summary.map(toneChip))
-        : el("span", { class: "muted" }, peopleSummary(h.screen) || h.screen?.headline?.text || "")))));
+  return el("ul", { class: "scan-cards" }, items.map((h, i) =>
+    el("li", { style: `--i:${Math.min(i, 5)}` }, el("a", { class: "scan-card", href: `#/result/${encodeURIComponent(h.id)}` },
+      packThumb(h),
+      el("span", { class: "scan-text" },
+        el("strong", {}, productName(h.product)),
+        h.screen?.summary?.length
+          ? el("span", { class: "chips" }, h.screen.summary.map(toneChip))
+          : el("span", { class: "muted" }, peopleSummary(h.screen) || h.screen?.headline?.text || ""),
+        h.at && el("span", { class: "scan-when" }, whenText(h.at)))))));
+}
+
+function packThumb(h) {
+  return el("span", { class: "scan-thumb", "aria-hidden": "true" },
+    h?.photo ? el("img", { src: h.photo, alt: "" }) : icon("pack"));
+}
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+function whenText(iso) {
+  const d = new Date(iso);
+  if (isNaN(d)) return "";
+  const days = Math.round((new Date().setHours(0, 0, 0, 0) - new Date(d).setHours(0, 0, 0, 0)) / 864e5);
+  return days === 0 ? "Today" : days === 1 ? "Yesterday" : `${d.getDate()} ${MONTHS[d.getMonth()]}`;
 }
 
 // D-176: the bottom bar's "Your scans": every result kept on this phone (D-074), newest first,
@@ -414,7 +460,7 @@ function scans() {
     yourScans(),
     all.length
       ? scanList(all)
-      : el("div", { class: "card" },
+      : el("div", { class: "card empty" }, spot("pack", "barcode"),
           el("p", {}, "Nothing scanned yet. Your results stay on this phone."),
           button("Scan a pack", () => { resetPending(); go("scan"); }, "primary")));
 }
@@ -544,13 +590,18 @@ function household() {
     el("h1", {}, "Your household"),
     el("p", { class: "muted" },
       `Up to ${MAX_PROFILES} people, including you. Nicknames stay on this phone.`),
-    el("ul", { class: "list" }, list.map(p => el("li", {},
-      el("a", { href: `#/person/${p.ref}` },
-        el("strong", {}, p.nickname),
-        el("span", { class: "muted" },
-          [p.age === "adult" ? "Adult" : AGES.find(a => a.id === p.age)?.label,
-           p.avoid.length ? `avoids ${p.avoid.length}` : "no avoid list"].join(" · ")))))),
-    list.length < MAX_PROFILES && button("Add a child", () => go("person/new"), "primary"),
+    // D-178: a card per person: their initial, age band and avoid list as chips.
+    el("ul", { class: "people" }, list.map((p, i) => el("li", { style: `--i:${i}` },
+      el("a", { class: "person-card", href: `#/person/${p.ref}` },
+        avatar(p),
+        el("span", { class: "person-text" },
+          el("strong", {}, p.nickname),
+          el("span", { class: "muted" }, p.age === "adult" ? "Adult" : AGES.find(a => a.id === p.age)?.label),
+          p.avoid.length
+            ? el("span", { class: "chips" }, avoidNames(p.avoid).map(n => el("span", { class: "chip avoid-chip" }, n)))
+            : el("span", { class: "muted" }, "No avoid list")))))),
+    list.length < MAX_PROFILES && el("button", { type: "button", class: "add-card", onclick: () => go("person/new") },
+      icon("plus"), "Add a child"),
     button("Done", () => go(""), "link"));
 }
 
@@ -2027,6 +2078,8 @@ function compare() {
         who: who ? "{name}" : null,           // D-074: the nickname is filled in here, not sent
       });
       out.replaceChildren(compareResult(body, whoRef));
+      // D-178: the answer lands below the fold on a phone; bring it up.
+      out.scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
     } catch (e) {
       out.replaceChildren(kinded("p", "problem", { class: "error" }, apiMessage(e)));
     }
@@ -2036,9 +2089,15 @@ function compare() {
     el("h1", {}, "Compare packs"),
     el("p", { class: "muted" },
       "Scan 2 to 4 packs from the same shelf. We name the better pick of these for a child."),
+    // D-178: the chosen packs side by side, with a slot to fill until there are two.
     packs.length
-      ? el("ul", { class: "list" }, packs.map(h => el("li", { class: "row between" },
-          el("span", {}, productName(h.product)), button("Remove", () => refresh(h.id), "link"))))
+      ? el("ul", { class: "compare-grid" },
+          packs.map((h, i) => el("li", { class: "compare-tile", style: `--i:${i}` },
+            packThumb(h),
+            el("strong", {}, productName(h.product)),
+            button("Remove", () => refresh(h.id), "link"))),
+          packs.length < 2 && el("li", {}, el("button", { type: "button", class: "add-card slot",
+            onclick: () => { resetPending(); go("scan"); } }, icon("plus"), "Scan a pack")))
       : el("div", { class: "card empty" }, spot("compare"), el("p", {}, "Nothing added yet.")),
     others.length > 0 && packs.length < 4 && el("details", {},
       el("summary", {}, "Add from recent scans"),
@@ -2072,13 +2131,17 @@ function compareResult(r, ref) {
     el("h2", {}, heading),
     r.why_best?.length > 0 && el("ul", { class: "plain" }, r.why_best.map(t => el("li", {}, fill(t, ref)))),
     r.allergen_lines?.length > 0 && el("ul", { class: "plain" }, r.allergen_lines.map(t => el("li", {}, fill(t, ref)))),
-    r.packs.map(p => el("details", { class: "item" + (p.id === r.best ? " best" : "") },
-      el("summary", {}, p.name + (p.id === r.best ? " (better pick)" : "")),
-      el("ul", { class: "plain small" },
-        p.allergens.filter(a => a.state !== "not_listed").map(a => el("li", { class: "flag" }, fill(a.text, ref))),
-        p.facts.filter(f => f.tier !== "info" || f.positive).map(f =>
-          el("li", { class: f.tier === "strong" ? "flag" : "" }, f.text)),
-        !p.fully_checked && el("li", { class: "muted" }, "Not fully checked, so it can't be the pick.")))));
+    // D-178: the packs side by side, each with what compare.py said about it.
+    el("div", { class: "compare-grid" }, r.packs.map((p, i) =>
+      el("div", { class: "card compare-col" + (p.id === r.best ? " best" : ""), style: `--i:${i}` },
+        packThumb(historyItem(p.id)),
+        el("strong", {}, p.name),
+        p.id === r.best && el("span", { class: "best-tag" }, "Better pick"),
+        el("ul", { class: "plain small" },
+          p.allergens.filter(a => a.state !== "not_listed").map(a => el("li", { class: "flag" }, fill(a.text, ref))),
+          p.facts.filter(f => f.tier !== "info" || f.positive).map(f =>
+            el("li", { class: f.tier === "strong" ? "flag" : "" }, f.text)),
+          !p.fully_checked && el("li", { class: "muted" }, "Not fully checked, so it can't be the pick."))))));
 }
 
 // app-polish: grey lines where content is coming (the words beside them say what).
