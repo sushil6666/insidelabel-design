@@ -3625,6 +3625,33 @@ bars (D-169), "Buy on Amazon" and "better rated options" (D-088, D-138), and the
 - Unchanged: every word about a pack (D-091), D-146's digit check, the scan flow's steps, the result's layout.
 `tests/test_site_desktop.py`, `tests/test_web.py`.
 
+### D-177 · The result screen: a pack card with the user's photo, three tabs, nutrition bars, Share `LOCKED` (2026-10-08)
+Step 2 of the plan accepted in D-176 (**accepted by Sushil 2026-10-08**, "please proceed on UI design plan", taken as
+yes to every recommendation). Built by Claude. Layout and motion only: every word about the pack still comes from
+`lenses/screen.py` (D-091), and nothing new judges it (D-004, D-064).
+
+- **The pack card:** the product name sits next to a small, tilted copy of the user's own front photo (the back one
+  when there is no front). The photo is shrunk on the phone (360 px, JPEG) and kept only in that phone's history,
+  on the newest 10 results; older entries lose it. It is never sent anywhere (D-074). No stock or retailer images
+  (D-088).
+- **The people block stays first** (D-060), inside the card, shown at once with no motion. The headline follows.
+- **Three tabs under them:** "For you" (not-permitted tiles, Worth knowing, the three answers, the asks for a
+  better photo), "What's inside" (nutrition, ingredients, additives) and "On the pack" (the user's photo and the
+  label text as read). Buttons in a tablist; arrow keys move between them; the chosen tab is kept for that result
+  while the app is open. "Worth knowing" is now an open list, not folded.
+- **Nutrition bars:** energy, added sugar and salt get a bar under their line, from the server's own numbers
+  (`screen.nutrition.rows[].bar`: value, the ICMR-NIN line, unit). The line is marked on the track with its value.
+  Amber when the server's tone is "worth" (D-169), grey otherwise; never red to green, no bar when the label gives
+  only a bound ("less than"). Saturated and trans fat get none. The text line stays the finding; the bar is
+  `aria-hidden`.
+- **Share:** a button on the card shares the product name, the people lines, the headline and the site link,
+  through the phone's share sheet or the clipboard. The lines are filled with no profile, so no nickname ever
+  leaves the phone (D-074).
+- **Motion** (transform and opacity only, off under reduced motion): the photo tilts in, the tab pill slides, a
+  panel fades in, a bar fills from zero when it scrolls into view.
+- Not built in this step: a per 100 g / per serving switch (servings stay as text lines).
+`tests/test_web.py`, `tests/test_pack_kind.py`.
+
 ---
 
 ## Open and pending

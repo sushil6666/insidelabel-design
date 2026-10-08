@@ -48,7 +48,7 @@
   --e-1: var(--shadow);
   --e-2: 0 2px 4px rgba(36, 75, 107, .08), 0 16px 36px -14px rgba(36, 75, 107, .32);
   /* Motion: Material 3 tokens (material-components-android motion tokens.xml, read 2026-10-01) */
-  --d-press: 100ms; --d-fast: 150ms; --d-enter: 200ms; --d-reveal: 250ms; --stagger: 40ms;
+  --d-press: 100ms; --d-fast: 150ms; --d-enter: 200ms; --d-reveal: 250ms; --d-fill: 600ms; --stagger: 40ms;
   --ease-standard: cubic-bezier(.2, 0, 0, 1);       /* standard */
   --ease-enter: cubic-bezier(.1, .7, .1, 1);        /* emphasized decelerate */
   --ease-exit: cubic-bezier(.3, 0, 1, 1);           /* standard accelerate */
@@ -839,3 +839,72 @@ body.has-tabbar main.wrap, body.has-tabbar .foot { padding-bottom: calc(96px + e
 body.has-tabbar.at-home main.wrap { padding-bottom: 8px; }
 html:has(body.has-tabbar) { scroll-padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
 @media (prefers-reduced-motion: reduce) { .tab-scan, .tabbar a .icon { transition: none; } }
+
+/* D-177: the result's pack card: the user's own photo, tilted on the deep panel, the name as the
+   h1 in the display face, and Share. */
+.pack-head { display: grid; grid-template-columns: auto minmax(0, 1fr) var(--tap); gap: var(--sp-4); align-items: center;
+             padding-top: var(--sp-2); }
+.pack-thumb { width: 76px; height: 92px; border-radius: var(--r-md); overflow: hidden; transform: rotate(-4deg);
+              background: var(--on-deep); box-shadow: 0 16px 28px -10px rgba(0, 0, 0, .55);
+              display: flex; align-items: center; justify-content: center; color: var(--deep); }
+.pack-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pack-thumb img[hidden], .pack-thumb-ph[hidden] { display: none; }
+.pack-thumb-ph .icon { width: 34px; height: 34px; stroke-width: 1.6; opacity: .7; }
+.result-top .pack-head h1.product { font: 800 clamp(1.5rem, 6.4vw, 2rem)/1.08 var(--display); letter-spacing: -.02em;
+                                    color: var(--on-deep); margin: 0; overflow-wrap: break-word; }
+.pack-meta { margin: 4px 0 0; color: var(--on-deep-muted); font-size: var(--fs-sm); }
+.share-btn { width: var(--tap); height: var(--tap); border-radius: 50%; border: 1px solid rgba(255, 255, 255, .25);
+             background: transparent; color: var(--on-deep); display: flex; align-items: center; justify-content: center;
+             cursor: pointer; padding: 0; align-self: start; transition: transform var(--d-press) var(--ease-standard); }
+.share-btn:active { transform: scale(.94); }
+@media (prefers-reduced-motion: no-preference) {
+  .pack-thumb { animation: thumb-in var(--d-reveal) var(--ease-enter) both; }
+}
+@keyframes thumb-in { from { opacity: 0; transform: rotate(-12deg) scale(1.25) translateY(10px); } }
+
+/* D-177: the three tabs. A dark pill slides under the chosen one (transform only). */
+.tabs { position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 4px;
+        border-radius: var(--r-pill); background: var(--surface-2); border: 1px solid var(--line); }
+.tabs-pill { position: absolute; top: 4px; bottom: 4px; left: 4px; width: calc((100% - 8px) / 3); border-radius: var(--r-pill);
+             background: var(--deep); transform: translateX(calc(var(--tab, 0) * 100%));
+             transition: transform var(--d-reveal) var(--ease-enter); }
+.tabs [role=tab] { position: relative; min-height: var(--tap); border: 0; background: transparent; border-radius: var(--r-pill);
+                   font: 600 var(--fs-sm)/1.2 var(--font); color: var(--ink); cursor: pointer; padding: 0 4px;
+                   transition: color var(--d-fast) var(--ease-standard); }
+.tabs [role=tab][aria-selected="true"] { color: var(--on-deep); font-weight: 700; }
+.tabs [role=tab]:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
+.tab-panel:focus-visible { outline: 3px solid var(--ring); outline-offset: 4px; border-radius: var(--r-md); }
+.tab-panel[hidden] { display: none; }
+@media (prefers-reduced-motion: no-preference) {
+  .tab-panel:not([hidden]) { animation: fade-in var(--d-enter) var(--ease-enter) both; }
+}
+.worth .notes { margin-top: var(--sp-2); }
+.result .worth { border: 0; }
+.result .worth > h2 { margin: 0; }
+
+/* D-177: a nutrition row's bar: the amount, and a tick at the line its sentence names. */
+.nut-bar { position: relative; height: 34px; margin: 6px 0 2px; }
+.nut-track { position: absolute; left: 0; right: 0; top: 8px; height: 10px; border-radius: 5px; overflow: hidden;
+             background: var(--surface-2); }
+.nut-fill { position: absolute; inset: 0; border-radius: 5px; background: var(--calm); opacity: .55;
+            transform-origin: left; transform: scaleX(var(--to, 0)); }
+.nut-bar.nb-worth .nut-fill { background: var(--unsure-line); opacity: 1; }
+.nut-line { position: absolute; top: 2px; width: 2px; height: 22px; margin-left: -1px; background: var(--ink); border-radius: 1px; }
+.nut-line-label { position: absolute; top: 22px; transform: translateX(-50%); font-size: var(--fs-xs); color: var(--muted);
+                  white-space: nowrap; }
+@media (prefers-reduced-motion: no-preference) {
+  .nut-bar:not(.in) .nut-fill { transform: scaleX(0); }
+  .nut-bar .nut-fill { transition: transform var(--d-fill) var(--ease-enter); }
+  .nut-bar:not(.in) .nut-line { opacity: 0; transform: translateY(-6px); }
+  .nut-bar .nut-line { transition: opacity var(--d-reveal) var(--ease-enter) var(--d-reveal), transform var(--d-reveal) var(--ease-enter) var(--d-reveal); }
+}
+
+/* D-177: "On the pack". */
+.pack-photo { margin: 0; display: grid; gap: var(--sp-2); }
+.pack-photo img { width: 100%; max-width: 360px; border-radius: var(--r-lg); box-shadow: var(--e-1); }
+.as-printed ol { margin: 0; padding-left: 1.4em; font-family: var(--serif); }
+.as-printed q { font-family: var(--serif); }
+
+.toast { position: fixed; left: 50%; bottom: calc(96px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 3;
+         margin: 0; padding: 10px 16px; border-radius: var(--r-pill); background: var(--deep); color: var(--on-deep);
+         box-shadow: var(--e-2); font-size: var(--fs-sm); }
