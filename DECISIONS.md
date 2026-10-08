@@ -4020,6 +4020,17 @@ it is 165 by 155 px (was 132 by 124) in the same 168 px tall card.
   a finding's page; on `main` too): the main column now clips it. On a computer the
   reading screen already has the result's width, so the result arriving does not move the page (a 0.14 layout
   shift before).
+Measured on the branch:
+- **Lighthouse mobile, app first screen, gzip as live**, the final build run in turn with main, 3 each: Performance
+  99, 99, 99 (main 100, 100, 100), Accessibility, Best Practices and SEO 100 in every run; LCP 1712 to 1829 ms
+  (main 1679 to 1737), CLS 0. The extra Phase 2 CSS costs about 30 ms of LCP on a cold first load.
+- **Headless walk** (barcode live and drawn, the lookup, the digit check, all four photo steps with their reviews,
+  the read, the result and both other tabs, a finding's page, two refusals, Send it to us, Thank you) at 390 light
+  and dark, 360 dark, 1280 light and 390 with reduced motion: no console errors; layout shift from "Check this
+  pack" to the settled result 0 in all five; no page wider than the window.
+- **Review:** eight rounds; every Phase 2 screen ends at 97 to 99 (scan 97 and 98, lookup 98, digit check 98, the
+  photo steps 97, their reviews 97 to 99, reading 98, result 99, the full result 98, What's inside 98, On the pack
+  97, a finding's page 98, refusal 97, Send 97, Thank you 99, desktop result 97).
 Superseded, that part only: D-171's and D-181's action placement on a phone (now docked); D-177's person lines,
 Worth knowing list, nutrition rows, "In preparation" block and desktop layout (as above). Headers marked.
 
