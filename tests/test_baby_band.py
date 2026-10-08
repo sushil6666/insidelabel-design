@@ -43,8 +43,8 @@ SWEET = ["Wheat flour", "Sugar", "Honey", "Iodised salt", "Sweetener (INS 955)",
 
 def person(j, ref="p1"):
     """
-    The profile's line, or None when it has none (nothing to say). D-188: an age line is in
-    "For you" (screen.for_you), its last line; a card at the top is a match or can't confirm.
+    The profile's line, or None when it has none (nothing to say). D-188: a card at the top (a
+    match, can't confirm, an age line); "Nothing extra for her age" is in "For you" (screen.for_you).
     """
     s = j["screen"]
     p = next((p for p in s["people"] if p["ref"] == ref), None)
