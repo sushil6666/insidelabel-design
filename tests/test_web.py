@@ -503,10 +503,11 @@ def test_a_retake_keeps_the_table_photo_and_the_front():                     # D
     assert "pending.back = null;" in fn and "pending.acceptUnconfirmed = false;" in fn
     # The front stays, except after two packs (D-108) or for another scan's photos.
     assert 'if (!mine || code === "product_mismatch") { pending.front = null; pending.pairing = false; }' in fn
-    # Every retake of the list uses it: the refusal (and D-118's clearer photo) and both partial reads.
-    assert app.count("() => retakeList(h, ") == 3
+    # Every retake of the list uses it: the refusal (and D-118's clearer photo), both partial reads
+    # and D-188's amber allergen card.
+    assert app.count("() => retakeList(h, ") == 4
     assert 'retakeList(h, s.problem?.code || s.headline?.source?.ref)' in app
-    assert app.count('retakeList(h, "partial")') == 2
+    assert app.count('retakeList(h, "partial")') == 3
     assert "pending.parts = []; pending.partSources = []; pending.partKinds = [];" not in app
     # A new first photo keeps a kept table, and a list part goes before it: the table is the last part.
     add = app[app.index("function addShot("):app.index("// D-173 (Sushil")]
@@ -546,7 +547,8 @@ def test_the_pack_photo_stays_on_the_phone():
 
 def test_share_sends_the_servers_words_without_a_nickname():
     share = _fn(JS["app.js"], "shareResult")
-    assert "fill(p.line))" in share                     # no ref: "your child", never the nickname (D-074)
+    assert "fill(p.share || p.line))" in share          # no ref: "your child", never the nickname (D-074)
+    assert "cardPeople(s)" in share                     # D-188: nothing for a person with no match
     assert "s.headline?.text" in share and "score" not in share
 
 
@@ -619,3 +621,38 @@ def test_the_pack_picture_and_the_example_photos():                  # D-183
     assert 'exampleShot(o.front ? "front" : o.table ? "table" : "list", "Like this: flat, sharp, the whole panel")' in app
     assert ".example-row { display: grid; grid-template-columns: repeat(3, 1fr);" in css
 
+
+
+# ---------------------------------------------------------------- D-188: allergen lines when they matter
+def test_the_top_shows_only_a_match_or_a_line_we_cant_confirm():
+    app = JS["app.js"]
+    body = _fn(app, "result")
+    assert "cardPeople(s).map(p => personCard(p, h))" in body and "s.people.map" not in body
+    pick = _fn(app, "cardPeople")
+    # A result kept on the phone from before web-66 still lists everyone; its "not listed" lines stay hidden.
+    assert 'LISTED.includes(p.status) || p.status === "cannot_confirm"' in pick
+    assert re.search(r'const LISTED = \["contains", "may_contain", "uncertain"\]', app)
+    card = _fn(app, "personCard")
+    # Retake on an amber card from a photo scan only; a barcode-only hit took no photo (D-170, D-173).
+    assert 'p.status === "cannot_confirm" && h.screen?.state === "result" && !h.looked_up' in card
+    assert 'retakeList(h, "partial")' in card
+    # A second match stays in view, not under "More".
+    assert 'class: "plain also"' in card and "LISTED.includes(a.state)" in card
+
+
+def test_for_you_has_the_servers_reminder_and_age_lines_only():
+    app = JS["app.js"]
+    lines = _fn(app, "forYouLines")
+    assert "s.for_you" in lines and "s.for_you_note" in lines and "fill(t, r.ref)" in lines
+    assert "Not listed" not in app and "not listed" not in lines            # D-188: worded on the server only
+    body = _fn(app, "result")
+    assert "you(forYouLines(s))" in body and "put(kindView(s), forYouLines(s))" in body
+
+
+def test_a_scan_card_names_a_match_and_never_a_no_match():
+    app = JS["app.js"]
+    cards = _fn(app, "scanList")
+    assert "scanPerson(h.screen)" in cards
+    person = _fn(app, "scanPerson")
+    assert "cardPeople(screen)[0]" in person and "PERSON_TONE[p.status]" in person
+    assert "cardPeople(screen)[0]" in _fn(app, "peopleSummary")

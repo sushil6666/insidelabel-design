@@ -348,6 +348,27 @@ check would pass on the packs published so far, with no model or Google call:
 il tools/recheck_measure.py
 ```
 
+### When a rule for the kind of pack changes (D-187, D-188)
+
+After a rule in `core/pack_kind.py` changes and `update.sh` has run, see which stored versions
+would now get a different kind. This only reads:
+
+```bash
+il tools/pack_kind_replay.py            # changed versions, with their review items
+il tools/pack_kind_replay.py --all      # every version
+```
+
+To write the new kind on every changed version, add `--apply` and your name. It changes only
+`pack_kind` and `pack_kind_evidence` (with a `corrected` note: the decision, old and new kind,
+your name, the date), prints each row it wrote, and touches nothing else:
+
+```bash
+il tools/pack_kind_replay.py --apply --by Sushil
+```
+
+Run the read-only form first and look at the list. `--decision D-1xx` names the rule when it
+isn't D-187. Running it again writes nothing: the corrected versions no longer change.
+
 ### The review agents (D-117), in shadow
 
 Gemini drafts each new queue item (category, ingredients, claims, note); a rules checker confirms

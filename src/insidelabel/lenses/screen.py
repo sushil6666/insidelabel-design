@@ -297,8 +297,64 @@ def _screen_person(profile, rows, pack):
     return status, line, [{"code": c, "state": st, "evidence": ev, "text": t} for c, st, ev, t in merged]
 
 
-def _person(profile, ingredients, statement, confidence, reliable, screen=False, pack=None, baby=()):
-    """D-064: the glanceable signal for one person, allergens first. baby: baby_lines()."""
+# D-188 (Sushil, 2026-10-08): an allergen line sits at the top of the result only when it
+# matters: a match (red, D-169) or a line we can't confirm (amber). A person with no match
+# gets nothing anywhere on the result (his option B: "i thought it won't show anything, but
+# it says not listed"); "For you" keeps one "may contain" reminder. The /scan answer's
+# `allergens` block is unchanged (D-060); only how it shows on the result screen moves.
+CARD_STATUS = ("contains", "may_contain", "uncertain", "cannot_confirm")
+
+
+def _quote(r, ingredients, statement):
+    """Where a listed allergen was read, quoted as printed: an ingredient, or the allergen line."""
+    ev = (r.evidence or "").strip()
+    if not ev:
+        return None, False
+    if ev in (ingredients or []):
+        return ev, False
+    low = (statement or "").lower()
+    i = low.find(ev.lower())
+    return ((statement[i:i + len(ev)] if i >= 0 else ev).strip(), True)
+
+
+def _match_text(r, who, ingredients, statement):
+    """D-188: one listed allergen, calm and factual: what is listed and where, quoted."""
+    short = allergen_checker.ALLERGENS[r.code]["short"]
+    quote, in_line = _quote(r, ingredients, statement)
+    if r.state == "contains":
+        where = " in the allergen line" if in_line else ""
+        return f"{short[0].upper() + short[1:]} is listed{where}" + (f": \"{quote}\"." if quote else ".")
+    if r.state == "may_contain":
+        return f"The pack says it may contain {short}" + (f": \"{quote}\"." if quote else ".")
+    return r.parent_text(who)                # uncertain: its own words already ask the brand
+
+
+def _cannot_confirm_text(codes, complete):
+    """D-188: one line for a person whose avoid list we couldn't check (D-060's cannot_confirm)."""
+    names = _names(codes)
+    names = names[0].lower() + names[1:]
+    if not complete:
+        return f"Part of the list couldn't be read, so we can't confirm {names}. Check the pack."
+    return f"The list wasn't clear enough to confirm {names}. Check the pack."
+
+
+# D-188: said once in "For you" when an avoid-list allergen isn't listed and no allergen line was
+# read: the one reminder left of the "not listed" lines. A photo scan says "in the photo"; a
+# barcode-only hit was read from the pack we checked (Sushil, 2026-10-08).
+MAY_CONTAIN_NOTE = {
+    "photo": "We didn't see a \"may contain\" line in the photo, so check the pack for one.",
+    "pack": "We didn't see a \"may contain\" line on the pack we checked, so check the pack for one.",
+}
+
+
+def _person(profile, ingredients, statement, confidence, reliable, screen=False, pack=None, baby=(),
+            complete=True, where="photo"):
+    """
+    D-064: the glanceable signal for one person, allergens first. baby: baby_lines().
+    D-188: `line` is the card at the top of the result; build() keeps a card only for a match
+    or a line we can't confirm. `quiet` (when set) is a child's age line for "For you";
+    `note` is the "may contain" reminder when something on the avoid list isn't listed.
+    """
     who, whose = _who(profile), _whose(profile)
     rows = []
     if profile["avoid"]:
@@ -307,39 +363,69 @@ def _person(profile, ingredients, statement, confidence, reliable, screen=False,
         rows = sorted(res.values(), key=lambda r: _STRONGEST[r.state])
     if screen and rows:
         status, line, allergens = _screen_person(profile, rows, pack)
-        return {"ref": profile["ref"], "status": status, "line": line, "allergens": allergens,
-                "child_facts": [f for f in _child_facts(profile, ingredients, reliable, baby)]}
+        out = {"ref": profile["ref"], "status": status, "line": line, "allergens": allergens,
+               "child_facts": [f for f in _child_facts(profile, ingredients, reliable, baby)]}
+        return out                       # D-130: the from_screen card says where it was read
 
     child_facts = _child_facts(profile, ingredients, reliable, baby)
-
-    if rows and rows[0].state != "not_listed":
-        status, line = rows[0].state, rows[0].parent_text(who)
+    quiet = None
+    texts = {}
+    if rows and rows[0].state == "cannot_confirm":
+        status = "cannot_confirm"
+        line = _cannot_confirm_text(profile["avoid"], complete)
+        texts = {r.code: line for r in rows}
+    elif rows and rows[0].state != "not_listed":
+        texts = {r.code: (_match_text(r, who, ingredients, statement) if r.state != "not_listed"
+                          else r.parent_text(who, where)) for r in rows}
+        status, line = rows[0].state, texts[rows[0].code]
     elif rows:
-        status = "not_listed"
-        # D-126: name what was checked ("Peanut, milk: ..."); "nothing on your avoid
-        # list" didn't say what that was. Still only what is printed: never "free from".
-        names = _names(profile["avoid"])
-        if all(r.statement_seen for r in rows):
-            line = f"{names}: not listed in the ingredients or the allergen line."
-        else:
-            line = (f"{names}: not in the ingredients. We didn't see a "
-                    f"\"may contain\" line in the photo, so check the pack.")
-    elif child_facts:
-        status = "worth_knowing"
-        n = len(child_facts)
-        line = f"{n} thing{'s' if n > 1 else ''} worth knowing for {NAME}."
-    elif profile["age"] in kids.AGE_BANDS and reliable and ingredients:
-        status, line = "nothing_flagged", f"Nothing extra for {NAME}'s age came up."
+        status, line = "not_listed", None
     else:
-        return None                      # an adult with no avoid list has no line
-    return {
+        status = line = None
+    if status in (None, "not_listed"):
+        if child_facts:
+            status = "worth_knowing"
+            n = len(child_facts)
+            line = f"{n} thing{'s' if n > 1 else ''} worth knowing for {NAME}."
+        elif status is None and profile["age"] in kids.AGE_BANDS and reliable and ingredients:
+            status, line = "nothing_flagged", f"Nothing extra for {NAME}'s age came up."
+            quiet = line
+        elif status is None:
+            return None                  # an adult with no avoid list has no line
+    out = {
         "ref": profile["ref"],
         "status": status,
         "line": line,
         "allergens": [{"code": r.code, "state": r.state, "evidence": r.evidence or None,
-                       "text": r.parent_text(who)} for r in rows],
+                       "text": texts.get(r.code) or r.parent_text(who, where)} for r in rows],
         "child_facts": child_facts,
     }
+    if quiet:
+        out["quiet"] = quiet
+    if any(r.state == "not_listed" and not r.statement_seen for r in rows):
+        out["note"] = MAY_CONTAIN_NOTE[where]
+    return out
+
+
+def split_people(people):
+    """
+    D-188: the cards at the top of the result (a match, or a line we can't confirm), and
+    "For you": a child's age line for a person without a card, and the one "may contain"
+    reminder. A person with no match is in neither.
+    """
+    cards, quiet = [], []
+    for p in people:
+        card = p["status"] in CARD_STATUS
+        lines = [x for x in (p.get("quiet"),) if x]
+        if not card and p["status"] == "worth_knowing":
+            lines.append(p["line"])
+        if card:
+            cards.append({k: v for k, v in p.items() if k not in ("quiet", "note")})
+        if lines:
+            quiet.append({"ref": p["ref"], "status": p["status"] if not card else "not_listed", "lines": lines,
+                          "child_facts": [] if card else p["child_facts"]})
+    note = next((p["note"] for p in people if p.get("note")), None)
+    return cards, quiet, note
 
 
 def _child_facts(profile, ingredients, reliable, baby=()):
@@ -1299,10 +1385,31 @@ SINCE_SAME = "The allergens on your avoid lists read the same on this pack as on
 SINCE_UNREAD = "We couldn't read this pack clearly enough to compare it with the screenshot."
 
 
-def build(*, verdict, display, claim_check, extracted, reliability, profiles,
-          allergen_confidence, allergen_reliable, catalogue=None, has_barcode=True,
-          photos_sent=("back",), pack=None, screen_pack=None, nutrition=None, parts_sent=1, kind=None,
-          nutra_input=None, barcode_answer=None, unchecked=False):
+def build(**kw):
+    """
+    The `screen` block of a /scan response (_build() below), with D-188's split of the
+    people: `people` holds the cards for the top of the result, a match or a line we can't
+    confirm; `for_you` holds a child's age line; `for_you_note` the "may contain" reminder.
+    """
+    out = _build(**kw)
+    cards, quiet, note = split_people(out["people"])
+    for p in cards:
+        if p["status"] in ("contains", "may_contain", "uncertain", "cannot_confirm"):
+            # Share sends the lines without the nickname (D-074, D-177): "For your child: ...".
+            whom = "you" if p["ref"] == "me" else NAME
+            p["share"] = f"For {whom}, {p['line'][0].lower() + p['line'][1:]}"
+    out["people"] = cards
+    if quiet:
+        out["for_you"] = quiet
+    if note and out["state"] == "result":
+        out["for_you_note"] = note
+    return out
+
+
+def _build(*, verdict, display, claim_check, extracted, reliability, profiles,
+           allergen_confidence, allergen_reliable, catalogue=None, has_barcode=True,
+           photos_sent=("back",), pack=None, screen_pack=None, nutrition=None, parts_sent=1, kind=None,
+           nutra_input=None, barcode_answer=None, unchecked=False):
     """
     The `screen` block of a /scan response. verdict=None means the scan was refused.
     pack: for a result read from a screen (D-130), our catalogue's version of the
@@ -1320,8 +1427,10 @@ def build(*, verdict, display, claim_check, extracted, reliability, profiles,
     from_screen = bool(reliability.get("from_screen"))
     baby = (baby_lines(kind["code"] if kind else "food", ingredients, allergen_reliable, nutrition)
             if verdict is not None else [])
+    where = "pack" if (catalogue or {}).get("source") == "catalogue" else "photo"     # D-188
     people = [p for p in (_person(pr, ingredients, statement, allergen_confidence, allergen_reliable,
-                                  screen=from_screen and verdict is not None, pack=pack, baby=baby)
+                                  screen=from_screen and verdict is not None, pack=pack, baby=baby,
+                                  complete=reliability.get("ingredients_complete", True), where=where)
                           for pr in profiles) if p]
 
     if verdict is None and from_screen and reliability.get("error") not in ("product_mismatch", "not_a_food_pack"):

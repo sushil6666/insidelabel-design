@@ -76,6 +76,7 @@ def test_a_shoppers_front_becomes_the_pack_picture_when_a_person_ticks_it(env):
     item = send_front(env, bc, agreed(env, "2026-10-08"), _photo())
     page = reviewer().get(f"/review/item/{item}").text
     assert "Show this front photo to everyone who scans this barcode" in page
+    assert 'name="pack_front"' in page and "It is the front of the pack" in page      # D-188
 
     # Ticked without the second box: refused, nothing published.
     c = reviewer()
@@ -87,7 +88,13 @@ def test_a_shoppers_front_becomes_the_pack_picture_when_a_person_ticks_it(env):
     assert "pack+alone" in r.headers["location"] or "pack%20alone" in r.headers["location"]
     assert q(env, "SELECT count(*) FROM pack_pictures")[0][0] == 0
 
+    # D-188: the pack alone but not ticked as the front: refused, nothing published.
     r = c.post(f"/review/item/{item}/approve", data=form | {"pack_alone": "1"}, follow_redirects=False)
+    assert "front+of+the+pack" in r.headers["location"] or "front%20of%20the%20pack" in r.headers["location"]
+    assert q(env, "SELECT count(*) FROM pack_pictures")[0][0] == 0
+
+    r = c.post(f"/review/item/{item}/approve", data=form | {"pack_alone": "1", "pack_front": "1"},
+               follow_redirects=False)
     assert r.headers["location"] == "/review"
     (key, source, by, scan_id), = q(env, "SELECT image_key, source, approved_by, scan_id FROM pack_pictures")
     assert source == "shopper_photo" and by == "asha" and scan_id is not None
@@ -139,18 +146,25 @@ def test_a_reviewer_uploads_one_and_can_remove_it(env):
     c = reviewer()
     page = c.get("/review/pictures").text
     assert "Show this picture" in page
+    assert 'name="pack_front"' in page and "It is the front of the pack" in page      # D-188
     form = {"csrf": csrf(page), "barcode": bc}
     files = {"photo": ("p.jpg", _photo(exif=False), "image/jpeg")}
     r = c.post("/review/pictures", data=form, files=files, follow_redirects=False)
-    assert "Tick+both+boxes" in r.headers["location"] or "Tick%20both%20boxes" in r.headers["location"]
+    assert "Tick+all+three" in r.headers["location"] or "Tick%20all%20three" in r.headers["location"]
+    # D-188: two of the three ticks, without "It is the front of the pack": refused.
     r = c.post("/review/pictures", data=form | {"pack_alone": "1", "same_product": "1"}, files=files,
                follow_redirects=False)
+    assert "Tick+all+three" in r.headers["location"] or "Tick%20all%20three" in r.headers["location"]
+    assert "pack_picture" not in post(barcode=bc).json()["screen"]
+    r = c.post("/review/pictures", data=form | {"pack_alone": "1", "same_product": "1", "pack_front": "1"},
+               files=files, follow_redirects=False)
     assert r.headers["location"] == f"/review/pictures?done={bc}"
     pic = post(barcode=bc).json()["screen"]["pack_picture"]
     assert TestClient(main.app).get(pic["url"]).status_code == 200
 
     # Not a catalogue barcode: refused.
-    r = c.post("/review/pictures", data=form | {"barcode": "8901088072236", "pack_alone": "1", "same_product": "1"},
+    r = c.post("/review/pictures", data=form | {"barcode": "8901088072236", "pack_alone": "1", "same_product": "1",
+                                                   "pack_front": "1"},
                files=files, follow_redirects=False)
     assert "No+product" in r.headers["location"] or "No%20product" in r.headers["location"]
 
@@ -259,7 +273,8 @@ def test_a_reviewer_crops_a_shoppers_front_on_the_item(env):
     before = q(env, "SELECT count(*) FROM pack_pictures")[0][0]
     form = {"csrf": csrf(page), "name": "Atta Cookie", "brand": "Testco", "variant": "", "barcode": "",
             "ingredients": "Whole wheat flour\nSugar\nGroundnut oil\nSalt", "allergen_statement": "Contains wheat, peanut.",
-            "front_claims": "", "note": "", "category": "7.2.1", "pack_picture": "1", "pack_alone": "1"}
+            "front_claims": "", "note": "", "category": "7.2.1", "pack_picture": "1", "pack_alone": "1",
+            "pack_front": "1"}
 
     # Bad rectangles: refused with a message for the reviewer; nothing saved, nothing published.
     for bad, words in ((_crop(0.6, 0, 0.5, 0.5), "outside"), (_crop(0, 0, 0.1, 0.1), "too+small"),
@@ -291,7 +306,7 @@ def test_a_reviewer_crops_their_own_upload(env):
     c = reviewer()
     page = c.get("/review/pictures").text
     assert "Crop to the pack" in page and 'data-crop-file="photo"' in page
-    form = {"csrf": csrf(page), "barcode": bc, "pack_alone": "1", "same_product": "1"}
+    form = {"csrf": csrf(page), "barcode": bc, "pack_alone": "1", "same_product": "1", "pack_front": "1"}
     files = {"photo": ("p.jpg", _photo(exif=False), "image/jpeg")}
     r = c.post("/review/pictures", data=form | _fields(_crop(0, 0, 0.1, 0.5)), files=files, follow_redirects=False)
     assert "too" in r.headers["location"] and "error=" in r.headers["location"]
@@ -311,6 +326,7 @@ def test_no_crop_stores_no_rectangle(env):
     c = reviewer()
     page = c.get("/review/pictures").text
     r = c.post("/review/pictures", data={"csrf": csrf(page), "barcode": bc, "pack_alone": "1", "same_product": "1",
+                                                    "pack_front": "1",
                                          **{f"crop_{k}": "" for k in ("left", "top", "width", "height")}},
                files={"photo": ("p.jpg", _photo(exif=False), "image/jpeg")}, follow_redirects=False)
     assert r.headers["location"] == f"/review/pictures?done={bc}"

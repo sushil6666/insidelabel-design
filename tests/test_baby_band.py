@@ -36,14 +36,20 @@ WEB = os.path.join(ROOT, "web")
 TABLE = json.load(open(os.path.join(ROOT, "data", "baby_lines.json"), encoding="utf-8"))
 BABY = [{"ref": "me", "age": "adult", "avoid": ["milk"]}, {"ref": "p1", "age": "baby", "avoid": []}]
 TODDLER = [{"ref": "me", "age": "adult", "avoid": []}, {"ref": "p1", "age": "toddler", "avoid": []}]
-# With an avoid list the baby always has a line, so "no baby line" is a real check.
+# With an avoid list the baby's allergens are checked too (D-188: a line only on a match).
 BABY_AVOIDS = [BABY[0], {"ref": "p1", "age": "baby", "avoid": ["peanut"]}]
 SWEET = ["Wheat flour", "Sugar", "Honey", "Iodised salt", "Sweetener (INS 955)", "Cocoa"]
 
 
 def person(j, ref="p1"):
-    """The profile's line, or None when it has none (no avoid list and nothing to say)."""
-    return next((p for p in j["screen"]["people"] if p["ref"] == ref), None)
+    """
+    The profile's line, or None when it has none (nothing to say). D-188: an age line is in
+    "For you" (screen.for_you), its last line; a card at the top is a match or can't confirm.
+    """
+    s = j["screen"]
+    p = next((p for p in s["people"] if p["ref"] == ref), None)
+    p = p or next((p for p in s.get("for_you", []) if p["ref"] == ref), None)
+    return {**p, "line": p["lines"][-1]} if p and "lines" in p else p
 
 
 def baby_refs(p):
@@ -153,7 +159,7 @@ def test_an_infant_food_gives_a_baby_no_line_and_no_question():
     j = run(reading(["Skimmed milk", "Sugar", "Honey", "Salt"], INFANT),
             profiles=BABY_AVOIDS + [TODDLER[1] | {"ref": "p2"}])
     assert j["screen"]["kind"]["code"] == "infant"
-    assert person(j) is not None and not baby_refs(person(j))
+    assert not baby_refs(person(j)) and "peanut" in j["allergens"]["avoid"]
     assert "band_question" not in j["screen"]
 
 

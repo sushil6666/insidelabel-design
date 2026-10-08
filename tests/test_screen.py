@@ -66,9 +66,11 @@ def test_people_first_and_allergens_still_first_key():
     assert j["allergens"]["avoid"] == ["peanut", "milk"]
     people = {p["ref"]: p for p in j["screen"]["people"]}
     assert people["p1"]["status"] == "contains"
-    assert people["p1"]["line"] == "Contains milk. It's on {name}'s avoid list."
-    # D-126: the line names what was checked.
-    assert people["me"]["line"] == "Peanut: not listed in the ingredients or the allergen line."
+    # D-188: calm and factual, the label quoted; the name is on the card above the line.
+    assert people["p1"]["line"] == 'Milk is listed: "Milk solids".'
+    # D-188: no match, no card; the /scan allergens block still has every state (D-060).
+    assert set(people) == {"p1"}
+    assert {r["code"]: r["state"] for r in j["allergens"]["results"]} == {"milk": "contains", "peanut": "not_listed"}
 
 
 def test_names_never_reach_the_server():                            # D-074
@@ -131,9 +133,12 @@ def test_refused_scan_names_the_problem():                          # D-036, D-0
 
 
 def test_kid_line_for_a_profile_without_avoid_list():
-    people = {p["ref"]: p for p in scan(BISCUIT).json()["screen"]["people"]}
-    assert people["p2"]["status"] == "worth_knowing"               # sugar is the 2nd ingredient
-    assert "{name}" in people["p2"]["line"]
+    # D-188: a child's age line is in "For you", not a card at the top.
+    s = scan(BISCUIT).json()["screen"]
+    assert "p2" not in {p["ref"] for p in s["people"]}
+    [kid] = [r for r in s["for_you"] if r["ref"] == "p2"]
+    assert kid["lines"] == ["1 thing worth knowing for {name}."]          # sugar is the 2nd ingredient
+    assert kid["child_facts"][0]["text"].startswith("Sugar is the 2nd ingredient")
 
 
 def test_empty_form_boxes_are_ignored():
@@ -271,13 +276,16 @@ def test_tallies_for_your_scans_are_worded_here():                 # D-123, D-09
     assert scan(PLAIN, profiles=[]).json()["screen"]["tallies"] == []
 
 
-def test_the_all_clear_line_names_each_allergen_checked():         # D-126
+def test_no_match_shows_nothing_for_that_person():                  # D-126, D-188
+    # D-188 (Sushil, option B): no card at the top and no "Not listed" line in For you.
     fam = [{"ref": "me", "age": "adult", "avoid": ["fish", "sesame"]}]      # PLAIN has groundnut oil
-    [p] = scan(PLAIN, profiles=fam).json()["screen"]["people"]
-    assert p["line"] == "Fish, sesame: not listed in the ingredients or the allergen line."
-    [p] = scan(PLAIN, profiles=fam, allergen_statement=None).json()["screen"]["people"]
-    assert p["line"] == ("Fish, sesame: not in the ingredients. We didn't see a \"may contain\" "
-                         "line in the photo, so check the pack.")
+    s = scan(PLAIN, profiles=fam).json()["screen"]
+    assert s["people"] == [] and "for_you" not in s
+    assert "for_you_note" not in s                       # an allergen line was read: nothing to remind
+    s = scan(PLAIN, profiles=fam, allergen_statement=None).json()["screen"]
+    assert s["people"] == [] and "for_you" not in s
+    assert s["for_you_note"] == "We didn't see a \"may contain\" line in the photo, so check the pack for one."
+    assert not re.search(r"not listed|isn't listed|free from|\bsafe\b", json.dumps(s), re.I)
 
 
 # ------------------------------------------------------------------ D-127 at a glance, words
@@ -404,3 +412,73 @@ def test_a_partly_read_list_says_we_could_read():                # D-173 wording
     assert one["scope"] == "We checked the 1 ingredient we could read " + tail
     whole = scan(MASKA_CHASKA, profiles=[]).json()["screen"]
     assert whole["scope"] == "We checked the 11 ingredients on the list " + tail
+
+
+# ------------------------------------------------------------------ D-188 allergen lines when they matter
+
+JOO = {"ref": "p1", "age": "kid", "avoid": ["milk", "soy", "fish"]}
+VERM = ["Durum wheat semolina (Suji)", "Wheat gluten"]
+VERM_MILK = ["Refined wheat flour (Maida)", "Milk solids", "Salt"]
+NOTE_PHOTO = "We didn't see a \"may contain\" line in the photo, so check the pack for one."
+
+
+def test_a_match_is_one_calm_red_card_quoting_the_label():
+    s = scan(VERM_MILK, profiles=[JOO], allergen_statement=None).json()["screen"]
+    [p] = s["people"]
+    assert p["status"] == "contains" and p["line"] == 'Milk is listed: "Milk solids".'
+    assert p["share"] == 'For {name}, milk is listed: "Milk solids".'
+    # Soy and fish aren't listed: nothing about them, only the one reminder in For you.
+    assert "for_you" not in s and s["for_you_note"] == NOTE_PHOTO
+    for word in ("warning", "!", "danger", "alert"):
+        assert word not in p["line"].lower()
+
+
+def test_the_allergen_line_and_may_contain_are_quoted_as_printed():
+    s = scan(VERM, profiles=[JOO], allergen_statement="Contains wheat, milk. May contain traces of soy.").json()["screen"]
+    [p] = s["people"]
+    assert p["line"] == 'Milk is listed in the allergen line: "Contains wheat, milk".'
+    assert [a["text"] for a in p["allergens"] if a["state"] == "may_contain"] == [
+        'The pack says it may contain soy: "May contain traces of soy".']
+    assert "for_you_note" not in s                       # the allergen line was read
+
+
+def test_cannot_confirm_is_one_amber_card_naming_the_reason():
+    s = scan(VERM, profiles=[JOO], allergen_statement=None, ingredients_status="partial").json()["screen"]
+    [p] = s["people"]
+    assert p["status"] == "cannot_confirm"
+    assert p["line"] == "Part of the list couldn't be read, so we can't confirm milk, soy, fish. Check the pack."
+    assert "for_you_note" not in s
+    low = scan(VERM, profiles=[JOO], allergen_statement=None,
+               confidence={"ingredients": 0.9, "front_claims": 0.0, "product_identity": 0.5}).json()["screen"]
+    [p] = low["people"]
+    assert p["status"] == "cannot_confirm"
+    assert p["line"] == "The list wasn't clear enough to confirm milk, soy, fish. Check the pack."
+
+
+def test_a_household_of_three_with_one_match_shows_one_card():
+    fam = [{"ref": "me", "age": "adult", "avoid": ["peanut"]}, JOO, {"ref": "p2", "age": "kid", "avoid": ["sesame"]}]
+    j = scan(VERM_MILK, profiles=fam, allergen_statement=None).json()
+    s = j["screen"]
+    assert [(p["ref"], p["status"]) for p in s["people"]] == [("p1", "contains")]
+    assert "for_you" not in s and s["for_you_note"] == NOTE_PHOTO
+    # D-060: /scan's allergens block is unchanged: first key, every state.
+    assert next(iter(j)) == "allergens"
+    assert {r["code"]: r["state"] for r in j["allergens"]["results"]} == {
+        "milk": "contains", "peanut": "not_listed", "soy": "not_listed", "fish": "not_listed",
+        "sesame": "not_listed"}
+
+
+def test_on_a_barcode_hit_the_reminder_says_the_pack_we_checked():
+    from insidelabel.api import main
+    from insidelabel.lenses import allergens
+    [r] = allergens.check(VERM, None, ["milk"]).values()
+    assert "in the photo" in r.parent_text()
+    assert r.parent_text(where="pack") == ("Milk isn't listed in the ingredients. We didn't see a \"may contain\" "
+                                           "line on the pack we checked, so check the pack.")
+    block = main.allergen_block(["milk"], VERM, None, where="pack")
+    assert "pack we checked" in block["results"][0]["text"] and "photo" not in block["results"][0]["text"]
+    assert screen.MAY_CONTAIN_NOTE["pack"] == ("We didn't see a \"may contain\" line on the pack we checked, "
+                                               "so check the pack for one.")
+    person = screen._person(JOO, VERM, None, 1.0, True, where="pack")
+    assert person["note"] == screen.MAY_CONTAIN_NOTE["pack"]
+    assert screen._person(JOO, VERM, None, 1.0, True)["note"] == NOTE_PHOTO

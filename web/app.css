@@ -1625,3 +1625,20 @@ main.wrap { overflow-x: clip; }
 }
 /* The seconds keep two digits' room, so "9 s" to "10 s" does not nudge the line (a layout shift). */
 .wait .wait-time > span { display: inline-block; min-width: 2ch; text-align: end; }
+
+/* D-188: a card's further matches stay in view under its first line, in the card's own colour. */
+.person-line .also { margin: var(--sp-1) 0 0; font-weight: 700; line-height: 1.35; }
+.person-line .also > li + li { margin-top: 2px; }
+.person-line > .btn { justify-self: start; margin-top: var(--sp-2); }
+/* D-188: "For you" opens with the quiet lines: who, then what isn't listed for them. */
+.for-you-lines { display: grid; gap: var(--sp-3); margin: 0; }
+.for-you-lines > li { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: var(--sp-3);
+                      align-items: start; color: var(--muted); line-height: 1.45; }
+.for-you-lines > li > :only-child { grid-column: 1 / -1; }
+.for-you-lines .avatar { width: 28px; height: 28px; font-size: .875rem; }
+.for-you-lines p { margin: 0; }
+/* D-188: a scan card names a match in the result's colour. */
+.scan-person { font-size: var(--fs-sm); line-height: 1.35; overflow-wrap: anywhere; }
+.scan-person.stop { color: var(--stop); }
+.scan-person.unsure { color: var(--unsure); }
+.for-you-lines > .note-line { display: block; font-size: var(--fs-sm); }
