@@ -3652,6 +3652,26 @@ yes to every recommendation). Built by Claude. Layout and motion only: every wor
 - Not built in this step: a per 100 g / per serving switch (servings stay as text lines).
 `tests/test_web.py`, `tests/test_pack_kind.py`.
 
+### D-178 · Home, Your scans, Household and Compare as cards `LOCKED` (2026-10-08)
+Step 3 of the plan accepted in D-176 (**accepted by Sushil 2026-10-08**, "please proceed on UI design plan", taken as
+yes to every recommendation). Built by Claude. Layout and motion only: the words on each card are the ones these
+screens already showed (D-091), and nothing is sent anywhere new (D-074).
+
+- **Home:** after "Scan here", a "Checking for" card: each person in the household as a chip (their initial, their
+  nickname, their avoid list in the server's allergen labels), with Edit opening Household. "Recent scans" shows
+  the newest 5 as cards, with "See all" opening Your scans.
+- **Scan cards** (home and Your scans): the user's own photo of the pack where the phone kept one (D-177), else a
+  drawn pack; the name; the server's chips or first person line, as before; and when it was scanned (Today,
+  Yesterday, or the date). An empty Your scans gets a drawing.
+- **Household:** a card per person: a coloured initial, the age band, and the avoid list as chips. "Add a child"
+  is a dashed card.
+- **Compare:** the chosen packs side by side, with a dashed "Scan a pack" slot until there are two. The answer
+  shows the packs side by side too, each with what compare.py said about it, "Better pick" marked on the one
+  named; the page scrolls to the answer.
+- **Motion** (transform and opacity only, off under reduced motion): cards rise in one after another
+  (`--stagger`, at most 6); a pressed card dips.
+`tests/test_web.py`.
+
 ---
 
 ## Open and pending

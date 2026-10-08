@@ -30,6 +30,7 @@ const SHAPES = {
   pack: ["M6.5 3.5h11l1.5 4v13h-14v-13z", "M5 7.5h14", "M9 11.5h6", "M9 14.5h6", "M9 17.5h3.5"],
   // D-177: Share on a result: three joined dots.
   share: [["circle", 17.5, 5.5, 2.5], ["circle", 6.5, 12, 2.5], ["circle", 17.5, 18.5, 2.5], "M8.7 10.8l6.6-4", "M8.7 13.2l6.6 4"],
+  plus: ["M12 5.5v13", "M5.5 12h13"],
   compare: ["M4 4.5h6.5v15H4z", "M13.5 4.5H20v15h-6.5z", "M6.5 9h1.5", "M16 9h1.5", "M6.5 12.5h1.5", "M16 12.5h1.5"],
   // D-169: the message kinds' own symbols.
   retake: ["M18.5 12a6.5 6.5 0 1 1-1.9-4.6", "M18.6 4.6v3.6H15"],

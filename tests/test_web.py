@@ -539,3 +539,27 @@ def test_nutrition_bars_come_from_the_servers_numbers():
     assert '"aria-hidden": "true"' in nb and "nb-${r.tone}" in nb and "score" not in nb
     css = open(os.path.join(WEB_DIR, "app.css"), encoding="utf-8").read()
     assert "scaleX(var(--to, 0))" in css                # transform only
+
+
+# D-178: home, Your scans, Household and Compare as cards.
+def test_scan_cards_show_the_phones_photo_and_the_servers_words():
+    app_js = JS["app.js"]
+    cards = _fn(app_js, "scanList")
+    assert "packThumb(h)" in cards and "h.screen.summary.map(toneChip)" in cards
+    assert "peopleSummary(h.screen)" in cards and "score" not in cards
+    thumb = _fn(app_js, "packThumb")
+    assert "h?.photo" in thumb and "fetch(" not in thumb      # the photo never leaves the phone (D-074)
+
+
+def test_checking_for_and_household_keep_nicknames_on_the_phone():
+    app_js = JS["app.js"]
+    for name in ("checkingFor", "household", "avatar", "avoidNames"):
+        fn = _fn(app_js, name)
+        assert "Request(" not in fn and "fetch(" not in fn
+    assert 'store.get("allergens"' in _fn(app_js, "avoidNames")
+    assert "checkingFor()," in _fn(app_js, "home")
+
+
+def test_compare_lays_the_packs_side_by_side_with_compare_py_words():
+    fn = _fn(JS["app.js"], "compareResult")
+    assert 'class: "compare-grid"' in fn and "p.facts" in fn and "score" not in fn
