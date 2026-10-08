@@ -183,7 +183,7 @@ def _assess(vision):
                 "Part of the ingredient list could not be read. Missing "
                 "ingredients can only add findings, never remove them, so "
                 "finding nothing here doesn't mean there is nothing to find. "
-                "Findings that were found are still real."
+                "What we did find still stands."
             ),
         })
 
