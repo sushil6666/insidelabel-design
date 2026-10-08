@@ -3971,7 +3971,12 @@ optional ask per scan; nothing new leaves the phone (D-074); no tracking or anal
     server error, the photo limit, the offline shell) at 390 light and dark, 360 dark, 1280 light and dark, and
     390 with reduced motion: no console errors.
   - **Reviewer's final scores** (rubric: hierarchy 15, type 10, colour 10, motion 15, brand 10, one-hand 10, trust
-    10, consistency 10, performance 10): SCORES_HERE
+    10, consistency 10, performance 10), every point lost named on the evidence page
+    (https://claude.ai/artifact/BYWK3DZSWgg7Z8LCUBZuT9): Home 98 (computer 97), Your scans 98 (computer 98),
+    Household 98, the person editor 97, Compare 97, the menu 98, Your data 97, Send feedback 98, Report a problem
+    98, Welcome 98, Who avoids it? 97, Before you start 98, no connection 98, server error 98, the photo limit 98,
+    offline home 98, the other screens on a computer 97. Kept on purpose: "Delete my data" stays red (a
+    destructive action behind a confirmation; D-169 governs messages about a pack).
 `tests/test_design_system.py`, `tests/test_web.py`, `tests/test_site_desktop.py`.
 
 ---
