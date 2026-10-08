@@ -105,12 +105,16 @@ def mentioned(text):
     D-175: the allergens a text names anywhere, by their aliases and statement words
     (each allergen's `exclude` phrases first taken out: "coconut milk" is no milk).
     For the re-check's "nothing new" test only; never an allergen state.
+    Bare numbers (sulphite's INS 220 to 228) are left out: anywhere on a label they are
+    mostly nutrition-panel values ("225 kcal"), and a new INS number in the list is
+    caught by the re-check's own number test (lost_ins_numbers, D-099). Seen on the
+    server's first run: three Horlicks packs, 2026-10-08.
     """
     low = (text or "").lower()
     out = set()
     for code, a in ALLERGENS.items():
         t = _strip_excluded(low, a)
-        if any(_has(w, t) for w in a["aliases"] + a.get("statement_words", [])):
+        if any(_has(w, t) for w in a["aliases"] + a.get("statement_words", []) if not w.isdigit()):
             out.add(code)
     return out
 

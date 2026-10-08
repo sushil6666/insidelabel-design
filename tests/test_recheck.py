@@ -392,3 +392,16 @@ def test_the_server_packs_still_catch_an_added_or_swapped_entry():
             swapped = ings[:i] + [ings[i + 1], ings[i]] + ings[i + 2:]
             assert checker.unchanged(swapped, stmt, text)["decision"] == "not_clear", ings[i]
 
+
+def test_a_nutrition_number_is_no_new_allergen():
+    # The server's first run (2026-10-08): Junior Horlicks and two more read as "sulphite", from
+    # panel values in sulphite's INS range (220 to 228). A new sulphite in the list still counts.
+    from insidelabel.lenses import allergens
+    assert allergens.mentioned("Energy 225 kcal, Sodium 220 mg") == set()
+    text = MALIBAN_OCR.replace("NUTRITIONAL FACTS:", "NUTRITIONAL FACTS: ENERGY 225 KCAL")
+    assert checker.unchanged(LIST, STATEMENT, text)["decision"] == "unchanged"
+    added = MALIBAN_OCR.replace("ACIDITY REGULATOR (270)", "ACIDITY REGULATOR (270), PRESERVATIVE (223)")
+    r = checker.unchanged(LIST, STATEMENT, added)
+    assert r["decision"] == "not_clear" and r["lost_ins"] == ["223"]
+    assert "sulphite" in allergens.mentioned("Preservative (sodium metabisulphite)")
+

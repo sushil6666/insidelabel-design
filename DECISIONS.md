@@ -3590,6 +3590,12 @@ D-175 on d175-recheck from current main, as approved, with the advisor's two cha
   - **Measured** on the repo's 4 texts and those 3: Oats and Oreo now count equal; Eat Fit, where Cloud Vision lost
     commas, still goes to the paid read; 90 of 90 added entries and 83 of 83 swaps still caught. The server number
     comes from re-running the tool after deploy.
+  - **Re-measured after deploy:** 23 of 57 pass (was 20); entry count still 25, most likely Cloud Vision losing
+    commas, which no count rule can recover safely. Left there: the cost is at most about Rs 0.6 per re-check photo.
+- **Allergen-number follow-up (Sushil, 2026-10-08, "yes"):** the "no new allergen" test ignores bare numbers.
+  Sulphite's aliases include INS 220 to 228, and Junior Horlicks, Mother's Plus and Women's Plus read as "new
+  sulphite" from nutrition-panel values; their records match their labels. A new INS number in the list is still
+  caught by `lost_ins_numbers`. The allergen check itself (`lenses/allergens.check`) is unchanged.
 
 ---
 
