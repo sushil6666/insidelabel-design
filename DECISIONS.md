@@ -2752,7 +2752,7 @@ waiting on Sushil's "accepted":
   (`web/app.js`) and the scan-speed query (OPERATIONS.md section 5), as in D-150.
 `tests/test_film.py`.
 
-### D-152 · One centred italic wordmark everywhere; the app's links behind a profile menu; "Scan here" first; the website's desktop layout `LOCKED` (2026-10-02)
+### D-152 · One centred italic wordmark everywhere; the app's links behind a profile menu; "Scan here" first; the website's desktop layout `LOCKED` (2026-10-02); its app-header and menu parts `SUPERSEDED by D-176` (2026-10-08)
 **Accepted by Sushil 2026-10-02 ("accepted" for D-152)**, the details below included; built and merged in #91.
 **Sushil, 2026-10-02:** "italic name for brand name everywhere and logo and brand name each page in center"; "In
 the app's header, right corner we will keep user profile icon, once click that the links (Compare, Household
@@ -3596,6 +3596,34 @@ D-175 on d175-recheck from current main, as approved, with the advisor's two cha
   Sulphite's aliases include INS 220 to 228, and Junior Horlicks, Mother's Plus and Women's Plus read as "new
   sulphite" from nutrition-panel values; their records match their labels. A new INS number in the list is still
   caught by `lost_ins_numbers`. The allergen check itself (`lenses/allergens.check`) is unchanged.
+
+### D-176 · The app gets a real frame: a header with the screen's name and a back arrow, and a bottom bar `LOCKED` (2026-10-08)
+**Sushil, 2026-10-08:** "we will make the best ui i am not happy with ui part take some reference attached, and
+suggest, plan only first, no proper header and footer etc till now", with two screen recordings of another food-label
+app; then "think about animation etc more focus on visually something describe and ey catching"; then, on the plan
+(https://claude.ai/artifact/YaSSPSNBUgbVgfHYDBbA9w, five choices each with a recommendation), "please proceed on UI
+design plan". **Accepted by Sushil 2026-10-08**, taken as yes to every recommendation. This entry is step 1 of the
+plan's four (the frame); the result screen, the other screens and the website follow as their own entries.
+
+From the recordings, only patterns were taken: a fixed top bar with back and actions, and a bottom bar. Not taken:
+their rating out of 5 (D-064), "Generally Safe" (D-071), the "concern" and "like" sections (D-042), the red-to-green
+bars (D-169), "Buy on Amazon" and "better rated options" (D-088, D-138), and their purple.
+
+- **The header** (supersedes D-152's "wordmark on every app screen"): home and the first-run screens (welcome, who,
+  invite, Before you start) keep the centred wordmark. Every other screen shows its name in the centre ("Result",
+  "Household", "Your scans"...) and a back arrow on the left. Back on a tile's page goes to its result (D-134), on a
+  result goes home (the photo steps behind it are done), and on any other screen goes where the phone's Back goes,
+  or home when the screen was the first one opened. The profile icon stays on the right on every screen.
+- **The bottom bar** (supersedes D-152's Household and Compare in the menu): Home, Your scans, a raised Scan
+  button in the middle (it opens what "Scan here" opens), Compare (with its count as a badge), Household. Fixed, so
+  showing or hiding it moves nothing (CLS). Hidden on the first-run screens and on the camera and photo steps,
+  where it would cover the shutter. Every target is 48 px or more; the screen in view is marked `aria-current`.
+- **"Your scans"** (`#/scans`): new. D-123's counts, then every result kept on this phone, newest first. Nothing is
+  sent anywhere (D-074).
+- **The menu:** Your data, Send feedback, Report a problem, How we check, Privacy. **The text footer** shows on home
+  only, with the same links.
+- Unchanged: every word about a pack (D-091), D-146's digit check, the scan flow's steps, the result's layout.
+`tests/test_site_desktop.py`, `tests/test_web.py`.
 
 ---
 

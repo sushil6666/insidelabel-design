@@ -57,14 +57,17 @@ def test_the_app_header_has_a_profile_icon_that_opens_the_menu():
     assert '<nav>' not in header and "Compare" not in header               # the pills moved to the menu
 
 
-def test_the_menu_holds_every_header_and_footer_link():
+def test_the_menu_and_the_bottom_bar_hold_every_link():                 # D-176
     menu = re.search(r'<dialog id="menu".*?</dialog>', APP_HTML, re.S).group(0)
     footer = re.search(r"<footer.*?</footer>", APP_HTML, re.S).group(0)
+    bar = re.search(r'<nav class="tabbar".*?</nav>', APP_HTML, re.S).group(0)
     links = dict(re.findall(r'<a href="([^"]+)"[^>]*>([^<]+)</a>', menu))
-    assert links.get("#/household") == "Household" and links.get("#/compare") == "Compare"
     for href in re.findall(r'href="([^"]+)"', footer):
         assert href in links, href
-    assert 'id="nav-compare"' in menu                                      # the count still updates
+    for href in ("#/", "#/scans", "#/compare", "#/household"):
+        assert f'href="{href}"' in bar, href
+    assert "#/household" not in menu and "#/compare" not in menu          # moved to the bar
+    assert 'id="nav-compare"' in bar and 'id="tab-scan"' in bar             # the count, the Scan button
 
 
 def test_the_menu_closes_every_way_and_gives_focus_back():
@@ -77,7 +80,7 @@ def test_the_menu_closes_every_way_and_gives_focus_back():
     assert not re.search(r"(?<![.\w])history\.(pushState|back)", fn)       # this file's history() is the scans
 
 
-def test_the_back_button_moved_into_the_header_only_where_it_was():
+def test_a_tile_page_still_goes_back_to_its_result():
     assert APP_JS.count('"data-back"') == 1                                 # a result's own page (D-134)
     look = APP_JS[APP_JS.index("function lookView("):]
     assert '"data-back-label": "Back to the result"' in look[:look.index("\n}\n")]
@@ -136,3 +139,45 @@ def test_get_review_shows_the_wordmark(fresh_db):
     assert WORDMARK.findall(r.text) == WORDMARK.findall(APP_HTML)        # the same copy, rendered
     assert 'aria-label="InsideLabel review"' in r.text and "{% raw %}" not in r.text
 
+
+
+# ---------------------------------------------------------------- D-176: the app's frame
+
+def _fn(name):
+    f = APP_JS[APP_JS.index(f"function {name}("):]
+    return f[:f.index("\n}\n")]
+
+
+def test_inner_screens_show_their_name_and_a_back_arrow():
+    header = re.search(r'<header class="top">.*?</header>', APP_HTML, re.S).group(0)
+    assert 'id="top-title"' in header and 'class="wordmark"' in header
+    assert ".top.titled .wordmark { display: none; }" in APP_CSS
+    frame = _fn("frame")
+    assert "FIRST_RUN.includes(name)" in frame                               # the wordmark on first-run screens
+    assert 'name === "result"' in frame and 'href: "#/"' in frame           # a result goes home
+    assert "window.history.back()" in frame and 'go("")' in frame           # else the phone's Back, or home
+    titles = APP_JS[APP_JS.index("const TITLES = {"):APP_JS.index("};", APP_JS.index("const TITLES = {"))]
+    assert "home" not in re.findall(r"(\w+):", titles)                       # home keeps the wordmark (D-152)
+
+
+def test_the_bottom_bar_stays_off_the_camera_and_first_run_screens():
+    nobar = APP_JS[APP_JS.index("const NO_TABBAR"):].split("\n")[0]
+    for name in ("scan", "photo", "front", "table", "tablephoto"):
+        assert f'"{name}"' in nobar, name
+    assert "...FIRST_RUN" in nobar
+    assert "bar.hidden = NO_TABBAR.includes(name)" in _fn("frame")
+    assert 'id="tabbar" aria-label="Main" hidden' in APP_HTML               # hidden until a screen shows it
+    assert re.search(r"\.tabbar \{\s*position: fixed;", APP_CSS)             # fixed: no layout shift
+    assert "scroll-padding-bottom" in APP_CSS                               # focus never hides under it
+
+
+def test_the_bottom_bar_scan_button_opens_what_scan_here_opens():
+    fn = _fn("setupTabbar")
+    assert 'resetPending(); go("scan")' in fn
+    assert "setupTabbar();" in APP_JS
+
+
+def test_your_scans_lists_this_phones_results():
+    fn = _fn("scans")
+    assert "history()" in fn and "yourScans()" in fn and "scanList(all)" in fn
+    assert "scans," in APP_JS[APP_JS.index("const routes = {"):APP_JS.index("};", APP_JS.index("const routes = {"))]

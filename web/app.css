@@ -106,8 +106,13 @@ body {
 .wordmark-svg { display: block; width: 170px; height: 34px; }
 .wordmark::after { content: ""; position: absolute; inset: -8px -4px; }     /* a 48 px tall hit area */
 .wordmark:focus-visible { outline: 3px solid var(--ring); outline-offset: 4px; }
-.top .wordmark { justify-self: center; }
-.top-left { display: flex; }
+.top .wordmark { justify-self: center; grid-column: 2; grid-row: 1; }
+.top-left { display: flex; grid-column: 1; grid-row: 1; }
+.menu-btn { grid-column: 3; grid-row: 1; }
+/* D-176: every screen but home and the first-run ones shows its name here instead of the wordmark. */
+.top-title { grid-column: 2; grid-row: 1; justify-self: center; max-width: 100%; overflow: hidden;
+             text-overflow: ellipsis; white-space: nowrap; font: 700 var(--fs-lg)/1.2 var(--display); }
+.top.titled .wordmark { display: none; }
 .top-back, .menu-btn {
   width: var(--tap); height: var(--tap); display: flex; align-items: center; justify-content: center; border: 0; padding: 0;
   border-radius: 50%; background: transparent; color: var(--ink); cursor: pointer;
@@ -332,6 +337,8 @@ q { quotes: "“" "”"; }
 /* Hidden until the first screen renders: otherwise it sits under an empty main
    and jumps down when the screen appears (CLS 0.07 of the 0.11 measured). */
 .foot { padding-top: 0; text-align: center; font-size: .9rem; visibility: hidden; }
+body.ready:not(.at-home) .foot { display: none; }      /* D-176: home only; the menu holds the same links */
+.foot { display: flex; flex-wrap: wrap; justify-content: center; column-gap: 12px; }   /* D-176: no stray dots when it wraps */
 body.ready .foot { visibility: visible; }
 .foot a { display: inline-block; padding: 15px 4px; color: var(--muted); }
 .preview { white-space: pre-wrap; word-break: break-all; max-height: 260px; overflow: auto; }
@@ -797,3 +804,38 @@ details[open]:not(.look) > summary::after { transform: rotate(180deg); }
 .sheet h2 { margin: 0; }
 .sheet .btn.primary { display: flex; }
 @media (prefers-reduced-motion: reduce) { .shutter:active:not(:disabled) { transform: none; } }
+
+/* D-176: the bottom bar. Fixed, so showing or hiding it moves nothing on the page (CLS); the page
+   leaves room for it, and a focused element never scrolls under it (WCAG 2.2 2.4.11). Hidden on the
+   first-run screens and the camera and photo steps (app.js NO_TABBAR). */
+.tabbar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 2; display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: end;
+  padding: 6px max(8px, calc((100% - 560px) / 2)) calc(6px + env(safe-area-inset-bottom));
+  background: var(--surface); border-top: 1px solid var(--line); box-shadow: 0 -8px 24px -18px rgba(36, 75, 107, .5);
+}
+.tabbar[hidden] { display: none; }
+.tabbar a { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px;
+            min-height: 56px; justify-content: center; color: var(--muted); text-decoration: none;
+            font-size: var(--fs-xs); font-weight: 600; border-radius: var(--r-md); }
+.tabbar a .icon { width: 24px; height: 24px; padding: 3px 16px; box-sizing: content-box; border-radius: var(--r-pill);
+                  transition: background-color var(--d-fast) var(--ease-standard); }
+.tabbar a[aria-current="page"] { color: var(--brand); font-weight: 700; }
+.tabbar a[aria-current="page"] .icon { background: var(--mint); }
+.tabbar a:focus-visible, .tab-scan:focus-visible { outline: 3px solid var(--ring); outline-offset: -3px; }
+.tab-scan {
+  justify-self: center; align-self: center; width: 60px; height: 60px; margin-top: -28px; border: 0; padding: 0;
+  display: flex; align-items: center; justify-content: center; border-radius: 20px; cursor: pointer;
+  color: var(--brand-ink); background: var(--brand); box-shadow: 0 10px 22px -8px rgba(4, 129, 73, .65);
+  transition: transform var(--d-press) var(--ease-standard);
+}
+.tab-scan .icon { width: 30px; height: 30px; }
+.tab-scan:active { transform: scale(.94); }
+.tab-badge { position: absolute; top: 2px; left: calc(50% + 8px); min-width: 18px; height: 18px; padding: 0 5px;
+             box-sizing: border-box; border-radius: var(--r-pill); background: var(--brand); color: var(--brand-ink);
+             font-size: 11px; font-weight: 700; line-height: 18px; text-align: center; }
+.tab-badge[hidden] { display: none; }
+body.has-tabbar main.wrap, body.has-tabbar .foot { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
+body.has-tabbar.at-home main.wrap { padding-bottom: 8px; }
+html:has(body.has-tabbar) { scroll-padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
+@media (prefers-reduced-motion: reduce) { .tab-scan, .tabbar a .icon { transition: none; } }
