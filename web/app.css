@@ -11,67 +11,73 @@
    Motion is transform and opacity only, Material 3's durations and easings, and
    all of it goes under prefers-reduced-motion. */
 
-@font-face { font-family: "DM Sans"; font-weight: 400; font-style: normal; font-display: swap; src: url("fonts/dm-sans-400.woff2") format("woff2"); }
-@font-face { font-family: "DM Sans"; font-weight: 600; font-style: normal; font-display: swap; src: url("fonts/dm-sans-600.woff2") format("woff2"); }
-@font-face { font-family: "DM Sans"; font-weight: 700; font-style: normal; font-display: swap; src: url("fonts/dm-sans-700.woff2") format("woff2"); }
-@font-face { font-family: "Bricolage Grotesque"; font-weight: 600; font-style: normal; font-display: swap; src: url("fonts/bricolage-grotesque-600.woff2") format("woff2"); }
-@font-face { font-family: "Bricolage Grotesque"; font-weight: 800; font-style: normal; font-display: swap; src: url("fonts/bricolage-grotesque-800.woff2") format("woff2"); }
-/* D-153: the report faces. A browser fetches a face only when text on the page uses it, so screens
-   without a serif heading or a source line never download these. */
-@font-face { font-family: "Source Serif 4"; font-weight: 400; font-style: normal; font-display: swap; src: url("fonts/source-serif-4-400.woff2") format("woff2"); }
-@font-face { font-family: "Source Serif 4"; font-weight: 600; font-style: normal; font-display: swap; src: url("fonts/source-serif-4-600.woff2") format("woff2"); }
-@font-face { font-family: "IBM Plex Mono"; font-weight: 400; font-style: normal; font-display: swap; src: url("fonts/ibm-plex-mono-400.woff2") format("woff2"); }
+/* D-185: two families, both variable and subset to Latin, the rupee sign and the marks the labels use
+   (Figtree 400 to 700, 16 KB; Bricolage Grotesque 600 to 800, 31 KB; not preloaded, see index.html). The
+   fallbacks are Arial scaled to each face's width and height, so the swap moves no line (CLS 0). */
+@font-face { font-family: "Figtree"; font-weight: 400 700; font-style: normal; font-display: swap; src: url("fonts/figtree.woff2") format("woff2"); }
+@font-face { font-family: "Bricolage Grotesque"; font-weight: 600 800; font-style: normal; font-display: swap; src: url("fonts/bricolage-grotesque.woff2") format("woff2"); }
+@font-face { font-family: "Figtree fallback"; src: local("Arial"), local("Roboto"), local("Liberation Sans"); size-adjust: 101%; ascent-override: 94%; descent-override: 25%; line-gap-override: 0%; }
+@font-face { font-family: "Bricolage fallback"; src: local("Arial Bold"), local("Roboto Bold"), local("Liberation Sans Bold"); font-weight: 600 800; size-adjust: 93.5%; ascent-override: 99%; descent-override: 29%; line-gap-override: 0%; }
 
 :root {
   color-scheme: light dark;
-  --bg: #fbf9ee; --surface: #ffffff; --ink: #244b6b; --muted: #57768c; --line: #c9e3ec;
-  --brand: #048149; --brand-ink: #fcfcf8; --accent: #6dc88f; --ring: #008cba; --mint: #c4f6d4;
-  --stop: #c92324; --stop-bg: #ffe5e0;                              /* on the avoid list / may contain */
-  --unsure: #6c380d; --unsure-bg: #ffefcd; --unsure-line: #f59e3b;  /* couldn't confirm / uncertain */
-  --calm: #194860; --calm-bg: #d5f7f4;                              /* not listed / nothing extra */
-  /* D-169: a photo or app problem, never red. 6.88:1 on --bg, 7.26:1 on --surface, 6.14:1 on its tint. */
-  --problem: #3e5a6e; --problem-bg: #e6edf2;
+  /* D-185: D-110's cream, ink and green made quieter; every text pair still passes AA (tests/test_design_system.py). */
+  --bg: #f9f7ef; --surface: #ffffff; --ink: #1f405c; --ink-2: #47657c; --muted: #5a7487; --line: #e2ddcc; --line-2: #d3e2ea;
+  --brand: #047a45; --brand-press: #036338; --brand-ink: #ffffff; --brand-soft: #dff3e6;
+  --accent: #6dc88f; --ring: #1b7fbf; --mint: #e2f4e8;
+  /* D-185: the logo's gold marks progress only (reading, a step in hand); never a verdict. */
+  --gold: #f2b632; --gold-soft: #fff1c9; --gold-ink: #6b4500;
+  /* D-169 kinds, shades refined by D-185, meanings kept: stop = the avoid list and "Not permitted in India";
+     unsure = worth a look, couldn't confirm; calm = information; problem = a photo or app problem, never red. */
+  --stop: #b42318; --stop-bg: #fdebe8; --stop-line: #f1b5ad;
+  --unsure: #7a4a06; --unsure-bg: #fff3d6; --unsure-line: #f0c46a;
+  --calm: #1f5a85; --calm-bg: #e5f1fa;
+  --problem: #3e5a6e; --problem-bg: #e8eef3;
   /* D-127 "At a glance": validated categorical slots (dataviz validator, both modes) + status red. */
   --g-worth: #d03b3b; --g-sugar: #eb6834; --g-industrial: #2a78d6; --g-additive: #1baf7a; --g-other: #d3dde3;
-  --surface-2: #f4f2e6;                    /* pressed rows, skeletons */
-  --field-line: #6f8ca0;                   /* WCAG 1.4.11: 3.35:1 on --bg, 3.54:1 on --surface */
-  /* Type (rem, so the phone's text size setting scales it) */
-  --fs-xs: .75rem; --fs-sm: .875rem; --fs-md: 1rem; --fs-lg: 1.125rem; --fs-xl: 1.375rem;
-  --fs-2xl: 1.75rem; --fs-3xl: 2.25rem;
+  --surface-2: #f2efe3;                    /* pressed rows, skeletons */
+  --field-line: #6f8ca0;                   /* WCAG 1.4.11: 3:1 or more on --bg and --surface */
+  /* Type (rem, so the phone's text size setting scales it). D-185: 13 px is the smallest. */
+  --fs-xs: .8125rem; --fs-sm: .875rem; --fs-md: 1rem; --fs-lead: 1.0625rem; --fs-lg: 1.125rem; --fs-xl: 1.3125rem;
+  --fs-2xl: 1.75rem; --fs-3xl: 2.375rem;
   /* Spacing, 4 px base */
   --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 20px; --sp-6: 24px; --sp-8: 32px;
   /* Shape */
-  --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-xl: 24px; --r-pill: 999px;
+  --r-sm: 10px; --r-md: 14px; --r-lg: 20px; --r-xl: 28px; --r-pill: 999px;
   --radius: var(--r-lg);
-  /* Elevation */
-  --shadow: 0 1px 2px rgba(36, 75, 107, .06), 0 12px 32px -12px rgba(36, 75, 107, .18);
+  /* Elevation: a hairline and a soft shadow; cards sit on the cream, not above it. */
+  --shadow: 0 1px 2px rgba(22, 52, 80, .06), 0 1px 1px rgba(22, 52, 80, .04);
   --e-1: var(--shadow);
-  --e-2: 0 2px 4px rgba(36, 75, 107, .08), 0 16px 36px -14px rgba(36, 75, 107, .32);
-  /* Motion: Material 3 tokens (material-components-android motion tokens.xml, read 2026-10-01) */
-  --d-press: 100ms; --d-fast: 150ms; --d-enter: 200ms; --d-reveal: 250ms; --d-fill: 600ms; --stagger: 40ms;
+  --e-2: 0 1px 2px rgba(22, 52, 80, .06), 0 10px 28px -12px rgba(22, 52, 80, .22);
+  --e-3: 0 2px 6px rgba(22, 52, 80, .08), 0 24px 48px -20px rgba(22, 52, 80, .38);
+  /* Motion: Material 3 tokens (material-components-android motion tokens.xml, read 2026-10-01).
+     D-185: enter and reveal a little longer, a 400 ms draw for strokes and bars, and one spring for arrivals. */
+  --d-press: 100ms; --d-fast: 150ms; --d-enter: 220ms; --d-reveal: 320ms; --d-draw: 400ms; --d-fill: 600ms; --stagger: 40ms;
   --ease-standard: cubic-bezier(.2, 0, 0, 1);       /* standard */
   --ease-enter: cubic-bezier(.1, .7, .1, 1);        /* emphasized decelerate */
   --ease-exit: cubic-bezier(.3, 0, 1, 1);           /* standard accelerate */
+  --ease-spring: linear(0, .009, .035 2.1%, .141 4.4%, .723 12.9%, .938 16.7%, 1.017 20.3%, 1.043 24.3%, 1.035 28.4%, 1.007 41.2%, .998 55.5%, 1);
   /* Android's touch target, 48 x 48 dp (developer.android.com, read 2026-10-01) */
   --tap: 48px;
-  --hero: radial-gradient(60% 60% at 15% 10%, rgba(196, 246, 212, .7), transparent 70%),
-          radial-gradient(50% 50% at 90% 20%, rgba(196, 234, 250, .7), transparent 70%);
-  --font: "DM Sans", system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", sans-serif;
-  --display: "Bricolage Grotesque", var(--font);
+  --hero: none;                            /* D-185: the mint glow is gone */
+  --font: "Figtree", "Figtree fallback", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --display: "Bricolage Grotesque", "Bricolage fallback", var(--font);
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #193043; --surface: #234058; --ink: #e0f2f6; --muted: #a3c4d1; --line: #3e6378;
-    --brand: #66c189; --brand-ink: #042234; --accent: #66c189; --ring: #7dccda; --mint: #28523c;
-    --stop: #ffbdb5; --stop-bg: #6c3530; --unsure: #ffd791; --unsure-bg: #674420; --unsure-line: #f7ac4d;
-    --calm: #d9f0f3; --calm-bg: #265368;
-    --problem: #c6d6e2; --problem-bg: #2e4a60;        /* D-169: 9.14:1 on --bg, 7.26:1 on --surface, 6.23:1 on its tint */
+    --bg: #0f2133; --surface: #172d42; --ink: #e8f1f6; --ink-2: #c3d5e2; --muted: #9db6c7; --line: #27425a; --line-2: #2c4b66;
+    --brand: #5fcb8c; --brand-press: #4db87a; --brand-ink: #062b18; --brand-soft: #173f2e;
+    --accent: #5fcb8c; --ring: #7cc4f0; --mint: #173f2e;
+    --gold: #f5c04a; --gold-soft: #3d3216; --gold-ink: #ffd98a;
+    --stop: #ffb4a8; --stop-bg: #4a1f1c; --stop-line: #8a4038;
+    --unsure: #ffd58a; --unsure-bg: #443214; --unsure-line: #c99236;
+    --calm: #a8d4f5; --calm-bg: #17344d;
+    --problem: #c6d6e2; --problem-bg: #233a4f;
     --g-worth: #e66767; --g-sugar: #d95926; --g-industrial: #3987e5; --g-additive: #199e70; --g-other: #4a6275;
-    --surface-2: #2b4b64; --field-line: #7a9db1;      /* 3.74:1 on --surface, 4.71:1 on --bg */
-    --shadow: 0 1px 2px rgba(0, 0, 0, .2), 0 12px 32px -12px rgba(0, 0, 0, .45);
-    --e-2: 0 2px 6px rgba(0, 0, 0, .3), 0 16px 36px -14px rgba(0, 0, 0, .6);
-    --hero: radial-gradient(60% 60% at 15% 10%, rgba(40, 82, 60, .8), transparent 70%),
-            radial-gradient(50% 50% at 90% 20%, rgba(38, 83, 104, .8), transparent 70%);
+    --surface-2: #1d3750; --field-line: #7a9db1;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .3);
+    --e-2: 0 1px 2px rgba(0, 0, 0, .3), 0 12px 28px -12px rgba(0, 0, 0, .55);
+    --e-3: 0 2px 6px rgba(0, 0, 0, .35), 0 24px 48px -20px rgba(0, 0, 0, .7);
   }
 }
 
@@ -91,31 +97,53 @@ body {
 .wrap { max-width: 560px; margin: 0 auto; padding: 16px 16px 48px; }
 
 /* site-desktop (Sushil, 2026-10-02): the wordmark centred (tools/make_wordmark.py), a back button on the
-   left only where a screen had one, the menu on the right. Three columns, so the name is centred on
-   the screen whatever the sides hold; the same on phones and desktop. */
+   left only where a screen had one, the menu on the right. D-185: three columns of 1fr auto 1fr, so the
+   name stays centred on the screen whatever the sides hold (D-180); from 1024 px the left side also
+   holds the bottom bar's places and the right side "Scan a pack". The edge line shows once the page
+   scrolls under it (no line on a screen that hasn't moved). */
 .top {
-  position: sticky; top: 0; z-index: 2; display: grid; grid-template-columns: var(--tap) minmax(0, 1fr) var(--tap);
-  align-items: center; gap: 8px; padding: 6px 12px; color: var(--ink);
+  position: sticky; top: 0; z-index: 5; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center; gap: 8px; min-height: 60px; padding: 0 8px; color: var(--ink);
   background: var(--bg);   /* older Chrome: no color-mix, solid header */
-  background: color-mix(in srgb, var(--bg) 85%, transparent); border-bottom: 1px solid var(--line);
-  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
 }
 /* The wordmark (made by tools/make_wordmark.py, inline in each page): the logo and "InsideLabel"
    in italic, the same on every page and screen. In running text the name stays plain. */
 .wordmark { position: relative; display: inline-flex; align-items: center; border-radius: 8px; }
-.wordmark-svg { display: block; width: 170px; height: 34px; }
-.wordmark::after { content: ""; position: absolute; inset: -8px -4px; }     /* a 48 px tall hit area */
+.wordmark-svg { display: block; width: 150px; height: 30px; }
+.wordmark::after { content: ""; position: absolute; inset: -9px -4px; }     /* a 48 px tall hit area */
 .wordmark:focus-visible { outline: 3px solid var(--ring); outline-offset: 4px; }
+body.scrolled .top { box-shadow: 0 1px 0 var(--line); }
 .top .wordmark { justify-self: center; grid-column: 2; grid-row: 1; }
-.top-left { display: flex; grid-column: 1; grid-row: 1; }
-.menu-btn { grid-column: 3; grid-row: 1; }
+.top-l { display: flex; align-items: center; gap: 4px; grid-column: 1; grid-row: 1; min-width: 0; }
+.top-left { display: flex; }
+.top-r { display: flex; align-items: center; justify-content: flex-end; gap: 10px; grid-column: 3; grid-row: 1; }
 .top-back, .menu-btn {
   width: var(--tap); height: var(--tap); display: flex; align-items: center; justify-content: center; border: 0; padding: 0;
   border-radius: 50%; background: transparent; color: var(--ink); cursor: pointer;
 }
-.menu-btn { justify-self: end; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--e-1); }
-.top-back:focus-visible, .menu-btn:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
-.menu-btn .icon { width: 26px; height: 26px; }
+.top-back:active { background: var(--surface-2); }
+/* The profile drawing on a small disc: 36 px to see, 48 px to tap. */
+.menu-btn::before { content: ""; position: absolute; width: 36px; height: 36px; border-radius: 50%; background: var(--surface);
+                    box-shadow: inset 0 0 0 1px var(--line), var(--e-1); }
+.menu-btn { position: relative; }
+.menu-btn .icon { position: relative; width: 20px; height: 20px; }
+.top-back:focus-visible, .menu-btn:focus-visible { outline: 3px solid var(--ring); outline-offset: -2px; }
+.topnav, .top-r .btn.topscan { display: none; }
+@media (min-width: 1024px) {
+  .top { min-height: 68px; padding: 0 24px; }
+  .wordmark-svg { width: 170px; height: 34px; }
+  .topnav { display: flex; gap: 4px; }
+  .topnav a { position: relative; display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 14px;
+              border-radius: var(--r-pill); color: var(--ink-2); text-decoration: none; font-weight: 600; font-size: .9375rem; }
+  .topnav a:hover { color: var(--ink); background: var(--surface-2); }
+  .topnav a[aria-current="page"] { color: var(--ink); background: var(--surface); box-shadow: var(--e-1), inset 0 0 0 1px var(--line); }
+  .topnav a:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
+  .topnav .tab-badge { position: static; }
+  .top-r .btn.topscan { display: inline-flex; width: auto; min-height: 44px; padding: 0 16px; font-size: .9375rem; gap: 8px; }
+  .topscan .icon { width: 20px; height: 20px; }
+}
 
 /* The menu: a sheet from the bottom on phones, a panel under the profile icon from 600 px up.
    A modal <dialog>: focus moves in and back; Escape, a tap outside, Back or a choice close it. */
@@ -141,16 +169,17 @@ a { color: var(--brand); text-underline-offset: 2px; }
    more, and the negative margin keeps every word where it was. */
 main a:not([class]) { padding: 14px 5px; margin-inline: -5px; }
 
-h1, h2, h3 { font-family: var(--display); font-weight: 800; letter-spacing: -.01em; }
-h1 { font-size: 1.7rem; line-height: 1.1; margin: 0; }
-h2 { font-size: 1.15rem; margin: 8px 0 0; }
+/* D-185: Bricolage Grotesque for headings (800 for a screen's title, 700 below it), Figtree for the rest. */
+h1, h2, h3 { font-family: var(--display); font-weight: 700; letter-spacing: -.01em; }
+h1 { font-size: var(--fs-2xl); font-weight: 800; line-height: 1.1; letter-spacing: -.02em; margin: 0; text-wrap: balance; }
+h2 { font-size: var(--fs-lg); line-height: 1.25; margin: 8px 0 0; }
 h1:focus, h2:focus { outline: none; }
 p { margin: 0; }
 .stack > * + * { margin-top: 14px; }
 .center { text-align: center; }
-.lead { font-size: 1.05rem; }
+.lead { font-size: var(--fs-lead); line-height: 1.5; color: var(--ink-2); }
 .muted { color: var(--muted); }
-.small { font-size: .92rem; }
+.small { font-size: var(--fs-sm); }
 .tech { color: var(--muted); font-size: .85rem; font-family: ui-monospace, "Roboto Mono", monospace; }
 .error { color: var(--problem); font-weight: 600; min-height: 0; }
 .error:empty { display: none; }
@@ -164,11 +193,13 @@ p { margin: 0; }
 
 .btn {
   display: inline-flex; align-items: center; justify-content: center; min-height: var(--tap); padding: 10px 18px;
-  border: 1px solid var(--field-line); border-radius: var(--radius); background: var(--surface); color: var(--ink);
+  border: 1.5px solid var(--line-2); border-radius: var(--r-md); background: var(--surface); color: var(--ink);
   font: inherit; font-weight: 700; cursor: pointer; text-align: center; box-shadow: var(--e-1);
   transition: transform var(--d-press) var(--ease-standard), opacity var(--d-fast) var(--ease-standard);
 }
-.btn.primary { background: var(--brand); border-color: var(--brand); color: var(--brand-ink); width: 100%; min-height: 54px; font-size: var(--fs-lg); }
+.btn.primary { background: var(--brand); border-color: var(--brand); color: var(--brand-ink); width: 100%; min-height: 52px; font-size: var(--fs-lead);
+               box-shadow: 0 8px 18px -10px rgba(4, 122, 69, .8); }
+@media (hover: hover) { .btn.primary:hover:not(:disabled) { background: var(--brand-press); border-color: var(--brand-press); } }
 .btn.link { border: 0; background: none; color: var(--brand); min-height: var(--tap); min-width: var(--tap); padding: 8px 4px; width: auto; box-shadow: none; }
 .btn.danger { color: var(--stop); }
 /* A button standing alone in a screen gets its own row: answers side by side read as
@@ -176,15 +207,69 @@ p { margin: 0; }
 .stack > .btn { display: flex; }
 .stack > .btn:not(.link) { width: 100%; }
 .stack > .btn.link { width: fit-content; }
+/* D-185: the quiet action a screen ends on (Done, Cancel, Home) sits centred under the main one, the whole row its target. */
+.stack > .btn.link.end { width: 100%; }
 .btn:disabled { opacity: .45; cursor: not-allowed; }
 .btn:focus-visible, a:focus-visible, summary:focus-visible, input:focus-visible,
 select:focus-visible, textarea:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
 
+/* D-185: home's one big action. A green card, "Scan here" in the display face, and a small drawing
+   of what a scan does: the barcode swept, the label's lines read in the logo's gold, a result card
+   with a tick. Three passes of 7.2 s and it rests on the finished drawing; still under reduced motion.
+   Transform and opacity only. */
 .scan-cta {
-  width: 100%; display: flex; align-items: center; gap: 16px; padding: 22px 20px; border: 0;
-  border-radius: var(--r-xl); background: var(--brand); color: var(--brand-ink); font: 800 1.35rem/1.2 var(--display);
-  cursor: pointer; box-shadow: var(--e-2);
+  position: relative; width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) 132px; align-items: center;
+  min-height: 168px; padding: 22px 18px 22px 22px; border: 0; border-radius: var(--r-xl); overflow: hidden; isolation: isolate;
+  background: var(--brand); color: var(--brand-ink); text-align: left; cursor: pointer;
+  box-shadow: 0 18px 36px -18px rgba(3, 66, 37, .9);
 }
+.scan-cta::before { content: ""; position: absolute; inset: 0; z-index: -1; background:
+  radial-gradient(120% 90% at 100% 0%, rgba(255, 255, 255, .16), transparent 55%),
+  repeating-linear-gradient(90deg, rgba(255, 255, 255, .05) 0 2px, transparent 2px 9px); }
+.scan-cta-words { display: grid; gap: 14px; justify-items: start; }
+.scan-cta-title { font: 800 2rem/1 var(--display); letter-spacing: -.02em; }
+.scan-cta-icon { display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 50%;
+                 background: rgba(255, 255, 255, .18); }
+.scan-cta-icon .icon { width: 24px; height: 24px; }
+@media (prefers-color-scheme: dark) {
+  .scan-cta { background: #17603c; color: #ffffff; box-shadow: 0 18px 36px -18px rgba(0, 0, 0, .8); }
+  .scan-cta-icon { background: rgba(255, 255, 255, .14); }
+}
+.loop { position: relative; width: 132px; height: 124px; }
+.loop .pk { position: absolute; inset: 6px 14px 0 14px; border-radius: 14px; background: #fffdf6; overflow: hidden;
+            box-shadow: 0 14px 24px -14px rgba(0, 0, 0, .55); transform: rotate(4deg); }
+.loop .bars { position: absolute; left: 14px; right: 14px; top: 16px; height: 34px;
+  background: repeating-linear-gradient(90deg, #163450 0 2px, transparent 2px 4px, #163450 4px 7px, transparent 7px 9px, #163450 9px 10px, transparent 10px 13px); }
+.loop .sweep { position: absolute; left: 8px; right: 8px; top: 12px; height: 2px; border-radius: 2px; opacity: 0;
+               background: var(--gold); box-shadow: 0 0 12px 2px rgba(242, 182, 50, .8); transform: translateY(40px); }
+.loop .ln { position: absolute; left: 14px; height: 5px; border-radius: 3px; background: #d9d3bd; }
+.loop .ln i { position: absolute; inset: 0; border-radius: 3px; background: #f2b632; transform-origin: left; }
+.loop .ln1 { top: 62px; width: 62px; } .loop .ln2 { top: 72px; width: 48px; } .loop .ln3 { top: 82px; width: 56px; }
+.loop .res { position: absolute; left: 0; right: 0; bottom: 4px; display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+             border-radius: 12px; background: #ffffff; box-shadow: 0 10px 18px -10px rgba(0, 0, 0, .5); }
+.loop .tick { flex: none; width: 20px; height: 20px; border-radius: 50%; background: #e2f4e8; color: #047a45;
+              display: flex; align-items: center; justify-content: center; }
+.loop .tick .icon { width: 13px; height: 13px; stroke-width: 3; }
+.loop .rl { display: grid; gap: 4px; flex: 1; }
+.loop .rl i { height: 5px; border-radius: 3px; background: #c9d6e0; }
+.loop .rl i + i { width: 60%; }
+@media (prefers-reduced-motion: no-preference) {
+  .loop :is(.sweep, .ln i, .res, .tick path) { animation: 7.2s var(--ease-standard) -.72s 3 both; }
+  .loop .sweep { animation-name: loop-sweep; }
+  .loop .ln1 i { animation-name: loop-read1; } .loop .ln2 i { animation-name: loop-read2; } .loop .ln3 i { animation-name: loop-read3; }
+  .loop .res { animation-name: loop-res; animation-timing-function: var(--ease-enter); }
+  .loop .tick path { stroke-dasharray: 1; animation-name: loop-tick; animation-timing-function: var(--ease-enter); }
+  .scan-cta.still .loop * { animation-play-state: paused; }
+}
+/* Each pass starts on the finished drawing, clears it, and draws it again (the negative delay skips
+   the clearing on the first pass), so the third pass ends where the reduced-motion still begins. */
+@keyframes loop-sweep { 0%, 10% { transform: translateY(0); opacity: 0 } 13% { opacity: 1 } 30% { transform: translateY(40px); opacity: 1 } 34%, 100% { transform: translateY(40px); opacity: 0 } }
+@keyframes loop-read1 { 0% { transform: none; opacity: 1 } 7% { opacity: 0 } 8%, 34% { transform: scaleX(0); opacity: 1 } 44%, 100% { transform: none; opacity: 1 } }
+@keyframes loop-read2 { 0% { transform: none; opacity: 1 } 7% { opacity: 0 } 8%, 42% { transform: scaleX(0); opacity: 1 } 52%, 100% { transform: none; opacity: 1 } }
+@keyframes loop-read3 { 0% { transform: none; opacity: 1 } 7% { opacity: 0 } 8%, 50% { transform: scaleX(0); opacity: 1 } 60%, 100% { transform: none; opacity: 1 } }
+@keyframes loop-res { 0% { opacity: 1; transform: none } 7% { opacity: 0; transform: translateY(-4px) } 8%, 62% { opacity: 0; transform: translateY(10px) scale(.96) } 70%, 100% { opacity: 1; transform: none } }
+@keyframes loop-tick { 0%, 7% { stroke-dashoffset: 0 } 8%, 68% { stroke-dashoffset: 1 } 78%, 100% { stroke-dashoffset: 0 } }
+@media (max-width: 359px) { .scan-cta { grid-template-columns: minmax(0, 1fr) 104px; } .loop { transform: scale(.8); transform-origin: right center; } }
 
 /* One press state for everything tappable (Apple HIG, Buttons: "Always include a
    press state"). Transform only, 100 ms; a press never blocks or delays the tap. */
@@ -196,7 +281,6 @@ select:focus-visible, textarea:focus-visible { outline: 3px solid var(--ring); o
 /* The app's icons (web/icons.js): 24 px grid, 2 px round strokes, currentColor. */
 .icon { width: 24px; height: 24px; flex: none; fill: none; stroke: currentColor; stroke-width: 2;
         stroke-linecap: round; stroke-linejoin: round; }
-.scan-cta-icon .icon { width: 44px; height: 44px; stroke-width: 1.8; }
 /* A small drawing above an empty or waiting screen's words: icons in a soft disc. */
 .spot { display: flex; align-items: center; justify-content: center; gap: 6px; width: 88px; height: 88px;
         border-radius: 50%; background: var(--surface-2); color: var(--muted); }
@@ -205,13 +289,14 @@ select:focus-visible, textarea:focus-visible { outline: 3px solid var(--ring); o
 .card.empty .spot { width: 72px; height: 72px; }
 
 .card {
-  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px;
   box-shadow: var(--e-1);
 }
 .card > * + * { margin-top: 8px; }
-.card.note { border-left: 4px solid var(--brand); }
+.card.note { box-shadow: var(--e-2); }   /* D-185: lifted, no side stripe */
 .card.warn { background: var(--unsure-bg); border-color: var(--unsure-line); color: var(--unsure); }
-.progress { height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; }
+.progress { height: 6px; background: var(--surface-2); border-radius: 3px; overflow: hidden; }
+.tallies .progress span { background: var(--calm); }   /* D-185: a count is information, not a good mark */
 .progress span { display: block; height: 100%; background: var(--brand); transform-origin: left;
                  animation: grow var(--d-reveal) var(--ease-enter) both; }
 @keyframes grow { from { transform: scaleX(0); } }
@@ -245,8 +330,12 @@ input[type=text], input:not([type]), input[inputmode], select, textarea {
 .stack > * + label:not(.choice):not(.btn) { margin-top: var(--sp-5); }
 .stack > label:not(.choice) + input, .stack > label:not(.choice) + textarea, .stack > label:not(.choice) + select,
 .stack > label:not(.choice) + .row { margin-top: 6px; }
-fieldset { border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 14px; margin: 0; background: var(--surface); }
-legend { font-weight: 700; padding: 0 4px; }
+fieldset { border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px 8px; margin: 0; background: var(--surface);
+           box-shadow: var(--e-1); min-width: 0; }
+/* D-185: the legend sits inside the card as its title, not in a notch in the border. */
+legend { float: left; width: 100%; padding: 0 0 4px; font: 700 var(--fs-md)/1.3 var(--display); }
+legend + * { clear: both; }
+fieldset .choice + .choice { border-top: 1px solid var(--line); }   /* D-185: long lists scan by row */
 .choice { display: flex; align-items: center; gap: 8px; min-height: var(--tap); font-weight: 400; }
 .choice input { width: 22px; height: 22px; flex: none; accent-color: var(--brand); }
 .consent { align-items: flex-start; }
@@ -330,13 +419,6 @@ q { quotes: "“" "”"; }
 .report { color: var(--muted); }
 
 /* Report a problem (D-092) */
-/* Hidden until the first screen renders: otherwise it sits under an empty main
-   and jumps down when the screen appears (CLS 0.07 of the 0.11 measured). */
-.foot { padding-top: 0; text-align: center; font-size: .9rem; visibility: hidden; }
-body.ready:not(.at-home) .foot { display: none; }      /* D-176: home only; the menu holds the same links */
-.foot { display: flex; flex-wrap: wrap; justify-content: center; column-gap: 12px; }   /* D-176: no stray dots when it wraps */
-body.ready .foot { visibility: visible; }
-.foot a { display: inline-block; padding: 15px 4px; color: var(--muted); }
 .preview { white-space: pre-wrap; word-break: break-all; max-height: 260px; overflow: auto; }
 
 /* D-102: photo upload on a computer - choose or drop. */
@@ -360,6 +442,13 @@ body.ready .foot { visibility: visible; }
 
 /* D-105: "Before you start". */
 .rules { padding-left: 22px; } .rules li { margin: 8px 0; }
+/* D-185: "Before you start": each rule on its own ruled row, its number in a small disc. */
+ol.rules { list-style: none; padding: 0; counter-reset: rule; }
+ol.rules > li { position: relative; counter-increment: rule; margin: 0; padding: 12px 0 12px 40px; border-top: 1px solid var(--line); }
+ol.rules > li:last-child { border-bottom: 1px solid var(--line); }
+ol.rules > li::before { content: counter(rule); position: absolute; left: 0; top: 12px; width: 26px; height: 26px; border-radius: 50%;
+                        display: flex; align-items: center; justify-content: center; background: var(--surface-2); color: var(--ink);
+                        font: 700 var(--fs-xs)/1 var(--font); font-variant-numeric: tabular-nums; box-shadow: inset 0 0 0 1px var(--line-2); }
 
 /* D-111: additive cards with a badge. Colour repeats what the badge says in words. */
 .add-alert { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: start; padding: 14px 16px;
@@ -519,7 +608,7 @@ ul.plain > li > a, .look-part a { display: inline-flex; align-items: center; min
 /* WCAG 2.2 2.3.3, Apple HIG "Make motion optional": with reduced motion on, nothing
    moves. Animations end on their last frame at once; presses don't scale. */
 @media (prefers-reduced-motion: reduce) {
-  :root { --d-press: 0ms; --d-fast: 0ms; --d-enter: 0ms; --d-reveal: 0ms; --stagger: 0ms; }
+  :root { --d-press: 0ms; --d-fast: 0ms; --d-enter: 0ms; --d-reveal: 0ms; --d-draw: 0ms; --stagger: 0ms; }
   *, *::before, *::after {
     animation-duration: .01ms !important; animation-delay: 0ms !important; animation-iteration-count: 1 !important;
     transition-duration: .01ms !important; transition-delay: 0ms !important; scroll-behavior: auto !important;
@@ -572,25 +661,29 @@ details[open]:not(.look) > summary::after { transform: rotate(180deg); }
    the two files reach fonts/ by different paths. Values that exist in app.css already are repeated
    here unchanged, so the website gets them too. */
 :root {
-  --serif: "Source Serif 4", Georgia, "Noto Serif", serif;
-  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-  --deep: #193b57; --on-deep: #f3fbf6; --on-deep-muted: #cfe6ee; --deep-action: #c4f6d4;
-  --mark: #048149;                         /* the hero's stroke: the light green, kept deep in dark mode too */
-  --stop: #c92324; --stop-bg: #ffe5e0; --unsure: #6c380d; --unsure-bg: #ffefcd;
-  --calm: #194860; --calm-bg: #d5f7f4; --surface-2: #f4f2e6;
-  --fs-xs: .75rem; --fs-sm: .875rem; --fs-md: 1rem; --fs-lg: 1.125rem; --fs-xl: 1.375rem;
-  --fs-2xl: 1.75rem; --fs-3xl: 2.25rem; --fs-4xl: 2.75rem;
+  /* D-185: two families. The report's serif headings take the display face and its source lines the
+     text face with tabular figures (.src, .cite); the serif and mono faces D-153 added are gone. */
+  --serif: "Bricolage Grotesque", "Bricolage fallback", system-ui, sans-serif;
+  --mono: "Figtree", "Figtree fallback", system-ui, sans-serif;
+  --deep: #163450; --on-deep: #f4f8fb; --on-deep-muted: #b9cddd; --deep-action: #9fe3b9;
+  --mark: #047a45;                         /* the hero's stroke: the brand green, kept deep in dark mode too */
+  --gold: #f2b632; --gold-soft: #fff1c9;
+  --stop: #b42318; --stop-bg: #fdebe8; --unsure: #7a4a06; --unsure-bg: #fff3d6;
+  --calm: #1f5a85; --calm-bg: #e5f1fa; --surface-2: #f2efe3;
+  --fs-xs: .8125rem; --fs-sm: .875rem; --fs-md: 1rem; --fs-lg: 1.125rem; --fs-xl: 1.3125rem;
+  --fs-2xl: 1.75rem; --fs-3xl: 2.375rem; --fs-4xl: 2.75rem;
   --fs-display: clamp(2.75rem, 1.6rem + 4.6vw, 5.5rem);   /* the website hero: 44 px on a phone, 88 px on a laptop */
   --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 20px; --sp-6: 24px; --sp-8: 32px;
-  --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-xl: 24px; --r-2xl: 32px; --r-pill: 999px;
+  --r-sm: 10px; --r-md: 14px; --r-lg: 20px; --r-xl: 28px; --r-2xl: 32px; --r-pill: 999px;
   --tap-big: 60px;                         /* the one action a screen ends on */
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --deep: #0e2435;                       /* a step darker than the dark page, so the panel still reads */
-    --deep-action: #66c189;
-    --stop: #ffbdb5; --stop-bg: #6c3530; --unsure: #ffd791; --unsure-bg: #674420;
-    --calm: #d9f0f3; --calm-bg: #265368; --surface-2: #2b4b64;
+    --deep: #0a1828;                       /* a step darker than the dark page, so the panel still reads */
+    --on-deep-muted: #a9c0d2; --deep-action: #5fcb8c;
+    --gold: #f5c04a; --gold-soft: #3d3216;
+    --stop: #ffb4a8; --stop-bg: #4a1f1c; --unsure: #ffd58a; --unsure-bg: #443214;
+    --calm: #a8d4f5; --calm-bg: #17344d; --surface-2: #1d3750;
   }
 }
 
@@ -618,10 +711,10 @@ details[open]:not(.look) > summary::after { transform: rotate(180deg); }
 
 /* A source: where a line was read or which rule backs it (D-046, D-086). Small and quiet; the
    words of the finding never depend on it. */
-.src { font: 400 var(--fs-xs)/1.45 var(--mono); color: var(--muted); overflow-wrap: anywhere; }
-.cite { font: 400 var(--fs-xs)/1 var(--mono); color: var(--muted); white-space: nowrap; }
-.kicker { font: 400 var(--fs-xs)/1.4 var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--muted); margin: 0; }
-.h-serif { font: 600 var(--fs-xl)/1.2 var(--serif); letter-spacing: 0; margin: 0; text-wrap: balance; }
+.src { font: 400 var(--fs-xs)/1.45 var(--mono); font-variant-numeric: tabular-nums; color: var(--muted); overflow-wrap: anywhere; }
+.cite { font: 600 var(--fs-xs)/1 var(--mono); font-variant-numeric: tabular-nums; color: var(--muted); white-space: nowrap; }
+.kicker { font: 700 var(--fs-xs)/1.4 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0; }
+.h-serif { font: 700 var(--fs-xl)/1.2 var(--serif); letter-spacing: -.01em; margin: 0; text-wrap: balance; }
 .h-serif.big { font-size: var(--fs-4xl); line-height: 1.12; }
 
 /* Numbered notes ("Worth knowing" opened): hairlines, not cards; the number lines up with the text. */
@@ -635,13 +728,13 @@ details[open]:not(.look) > summary::after { transform: rotate(180deg); }
 .ruled { list-style: none; margin: 0; padding: 0; }
 .ruled > * { border-top: 1px solid var(--line); padding: var(--sp-4) 0; margin: 0; }
 .ruled > :last-child { border-bottom: 1px solid var(--line); }
-.ruled dt, .ruled h3 { font: 600 var(--fs-lg)/1.3 var(--serif); margin: 0; }
+.ruled dt, .ruled h3 { font: 700 var(--fs-lg)/1.3 var(--serif); margin: 0; }
 .ruled dd { margin: var(--sp-1) 0 0; color: var(--muted); }
 
 /* The report table (Finding / For / Source). It scrolls inside its own box on a narrow screen. */
 .table-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--r-md); }
 .sourced { width: 100%; min-width: 34rem; border-collapse: collapse; font-size: var(--fs-md); }
-.sourced th { font: 400 var(--fs-xs)/1.4 var(--mono); letter-spacing: .04em; text-transform: uppercase;
+.sourced th { font: 700 var(--fs-xs)/1.4 var(--mono); letter-spacing: .08em; text-transform: uppercase;
               color: var(--ink); text-align: left; background: var(--surface-2); padding: var(--sp-3) var(--sp-4); }
 .sourced td { border-top: 1px solid var(--line); padding: var(--sp-3) var(--sp-4); vertical-align: top; }
 .sourced tr.stop td:first-child { color: var(--stop); font-weight: 700; }
@@ -649,7 +742,7 @@ details[open]:not(.look) > summary::after { transform: rotate(180deg); }
 /* Promised, not built yet: dashed, its state written out ("In preparation"). */
 .pending { border: 2px dashed var(--line); border-radius: var(--r-lg); padding: var(--sp-3) var(--sp-4);
            display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--sp-2) var(--sp-3); }
-.pending-tag { font: 400 var(--fs-xs)/1.4 var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.pending-tag { font: 700 var(--fs-xs)/1.4 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 
 /* The one action a screen ends on: 60 px tall, full width. */
 .btn-big { display: flex; align-items: center; justify-content: center; gap: var(--sp-2); width: 100%;
@@ -715,28 +808,28 @@ details[open]:not(.look) > summary::after { transform: rotate(180deg); }
 .pb-ing.pb-half { grid-column: auto; }
 .pb-tag { position: absolute; top: -11px; right: 10px; background: var(--brand); color: var(--brand-ink);
           font: 700 var(--fs-xs)/1 var(--font); padding: 4px 9px; border-radius: var(--r-pill); }
-.pb-title { font: 400 var(--fs-xs) var(--mono); font-weight: 400; color: var(--ink); letter-spacing: .04em; }
+.pb-title { font: 700 var(--fs-xs) var(--mono); color: var(--ink); letter-spacing: .04em; }
 .pb-line { display: block; height: 5px; border-radius: 3px; background: var(--field-line); opacity: .45; }
 .pb-line:nth-child(odd) { width: 86%; }
 .pb-skip { display: grid; gap: 5px; align-content: start; padding: 10px; border: 1px dashed var(--line);
            border-radius: var(--r-sm); color: var(--muted); font-size: var(--fs-xs); font-weight: 600; }
 .pb-skip .pb-line { opacity: .25; }
 .pb-skip em { font-style: normal; font-weight: 700; }
-.hints dt { font: 400 var(--fs-xs)/1.4 var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.hints dt { font: 700 var(--fs-xs)/1.4 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 .hints dd { color: var(--ink); }
 
 /* The result's panel: the pack's name (the h1), then the person lines. */
-.result-top .product { color: var(--on-deep); font: 600 var(--fs-lg)/1.3 var(--serif); letter-spacing: 0; text-transform: none; }
+.result-top .product { color: var(--on-deep); font: 700 var(--fs-xl)/1.25 var(--serif); letter-spacing: 0; text-transform: none; }
 .result-top .rescan { color: var(--on-deep-muted); }
 .result-top .rescan .btn.link { color: var(--on-deep); }
 .person-line .who { font-size: var(--fs-xs); font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
 .person-line details summary { min-height: var(--tap); color: inherit; }
 .person-line .src a { color: inherit; }
-.result .headline { font: 600 var(--fs-xl)/1.2 var(--serif); letter-spacing: 0; }
+.result .headline { font: 700 var(--fs-xl)/1.2 var(--serif); letter-spacing: -.01em; }
 
 /* "Worth knowing (n)": closed until tapped; the summary reads as a serif heading with the app's chevron. */
 .worth { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-.worth > summary { font: 600 var(--fs-lg)/1.3 var(--serif); color: var(--ink); }
+.worth > summary { font: 700 var(--fs-lg)/1.3 var(--serif); color: var(--ink); }
 .worth-body { padding-bottom: var(--sp-4); }
 .notes .note-link { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2);
                     min-height: var(--tap); color: var(--ink); text-decoration: none; padding: 0; margin: 0; }
@@ -849,35 +942,45 @@ details[open]:not(.look) > summary::after { transform: rotate(180deg); }
    leaves room for it, and a focused element never scrolls under it (WCAG 2.2 2.4.11). Hidden on the
    first-run screens and the camera and photo steps (app.js NO_TABBAR). */
 .tabbar {
-  position: fixed; left: 0; right: 0; bottom: 0; z-index: 2; display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: end;
-  padding: 6px max(8px, calc((100% - 560px) / 2)) calc(6px + env(safe-area-inset-bottom));
-  background: var(--surface); border-top: 1px solid var(--line); box-shadow: 0 -8px 24px -18px rgba(36, 75, 107, .5);
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 4; display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: center; min-height: 72px;
+  padding: 4px max(6px, calc((100% - 560px) / 2)) calc(4px + env(safe-area-inset-bottom));
+  background: var(--surface);   /* older Chrome: no color-mix, solid bar */
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); box-shadow: 0 -1px 0 var(--line);
 }
 .tabbar[hidden] { display: none; }
-.tabbar a { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px;
+.tabbar a { position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px;
             min-height: 56px; justify-content: center; color: var(--muted); text-decoration: none;
             font-size: var(--fs-xs); font-weight: 600; border-radius: var(--r-md); }
-.tabbar a .icon { width: 24px; height: 24px; padding: 3px 16px; box-sizing: content-box; border-radius: var(--r-pill);
-                  transition: background-color var(--d-fast) var(--ease-standard); }
-.tabbar a[aria-current="page"] { color: var(--brand); font-weight: 700; }
-.tabbar a[aria-current="page"] .icon { background: var(--mint); }
+/* D-185: the place you are on is a filled pill behind its icon, the icon and its name in ink. */
+.tabbar a .icon { width: 22px; height: 22px; padding: 4px 18px; box-sizing: content-box; border-radius: var(--r-pill);
+                  transition: transform var(--d-press) var(--ease-standard); }   /* the pill itself springs in (pill-in) */
+.tabbar a[aria-current="page"] { color: var(--ink); font-weight: 700; }
+.tabbar a[aria-current="page"] .icon { background: var(--brand-soft); color: var(--brand); }
+.tabbar a:active .icon { transform: scale(.92); }
 .tabbar a:focus-visible, .tab-scan:focus-visible { outline: 3px solid var(--ring); outline-offset: -3px; }
 .tab-scan {
-  justify-self: center; align-self: center; width: 60px; height: 60px; margin-top: -28px; border: 0; padding: 0;
+  justify-self: center; align-self: center; width: 60px; height: 60px; margin-top: -26px; border: 0; padding: 0;
   display: flex; align-items: center; justify-content: center; border-radius: 20px; cursor: pointer;
-  color: var(--brand-ink); background: var(--brand); box-shadow: 0 10px 22px -8px rgba(4, 129, 73, .65);
+  color: var(--brand-ink); background: var(--brand);
+  box-shadow: 0 10px 22px -8px rgba(4, 122, 69, .7), 0 0 0 5px var(--bg);
   transition: transform var(--d-press) var(--ease-standard);
 }
-.tab-scan .icon { width: 30px; height: 30px; }
+.tab-scan .icon { width: 28px; height: 28px; }
 .tab-scan:active { transform: scale(.94); }
-.tab-badge { position: absolute; top: 2px; left: calc(50% + 8px); min-width: 18px; height: 18px; padding: 0 5px;
-             box-sizing: border-box; border-radius: var(--r-pill); background: var(--brand); color: var(--brand-ink);
-             font-size: 11px; font-weight: 700; line-height: 18px; text-align: center; }
+.tab-badge { position: absolute; top: 2px; left: calc(50% + 10px); min-width: 18px; height: 18px; padding: 0 5px;
+             box-sizing: border-box; border-radius: var(--r-pill); background: var(--ink); color: var(--bg);
+             font-size: 11px; font-weight: 700; line-height: 18px; text-align: center; font-variant-numeric: tabular-nums; }
 .tab-badge[hidden] { display: none; }
-body.has-tabbar main.wrap, body.has-tabbar .foot { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
-body.has-tabbar.at-home main.wrap { padding-bottom: 8px; }
+body.has-tabbar main.wrap { padding-bottom: calc(104px + env(safe-area-inset-bottom)); }
 html:has(body.has-tabbar) { scroll-padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
+/* D-185: from 1024 px the header holds the same places (index.html .topnav), so the bar goes. */
+@media (min-width: 1024px) {
+  .tabbar { display: none; }
+  body.has-tabbar main.wrap { padding-bottom: 64px; }
+  html:has(body.has-tabbar) { scroll-padding-bottom: 0; }
+}
 @media (prefers-reduced-motion: reduce) { .tab-scan, .tabbar a .icon { transition: none; } }
 
 /* D-177: the result's pack card: the user's own photo, tilted on the deep panel, the name as the
@@ -942,23 +1045,24 @@ html:has(body.has-tabbar) { scroll-padding-bottom: calc(88px + env(safe-area-ins
 /* D-177: "On the pack". */
 .pack-photo { margin: 0; display: grid; gap: var(--sp-2); }
 .pack-photo img { width: 100%; max-width: 360px; border-radius: var(--r-lg); box-shadow: var(--e-1); }
-.as-printed ol { margin: 0; padding-left: 1.4em; font-family: var(--serif); }
-.as-printed q { font-family: var(--serif); }
+.as-printed ol { margin: 0; padding-left: 1.4em; }
+.as-printed q { font-style: italic; }
 
 .toast { position: fixed; left: 50%; bottom: calc(96px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 3;
          margin: 0; padding: 10px 16px; border-radius: var(--r-pill); background: var(--deep); color: var(--on-deep);
          box-shadow: var(--e-2); font-size: var(--fs-sm); }
 
 /* D-178: home, Your scans, Household and Compare as cards. */
-.section-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-3); }
-.section-head h2 { margin: 0; }
-.section-head a { font-weight: 700; color: var(--brand); text-decoration: none; padding: 12px 0; }
+.section-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-3); padding: 0 4px; }
+.section-head h2 { margin: 0; font-size: var(--fs-lead); }
+.section-head a { font-weight: 700; font-size: var(--fs-sm); color: var(--brand); text-decoration: none; padding: 14px 4px; margin: -14px -4px; }
+.card .section-head { padding: 0; }
 
 .scan-cards, .people, .compare-grid, .who-chips { list-style: none; padding: 0; margin-bottom: 0; }
 :not(.stack) > :is(.scan-cards, .people, .compare-grid, .who-chips) { margin-top: 0; }
 .scan-cards { display: grid; gap: 10px; }
-.scan-card, .person-card { display: grid; grid-template-columns: auto minmax(0, 1fr) 20px; gap: var(--sp-3);
-                           align-items: center; min-height: var(--tap); padding: 12px 14px; color: inherit;
+.scan-card, .person-card { display: grid; grid-template-columns: auto minmax(0, 1fr) 20px; gap: 14px;
+                           align-items: center; min-height: var(--tap); padding: 10px 12px 10px 10px; color: inherit;
                            text-decoration: none; background: var(--surface); border: 1px solid var(--line);
                            border-radius: var(--radius); box-shadow: var(--e-1);
                            transition: transform var(--d-press) var(--ease-standard); }
@@ -968,32 +1072,45 @@ html:has(body.has-tabbar) { scroll-padding-bottom: calc(88px + env(safe-area-ins
           mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 5.5l6.5 6.5-6.5 6.5'/%3E%3C/svg%3E") center / contain no-repeat;
 }
 .scan-card:active, .person-card:active, .add-card:active { transform: scale(.985); }
-.scan-text, .person-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.scan-text strong, .person-text strong { overflow-wrap: break-word; }
-.scan-when { font-size: var(--fs-xs); color: var(--muted); }
+.scan-text, .person-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.scan-text strong, .person-text strong { overflow-wrap: break-word; line-height: 1.25; }
+.scan-text .chips { margin-top: 2px; }
+.scan-when { font-size: var(--fs-xs); font-weight: 600; color: var(--muted); }
 /* The user's own photo of the pack (D-177), or a drawn pack where the phone kept none. */
-.scan-thumb { width: 52px; height: 62px; border-radius: var(--r-sm); overflow: hidden; flex: none;
+.scan-thumb { width: 56px; height: 56px; border-radius: 12px; overflow: hidden; flex: none;
               background: var(--surface-2); color: var(--muted); display: flex; align-items: center;
-              justify-content: center; transform: rotate(-3deg); }
+              justify-content: center; box-shadow: inset 0 0 0 1px var(--line); }
 .scan-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .scan-thumb .icon { width: 26px; height: 26px; stroke-width: 1.7; }
 
+/* D-185: a person's initial. One quiet style for everyone (you in deep blue), so a disc's colour
+   never borrows a D-169 meaning. */
 .avatar { width: 40px; height: 40px; border-radius: 50%; flex: none; display: flex; align-items: center;
-          justify-content: center; font: 800 1.05rem/1 var(--display); background: var(--mint); color: var(--ink); }
-.avatar.av-p1 { background: var(--unsure-bg); color: var(--unsure); }
-.avatar.av-p2 { background: var(--calm-bg); color: var(--calm); }
-.avatar.av-p3 { background: var(--problem-bg); color: var(--problem); }
+          justify-content: center; font: 800 1.05rem/1 var(--display); background: var(--surface-2); color: var(--ink);
+          box-shadow: inset 0 0 0 1.5px var(--line-2); }
+.avatar.av-me { background: var(--deep); color: var(--on-deep); box-shadow: none; }
 /* D-178 follow-up (Sushil, 2026-10-08): a row per person, "You · 9 to avoid"; a tap opens the
    list under it. The name never breaks or shrinks (it wrapped one letter per line beside a long
    list); the list wraps under the line, at full width. */
-.checking .who-chips { display: grid; gap: 8px; }
-.who-chips li { border-radius: 18px; background: var(--surface-2); min-width: 0; }
-.who-chips :is(summary, .who-line) { display: flex; align-items: center; gap: 8px; min-height: var(--tap);
-                                     padding: 4px 12px 4px 6px; font-weight: 400; }
-.who-chips .avatar { flex: none; width: 30px; height: 30px; font-size: .85rem; }
+.checking { padding: 16px 0 4px; }
+.checking .section-head { padding: 0 16px; }
+.checking .who-chips { display: grid; margin-top: 4px; }
+.who-chips li { min-width: 0; }
+.who-chips li + li { border-top: 1px solid var(--line); }
+.who-chips :is(summary, .who-line) { display: flex; align-items: center; gap: 12px; min-height: 56px;
+                                     padding: 0 16px; font-weight: 400; }
+.who-chips summary { list-style: none; }
+.who-chips summary::-webkit-details-marker { display: none; }
+.who-chips summary::after { content: ""; flex: none; width: 20px; height: 20px; margin-left: auto; background: var(--muted);
+  transition: transform var(--d-fast) var(--ease-standard);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5.5 9l6.5 6.5 6.5-6.5'/%3E%3C/svg%3E") center / contain no-repeat;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5.5 9l6.5 6.5 6.5-6.5'/%3E%3C/svg%3E") center / contain no-repeat; }
+.who-chips details[open] > summary::after { transform: rotate(180deg); }
+.who-chips summary:focus-visible { outline-offset: -3px; }
+.who-chips .avatar { flex: none; width: 32px; height: 32px; font-size: .875rem; }
 .who-name { white-space: nowrap; flex-shrink: 0; font-weight: 600; }
 .who-count { font-size: var(--fs-sm); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-.who-avoid { margin: 0; padding: 0 14px 12px 44px; font-size: var(--fs-sm); overflow-wrap: break-word; }
+.who-avoid { margin: 0; padding: 0 16px 14px 60px; font-size: var(--fs-sm); overflow-wrap: break-word; }
 .people { display: grid; gap: 10px; }
 .person-card .avatar { width: 48px; height: 48px; font-size: 1.25rem; }
 .avoid-chip { background: var(--stop-bg); color: var(--stop); font-weight: 600; }
@@ -1020,4 +1137,90 @@ html:has(body.has-tabbar) { scroll-padding-bottom: calc(88px + env(safe-area-ins
 @media (prefers-reduced-motion: no-preference) {
   .scan-cards > li, .people > li, .compare-grid > li, .compare-col {
     animation: enter-up var(--d-enter) var(--ease-enter) both; animation-delay: calc(var(--i, 0) * var(--stagger)); }
+}
+
+/* ==== D-185: home ====
+   "Start at home" compact: the count beside its name, and three segments that fill in green, one
+   for each pack done (gold marks reading in progress, so it isn't used here). */
+.card.start { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: baseline; }
+.card.start > * + * { margin-top: 0; }
+.card.start h2 { margin: 0; font-size: var(--fs-md); }
+.start-count { font-size: var(--fs-xs); font-weight: 600; font-variant-numeric: tabular-nums; }
+.card.start p { grid-column: 1 / -1; font-size: var(--fs-sm); }
+.segs { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: 8px; }
+.segs i { position: relative; height: 6px; border-radius: 3px; background: var(--surface-2); overflow: hidden;
+          box-shadow: inset 0 0 0 1px var(--line); }
+.segs i.on::after { content: ""; position: absolute; inset: 0; background: var(--brand); transform-origin: left; }
+@media (prefers-reduced-motion: no-preference) {
+  .segs i.on::after { animation: grow var(--d-draw) var(--ease-enter) both; animation-delay: calc(300ms + var(--stagger) * 2); }
+  .segs i.on + i.on::after { animation-delay: calc(300ms + var(--stagger) * 4); }
+}
+/* Two columns from 1024 px: the scan card and the cards about you on the left, recent scans on the right. */
+.home > .home-b { margin-top: 24px; }
+.home-b > .scan-cards { margin-top: 10px; }
+@media (min-width: 1024px) {
+  body.at-home main.wrap { max-width: 1040px; padding-top: 24px; }
+  .home { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; align-items: start; }
+  .home > .home-b { margin-top: 0; }
+  .home > .home-a { margin-top: 0; }
+}
+/* The header's places and "Scan a pack" stay off the first-run and camera screens, as the bottom bar does. */
+body:not(.has-tabbar) .top :is(.topnav, .btn.topscan) { display: none; }
+
+/* ==== D-185: first run, menu ==== */
+.welcome-art { display: flex; justify-content: center; align-items: center; height: 168px; border-radius: var(--r-xl);
+               background: var(--brand); overflow: hidden; position: relative; isolation: isolate; }
+.welcome-art::before { content: ""; position: absolute; inset: 0; z-index: -1; background:
+  radial-gradient(120% 90% at 100% 0%, rgba(255, 255, 255, .16), transparent 55%),
+  repeating-linear-gradient(90deg, rgba(255, 255, 255, .05) 0 2px, transparent 2px 9px); }
+.welcome-art .loop { transform: scale(1.1); }
+@media (prefers-color-scheme: dark) { .welcome-art { background: #17603c; } }
+ul.points > li { position: relative; padding-left: 22px; }
+ul.points > li::before { content: ""; position: absolute; left: 4px; top: .6em; width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+ul.points > li + li { margin-top: 10px; }
+/* The menu sheet: a handle says it can be swiped or tapped away. */
+.menu-inner::before { content: ""; display: block; width: 36px; height: 4px; margin: 2px auto 10px; border-radius: 2px; background: var(--line-2); }
+@media (min-width: 600px) { .menu-inner::before { display: none; } }
+
+/* ==== D-185: motion ====
+   Home after the first screen: its cards rise one after another, 40 ms apart, six at most, instead
+   of the whole screen at once. The place you move to in the bottom bar gets its pill with a small
+   spring; a new Compare count springs in. Transform and opacity only; all of it is off under
+   reduced motion (the block above ends every animation on its last frame). */
+main > .home[data-enter] { animation: none; }
+main > .home[data-enter] :is(.home-a, .home-b) > * { animation: enter-up var(--d-reveal) var(--ease-enter) both; }
+main > .home[data-enter] :is(.home-a, .home-b) > :nth-child(2) { animation-delay: calc(var(--stagger) * 1); }
+main > .home[data-enter] :is(.home-a, .home-b) > :nth-child(3) { animation-delay: calc(var(--stagger) * 2); }
+main > .home[data-enter] :is(.home-a, .home-b) > :nth-child(4) { animation-delay: calc(var(--stagger) * 3); }
+main > .home[data-enter] :is(.home-a, .home-b) > :nth-child(n+5) { animation-delay: calc(var(--stagger) * 4); }
+main > .home[data-enter] .home-b > * { animation-delay: calc(var(--stagger) * 2); }
+.tabbar a[aria-current="page"] .icon { animation: pill-in var(--d-reveal) var(--ease-spring) both; }
+@keyframes pill-in { from { transform: scale(.82); opacity: .6; } }
+.tab-badge:not([hidden]) { animation: pill-in var(--d-reveal) var(--ease-spring) both; }
+/* D-185: from 1024 px Your scans uses the width, in two columns. Forms and
+   first-run screens keep the phone's reading width. */
+@media (min-width: 1024px) {
+  body[data-screen="scans"] main.wrap { max-width: 880px; }
+  body[data-screen="scans"] .scan-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* The header's places replace the back arrow on the bottom bar's own screens, so the places never shift. */
+  body:is([data-screen="scans"], [data-screen="compare"], [data-screen="household"]) .top-left { display: none; }
+  body:not(.at-home) main.wrap { padding-top: 24px; }
+}
+/* D-185: a screen that is only a state (an error, the photo limit, "Sorry") opens on its drawing:
+   centred, with room above, its actions under the words. The drawing's disc is a photo or app
+   problem's grey-blue (D-169), never red. */
+main > .stack:has(> .spot:first-child) { text-align: center; padding-top: var(--sp-6); }
+main > .stack:has(> .spot:first-child) > .spot { margin-inline: auto; width: 96px; height: 96px; }
+main > .stack:has(> .spot:first-child) > .problem-label { justify-content: center; }
+main > .stack:has(> .spot:first-child) > :is(.btn.link, p:has(> a)) { margin-inline: auto; }
+@media (prefers-reduced-motion: no-preference) {
+  main > .stack:has(> .spot:first-child) > .spot { animation: pill-in var(--d-reveal) var(--ease-spring) both; }
+}
+/* D-185: a long form's one action stays in thumb reach on a phone: it sticks above the bottom bar
+   (or the screen's edge) while the list scrolls, and sits in place once its turn comes. */
+@media (max-width: 1023px) {
+  /* Its 6 px ring of page colour fills the gap to the bar (72 px) or the edge, so no row shows through. */
+  .btn.primary.dock { position: sticky; bottom: calc(6px + env(safe-area-inset-bottom)); z-index: 1;
+                      box-shadow: 0 0 0 6px var(--bg), 0 10px 22px -8px rgba(4, 122, 69, .7); }
+  body.has-tabbar .btn.primary.dock { bottom: calc(78px + env(safe-area-inset-bottom)); }
 }

@@ -136,7 +136,9 @@ def test_fonts_are_ours_and_licensed():
             local = os.path.join(WEB, url[len("/app/"):]) if url.startswith("/app/") \
                 else os.path.join(os.path.dirname(path), url)
             assert os.path.exists(local), (os.path.relpath(path, ROOT), url)
-    families = {"source-serif-4", "ibm-plex-mono", "dm-sans", "bricolage-grotesque"}
+    families = {"figtree", "bricolage-grotesque"}                       # D-185: two families
+    assert sorted(f for f in os.listdir(os.path.join(WEB, "fonts")) if f.endswith(".woff2")) == \
+        ["bricolage-grotesque.woff2", "figtree.woff2"]
     for fam in families:
         assert os.path.exists(os.path.join(WEB, "fonts", f"OFL-{fam}.txt")), fam
         assert "SIL Open Font License" in read(os.path.join(WEB, "fonts", f"OFL-{fam}.txt"))
@@ -146,11 +148,34 @@ def test_fonts_are_ours_and_licensed():
             assert "fonts.googleapis" not in text and "fonts.gstatic" not in text, f
 
 
-def test_both_stylesheets_name_the_same_new_faces():
-    faces = lambda css: sorted(re.findall(r'font-family: "([^"]+)"; font-weight: (\d+)', css))
-    new = [f for f in faces(read(APP_CSS)) if f[0] in ("Source Serif 4", "IBM Plex Mono")]
-    assert new == [f for f in faces(read(SITE_CSS)) if f[0] in ("Source Serif 4", "IBM Plex Mono")]
-    assert new == [("IBM Plex Mono", "400"), ("Source Serif 4", "400"), ("Source Serif 4", "600")]
+def test_both_stylesheets_name_the_same_two_faces():
+    """D-185: Figtree for text, Bricolage Grotesque for headings, each one variable file, in both
+    stylesheets; the report faces of D-153 are gone, and nothing else is named."""
+    faces = lambda css: sorted(re.findall(r'font-family: "([^"]+)"; font-weight: ([\d ]+);', css))
+    assert faces(read(APP_CSS)) == faces(read(SITE_CSS)) == [
+        ("Bricolage Grotesque", "600 800"), ("Figtree", "400 700")]
+    for css in (read(APP_CSS), read(SITE_CSS)):
+        assert "Source Serif" not in css and "Plex Mono" not in css and "DM Sans" not in css
+        # Each fallback is a local face scaled to the web font, so the swap moves no line (CLS 0).
+        assert css.count('local("Arial")') == 1 and css.count('local("Arial Bold")') == 1 and css.count("; size-adjust: ") == 2
+    sizes = {f: os.path.getsize(os.path.join(WEB, "fonts", f)) for f in ("figtree.woff2", "bricolage-grotesque.woff2")}
+    assert sum(sizes.values()) <= 100 * 1024, sizes                      # the first screen's fonts, about 100 KB or less
+
+
+def test_motion_moves_only_transform_and_opacity():
+    """D-185: an animation moves only transform and opacity (plus an SVG stroke drawing itself), so no
+    frame re-lays out the page on a mid-range phone and nothing shifts (CLS 0)."""
+    for path in (APP_CSS, SITE_CSS):
+        css = strip_comments(read(path))
+        frames = list(re.finditer(r"@keyframes\s+([\w-]+)\s*\{", css))
+        assert frames, path
+        for m in frames:
+            depth, j = 1, m.end()
+            while depth:
+                depth += {"{": 1, "}": -1}.get(css[j], 0)
+                j += 1
+            props = set(re.findall(r"([\w-]+)\s*:", css[m.end():j - 1]))
+            assert props <= {"transform", "opacity", "stroke-dashoffset"}, (os.path.relpath(path, ROOT), m.group(1), props)
 
 
 def test_the_reference_sheet_is_worded_like_the_app_and_stays_out_of_search():

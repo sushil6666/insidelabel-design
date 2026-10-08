@@ -281,60 +281,80 @@ but that edge only repeats the chip's words (decorative).
 
 One source of truth: custom properties on `:root` in `web/app.css`, redefined for dark mode.
 
-### 8.1 Colour (the D-110 palette, kept; additions marked new)
+### 8.1 Colour (the D-110 palette, made quieter by D-185; meanings as D-169)
 
 | Token | Light | Dark | Use |
 |---|---|---|---|
-| `--bg` | #fbf9ee (the manifest's) | #193043 (the Play app's dark bars) | page |
-| `--surface` | #ffffff | #234058 | cards, fields |
-| `--surface-2` (new) | #f4f2e6 | #2b4b64 | pressed rows, skeletons, raised dark cards |
-| `--ink` / `--muted` | #244b6b / #57768c | #e0f2f6 / #a3c4d1 | text |
-| `--line` | #c9e3ec | #3e6378 | dividers (decorative) |
-| `--field-line` (new) | #6f8ca0 (3.35:1 on bg) | #7a9db1 (3.74:1 on surface) | text fields, tick boxes |
-| `--brand` / `--brand-ink` | #048149 / #fcfcf8 | #66c189 / #042234 | actions, links |
-| `--ring` | #008cba | #7dccda | focus |
-| status pairs | `--stop`, `--unsure`, `--calm` and their `-bg` | as now | only beside words that say the same |
+| `--bg` | #f9f7ef | #0f2133 | page |
+| `--surface` | #ffffff | #172d42 | cards, fields |
+| `--surface-2` | #f2efe3 | #1d3750 | pressed rows, skeletons, empty tracks |
+| `--ink` / `--ink-2` / `--muted` | #1f405c / #47657c / #5a7487 | #e8f1f6 / #c3d5e2 / #9db6c7 | text; lead text; sources and captions |
+| `--line` / `--line-2` | #e2ddcc / #d3e2ea | #27425a / #2c4b66 | hairlines; button and chip edges (decorative) |
+| `--field-line` | #6f8ca0 (3.30:1 on bg) | #7a9db1 (4.89:1 on surface) | text fields, tick boxes |
+| `--brand` / `--brand-ink` / `--brand-soft` | #047a45 / #ffffff / #dff3e6 | #5fcb8c / #062b18 / #173f2e | actions, links; the bar's current place |
+| `--gold` / `--gold-soft` | #f2b632 / #fff1c9 | #f5c04a / #3d3216 | the logo's gold: reading only (never a finding, never text) |
+| `--ring` | #1b7fbf | #7cc4f0 | focus |
+| `--stop` on `--stop-bg` | #b42318 on #fdebe8 (5.71:1) | #ffb4a8 on #4a1f1c (8.21:1) | the avoid list, "Not permitted in India" |
+| `--unsure` on `--unsure-bg` | #7a4a06 on #fff3d6 (6.78:1) | #ffd58a on #443214 (8.84:1) | worth a look, cannot confirm |
+| `--calm` on `--calm-bg` | #1f5a85 on #e5f1fa (6.40:1) | #a8d4f5 on #17344d (8.20:1) | information |
+| `--problem` on `--problem-bg` | #3e5a6e on #e8eef3 (6.21:1) | #c6d6e2 on #233a4f (7.89:1) | a photo or app problem, never red |
 
 ### 8.2 Type (rem, so a phone's text-size setting scales it)
 
 | Token | Size | Use |
 |---|---|---|
-| `--fs-xs` | 0.75rem (12 px) | uppercase labels, chips |
+| `--fs-xs` | 0.8125rem (13 px, D-185: the smallest) | uppercase labels, chips, sources |
 | `--fs-sm` | 0.875rem (14 px) | secondary text, captions |
 | `--fs-md` | 1rem (16 px) | body |
-| `--fs-lg` | 1.125rem (18 px) | lead, card titles |
-| `--fs-xl` | 1.375rem (22 px) | result headline |
+| `--fs-lead` | 1.0625rem (17 px, D-185) | the lead under a title, the main button |
+| `--fs-lg` | 1.125rem (18 px) | card titles |
+| `--fs-xl` | 1.3125rem (21 px) | section titles, result headline, the pack name |
 | `--fs-2xl` | 1.75rem (28 px) | page titles |
-| `--fs-3xl` | 2.25rem (36 px) | the D-146 digits |
-Display face Bricolage Grotesque 800 for titles; DM Sans 400, 600, 700 for the rest (both
-self-hosted since D-110). Line height 1.5 body, 1.15 titles.
+| `--fs-3xl` | 2.375rem (38 px) | the D-146 digits, display |
+D-185: two families, each one variable file, self-hosted in `web/fonts/` (SIL OFL), 47 KB together:
+**Bricolage Grotesque** 600 to 800 (31 KB) for titles and headings, **Figtree** 400 to 700 (16 KB) for
+everything else, with tabular figures wherever numbers line up. Each has a local fallback scaled to
+its metrics (`size-adjust`, `ascent-override`), so the swap moves no line. Neither is preloaded: on the
+app's first screen a preload measured slower (LCP 1874 ms with both, 1667 ms with none, D-185); the
+service worker precaches both. Line height 1.5 body, 1.15 titles.
 
 ### 8.3 Spacing (4 px base)
 `--sp-1` 4, `--sp-2` 8, `--sp-3` 12, `--sp-4` 16, `--sp-5` 20, `--sp-6` 24, `--sp-8` 32 px. Label to
 field 6 px; within a group 8 to 12; between groups 20; page gutter 16.
 
 ### 8.4 Shape
-`--r-sm` 8 px (chips' inner parts, thumbnails), `--r-md` 12 (fields, small cards), `--r-lg` 16
-(cards, buttons; the existing `--radius`), `--r-xl` 24 (the scan button), `--r-pill` 999.
+D-185: `--r-sm` 10 px (chips' inner parts, thumbnails), `--r-md` 14 (buttons, fields), `--r-lg` 20
+(cards; the existing `--radius`), `--r-xl` 28 ("Scan here", sheets), `--r-pill` 999.
 
 ### 8.5 Elevation
-`--e-1` resting cards (the existing soft shadow); `--e-2` raised (the scan button, the sticky
-header when scrolled). In dark mode shadows barely show, so a raised card also steps up to
-`--surface-2`.
+`--e-1` resting cards (a hairline-soft shadow); `--e-2` lifted (a note card, the menu); `--e-3`
+(D-185) is set for Phase 2's sheets and not used yet. The header gets its hairline only once the page scrolls. In dark mode shadows
+barely show, so a raised card also steps up to `--surface-2`.
 
 ### 8.6 Motion (Material 3 tokens, section 5)
 | Token | Value | Use |
 |---|---|---|
 | `--d-press` | 100 ms (short2) | press in and out |
 | `--d-fast` | 150 ms (short3) | opening a panel, a chevron turning |
-| `--d-enter` | 200 ms (short4) | a screen entering |
-| `--d-reveal` | 250 ms (medium1) | each block of the result's reveal |
+| `--d-enter` | 220 ms (D-185, was 200) | a screen entering |
+| `--d-reveal` | 320 ms (D-185, was 250) | each block of the result's reveal; a state screen's disc |
+| `--d-draw` | 400 ms (D-185) | a stroke drawing itself, a segment filling |
+| `--d-fill` | 600 ms | a nutrition bar growing to its value |
 | `--stagger` | 40 ms | between revealed blocks, at most 6 |
 | `--ease-standard` | cubic-bezier(0.2, 0, 0, 1) | presses, toggles |
 | `--ease-enter` | cubic-bezier(0.1, 0.7, 0.1, 1) (emphasized decelerate) | anything arriving |
 | `--ease-exit` | cubic-bezier(0.3, 0, 1, 1) (standard accelerate) | anything leaving |
-Only `transform` and `opacity` animate. Under `prefers-reduced-motion: reduce` every duration is 0
-and transforms are dropped; a cross-fade at most. Nothing animates the allergen block.
+| `--ease-spring` | a `linear()` spring, about 4 % overshoot (D-185) | a small control arriving (the bar's pill, a badge, a state's disc); never text about a pack |
+Only `transform` and `opacity` animate (plus an SVG stroke). UI moves in 150 to 400 ms; a loop is calm
+(2.6 to 9 s) and nothing blinks. Under `prefers-reduced-motion: reduce` every duration is 0 and
+transforms are dropped; a loop shows its finished still. Nothing animates the allergen block, and a
+scan never waits on motion.
+
+D-185 motion in the app (Phase 1): home's "Scan here" drawing (7.2 s: a gold line reads the barcode,
+the list lights up line by line, a result card arrives with a tick; three passes, then still, and each
+pass starts on the finished drawing, which is also the reduced-motion still); home's blocks rise in
+order; the bottom bar's pill springs to the place in view; the Compare badge springs in; a state
+screen's disc springs in; "Start at home" fills its segments.
 
 ### 8.7 Icons
 Drawn for this app on a 24 px grid: 2 px strokes, round caps and joins, `currentColor`, no
@@ -360,8 +380,8 @@ below WCAG AA (computed in the test, light and dark). The reference sheet is `we
 | `--deep` / `--on-deep` / `--on-deep-muted` | #193b57 / #f3fbf6 / #cfe6ee | #0e2435 / same / same | the deep-blue panel (app top, website hero and last band) |
 | `--deep-action` | #c4f6d4 | #66c189 | the big button on the panel, with `--deep` text |
 | `--mark` | #048149 | #048149 | the green stroke under the hero's last words (kept deep in dark mode: the light green failed under white words) |
-| `--serif` | Source Serif 4 400, 600 | | section headings, the pack name, the founder note |
-| `--mono` | IBM Plex Mono 400 | | sources, citation numbers, kickers, the table header |
+| `--serif` | Bricolage Grotesque (D-185; was Source Serif 4) | | section headings, the pack name, the founder note |
+| `--mono` | Figtree with tabular figures (D-185; was IBM Plex Mono) | | sources, citation numbers, kickers, the table header |
 | `--fs-4xl`, `--fs-display` | 2.75rem; clamp(2.75rem, 1.6rem + 4.6vw, 5.5rem) | | big serif headings; the website hero (44 to 88 px) |
 | `--r-2xl`, `--tap-big` | 32 px; 60 px | | the panel's bottom corners; the one action a screen ends on |
 

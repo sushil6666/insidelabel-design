@@ -317,8 +317,12 @@ def test_report_faces_are_cached_on_use_not_at_install():              # D-153
     the first time a screen uses them."""
     sw = open(os.path.join(WEB_DIR, "sw.js"), encoding="utf-8").read()
     shell = sw[sw.index("const SHELL"):sw.index("];", sw.index("const SHELL"))]
-    for f in ("source-serif-4", "ibm-plex-mono"):
+    for f in ("source-serif-4", "ibm-plex-mono", "dm-sans"):
         assert f not in shell
+    # D-185: the two faces left are both the first screen's, so both are precached.
+    assert '"fonts/figtree.woff2", "fonts/bricolage-grotesque.woff2"' in shell
+    # ...and not preloaded: measured, a preload cost the first screen's LCP (index.html says how much).
+    assert 'rel="preload"' not in HTML
     assert "caches.open(VERSION).then(c => c.put(e.request, copy))" in sw
 
 
@@ -564,8 +568,11 @@ def test_nutrition_bars_come_from_the_servers_numbers():
 def test_scan_cards_show_the_phones_photo_and_the_servers_words():
     app_js = JS["app.js"]
     cards = _fn(app_js, "scanList")
-    assert "packThumb(h)" in cards and "h.screen.summary.map(toneChip)" in cards
+    assert "packThumb(h)" in cards and "cardChips(h.screen.summary).map(toneChip)" in cards
     assert "peopleSummary(h.screen)" in cards and "score" not in cards
+    # D-185: at most two chips on a card, those worth a look first, in the server's order (D-123).
+    chips = _fn(app_js, "cardChips")
+    assert ".slice(0, 2)" in chips and 'r.tone === "worth"' in chips and "sort(" not in chips
     thumb = _fn(app_js, "packThumb")
     assert "h?.photo" in thumb and "fetch(" not in thumb      # the photo never leaves the phone (D-074)
 

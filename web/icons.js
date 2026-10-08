@@ -17,6 +17,7 @@ const SHAPES = {
   "chevron-right": ["M9 5.5l6.5 6.5-6.5 6.5"],
   "chevron-down": ["M5.5 9l6.5 6.5 6.5-6.5"],
   back: ["M15 5.5L8.5 12l6.5 6.5"],
+  forward: ["M5 12h13", "M12.5 6l6 6-6 6"],               // D-185: "Scan here" goes on to the scanner
   alert: ["M12 6.5v7", "M12 17.5v.01"],
   cross: ["M7.5 7.5l9 9", "M16.5 7.5l-9 9"],
   check: ["M5.5 12.5l4.5 4.5 8.5-9.5"],

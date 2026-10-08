@@ -1097,7 +1097,7 @@ useful back (D-076's "ready?" on `/updates`).
   on the result screen), or making the field more specific (the drop-down already says
   where to look; the text says what's wrong).
 
-### D-110 · The website takes the Lovable look, not the Lovable app `LOCKED` (2026-09-26)
+### D-110 · The website takes the Lovable look, not the Lovable app `LOCKED` (2026-09-26); its type and its colour shades `SUPERSEDED by D-185` (2026-10-08)
 Direction from Sushil ("implement the look and feel [of `insidelabel_lovable`] in our
 website"); review and details by Claude; accepted by Sushil 2026-09-26.
 
@@ -2785,7 +2785,7 @@ Claude's, waiting on Sushil's "accepted":
   the header, every website page on a 390 or 360 px phone is pixel-identical to before.
 `tests/test_site_desktop.py`.
 
-### D-153 · The redesign: one design system for the website and the app; the website home rebuilt as "Merged"; the app's photo ask and result fixed where a tester got stuck `LOCKED` (2026-10-02)
+### D-153 · The redesign: one design system for the website and the app; the website home rebuilt as "Merged"; the app's photo ask and result fixed where a tester got stuck `LOCKED` (2026-10-02); its serif and mono faces `SUPERSEDED by D-185` (2026-10-08)
 **Accepted by Sushil 2026-10-02 ("accepted")**, after a five-round interview with Claude and four mockup directions
 on one canvas (https://claude.ai/artifact/2rmu9zKpTyATZwibpcK1fF; row D is the one accepted, rows A to C are kept for
 reference). Not built yet.
@@ -3268,7 +3268,7 @@ published without a table never got one (a catalogue hit never asked; a table-on
   labels; asked before any paid call).
 `tests/test_table_photo.py`, `tests/test_web.py`.
 
-### D-169 · One symbol and one colour per kind of message `LOCKED` (2026-10-07)
+### D-169 · One symbol and one colour per kind of message `LOCKED` (2026-10-07); its shades, not its meanings, `SUPERSEDED by D-185` (2026-10-08)
 A tester's feedback via Sushil, 2026-10-07 ("all", colours and symbols first): a blurry photo was drawn in the same red
 as the strongest findings about the food, the retake card in the same amber as "worth knowing", and some messages
 leaned on colour alone. A red photo problem makes the pack look bad when only the photo was. **Accepted by Sushil
@@ -3599,7 +3599,7 @@ D-175 on d175-recheck from current main, as approved, with the advisor's two cha
   sulphite" from nutrition-panel values; their records match their labels. A new INS number in the list is still
   caught by `lost_ins_numbers`. The allergen check itself (`lenses/allergens.check`) is unchanged.
 
-### D-176 · The app gets a real frame: a header with the screen's name and a back arrow, and a bottom bar `LOCKED` (2026-10-08); its screen-name-in-the-header part `SUPERSEDED by D-180` (2026-10-08)
+### D-176 · The app gets a real frame: a header with the screen's name and a back arrow, and a bottom bar `LOCKED` (2026-10-08); its screen-name-in-the-header part `SUPERSEDED by D-180` (2026-10-08); its home footer, and the bar on computers, `SUPERSEDED by D-185` (2026-10-08)
 **Sushil, 2026-10-08:** "we will make the best ui i am not happy with ui part take some reference attached, and
 suggest, plan only first, no proper header and footer etc till now", with two screen recordings of another food-label
 app; then "think about animation etc more focus on visually something describe and ey catching"; then, on the plan
@@ -3654,7 +3654,7 @@ yes to every recommendation). Built by Claude. Layout and motion only: every wor
 - Not built in this step: a per 100 g / per serving switch (servings stay as text lines).
 `tests/test_web.py`, `tests/test_pack_kind.py`.
 
-### D-178 · Home, Your scans, Household and Compare as cards `LOCKED` (2026-10-08)
+### D-178 · Home, Your scans, Household and Compare as cards `LOCKED` (2026-10-08); its scan-card chips and its Start at home card `SUPERSEDED by D-185` (2026-10-08)
 Step 3 of the plan accepted in D-176 (**accepted by Sushil 2026-10-08**, "please proceed on UI design plan", taken as
 yes to every recommendation). Built by Claude. Layout and motion only: the words on each card are the ones these
 screens already showed (D-091), and nothing is sent anywhere new (D-074).
@@ -3859,6 +3859,120 @@ already off by D-162); amends D-148's wording only (the daily photo limit stays,
 - **Checked by** `tests/test_no_beta.py`: no app string, screen.py table, website page or meta description,
   "Before you start" text or server message says "beta" or "tester" ("beta-carotene" is a pigment and passes).
 - **Sushil's own steps:** the Play Store listing text and the Play Console track.
+
+### D-185 · The redesign: two fonts, quieter colours, motion with a job; built in three phases `LOCKED` (2026-10-08)
+**Sushil, 2026-10-08:** "redesign all app and website top5 best ui app or website available in world ... review
+till u get more than 96% score. more animation, motion gif style focused for insidelabel." And later the same day:
+"redesign with a top 1 percentage reviewer, think all font option to change if required not much information on
+top to be exposed etc". Plan and mockups by Claude (https://claude.ai/code/artifact/5f38a778-9606-4254-80c2-1745fbd84216).
+**Accepted by Sushil 2026-10-08:** "Accept (Sushil, 2026-10-08), with these choices: 1. Fonts: Figtree + Bricolage
+Grotesque. [...] 2. New words: accept all three [...] 3. Phases: three PRs, (1) design system and app screens, (2)
+scan flow and result, (3) website. Each its own branch from main after the previous one is merged. 4. The changes to
+D-176, D-177, D-178 and D-151 (including the website's hero film becoming an animated phone): accepted as listed in
+your plan. Record each in D-185 as superseding that part only, with one line per change. 5. Keep the rules:
+allergen lines and "cannot confirm" never behind a tap; D-169 colour meanings; no score feel; nothing slower on a
+mid-range Android phone. Each phase's PR shows the reviewer's table with every screen in that phase above 96 and the
+Lighthouse numbers." Built by Claude.
+
+**The five benchmarks, for principles only** (no layout, icon, wording, colour or asset taken from them, or from any
+food-label app):
+- **Apple** (iOS Health, Wallet, apple.com): the clearest type hierarchy; motion that shows where a thing came from.
+- **Linear:** restraint and density; one accent; every state of a small control finished.
+- **Stripe** (stripe.com, Docs): complex, sourced information made calm; numbers that line up; the product shown.
+- **Airbnb:** one task per screen on a phone; cards that lead with the picture.
+- **Headspace:** warmth without noise; slow, calm loops that explain instead of decorate.
+
+**The design system (every phase):**
+- **Type:** two families instead of four, each one variable file, Latin plus the rupee sign, SIL OFL, self-hosted
+  in `web/fonts/` (no visitor IP goes to Google, D-110): **Figtree** 400 to 700 for text (16 KB) and **Bricolage
+  Grotesque** 600 to 800 for headings (31 KB), 47 KB in all (about 100 KB was the budget). Sizes: 13 caption (the
+  smallest), 14 label, 16 body, 17 lead, 18 card title, 21 section and result headline, 28 screen title, 38
+  display. Tabular figures wherever numbers line up. Each face has a local fallback scaled to its metrics
+  (`size-adjust`, `ascent-override`), so the swap moves no line.
+- **Not preloaded (the plan said preloaded; changed on measurement):** Lighthouse mobile on the app's first screen,
+  gzip on as the live server: both files preloaded LCP 1874 ms (Performance 99), Figtree only 1725 ms, none 1667 ms
+  (main today 1677 ms). On slow 4G a preload competes with the shell's own CSS and JS; with `font-display: swap`
+  and the scaled fallbacks nothing flashes or shifts either way. The service worker precaches both files, so every
+  later visit has them. The website keeps its two preloads until Phase 3 measures it.
+- **Colour:** D-110's cream, ink and green, quieter: the cream less yellow, the mint glow behind pages gone, softer
+  shadows. D-169's meanings unchanged; shades (text on tint, light / dark, contrast): avoid list and "Not permitted
+  in India" #b42318 on #fdebe8 / #ffb4a8 on #4a1f1c (5.71 / 8.21); worth a look, cannot confirm #7a4a06 on #fff3d6 /
+  #ffd58a on #443214 (6.78 / 8.84); information #1f5a85 on #e5f1fa / #a8d4f5 on #17344d (6.40 / 8.20); photo or
+  app problem, never red, #3e5a6e on #e8eef3 / #c6d6e2 on #233a4f (6.21 / 7.89); done #047a45 on #f9f7ef / #5fcb8c
+  on #0f2133 (5.05 / 8.10). The logo's gold (#f2b632) is the colour of reading only: never a finding, never text.
+  "Start at home" fills green, not gold: it counts packs done (D-169's green), and gold on white is 1.8:1, under
+  the 3:1 a bar needs.
+- **Shape:** 4 px grid, 16 px side gutter; radii 10, 14 (buttons, fields), 20 (cards), 28 ("Scan here", sheets).
+- **Motion rules:** CSS, SVG and the Web Animations API only; no library, no GIF or video in the app. Only
+  `transform` and `opacity` animate (plus an SVG stroke); `tests/test_design_system.py` fails on a keyframe that
+  moves anything else. UI moves in 150 to 400 ms; a loop is calm (2.6 to 9 s); nothing blinks. A scan never waits
+  on motion, and the people block appears at once (D-060). Under reduced motion every duration is 0 and each loop
+  shows its finished still. Tokens: `--d-enter` 220 ms and `--d-reveal` 320 ms (were 200 and 250), `--d-draw` 400
+  ms (new), `--ease-spring` (new, a `linear()` spring with about 4 percent overshoot, for a small control
+  arriving, never for text about a pack). docs/APP_DESIGN.md 8.1 to 8.6 carry the tables.
+
+**The three new word lines (accepted; final text):**
+1. Website hero lead (Phase 3): "Scan the barcode and photograph the label. See what matters for each person in your
+   family, and where every line comes from."
+2. Website "How it works", step 2 (Phase 3; the front is required while the catalogue wants it, D-181): "The list
+   that starts with "Ingredients:" and the table of values, then the front of the pack."
+3. App header from 1024 px (Phase 1): "Scan a pack".
+
+**What this supersedes, that part only (one line each):**
+- D-110 and D-153, type: four families become two; DM Sans becomes Figtree; Source Serif 4 and IBM Plex Mono go
+  (`--serif` now names Bricolage Grotesque, `--mono` Figtree with tabular figures). Phase 1.
+- D-110 and D-169, colour: the shades above; meanings unchanged; the mint glow removed; the logo's gold added for
+  reading only. Phase 1.
+- D-176, frame: from 1024 px the bottom bar's places (Home, Your scans, Compare with its count, Household) move
+  into the header left of the centred wordmark (D-180 kept), "Scan a pack" on its right, and the bar hides; home's
+  text footer goes, its links stay in the profile menu. Phase 1.
+- D-177, result: each person line shows the person's initial; Worth knowing items become rows with a kind icon and
+  a one-line source; nutrition rows lead with the label and the value; on desktop the pack card and people stay
+  on the left; "In preparation" items become one quiet line. Phase 2.
+- D-178, cards: scan cards show at most 2 chips (the "worth a look" ones first); "Start at home" becomes one
+  compact card; home no longer repeats Your scans' counts. Phase 1.
+- D-171 and D-181, camera steps: the step's action docks at the bottom of the screen on phones; the drop zone
+  shows only with a mouse. Phase 2.
+- D-151, film: the website hero becomes an inline animated phone (scan, photo, result); the film stays one tap
+  away lower on the page. Phase 3.
+The old entries' headers are marked when their phase is built: D-110, D-153, D-169, D-176 and D-178 now.
+
+**Unchanged:** every word about a pack (D-091); allergens first and "cannot confirm" as visible as a match
+(D-060); no score, grade, stars or traffic light (D-064, D-165); D-169's one symbol and one colour per kind; the
+wordmark and logo (D-152), centred everywhere (D-180); the flows (D-168, D-170 to D-175, D-181); at most one
+optional ask per scan; nothing new leaves the phone (D-074); no tracking or analytics; /review untouched.
+
+**Phase 1, design system and app screens** (branch `claude/project-thread-n9uqxj`, web-63, `il-shell-63`):
+- **Header:** 60 px (68 from 1024), the wordmark centred; its hairline shows only once the page scrolls. From 1024
+  px the places and "Scan a pack" as above; the back arrow hides on the places' own screens.
+- **Bottom bar:** translucent over the page; the place in view gets a soft green pill that springs in; the labels
+  are 13 px; the Scan button sits raised in a ring of the page colour.
+- **Home:** "Scan here" is one green card with a drawing of what it does: a gold line reads a pack's barcode, its
+  list lights up line by line, a result card arrives with a tick (7.2 s, three passes, then still; each pass starts
+  on the finished drawing, which is also the reduced-motion still). Then "Checking for", "Start at home" as one
+  compact card with three segments (a `progressbar` for screen readers), and Recent scans. From 1024 px two
+  columns (Scan here, Checking for and Start at home; Recent scans, 6 instead of 5). Blocks rise in order.
+- **Your scans:** the repeated heading goes; two columns from 1024 px. **Household and the person editor:** each
+  question is a card with its title inside and a hairline between choices; Save docks above the bar on phones
+  while the list scrolls. **Compare, Your data, Send feedback, Report a problem, the menu:** the new type, cards
+  and buttons; the menu sheet gets a handle on phones.
+- **The quiet action a screen ends on** (Done, Cancel, Home, "Scan a pack to add") sits centred under the main
+  one, the whole row its target.
+- **First run:** the welcome shows the same drawing on a green panel; "Before you start" and "Who avoids it?" take
+  the new type and cards. **States** (no connection, server error, the photo limit, offline): centred under their
+  kind's disc, which springs in.
+- `web/design.html` shows the new swatches and type. Measured on the branch:
+  - **Lighthouse mobile, app first screen, gzip as live**, the final build run in turn with main, median of 3:
+    Performance 100, Accessibility 100, Best Practices 100, SEO 100; LCP 1689 ms (main 1818, Performance 99, in
+    the same runs), FCP 1220 ms (main 1290), CLS 0. An earlier, quieter run: LCP 1667 ms against main's 1677.
+  - **Returning user's home, slow 4G and 4x CPU** (median of 5): LCP 1256 ms (main 1244, within noise), CLS 0,
+    longest task 111 ms (main 125).
+  - **Headless walk** (first run, two photo scans to a result, every Phase 1 screen, the menu, no connection, a
+    server error, the photo limit, the offline shell) at 390 light and dark, 360 dark, 1280 light and dark, and
+    390 with reduced motion: no console errors.
+  - **Reviewer's final scores** (rubric: hierarchy 15, type 10, colour 10, motion 15, brand 10, one-hand 10, trust
+    10, consistency 10, performance 10): SCORES_HERE
+`tests/test_design_system.py`, `tests/test_web.py`, `tests/test_site_desktop.py`.
 
 ---
 

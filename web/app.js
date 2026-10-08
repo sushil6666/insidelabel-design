@@ -155,15 +155,15 @@ function frame(href, label, backTo = null) {
     slot.replaceChildren(back);
   }
   const bar = document.getElementById("tabbar");
-  if (bar) {
-    bar.hidden = NO_TABBAR.includes(name);
-    for (const a of bar.querySelectorAll("a[data-tab]")) {
-      const here = a.dataset.tab === name || (a.dataset.tab === "household" && name === "person");
-      if (here) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
-    }
+  if (bar) bar.hidden = NO_TABBAR.includes(name);
+  // The bottom bar and, from 1024 px, the header's places (D-185) mark the screen in view.
+  for (const a of document.querySelectorAll("a[data-tab]")) {
+    const here = a.dataset.tab === name || (a.dataset.tab === "household" && name === "person");
+    if (here) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
   }
   document.body.classList.toggle("has-tabbar", !NO_TABBAR.includes(name));
   document.body.classList.toggle("at-home", name === "home");
+  document.body.dataset.screen = name;                      // D-185: desktop widths per screen (app.css)
 }
 
 function revealAfterPeople(view) {
@@ -177,10 +177,11 @@ function revealAfterPeople(view) {
 
 function updateNav() {
   const n = store.get("compare", []).length;
-  const badge = document.getElementById("nav-compare");       // D-176: the bottom bar's Compare count
-  if (!badge) return;
-  badge.textContent = n ? String(n) : "";
-  badge.hidden = !n;
+  // D-176: the bottom bar's Compare count; D-185: the header's too.
+  for (const badge of document.querySelectorAll("[data-compare-count]")) {
+    badge.textContent = n ? String(n) : "";
+    badge.hidden = !n;
+  }
 }
 
 function productName(product) {
@@ -270,7 +271,7 @@ function feedback() {
     el("label", { for: "fb" }, "Your feedback"), comment,
     err,
     el("button", { type: "submit", class: "btn primary" }, "Send"),
-    button("Cancel", () => window.history.back(), "link"));
+    button("Cancel", () => window.history.back(), "link end"));
   form.addEventListener("submit", async e => {
     e.preventDefault();
     const text = comment.value.trim();
@@ -290,11 +291,13 @@ function feedback() {
 // ------------------------------------------------------------------ first run (D-069, D-074)
 function welcome() {
   return el("section", { class: "stack" },
+    // D-185: the first screen shows what a scan does, with the drawing from home's "Scan here".
+    el("div", { class: "welcome-art", "aria-hidden": "true" }, scanLoop()),
     el("h1", {}, "See what's inside the pack"),
     el("p", { class: "lead" },
       "Scan a barcode, or photograph the ingredient list. We tell you what's in it, " +
       "starting with anything on your family's avoid list."),
-    el("ul", { class: "plain" },
+    el("ul", { class: "plain points" },
       el("li", {}, "An AI reads the label. Fixed rules, based on FSSAI regulations, make every judgement."),
       el("li", {}, "Nicknames you add stay on this phone. Our server only sees an age band and an avoid list."),
       el("li", {}, "It shows ingredient facts, not medical advice.")),
@@ -314,37 +317,58 @@ function who() {
     button("Me", () => go("person/me"), "primary"),
     profiles().length < MAX_PROFILES && button("A child I shop for", () => go("person/new")),
     el("p", { class: "muted" }, "You can add more people afterwards, up to " + MAX_PROFILES + " including you."),
-    button("Done", () => go(""), "link"));
+    button("Done", () => go(""), "link end"));
 }
 
 // ------------------------------------------------------------------ home
 async function home() {
   const done = history().filter(h => h.screen?.state === "result").length;
-  const recent = history().slice(0, 5);
+  // D-185: six on a desktop, where the recent scans fill their own column.
+  const recent = history().slice(0, matchMedia("(min-width: 1024px)").matches ? 6 : 5);
   const updates = el("div", {});
   loadUpdates(updates);
 
   // site-desktop (Sushil, 2026-10-02): one wide "Scan here" bar, nothing above it but the
   // header; it opens what "Scan a pack" opened. Everything else follows in the same order.
-  return el("section", { class: "stack" },
-    el("button", { type: "button", class: "scan-cta", onclick: () => { resetPending(); go("scan"); } },
-      el("span", { class: "scan-cta-icon", "aria-hidden": "true" }, icon("barcode")),
-      el("span", {}, "Scan here")),
-    updates,
-    checkingFor(),
-    shopListCard(),
-    done < 3 && el("div", { class: "card note" },
-      el("h2", {}, "Start at home"),
-      el("p", {}, "Scan 3 packs from your kitchen. You'll see how it works without a trip to the shop."),
-      el("div", { class: "progress", role: "progressbar", "aria-valuemin": "0", "aria-valuemax": "3",
-                  "aria-valuenow": String(done) },
-        el("span", { style: `width:${(done / 3) * 100}%` })),
-      el("p", { class: "muted" }, `${done} of 3 done`)),
-    yourScans(),
-    recent.length > 0 && el("div", { class: "section-head" },
-      el("h2", {}, "Recent scans"),
-      history().length > recent.length && el("a", { href: "#/scans" }, "See all")),
-    recent.length > 0 && scanList(recent));
+  // D-185: two columns from 1024 px; the recent scans take the second.
+  return el("section", { class: "stack home" },
+    el("div", { class: "home-a stack" },
+      el("button", { type: "button", class: "scan-cta", onclick: () => { resetPending(); go("scan"); } },
+        el("span", { class: "scan-cta-words" },
+          el("span", { class: "scan-cta-title" }, "Scan here"),
+          el("span", { class: "scan-cta-icon", "aria-hidden": "true" }, icon("forward"))),
+        scanLoop()),
+      updates,
+      checkingFor(),
+      shopListCard(),
+      done < 3 && startAtHome(done)),     // D-185: the counts (yourScans) live on Your scans
+    recent.length > 0 && el("div", { class: "home-b stack" },
+      el("div", { class: "section-head" },
+        el("h2", {}, "Recent scans"),
+        history().length > recent.length && el("a", { href: "#/scans" }, "See all")),
+      scanList(recent)));
+}
+
+// D-185: the drawing on "Scan here" (app.css .loop): a pack's barcode swept, its label read in the
+// logo's gold, a result card with a tick. Decoration only, so hidden from screen readers.
+function scanLoop() {
+  const tick = icon("check");
+  tick.querySelector("path").setAttribute("pathLength", "1");
+  return el("span", { class: "loop", "aria-hidden": "true" },
+    el("span", { class: "pk" }, el("span", { class: "bars" }), el("span", { class: "sweep" }),
+      ...[1, 2, 3].map(n => el("span", { class: "ln ln" + n }, el("i", {})))),
+    el("span", { class: "res" }, el("span", { class: "tick" }, tick), el("span", { class: "rl" }, el("i", {}), el("i", {}))));
+}
+
+// "Start at home" (D-178), D-185: compact; the three packs as three segments that fill in.
+function startAtHome(done) {
+  return el("div", { class: "card start" },
+    el("h2", {}, "Start at home"),
+    el("span", { class: "start-count muted" }, `${done} of 3 done`),
+    el("p", { class: "muted" }, "Scan 3 packs from your kitchen. You'll see how it works without a trip to the shop."),
+    el("div", { class: "segs", role: "progressbar", "aria-valuemin": "0", "aria-valuemax": "3",
+                "aria-valuenow": String(done), "aria-label": "Start at home" },
+      [0, 1, 2].map(i => el("i", { class: i < done ? "on" : "" }))));
 }
 
 // D-178: who every pack is checked for, on home, with a way to change it. Nicknames stay on
@@ -387,9 +411,16 @@ function scanList(items) {
       el("span", { class: "scan-text" },
         el("strong", {}, productName(h.product)),
         h.screen?.summary?.length
-          ? el("span", { class: "chips" }, h.screen.summary.map(toneChip))
+          ? el("span", { class: "chips" }, cardChips(h.screen.summary).map(toneChip))
           : el("span", { class: "muted" }, peopleSummary(h.screen) || h.screen?.headline?.text || ""),
         h.at && el("span", { class: "scan-when" }, whenText(h.at)))))));
+}
+
+// D-185: a card shows at most two of the server's chips, those worth a look first, in the server's
+// order (D-123); the result shows all three.
+function cardChips(summary) {
+  const worth = summary.filter(r => r.tone === "worth");
+  return (worth.length ? worth : summary).slice(0, 2);
 }
 
 function packThumb(h) {
@@ -457,8 +488,8 @@ function yourScans() {
   const counts = new Map();
   done.forEach(h => h.screen.tallies.forEach(t => counts.set(t, (counts.get(t) || 0) + 1)));
   const rows = [...counts].sort((a, b) => b[1] - a[1]);
-  return el("div", { class: "card" },
-    el("h2", {}, "Your scans"),
+  // D-185: on Your scans only, under its own title, so the card doesn't repeat it.
+  return el("div", { class: "card tallies-card" },
     el("p", { class: "muted" }, `${done.length} packs checked, kept on this phone.`),
     rows.length
       ? el("div", { class: "tallies" }, rows.map(([label, n]) => el("div", { class: "tally" },
@@ -541,7 +572,7 @@ function data() {
       "."),
     el("p", {}, el("a", { href: "/privacy" }, "Privacy")),
     ask, confirmBox,
-    button("Done", () => go(""), "link"));
+    button("Done", () => go(""), "link end"));
 }
 
 function household() {
@@ -562,7 +593,7 @@ function household() {
             : el("span", { class: "muted" }, "No avoid list")))))),
     list.length < MAX_PROFILES && el("button", { type: "button", class: "add-card", onclick: () => go("person/new") },
       icon("plus"), "Add a child"),
-    button("Done", () => go(""), "link"));
+    button("Done", () => go(""), "link end"));
 }
 
 async function person(ref) {
@@ -612,12 +643,12 @@ async function person(ref) {
       " I am this child's parent or guardian. I agree to InsideLabel using this age band and " +
       "avoid list to check labels for them."),
     err,
-    el("button", { type: "submit", class: "btn primary" }, "Save"),
+    el("button", { type: "submit", class: "btn primary dock" }, "Save"),     // D-185: in thumb reach
     !isNew && !isMe && button("Remove", () => {
       saveProfiles(profiles().filter(x => x.ref !== p.ref));
       go("household");
     }, "link danger"),
-    button("Cancel", () => go("household"), "link"),
+    button("Cancel", () => go("household"), "link end"),
   ].flat().filter(x => x != null && x !== false));
 
   form.addEventListener("submit", e => {
@@ -2010,7 +2041,7 @@ function report(id) {
     el("label", { for: "note" }, "What looks wrong?"), note,
     err,
     el("button", { type: "submit", class: "btn primary" }, "Send to our team"),
-    button("Cancel", () => window.history.back(), "link"));
+    button("Cancel", () => window.history.back(), "link end"));
   form.addEventListener("submit", async e => {
     e.preventDefault();
     if (said.value.trim().length < 3 && note.value.trim().length < 3) {
@@ -2093,7 +2124,7 @@ function compare() {
           el("input", { type: "radio", name: "age", checked: a.id === age, onchange: () => { age = a.id; } }),
           ` ${a.label} `, el("span", { class: "muted" }, a.sub)))),
     el("button", { type: "button", class: "btn primary", disabled: packs.length < 2, onclick: run }, "Compare"),
-    button("Scan a pack to add", () => { resetPending(); go("scan"); }, "link"),
+    button("Scan a pack to add", () => { resetPending(); go("scan"); }, "link end"),
     out);
 }
 
@@ -2217,7 +2248,7 @@ function apiErrorView(e, retry) {
     el("p", {}, apiMessage(e)),
     retry && button("Try again", retry, "primary"),
     problemLink(),
-    button("Home", () => go(""), "link"));
+    button("Home", () => go(""), "link end"));
 }
 
 // D-148: this phone's photo scans for the last 24 hours are used. One screen in place of
@@ -2232,7 +2263,7 @@ function photoLimit(w) {
     el("p", {}, w.barcode),
     el("p", { class: "muted" }, w.when),
     button(w.scan, () => { resetPending(); go("scan"); }, "primary"),
-    button("Home", () => go(""), "link"));
+    button("Home", () => go(""), "link end"));
 }
 
 function errorView(text) {
@@ -2269,7 +2300,7 @@ function problem() {
       preview),
     err,
     el("button", { type: "submit", class: "btn primary" }, "Send report"),
-    button("Cancel", () => window.history.back(), "link"));
+    button("Cancel", () => window.history.back(), "link end"));
   form.addEventListener("submit", async e => {
     e.preventDefault();
     try {
@@ -2300,7 +2331,7 @@ function send() {
                                     : `We keep the ${ids.length} photos you took until our team has read them.`),
       el("li", {}, "Nothing else is sent. Nicknames stay on this phone.")),
     err, go_,
-    button("Cancel", () => window.history.back(), "link"));
+    button("Cancel", () => window.history.back(), "link end"));
   go_.addEventListener("click", async () => {
     go_.disabled = true;
     try {
@@ -2429,15 +2460,26 @@ function setupMenu() {
 }
 
 // D-176: the bottom bar's Scan button opens what "Scan here" opens.
+// D-185: the header's edge line shows once the page has moved under it.
+function setupHeaderEdge() {
+  let queued = false;
+  const set = () => { queued = false; document.body.classList.toggle("scrolled", window.scrollY > 2); };
+  window.addEventListener("scroll", () => { if (!queued) { queued = true; requestAnimationFrame(set); } }, { passive: true });
+  set();
+}
+
 function setupTabbar() {
   const scanBtn = document.getElementById("tab-scan");
   if (scanBtn) scanBtn.addEventListener("click", () => { record("tab_scan"); resetPending(); go("scan"); });
+  const topScan = document.getElementById("top-scan");      // D-185: the header's "Scan a pack", 1024 px up
+  if (topScan) topScan.addEventListener("click", () => { record("tab_scan"); resetPending(); go("scan"); });
   updateNav();
 }
 
 // ------------------------------------------------------------------ start
 setupMenu();
 setupTabbar();
+setupHeaderEdge();
 window.addEventListener("hashchange", route);
 deviceId();
 record("start", { app_version: APP_VERSION });
