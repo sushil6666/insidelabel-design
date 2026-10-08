@@ -796,19 +796,26 @@ def _nutrition_rows(panel):
     per = f"per 100 {u}"
     rows = []
 
-    def row(key, label, text, over):
-        rows.append({"key": key, "label": label, "text": text, "tone": "worth" if over else "calm", "over": over})
+    # D-177: `bar` draws the amount beside the threshold its sentence names (value, line, unit, per
+    # 100 g or ml): numbers only, so the picture says nothing the words don't. None where the
+    # sentence names a share of energy rather than an amount, or a printed "less than" bound.
+    def row(key, label, text, over, bar=None):
+        rows.append({"key": key, "label": label, "text": text, "tone": "worth" if over else "calm", "over": over,
+                     "bar": bar})
+
+    def bar(value, line, unit, bound=None):
+        return None if bound is not None else {"value": round(value, 2), "line": line, "unit": unit}
 
     if "energy" in vals:
         e = vals["energy"]
         row("energy", "Energy", f"Energy: {_amount_words(e, 'kcal')} {per}. ICMR-NIN counts more than "
                                 f"{_fmt(t['energy_kcal'])} kcal {per} as high.",
-            e["bound"] is None and e["value"] > t["energy_kcal"])
+            e["bound"] is None and e["value"] > t["energy_kcal"], bar(e["value"], t["energy_kcal"], "kcal", e["bound"]))
     if "added_sugars" in vals:
         a = vals["added_sugars"]
         row("added_sugars", "Added sugar", f"Added sugar: {_amount_words(a, 'g')} {per}. ICMR-NIN counts more than "
                                            f"{_fmt(t['added_sugar_g'])} g {per} as high.",
-            a["bound"] is None and a["value"] > t["added_sugar_g"])
+            a["bound"] is None and a["value"] > t["added_sugar_g"], bar(a["value"], t["added_sugar_g"], "g", a["bound"]))
     elif "total_sugars" in vals:
         row("total_sugars", "Total sugars",
             f"Total sugars: {_amount_words(vals['total_sugars'], 'g')} {per}. The table doesn't show added sugar on "
@@ -820,13 +827,13 @@ def _nutrition_rows(panel):
         row("salt", "Salt", f"Salt: about {_fmt(salt_mg, 0)} mg {per}, from {_amount_words(s, 'mg')} of sodium "
                             f"(salt is {_fmt(nutrition.SALT_PER_SODIUM)} times the sodium). ICMR-NIN counts more "
                             f"than {_fmt(t['salt_mg'])} mg of salt {per} as high.",
-            s["bound"] is None and salt_mg > t["salt_mg"])
+            s["bound"] is None and salt_mg > t["salt_mg"], bar(salt_mg, t["salt_mg"], "mg", s["bound"]))
     elif "salt" in vals:
         s = vals["salt"]
         salt_mg = s["value"] * 1000
         row("salt", "Salt", f"Salt: {_amount_words(s, 'g')} {per}. ICMR-NIN counts more than "
                             f"{_fmt(t['salt_mg'])} mg of salt {per} as high.",
-            s["bound"] is None and salt_mg > t["salt_mg"])
+            s["bound"] is None and salt_mg > t["salt_mg"], bar(salt_mg, t["salt_mg"], "mg", s["bound"]))
     who = NUT["who_energy_share"]
     kcal = (vals.get("energy") or {}).get("value")
     if "saturated_fat" in vals:

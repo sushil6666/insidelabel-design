@@ -443,7 +443,7 @@ def test_the_refusal_shows_the_photo_and_its_problem_without_report_a_mistake():
     # The photo is the one still on this phone: no request, no upload.
     held = app[app.index("function heldPhotos("):app.index("function partialRetake(")]
     assert "pending.resultId !== h.id" in held and "Request(" not in held
-    assert app.count("put(partialRetake(s, h,") == 2                               # the partial read's card too
+    assert app.count("put(partialRetake(s, h,") + app.count("you(partialRetake(s, h,") == 2   # the partial read's card too
     assert 'class: "card k-problem photo-problem"' in app
 
 
@@ -493,3 +493,49 @@ def test_a_retake_keeps_the_table_photo_and_the_front():                     # D
     assert 'const kept = tableIn && pending.lastKind === "list";' in review
     assert 'kept && button("Retake the table too", dropTable, "link")' in review
     assert 'ask || (kept && n < MAX_PHOTOS) || (listOnly && n < MAX_PHOTOS)\n        ? button("The list continues"' in review
+
+
+# ---------------------------------------------------------------- D-177: the result screen
+def _fn(app, name):
+    f = app[app.index(f"function {name}("):]
+    return f[:f.index("\n}\n")]
+
+
+def test_a_food_result_has_three_tabs_under_the_people():
+    app = JS["app.js"]
+    body = _fn(app, "result")
+    assert body.index('class: "deep opener result-top"') < body.index("put(tabBar(h, tabs, panels))")
+    assert '[["you", "For you"], ["inside", "What\'s inside"], ["pack", "On the pack"]]' in body
+    assert "moreAbout(h, !askTable, false)" in body and "onThePack(h)" in body
+    bar = _fn(app, "tabBar")
+    assert 'role: "tablist"' in bar and '"aria-selected"' in bar and "ArrowRight" in bar
+    assert "p.hidden = k !== key" in bar
+
+
+def test_the_pack_photo_stays_on_the_phone():
+    lib = JS["lib.js"]
+    keep = lib[lib.index("const PHOTO_KEEP"):]
+    keep = keep[:keep.index("\n}\n", keep.index("export function savePackPhoto(")) + 3]
+    assert "PHOTO_KEEP" in keep and "fetch(" not in keep and "Request(" not in keep
+    head = _fn(JS["app.js"], "packHead")
+    assert 'el("h1", { class: "product" }' in head and "shareResult(h)" in head
+
+
+def test_share_sends_the_servers_words_without_a_nickname():
+    share = _fn(JS["app.js"], "shareResult")
+    assert "fill(p.line))" in share                     # no ref: "your child", never the nickname (D-074)
+    assert "s.headline?.text" in share and "score" not in share
+
+
+def test_nutrition_bars_come_from_the_servers_numbers():
+    from insidelabel.lenses import screen
+    panel = {"basis": "per 100 g", "form": "solid", "values": {
+        "added_sugars": {"value": 24.0, "unit": "g", "printed": "24 g", "bound": None},
+        "sodium": {"value": 310.0, "unit": "mg", "printed": "310 mg", "bound": "lt"}}}
+    rows = {r["key"]: r for r in screen._nutrition_rows(panel)[0]}
+    assert rows["added_sugars"]["bar"]["value"] == 24.0 and rows["added_sugars"]["bar"]["unit"] == "g"
+    assert rows["salt"]["bar"] is None                  # a printed "less than": no bar
+    nb = _fn(JS["app.js"], "nutBar")
+    assert '"aria-hidden": "true"' in nb and "nb-${r.tone}" in nb and "score" not in nb
+    css = open(os.path.join(WEB_DIR, "app.css"), encoding="utf-8").read()
+    assert "scaleX(var(--to, 0))" in css                # transform only

@@ -12,7 +12,7 @@
 //    beyond the headline the user was shown.
 
 // Bump together with VERSION in sw.js: a report then says which shell was cached.
-export const APP_VERSION = "web-53";
+export const APP_VERSION = "web-54";
 
 // ------------------------------------------------------------------ storage
 // localStorage can throw (private mode, blocked site data); the app must still work.
@@ -107,6 +107,27 @@ export function addHistory(entry) {
   store.set("history", list);
 }
 export function historyItem(id) { return history().find(h => h.id === id); }
+
+// D-177: a small copy of the user's own photo of the pack, shown on its result. Kept on this
+// phone only, beside the result (D-074), and only on the newest PHOTO_KEEP results so the
+// history stays well inside the browser's storage; "Delete my data" removes it with the rest.
+const PHOTO_KEEP = 10;
+export async function packPhoto(blob, maxEdge = 360) {
+  try {
+    const bmp = await createImageBitmap(blob, { imageOrientation: "from-image" });
+    const scale = Math.min(1, maxEdge / Math.max(bmp.width, bmp.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(bmp.width * scale);
+    canvas.height = Math.round(bmp.height * scale);
+    canvas.getContext("2d").drawImage(bmp, 0, 0, canvas.width, canvas.height);
+    bmp.close && bmp.close();
+    return canvas.toDataURL("image/jpeg", 0.6);
+  } catch { return null; }
+}
+export function savePackPhoto(id, url) {
+  const list = history().map((h, i) => h.id === id ? { ...h, photo: url } : i >= PHOTO_KEEP ? { ...h, photo: undefined } : h);
+  store.set("history", list);
+}
 
 // ------------------------------------------------------------------ flight recorder (D-092)
 const TRAIL_MAX = 60;

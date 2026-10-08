@@ -12,7 +12,7 @@ import {
   deviceId, el, fill, history, historyItem, lastIncident, prepareImage, problemRequest, profileByRef,
   profiles, record, reportRequest, saveProfiles, scanRequest, sendToUsRequest, store, trailSnapshot,
   accessRequest, agreeRequest, checkPhotoRequest, feedbackRequest, joinRequest, termsRequest,
-  updatesRequest, forgetRequest, clearTrail,
+  updatesRequest, forgetRequest, clearTrail, packPhoto, savePackPhoto,
 } from "./lib.js";
 import { barcodeSupported, labelCameraSupported, startLabelCamera, startScanner } from "./camera.js";
 import { icon, kindIcon, spot } from "./icons.js";
@@ -1306,6 +1306,15 @@ function finish(body, { lookedUp = false } = {}) {
     pending.sendNow = !!body.screen.send_now;                   // D-172: one blocked scan is enough
   }
   pending.resultId = id;           // D-133: the photos in hand belong to this result
+  // D-177: a small copy of the photo for the result's pack card, kept on this phone only.
+  const shot = body.screen?.state === "result" && (pending.front || pending.back);
+  if (shot) packPhoto(shot).then(url => {
+    if (!url) return;
+    savePackPhoto(id, url);
+    for (const img of document.querySelectorAll(`img[data-photo="${CSS.escape(id)}"]`)) { img.src = url; img.hidden = false; }
+    const ph = document.querySelector(`[data-photo-ph="${CSS.escape(id)}"]`);
+    if (ph) ph.hidden = true;
+  });
   go("result/" + encodeURIComponent(id));
 }
 
@@ -1324,7 +1333,8 @@ function nutritionView(n, h, ask = true) {
     el("h2", {}, n.title),
     n.basis && el("p", { class: "muted small" }, n.basis),
     n.rows.map(r => el("div", { class: `nut-row tone-${r.tone}` },
-      el("p", {}, r.tone === "worth" && kindIcon("worth"), r.text))),
+      el("p", {}, r.tone === "worth" && kindIcon("worth"), r.text),
+      r.bar && nutBar(r))),
     n.servings.map(x => el("p", { class: "nut-serving" }, x.text)),
     n.adults && el("p", { class: "muted small" }, n.adults),
     n.also && el("p", { class: "muted small" }, n.also),
@@ -1363,7 +1373,7 @@ function result(id, sub, tileId) {
   // largest words on the screen (D-060, D-064). The name is the h1, so focus and a screen
   // reader start here, above the people.
   put(el("div", { class: "deep opener result-top" },
-    el("h1", { class: "product" }, productName(h.product)),
+    packHead(h),
     // D-146: a catalogue hit names the product; if it isn't this pack, back to the scanner.
     s.rescan && h.looked_up && el("p", { class: "rescan" }, s.rescan.text, " ",
       button(s.rescan.button, () => { resetPending(); scanAgain(); }, "link")),
@@ -1432,49 +1442,60 @@ function result(id, sub, tileId) {
     return view;
   }
 
-  // 3. D-153: a tester found the result too long. What isn't about a person waits, closed,
-  // under "Worth knowing (n)": each tile a numbered note with its source, opening its own
-  // page (D-134); then the three answers (D-123) and the ring (D-127). One exception stays
-  // open: an additive not permitted in India, the most serious thing the app says (D-111).
-  // Results kept on the phone from before web-27 have no tiles: their rows show as before.
+  // 3. D-177: the rest of a food result sits under three tabs, so the first screen stays short
+  // (D-153) and nothing is folded away: "For you" (what this pack means for the people above,
+  // with its sources), "What's inside" (the nutrition table, additives, notes) and "On the pack"
+  // (the user's photo and the list as printed). The people block above stays put (D-060).
+  const tabs = [["you", "For you"], ["inside", "What's inside"], ["pack", "On the pack"]];
+  const panels = {};
+  for (const [key] of tabs) {
+    panels[key] = el("div", { class: "stack tab-panel", id: `tp-${key}`, role: "tabpanel", "aria-labelledby": `tab-${key}`,
+                              tabindex: "0" });
+  }
+  put(tabBar(h, tabs, panels));
+  put(...Object.values(panels));
+  const you = (...nodes) => panels.you.append(...nodes.flat().filter(x => x != null && x !== false));
+
+  // For you. D-153's order: an additive not permitted in India first (D-111), then "Worth
+  // knowing (n)", each tile a numbered note with its source opening its own page (D-134), then
+  // the three answers (D-123) and the ring (D-127). Results kept on the phone from before
+  // web-27 have no tiles: their rows show as before.
   const tiles = s.tiles || [];
   const serious = tiles.filter(t => t.kind === "not_permitted");
   const notes = tiles.filter(t => t.kind !== "not_permitted");
-  if (serious.length) put(el("ul", { class: "tiles" }, serious.map(t => el("li", {}, tileLink(h, t)))));
+  if (serious.length) you(el("ul", { class: "tiles" }, serious.map(t => el("li", {}, tileLink(h, t)))));
   const answers = s.summary?.length
     ? answersView(s.summary)
     // Older results kept on the phone have no summary; they keep the band (D-063).
     : el("div", { class: `band band-${s.band.code}` },
         el("strong", {}, s.band.label),
         s.band.note && el("details", {}, el("summary", {}, "What does this mean?"), el("p", {}, s.band.note)));
-  put(el("details", { class: "worth" },
-    el("summary", {}, notes.length ? `Worth knowing (${notes.length})` : "The three answers"),
-    el("div", { class: "stack worth-body" },
-      notes.length > 0 && el("ol", { class: "notes" }, notes.map((t, i) => noteItem(h, t, i + 1))),
-      !s.tiles && legacyLooks(s),
-      answers,
-      s.glance && glanceView(s.glance, true))));
+  if (notes.length) you(el("div", { class: "worth" },
+    el("h2", { class: "h-serif" }, `Worth knowing (${notes.length})`),
+    el("ol", { class: "notes" }, notes.map((t, i) => noteItem(h, t, i + 1)))));
+  you(el("details", { class: "item answers-fold" },
+    el("summary", {}, "The three answers"),
+    el("div", { class: "stack worth-body" }, !s.tiles && legacyLooks(s), answers, s.glance && glanceView(s.glance, true))));
 
   // A partial read, the table photo and the D-073 re-check ask for something now,
-  // with the pack in hand, so they stay on the first screen.
-  if (s.retake) put(partialRetake(s, h,
+  // with the pack in hand, so they stay on the first tab.
+  if (s.retake) you(partialRetake(s, h,
     button("Retake the ingredients photo", () => retakeList(h, "partial"))));
   const askTable = s.nutrition && canAskTable(s.nutrition, h);
-  if (askTable) put(el("div", { class: "card note" }, el("p", {}, s.nutrition.text),
+  if (askTable) you(el("div", { class: "card note" }, el("p", {}, s.nutrition.text),
     button(s.nutrition.ask, () => go("table"))));
-  if (s.recheck) put(el("div", { class: "card note" }, el("p", {}, s.recheck),
+  if (s.recheck) you(el("div", { class: "card note" }, el("p", {}, s.recheck),
     button("Photograph the ingredients and nutrition table", () => recheckPhoto(h, true))));
   // D-175: a pack last checked over 15 days ago; one optional photo of the list, after the answers.
-  if (s.recheck_card) put(el("div", { class: "card note" }, el("p", {}, s.recheck_card.text),
+  if (s.recheck_card) you(el("div", { class: "card note" }, el("p", {}, s.recheck_card.text),
     button(s.recheck_card.button, () => recheckPhoto(h, false, true))));
   // D-175: this photo matched the published list; said where the ask was.
-  if (s.rechecked) put(kinded("p", "done", { class: "card" }, s.rechecked));
+  if (s.rechecked) you(kinded("p", "done", { class: "card" }, s.rechecked));
 
-
-  // 5. Actions: compare (D-057), the shop list (D-130), report (D-076, on every result).
+  // Actions: compare (D-057), the shop list (D-130), report (D-076, on every result).
   // D-130: a screen result goes on the shop list, to be scanned from the pack in the shop.
   const onList = () => shopList().some(x => x.id === h.id);
-  if (s.shop_list && h.pack) put(button(onList() ? "On your shop list ✓" : "Add to my shop list", e => {
+  if (s.shop_list && h.pack) you(button(onList() ? "On your shop list ✓" : "Add to my shop list", e => {
     if (!onList()) {
       store.set("shoplist", [{ id: h.id, product: h.product, barcode: h.barcode, at: h.at, pack: {
         ingredients: h.pack.ingredients, allergen_statement: h.pack.allergen_statement } },
@@ -1487,7 +1508,7 @@ function result(id, sub, tileId) {
   // "Compare (n)" opens Compare once there are two or more.
   const others = store.get("compare", []).filter(x => x !== h.id && historyItem(x)).length;
   const next = () => { resetPending(); go("scan"); };
-  put(el("div", { class: "result-next" },
+  you(el("div", { class: "result-next" },
     h.pack && !s.shop_list
       ? el("button", { type: "button", class: "btn-big", onclick: () => {
           if (!store.get("compare", []).includes(h.id)) toggleCompare(h.id);
@@ -1505,25 +1526,108 @@ function result(id, sub, tileId) {
     reportLink(h));
 
   // D-153: what's promised and not built yet, said plainly (D-058/D-059 alternatives, D-113 Ask).
-  put(el("div", { class: "pending" }, el("span", {}, "Other packs without what's on your avoid list"),
+  you(el("div", { class: "pending" }, el("span", {}, "Other packs without what's on your avoid list"),
       el("span", { class: "pending-tag" }, "In preparation")),
     el("div", { class: "pending" }, el("span", {}, "Ask about this pack"),
       el("span", { class: "pending-tag" }, "Pro · in preparation")));
 
-  // 6. Everything else, closed.
-  put(el("details", { class: "item more-pack" }, el("summary", {}, s.more_title || "More about this pack"),
-    el("div", { class: "stack more-body" }, moreAbout(h, !askTable))));
+  // What's inside: everything D-153 kept under "More about this pack", open.
+  panels.inside.append(...moreAbout(h, !askTable, false));
   // D-168: a published pack without a nutrition table: one photo of it, offered last (never
   // above the allergen lines, D-060), and not again on this phone once it sent one for the pack.
   const offer = s.table_offer;
   if (offer && h.barcode && !tableSent(h.barcode)) {
-    put(el("div", { class: "card note" },
+    panels.inside.append(el("div", { class: "card note" },
       el("h2", {}, offer.title),
       el("p", {}, offer.text),
       button(offer.button, () => go("tablephoto/" + encodeURIComponent(h.id)))));
   }
+
+  // On the pack: the user's own photo and the list as it was read, the label's words quoted.
+  panels.pack.append(...onThePack(h));
   return view;
 }
+
+// D-177: the pack card at the top of a result: the user's own photo of the pack (kept on this
+// phone, D-074), its name as the h1 (focus and a screen reader start here, D-153), and Share.
+function packHead(h) {
+  const id = h.id;
+  return el("div", { class: "pack-head" },
+    el("div", { class: "pack-thumb" },
+      el("img", { "data-photo": id, alt: "", src: h.photo || null, hidden: !h.photo }),
+      el("span", { class: "pack-thumb-ph", "data-photo-ph": id, hidden: !!h.photo }, icon("pack"))),
+    el("div", { class: "pack-name" },
+      el("h1", { class: "product" }, productName(h.product)),
+      h.product?.net_quantity && el("p", { class: "pack-meta" }, h.product.net_quantity)),
+    el("button", { type: "button", class: "share-btn", "aria-label": "Share this result", onclick: () => shareResult(h) },
+      icon("share")));
+}
+
+// D-177: Share sends the result's own words (D-091) as text. A child's nickname stays on this
+// phone (D-074): the lines name "your child", as they do before the nickname is filled in.
+function shareResult(h) {
+  const s = h.screen || {};
+  const text = [productName(h.product), ...(s.people || []).map(p => fill(p.line)), s.headline?.text,
+                "Read with InsideLabel: https://insidelabel.ai"].filter(Boolean).join("\n");
+  record("share", { via: navigator.share ? "share" : "copy" });
+  if (navigator.share) return navigator.share({ title: productName(h.product), text }).catch(() => {});
+  navigator.clipboard?.writeText(text).then(() => toast("Copied. Paste it where you like."), () => {});
+}
+
+function toast(text) {
+  const t = el("p", { class: "toast", role: "status" }, text);
+  document.body.append(t);
+  setTimeout(() => t.remove(), 2600);
+}
+
+// D-177: the three tabs. Buttons in a tablist (arrow keys move between them); the chosen tab is
+// kept for this result while the app is open, so a tile's page returns to the same tab.
+const tabChosen = new Map();
+function tabBar(h, tabs, panels) {
+  const pick = (key, focus) => {
+    tabChosen.set(h.id, key);
+    bar.style.setProperty("--tab", String(tabs.findIndex(([k]) => k === key)));
+    for (const b of bar.querySelectorAll("[role=tab]")) {
+      const on = b.dataset.key === key;
+      b.setAttribute("aria-selected", String(on));
+      b.tabIndex = on ? 0 : -1;
+      if (on && focus) b.focus();
+    }
+    for (const [k, p] of Object.entries(panels)) p.hidden = k !== key;
+    record("tab", { to: key });
+  };
+  const bar = el("div", { class: "tabs", role: "tablist", "aria-label": "This result" },
+    el("span", { class: "tabs-pill", "aria-hidden": "true" }),
+    tabs.map(([key, label]) => el("button", { type: "button", role: "tab", id: `tab-${key}`, "data-key": key,
+      "aria-controls": `tp-${key}`, onclick: () => pick(key, false) }, label)));
+  bar.addEventListener("keydown", e => {
+    const i = tabs.findIndex(([k]) => k === tabChosen.get(h.id));
+    const j = e.key === "ArrowRight" ? i + 1 : e.key === "ArrowLeft" ? i - 1 : null;
+    if (j == null) return;
+    e.preventDefault();
+    pick(tabs[(j + tabs.length) % tabs.length][0], true);
+  });
+  pick(tabChosen.get(h.id) || "you", false);
+  return bar;
+}
+
+// D-177: "On the pack": the user's photo (when this phone kept one) and the ingredient list as it
+// was read, quoted, with the printed allergen line. Nothing here is our wording about the pack.
+function onThePack(h) {
+  const s = h.screen;
+  return [
+    h.photo
+      ? el("figure", { class: "pack-photo" }, el("img", { src: h.photo, alt: "Your photo of the pack" }),
+          el("figcaption", { class: "muted small" }, "Your photo. It stays on this phone."))
+      : el("p", { class: "muted" }, "No photo of this pack is kept on this phone."),
+    el("div", { class: "card as-printed" },
+      el("h2", {}, "The ingredient list as read"),
+      el("ol", {}, s.ingredients.map(i => el("li", {}, i))),
+      h.pack?.allergen_statement && el("p", {}, el("strong", {}, "Allergen line: "), el("q", {}, h.pack.allergen_statement))),
+    h.barcode && el("p", { class: "muted small" }, "Barcode ", h.barcode),
+    reportLink(h)];
+}
+
 
 // D-139, D-140: the kind of pack, in the server's words, with what the pack prints.
 function kindView(s) {
@@ -1610,7 +1714,27 @@ function legacyLooks(s) {
 }
 
 // D-134: "More about this pack": what used to follow the answers, in the same order.
-function moreAbout(h, askTable) {
+// D-177: the amount beside the line its sentence names, drawn from the server's numbers
+// (screen.py `bar`). Decoration: the sentence says the same, so the bar is hidden from a
+// screen reader. Amber only where the server's tone is "worth" (D-169); it fills in as it
+// scrolls into view.
+function nutBar(r) {
+  const top = Math.max(r.bar.value, r.bar.line) * 1.25 || 1;
+  const pct = x => `${Math.min(100, (x / top) * 100).toFixed(1)}%`;
+  const fill = el("span", { class: "nut-fill", style: `--to:${(Math.min(r.bar.value, top) / top).toFixed(3)}` });
+  const bar = el("div", { class: `nut-bar nb-${r.tone}`, "aria-hidden": "true" },
+    el("span", { class: "nut-track" }, fill),
+    el("span", { class: "nut-line", style: `left:${pct(r.bar.line)}` }),
+    el("span", { class: "nut-line-label", style: `left:${pct(r.bar.line)}` }, `${fmtNum(r.bar.line)} ${r.bar.unit}`));
+  if ("IntersectionObserver" in window) {
+    const io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { bar.classList.add("in"); io.disconnect(); } });
+    io.observe(bar);
+  } else bar.classList.add("in");
+  return bar;
+}
+function fmtNum(x) { return Number.isInteger(x) ? String(x) : x.toFixed(1); }
+
+function moreAbout(h, askTable, withList = true) {
   const s = h.screen;
   const out = [];
   const put = (...nodes) => out.push(...nodes.flat().filter(x => x != null && x !== false));
@@ -1668,7 +1792,7 @@ function moreAbout(h, askTable) {
       plain.length > 0 && el("ul", { class: "plain" }, plain.map(a =>
         el("li", {}, el("strong", {}, a.name), ": ", a.why)))));
   }
-  put(el("details", { class: "item" },
+  if (withList) put(el("details", { class: "item" },
     el("summary", {}, "The ingredient list as read"),
     el("ol", {}, s.ingredients.map(i => el("li", {}, i)))));
 
