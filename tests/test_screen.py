@@ -391,3 +391,16 @@ def test_every_ingredient_count_is_the_printed_entries():           # D-111, D-1
     # The sugar chip counts printed entries too ("3rd of 11").
     sugar = next(r for r in s["summary"] if r["key"] == "sugar")
     assert sugar["chip"].endswith("of 11")
+
+
+def test_a_partly_read_list_says_we_could_read():                # D-173 wording follow-up
+    from insidelabel.core import engine
+    tail = (f"against {len(engine._ADDITIVE_BY_INS)} additives and {len(engine.NOVA['markers'])} "
+            f"processing markers in our tables.")
+    s = scan(MASKA_CHASKA, profiles=[], ingredients_status="partial").json()["screen"]
+    assert s["scope"] == "We checked the 11 ingredients we could read " + tail
+    assert "on the list" not in s["scope"]
+    one = scan(["Sugar"], profiles=[], ingredients_status="partial").json()["screen"]
+    assert one["scope"] == "We checked the 1 ingredient we could read " + tail
+    whole = scan(MASKA_CHASKA, profiles=[]).json()["screen"]
+    assert whole["scope"] == "We checked the 11 ingredients on the list " + tail

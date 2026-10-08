@@ -663,6 +663,12 @@ setup alarms.
 
 **NEXT SESSION STARTS HERE (2026-10-01).** Where things stand, newest first:
 
+- **`d173-wording` (2026-10-08, no migration, server words only), from `main` a4ddfaf (#127).** D-173 wording follow-up (the advisor, Sushil agreeing):
+  - **Scope line on a partly read list:** "We checked the 11 ingredients we could read against ...". A complete read keeps "on the list".
+  - **Partial-list caveat:** now ends "What we did find still stands."
+  - **Waiting on Sushil:** merge; `update.sh`.
+  - **Next:** D-175 (the 15-day re-check; plan accepted) branches from main after this is merged.
+
 - **2026-10-07 evening (hand-off, docs only).**
   - **D-174 is live:** merged (#126) and `update.sh` run (migration 023).
     - Optional: measure the table read on item #71's photos with `il tools/table_read.py 71`. Export `GEMINI_API_KEY` in that shell first; it costs about Rs 0.75.

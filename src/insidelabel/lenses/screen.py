@@ -1337,7 +1337,10 @@ def build(*, verdict, display, claim_check, extracted, reliability, profiles,
                  "note": NOVA_NOTE if band == "ultra-processed" else None},
         # The scope line says what was checked; the claims (in shadow, D-051) join it.
         "checked": None,
-        "scope": (f"We checked the {n_list} ingredient{'s' if n_list != 1 else ''} on the list against "
+        # D-173 wording follow-up (advisor, Sushil agreeing, 2026-10-08): a partly read list
+        # says "we could read", never "on the list", which would claim the whole list.
+        "scope": (f"We checked the {n_list} ingredient{'s' if n_list != 1 else ''} "
+                  f"{'on the list' if complete else 'we could read'} against "
                   f"{len(engine._ADDITIVE_BY_INS)} additives and {len(engine.NOVA['markers'])} "
                   f"processing markers in our tables" + (", and the claims on the front." if claims else ".")),
         "claims": claims,

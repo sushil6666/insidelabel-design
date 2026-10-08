@@ -3467,6 +3467,13 @@ day. Built by Claude. App only.
     no count. `tests/test_screen.py` with a list shaped like Maska Chaska's (11 entries, 23 parsed parts; the exact
     printed list isn't in the repo).
 web-50. `tests/test_web.py`, `tests/test_screen.py`, `tests/test_no_score_words.py`.
+- **Wording follow-up (the advisor, Sushil agreeing, 2026-10-08), on its own branch:**
+  - **The scope line on a partly read list** no longer says "on the list", which suggested the whole list was
+    checked. It now reads: "We checked the 11 ingredients we could read against 69 additives and 17 processing markers
+    in our tables." The counts are still printed entries (D-111), ", and the claims on the front." is still added when
+    claims are shown, and one entry reads "1 ingredient we could read". A complete read keeps "on the list".
+  - **The partial-list caveat** ends "What we did find still stands." (was "Findings that were found are still real.").
+  `tests/test_screen.py`.
 
 ### D-174 · A pack sent to us publishes with its nutrition table `LOCKED` (2026-10-07)
 **Sushil, 2026-10-07:** "yes", after review items #71 and #72. The plan was shown with options (a), (b) and (c), and
