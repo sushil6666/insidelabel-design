@@ -54,15 +54,21 @@ def test_the_app_header_has_a_profile_icon_that_opens_the_menu():
     assert 'aria-label="Menu"' in btn.group(0) and 'aria-controls="menu"' in btn.group(0)
     assert re.sub(r"<[^>]+>", "", btn.group(1)).strip() == ""           # a drawing: no name, no initials
     assert "width: var(--tap); height: var(--tap)" in APP_CSS              # 48 x 48
-    assert '<nav>' not in header and "Compare" not in header               # the pills moved to the menu
+    # D-185: the header holds the bottom bar's places only from 1024 px, where the bar goes.
+    nav = re.search(r'<nav class="topnav" aria-label="Main">.*?</nav>', header, re.S).group(0)
+    assert re.findall(r'href="([^"]+)"', nav) == ["#/", "#/scans", "#/compare", "#/household"]
+    assert ".topnav, .top-r .btn.topscan { display: none; }" in APP_CSS
+    desk = APP_CSS[APP_CSS.index("@media (min-width: 1024px) {\n  .top {"):]
+    assert ".topnav { display: flex;" in desk[:desk.index("\n}\n")]
+    assert re.search(r"@media \(min-width: 1024px\) \{\s*\.tabbar \{ display: none; \}", APP_CSS)
 
 
 def test_the_menu_and_the_bottom_bar_hold_every_link():                 # D-176
     menu = re.search(r'<dialog id="menu".*?</dialog>', APP_HTML, re.S).group(0)
-    footer = re.search(r"<footer.*?</footer>", APP_HTML, re.S).group(0)
+    assert "<footer" not in APP_HTML                                        # D-185: home's text footer went
     bar = re.search(r'<nav class="tabbar".*?</nav>', APP_HTML, re.S).group(0)
     links = dict(re.findall(r'<a href="([^"]+)"[^>]*>([^<]+)</a>', menu))
-    for href in re.findall(r'href="([^"]+)"', footer):
+    for href in ("#/data", "#/feedback", "#/problem", "/how", "/privacy"):  # the footer's links
         assert href in links, href
     for href in ("#/", "#/scans", "#/compare", "#/household"):
         assert f'href="{href}"' in bar, href
