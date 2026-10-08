@@ -216,7 +216,8 @@ def test_how_we_check_says_there_is_no_score():                         # D-165,
 def test_label_photos_come_in_steps():                                   # D-171 (was D-153's one page)
     """A tester liked the barcode step and was lost on the one long label page (2026-10-07)."""
     app = JS["app.js"]
-    assert "Step ${n} of ${STEPS}" in app and "const STEPS = 3;" in app
+    assert "Step ${n} of ${steps()}" in app
+    assert "const steps = () => frontNeeded() ? 4 : 3;" in app          # D-181: the front is step 4
     assert 'stepLine(1, "Barcode")' in app
     # Step 2: one line under the camera; step 3 only when the table isn't in that photo.
     assert 'title: n === 1 ? "Photograph the ingredient list"' in app
@@ -233,15 +234,38 @@ def test_label_photos_come_in_steps():                                   # D-171
     assert 'pending.barcode ? el("div", {}, el("dt", {}, "Barcode"),' in tips
     assert "packBack()" in tips and '"Photograph these"' in app and '"NUTRITION"' in app
     assert app.count('"Not needed"') == 1                           # only the licence
-    # D-100's front is a link on the answer screens, not a step (Sushil, 2026-10-07: a new pack
-    # must not lose it; the reviewer reads brand, name and claims from it). It rides the one /scan.
+    # D-181 (Sushil, 2026-10-08, "make the front photo mandatory"): while the catalogue wants the
+    # front (D-100), it is step 4 and the check waits for it and for D-035's pairing box. It still
+    # rides the one /scan.
     review = app[app.index("function shotReview("):app.index("function frontShot(")]
-    assert 'pending.frontWanted && !pending.front &&\n      button("Add the front of the pack too (optional)", () => show(frontShot()), "link")' in review
+    assert "front of the pack too (optional)" not in app
+    assert "const frontNeeded = () => !!pending.frontWanted;" in app
+    assert "const check = frontNeeded() && !pending.front" in review
+    assert 'button(ask ? "Yes, now the front of the pack" : "Next: the front of the pack", () => show(frontShot()), "primary")' in review
+    assert "&& !frontIn;   // the table question" in review                  # answered before the front
+    assert "if (frontIn && !pending.pairing) check.disabled = true;" in review
+    assert "if (frontIn) check.disabled = !pending.pairing;" in review
+    assert review.index('id: "pairing"') < review.index("    check,\n")       # the box above the check
     assert '" Both photos are of the same pack"' in review                    # D-035's pairing
     assert '" All these photos are of the same pack"' in review
     front = app[app.index("function frontShot("):app.index("// One photo of the label.")]
     assert 'role: "front", checkAs: "front"' in front and "show(shotReview(undefined, res))" in front
-    assert 'button("Not now", back, "link")' in front and "const back = () => show(shotReview());" in front
+    assert 'stepLine(4, "Front")' in front and '"Not now"' not in front and '"Optional"' not in front
+    assert "back: () => show(shotReview())," in front and '"Back"' not in front
+    # Sushil, 2026-10-08: no loose "Tips" and "Back" links on the camera pages. Tips is a pill beside
+    # the title; the header's arrow goes back to the photos in hand (a screen's backTo).
+    shot = app[app.index("function labelShot("):app.index("function tipsSheet(")]
+    assert 'el("div", { class: "cam-title" }, el("h1", {}, o.title), tips)' in shot
+    assert 'class: "tips-btn"' in shot and 'button("Tips"' not in app
+    assert "if (o.back) view.backTo = o.back;" in shot
+    assert 'if (backTo) back = el("button", { type: "button", class: "top-back", "aria-label": "Back", onclick: backTo }' in app
+    # An answer, as a button; with the front still to take (D-181) it leads there, not to the read.
+    assert 'button("This pack has no table", () => frontNeeded() && !pending.front ? show(frontShot()) : sendPhotos())' in app
+    assert '"Not now"' not in app[app.index("function front("):app.index("function recheckPhoto(")]
+    # Off where the front is on file, and for D-175's list-only re-check.
+    recheck = app[app.index("function recheckPhoto("):app.index("// ------------------------------------------------------------------ a table photo")]
+    assert "pending.frontWanted = !!h.catalogue?.front_wanted;" in recheck
+    assert "if (listOnly) pending.frontWanted = false;" in recheck
     assert '"Add the front of the pack?"' in app                              # the result's offer stays
     # D-168 and D-133's table photos use the same step 3 camera.
     assert "return labelShot(o);" in app[app.index("function tablephoto("):]

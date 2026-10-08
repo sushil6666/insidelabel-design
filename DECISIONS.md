@@ -3704,6 +3704,62 @@ the website; both are undone. Built by Claude.
 - Unchanged: D-179's footer, D-176's bottom bar and back arrow, the header heights (65 px on the website).
 `tests/test_site_desktop.py`.
 
+### D-181 · The front photo is required while the catalogue wants it `LOCKED` (2026-10-08)
+**Sushil, 2026-10-08:** "make the front photo mandatory". Supersedes the front's "link, not a step" in D-171
+(Sushil, 2026-10-07). Built by Claude.
+
+- **A step, not a link.** While `frontWanted` is on (D-100: a new pack, a pack scanned without a barcode, or a
+  catalogue pack whose front isn't on file), the front is "Step 4 of 4". The answer to "Is the nutrition table in
+  this photo too?" becomes "Yes, now the front of the pack" (or "Next: the front of the pack" once the table is
+  in), and leads to the front's camera. "Not now" and "(optional)" are gone; "Back" returns to the photos in hand.
+- **The check waits for it.** With the front in, the screen says "Both photos are in" (or three, or four), shows
+  D-035's "same pack" box above "Check this pack", and the button stays off until the box is ticked: an unticked
+  front would not reach the reviewer (the server keeps a front only with a trusted pairing).
+- **Not asked:** a re-check of a pack whose front is on file, D-175's list-only re-check, and a catalogue hit by
+  barcode alone (no photos are taken, so the result's "Add the front of the pack?" offer stays optional).
+- **App only.** `/scan` still accepts a back without a front (repro, tools, tests, an older app); the app is the
+  only client that sends new packs.
+- **No loose links on the camera pages (Sushil, 2026-10-08: "this tips and back in every page does not look good").**
+  Tips is a small pill with an info icon beside each camera step's title, not a link under the picker (in the live
+  shutter row its place is left empty). The header's back arrow does what the "Back" and "Not now" links did: on
+  the table, front and later list steps it returns to the photos in hand (a screen shown in place sets `backTo`),
+  elsewhere it goes back as before. "This pack has no table" is a full-width answer button, and leads to the front
+  when it is still to take.
+`tests/test_web.py`.
+
+### D-182 · The pack picture: a reviewed front photo taken by the team, shown for that barcode `RECOMMENDED` (2026-10-08)
+Sushil asked where the app can get real product images ("the UI looks great with a real image"). Options Claude
+checked on 2026-10-08:
+- **Verified by GS1** (gs1.org): the public search allows 30 lookups a day (GS1 UK's page) and shows the brand's
+  own name, image and net content where the brand entered them. Fine for a person checking a barcode by hand or
+  adding a lead (D-089); not for the server. Its terms PDF could not be read from the cloud session (gs1.org is
+  blocked there), so "no automated use" is an inference until someone reads it in a browser.
+- **GS1 India DataKart:** brand-supplied data and images (GS1 India claims 20M+ SKUs). Paid registration plus company
+  papers; its terms treat product data as confidential (cl. 3.1) and forbid passing access on (cl. 8.2), so showing
+  its images to users needs GS1 India's written OK. Still D-088's "one email".
+- **Open Food Facts images:** CC BY-SA (credit and share-alike; brand trademark rights still apply). Thin for India
+  and collides with D-029. **Retailer images:** no (D-088).
+
+**Sushil chose "Own photos" (2026-10-08).** Proposed by Claude, not built until accepted:
+- **Whose photos:** only fronts taken by the team (Sushil and reviewers), from installs joined with an invite marked
+  `team` (new column on `invites`). A user's photo is never shown to anyone else (D-074; D-128 leaves open whether a
+  pack photo showing a hand or a face is personal data).
+- **Reviewed by a person:** a team front on a catalogue product with no picture yet queues a `pack_picture` item.
+  A person (never the review agent, D-117) approves it only when it shows the pack alone (no hand, face or room),
+  is this product, and is sharp. Approved pictures go in a new `product_pictures` table (product, image key, taken
+  on, scan, approved by, approved at); the newest one is shown, and its photo is kept like any catalogue photo
+  (D-098).
+- **Served small:** `/pack-picture/<product>` returns a 480 px JPEG with its metadata stripped, cached; `/scan`'s
+  catalogue block carries its URL and date, and `lenses/screen.py` words the caption ("Photo of the pack taken by
+  InsideLabel on 8 Oct 2026", D-091).
+- **Where it shows:** D-177's pack card shows the user's own photo first and the pack picture when there is none (a
+  catalogue hit by barcode alone). Your scans and Compare cards can use it later.
+- **Never a source:** the picture is not read for findings; they still come from the reviewed version (D-004). No
+  brand can supply or replace it.
+- **Cost:** storage only, no model call.
+
+Needs Sushil's acceptance.
+
 ---
 
 ## Open and pending
