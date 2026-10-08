@@ -663,6 +663,8 @@ setup alarms.
 
 **NEXT SESSION STARTS HERE (2026-10-01).** Where things stand, newest first:
 
+- **`claude/project-thread-viwmj6` (2026-10-08, no migration, web-57), from `main` 20aabd0 (#136).** D-181: the front photo is a required step 4 while the catalogue wants it, and "Check this pack" waits for the "same pack" box. D-182 (pack picture from the team's reviewed front photos) is written as a recommendation, not built.
+  - **Waiting on Sushil:** merge; `update.sh`; accept or change D-182.
 - **`d175-count` (2026-10-08, no migration, server only), from `main` d720f93 (#129).** D-175 count follow-up: the re-check counts every comma on both sides and finds the list end by the last entry's final three words. The server's first run passed 20 of 57 packs, 28 failing on the count.
   - **Waiting on Sushil:** merge; `update.sh`; `il tools/recheck_measure.py` again.
   - **Merged (#130); re-measured: 23 of 57.** Count tuning stopped there.

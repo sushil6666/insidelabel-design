@@ -802,16 +802,20 @@ function digitCheck(c) {
 // was not. So the label is taken in steps, one job per screen: the ingredient list (step 2),
 // then, only if it isn't in that photo, the nutrition table (step 3). D-119's extra parts of
 // a long list stay possible. Every photo goes to the server as today (back, back2, back3) and
-// the pack is read once. The front photo (D-100) is no longer asked for here: the result
-// offers it once the pack is in the catalogue.
+// the pack is read once. D-181 (Sushil, 2026-10-08, "make the front photo mandatory"): while the
+// catalogue wants this pack's front (D-100), the front is the last step, and "Check this pack"
+// waits for it and for D-035's "same pack" box.
 // The camera: the app's own live view and shutter where the server has it switched on
 // (/access live_shutter) and the phone can take a full-size still; otherwise the phone's
 // camera app, as before.
-const STEPS = 3;
 const MAX_PHOTOS = 3;                    // D-119's limit: back, back2, back3
+// D-181: the front is required while the catalogue wants it (off for a re-check of a pack
+// whose front is on file, and for D-175's list-only re-check).
+const frontNeeded = () => !!pending.frontWanted;
+const steps = () => frontNeeded() ? 4 : 3;
 
 function stepLine(n, what) {
-  return el("p", { class: "kicker step" }, el("span", {}, `Step ${n} of ${STEPS}`), el("span", {}, what));
+  return el("p", { class: "kicker step" }, el("span", {}, `Step ${n} of ${steps()}`), el("span", {}, what));
 }
 
 function photo() {
@@ -921,13 +925,33 @@ function shotReview(res = undefined, frontRes = undefined) {
     : res === undefined ? null : checkLine(res, retake);
   // D-175: a re-check of a published pack asks for the list only; the table is on file or offered apart.
   const listOnly = pending.recheck === "list";
-  const ask = !tableIn && n < MAX_PHOTOS && !listOnly;   // the table question, while there's room for its photo
-  const check = button(ask ? "Yes, check this pack" : "Check this pack", () => sendPhotos(), "primary");
+  // D-181: the front is the last photo; once it's in, the table question has had its answer.
+  const frontIn = frontNeeded() && !!pending.front;
+  const ask = !tableIn && n < MAX_PHOTOS && !listOnly && !frontIn;   // the table question, while there's room for its photo
+  // D-181: with the front still to take, the answer leads to it; with it in, the check waits
+  // for the "same pack" box (D-035), so the front can reach the reviewer.
+  const check = frontNeeded() && !pending.front
+    ? button(ask ? "Yes, now the front of the pack" : "Next: the front of the pack", () => show(frontShot()), "primary")
+    : button(ask ? "Yes, check this pack" : "Check this pack", () => sendPhotos(), "primary");
+  if (frontIn && !pending.pairing) check.disabled = true;
+  const m = shown.length;
   return el("section", { class: "stack shot-review" },
-    stepLine(tableIn && !kept ? 3 : 2, kept ? names[lists - 1] : names[n - 1]),
+    frontIn ? stepLine(4, "Front")
+      : stepLine(tableIn && !kept ? 3 : 2, kept ? names[lists - 1] : names[n - 1]),
     pics, line,
     ask ? el("h1", {}, "Is the nutrition table in this photo too?")
-      : el("h1", {}, n === 1 ? "The ingredient list is in" : n === 2 ? "Both photos are in" : "All three photos are in"),
+      : el("h1", {}, m === 1 ? "The ingredient list is in" : m === 2 ? "Both photos are in"
+        : m === 3 ? "All three photos are in" : "All four photos are in"),
+    // D-100: the reviewer reads the brand, name and claims from the front. D-181: required while
+    // the catalogue wants it, so no "optional" link; the "same pack" box sits above the check
+    // it unlocks. Sent with the back in the one /scan.
+    pending.front && el("label", { class: "choice" },
+      el("input", { type: "checkbox", id: "pairing", checked: pending.pairing,
+                    onchange: e => {
+                      pending.pairing = e.target.checked;
+                      if (frontIn) check.disabled = !pending.pairing;
+                    } }),
+      m === 2 ? " Both photos are of the same pack" : " All these photos are of the same pack"),
     check,
     ask && button("No, photograph the table", () => show(tableShot())),
     el("div", { class: "row between" },
@@ -935,26 +959,19 @@ function shotReview(res = undefined, frontRes = undefined) {
         ? button("The list continues", () => show(listShot()), "link") : el("span", {}),
       button(tableIn && !kept ? "Retake the table" : "Retake", retake, "link")),
     kept && button("Retake the table too", dropTable, "link"),
-    // D-100: the reviewer reads the brand, name and claims from the front. A link, not a step:
-    // skipping it costs no tap (Sushil, 2026-10-07). Sent with the back in the one /scan.
-    pending.frontWanted && !pending.front &&
-      button("Add the front of the pack too (optional)", () => show(frontShot()), "link"),
-    pending.front && el("label", { class: "choice" },
-      el("input", { type: "checkbox", id: "pairing", checked: pending.pairing,
-                    onchange: e => { pending.pairing = e.target.checked; } }),
-      shown.length === 2 ? " Both photos are of the same pack" : " All these photos are of the same pack"),
     pending.front && button("Retake the front", () => show(frontShot()), "link"));
 }
 
-// The optional front photo (D-100), then back to the same answer screen.
+// The front photo (D-100), then back to the same answer screen. D-181: a required step while
+// the catalogue wants it ("Back" returns to the photos in hand; there is no "Not now").
 function frontShot() {
   const back = () => show(shotReview());
   return labelShot({
     role: "front", checkAs: "front", front: true,
-    step: el("p", { class: "kicker" }, "Optional"),
+    step: stepLine(4, "Front"),
     title: "Photograph the front",
     line: "Fill the frame with the front of the pack, including any words printed on it.",
-    after: button("Not now", back, "link"),
+    after: button("Back", back, "link"),
     onShot: (b, res, source) => {
       pending.front = b;
       pending.frontSource = source;
@@ -1214,11 +1231,11 @@ function front(id) {
 
 // D-073, D-175: a photo of a published pack's list, compared with the published list for free
 // first (recheck=true). listOnly: D-175's card asks for the list alone ("list"), no table question.
-function recheckPhoto(h, front, listOnly = false) {
+function recheckPhoto(h, listOnly = false) {
   resetPending();
   pending.barcode = h.barcode;
   pending.recheck = listOnly ? "list" : "full";
-  if (front) pending.frontWanted = !!h.catalogue?.front_wanted;           // D-100
+  pending.frontWanted = !!h.catalogue?.front_wanted;      // D-100, D-181: required only while wanted
   if (listOnly) pending.frontWanted = false;              // D-175: one ask; a front would cost the free check
   go("photo");
 }
@@ -1480,7 +1497,7 @@ function result(id, sub, tileId) {
     if (s.retake) put(partialRetake(s, h,
       button("Retake the ingredients photo", () => retakeList(h, "partial"))));
     if (s.recheck) put(el("div", { class: "card note" }, el("p", {}, s.recheck),
-      button("Photograph the ingredients list", () => recheckPhoto(h, false))));
+      button("Photograph the ingredients list", () => recheckPhoto(h))));
     put(el("div", { class: "row wrap" }, button("Scan another", () => { resetPending(); go("scan"); }, "primary")),
       reportLink(h));
     put(el("details", { class: "item more-pack" }, el("summary", {}, s.more_title || "More about this pack"),
@@ -1531,10 +1548,10 @@ function result(id, sub, tileId) {
   if (askTable) you(el("div", { class: "card note" }, el("p", {}, s.nutrition.text),
     button(s.nutrition.ask, () => go("table"))));
   if (s.recheck) you(el("div", { class: "card note" }, el("p", {}, s.recheck),
-    button("Photograph the ingredients and nutrition table", () => recheckPhoto(h, true))));
+    button("Photograph the ingredients and nutrition table", () => recheckPhoto(h))));
   // D-175: a pack last checked over 15 days ago; one optional photo of the list, after the answers.
   if (s.recheck_card) you(el("div", { class: "card note" }, el("p", {}, s.recheck_card.text),
-    button(s.recheck_card.button, () => recheckPhoto(h, false, true))));
+    button(s.recheck_card.button, () => recheckPhoto(h, true))));
   // D-175: this photo matched the published list; said where the ask was.
   if (s.rechecked) you(kinded("p", "done", { class: "card" }, s.rechecked));
 
