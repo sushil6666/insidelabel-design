@@ -302,7 +302,7 @@ def _screen_person(profile, rows, pack):
 # gets nothing anywhere on the result (his option B: "i thought it won't show anything, but
 # it says not listed"); "For you" keeps one "may contain" reminder. The /scan answer's
 # `allergens` block is unchanged (D-060); only how it shows on the result screen moves.
-CARD_STATUS = ("contains", "may_contain", "uncertain", "cannot_confirm")
+CARD_STATUS = ("contains", "may_contain", "uncertain", "cannot_confirm", "worth_knowing")
 
 
 def _quote(r, ingredients, statement):
@@ -336,6 +336,15 @@ def _cannot_confirm_text(codes, complete):
     if not complete:
         return f"Part of the list couldn't be read, so we can't confirm {names}. Check the pack."
     return f"The list wasn't clear enough to confirm {names}. Check the pack."
+
+
+def _weaker_text(r):
+    """
+    D-188 follow-up (Sushil, 2026-10-08): an allergen brands don't have to declare (sesame,
+    data/allergens.json `fssai_mandatory: false` and its `note`) that isn't listed keeps the
+    words D-071's line always had, in "For you". Never "safe" or "free from".
+    """
+    return f"Brands don't have to declare {allergen_checker.ALLERGENS[r.code]['short']}, so this check is weaker."
 
 
 # D-188: said once in "For you" when an avoid-list allergen isn't listed and no allergen line was
@@ -400,6 +409,9 @@ def _person(profile, ingredients, statement, confidence, reliable, screen=False,
                        "text": texts.get(r.code) or r.parent_text(who, where)} for r in rows],
         "child_facts": child_facts,
     }
+    weak = [_weaker_text(r) for r in rows
+            if r.state == "not_listed" and not allergen_checker.ALLERGENS[r.code].get("fssai_mandatory", True)]
+    quiet = [x for x in [quiet, *weak] if x]
     if quiet:
         out["quiet"] = quiet
     if any(r.state == "not_listed" and not r.statement_seen for r in rows):
@@ -409,21 +421,20 @@ def _person(profile, ingredients, statement, confidence, reliable, screen=False,
 
 def split_people(people):
     """
-    D-188: the cards at the top of the result (a match, or a line we can't confirm), and
-    "For you": a child's age line for a person without a card, and the one "may contain"
-    reminder. A person with no match is in neither.
+    D-188: the cards at the top of the result (a match, a line we can't confirm, or a child's
+    age line, amber, with its facts), and "For you": "Nothing extra for {name}'s age came up.",
+    the weaker-check line for sesame when it isn't listed, and the one "may contain" reminder.
+    A person with nothing of these is in neither.
     """
     cards, quiet = [], []
     for p in people:
         card = p["status"] in CARD_STATUS
-        lines = [x for x in (p.get("quiet"),) if x]
-        if not card and p["status"] == "worth_knowing":
-            lines.append(p["line"])
+        lines = p.get("quiet") or []
         if card:
             cards.append({k: v for k, v in p.items() if k not in ("quiet", "note")})
         if lines:
-            quiet.append({"ref": p["ref"], "status": p["status"] if not card else "not_listed", "lines": lines,
-                          "child_facts": [] if card else p["child_facts"]})
+            quiet.append({"ref": p["ref"], "status": "nothing_flagged" if p["status"] == "nothing_flagged"
+                          else "not_listed", "lines": lines})
     note = next((p["note"] for p in people if p.get("note")), None)
     return cards, quiet, note
 

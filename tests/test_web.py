@@ -630,8 +630,9 @@ def test_the_top_shows_only_a_match_or_a_line_we_cant_confirm():
     assert "cardPeople(s).map(p => personCard(p, h))" in body and "s.people.map" not in body
     pick = _fn(app, "cardPeople")
     # A result kept on the phone from before web-66 still lists everyone; its "not listed" lines stay hidden.
-    assert 'LISTED.includes(p.status) || p.status === "cannot_confirm"' in pick
+    assert "CARD.includes(p.status)" in pick
     assert re.search(r'const LISTED = \["contains", "may_contain", "uncertain"\]', app)
+    assert 'const CARD = [...LISTED, "cannot_confirm", "worth_knowing"];' in app      # an age line is a card
     card = _fn(app, "personCard")
     # Retake on an amber card from a photo scan only; a barcode-only hit took no photo (D-170, D-173).
     assert 'p.status === "cannot_confirm" && h.screen?.state === "result" && !h.looked_up' in card
@@ -654,5 +655,6 @@ def test_a_scan_card_names_a_match_and_never_a_no_match():
     cards = _fn(app, "scanList")
     assert "scanPerson(h.screen)" in cards
     person = _fn(app, "scanPerson")
-    assert "cardPeople(screen)[0]" in person and "PERSON_TONE[p.status]" in person
+    assert 'cardPeople(screen).find(x => x.status !== "worth_knowing")' in person
+    assert "PERSON_TONE[p.status]" in person
     assert "cardPeople(screen)[0]" in _fn(app, "peopleSummary")

@@ -91,10 +91,12 @@ def test_the_six_gold_labels_come_out_exactly_as_before(name):
             assert got["ordinary"]["count"] == got["glance"]["counts"].get("other", 0) < before["ordinary"]["count"]
             got = {k: v for k, v in got.items() if k not in ("checked", "scope")}
             # D-188: the top keeps a card only for a match or a line we can't confirm; the same
-            # people, in the same order, as before; a no-match and an age line leave the top.
-            cards = ("contains", "may_contain", "uncertain", "cannot_confirm")
-            assert [p["ref"] for p in got["people"]] == [p["ref"] for p in before["people"] if p["status"] in cards]
-            assert [p["status"] for p in got["people"]] == [p["status"] for p in before["people"] if p["status"] in cards]
+            # people, in the same order, as before; a no-match and "nothing extra" leave the top.
+            cards = ("contains", "may_contain", "uncertain", "cannot_confirm", "worth_knowing")
+            # A child whose allergens aren't listed but who has an age line keeps it as an amber card.
+            want = [(p["ref"], "worth_knowing" if p["status"] == "not_listed" and p["child_facts"] else p["status"])
+                    for p in before["people"]]
+            assert [(p["ref"], p["status"]) for p in got["people"]] == [w for w in want if w[1] in cards]
             got = {k: v for k, v in got.items() if k not in ("people", "for_you", "for_you_note")}
             before = {k: v for k, v in before.items() if k != "people"}
             got["ordinary"] = {k: v for k, v in got["ordinary"].items() if k not in ("count", "text")}

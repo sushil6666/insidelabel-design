@@ -4160,23 +4160,26 @@ cannot-confirm and age lines "as accepted"). Built by Claude. Changes how D-060 
 | A source we can't tell (`uncertain`) | unchanged: `We can't tell whether "lecithin" comes from soy. Check with the brand ...` | amber |
 | Cannot confirm, partial read | `Part of the list couldn't be read, so we can't confirm milk, soy, fish. Check the pack.` | amber |
 | Cannot confirm, otherwise (below 0.95, unclear) | `The list wasn't clear enough to confirm milk, soy, fish. Check the pack.` | amber |
-| No match | nothing, here or in "For you" | none |
+| A child's age line (honey under 1, HFSS under 2, sugar 2nd) | `1 thing worth knowing for {name}.`, its facts under More | amber |
+| No match | nothing, here or in "For you" (sesame: see below) | none |
 
 - One card per person; the person's name is on the card above the line. A second match for the same person shows under
   the first line, not folded. No "warning", no exclamation mark.
 - **"May contain" is red:** today's states rank it with "contains" and D-169 gives both the avoid cross; the pack
   itself names the allergen. Amber stays for what is about our read ("can't tell", "can't confirm").
 - **Retake** on an amber cannot-confirm card of a photo scan (D-170, D-173's retake flow); none on a barcode-only hit.
-- **"For you"** opens with a child's age line for a person without a card ("1 thing worth knowing for {name}.",
-  "Nothing extra for {name}'s age came up."), then one reminder when something on an avoid list isn't listed and no
-  allergen line was read: `We didn't see a "may contain" line in the photo, so check the pack for one.` on a photo
+- **"For you"** opens with "Nothing extra for {name}'s age came up." (never a card), then, for a person whose avoid
+  list has sesame and only when sesame isn't listed, the note's existing words: `Brands don't have to declare sesame,
+  so this check is weaker.` (`data/allergens.json`: `fssai_mandatory: false`, its `note`; mustard, the other such
+  row, gets the same line), then one reminder when something on an avoid list isn't listed and no allergen line was
+  read: `We didn't see a "may contain" line in the photo, so check the pack for one.` on a photo
   scan, `We didn't see a "may contain" line on the pack we checked, so check the pack for one.` on a barcode-only hit.
   No "Not listed for ..." line (option B); never "safe", "free from" or "no milk" (D-042/D-071).
 - **Your scans, Compare, Share** follow the same rule: a scan card names a match in its colour; Compare's allergen
   lines leave out "not listed"; Share sends `For your child, milk is listed: "Milk solids".` (no nickname, D-074,
   D-177) and nothing for a person with no match.
 - **The /scan answer is unchanged:** `allergens` stays the first key with every state (D-060). `screen.people` now
-  holds only the cards; `screen.for_you` holds age lines and `screen.for_you_note` the reminder. A result kept on a
+  holds only the cards; `screen.for_you` holds "nothing extra" and the sesame line, `screen.for_you_note` the reminder. A result kept on a
   phone from before web-66 still lists everyone; the app hides its "not listed" lines.
 
 **2. "In the photo" on a barcode scan.** On a catalogue hit no photo was taken; the words come from the reviewed
@@ -4191,8 +4194,13 @@ changed version gets today's `pack_kind` and `pack_kind_evidence` (evidence and 
 the rule's decision number, old and new kind, who ran it, the date); each written row is printed; nothing else on the
 version changes. D-187's follow-up line records version 74, fixed by hand before this existed.
 
+- **Follow-up, before merge (Sushil, 2026-10-08):** age lines stay at the top, as accepted (the advisor's reply he
+  pasted: "Age lines stay at the top: a child's age line (today's amber "1 thing worth knowing for Mira", e.g. honey
+  under 1, HFSS under 2) keeps its amber card for that child, only when there is one."). And, agreeing with the
+  advisor, the sesame note comes back in "For you", only for a sesame avoider and only when sesame isn't listed. Both
+  are in the table and the "For you" line above.
 - **Tests:** `tests/test_screen.py` (match, cannot-confirm, no match, a household of three with one match, the
-  reminder's two wordings), `tests/test_web.py` (cards, For you, scan cards, Share, Retake), `tests/test_pack_kind.py`
+  reminder's two wordings, an age line's amber card, a sesame avoider's line, a milk avoider sees nothing), `tests/test_web.py` (cards, For you, scan cards, Share, Retake), `tests/test_pack_kind.py`
   (the gold labels' cards), `tests/test_pack_kind_db.py` (a barcode hit says "on the pack we checked"; `--apply`
   writes only the two columns, the default run writes nothing), `tests/test_pack_pictures.py` (the front tick).
 

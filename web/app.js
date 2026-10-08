@@ -425,7 +425,7 @@ function scanList(items) {
 // D-188: a scan card names a match (or a line we can't confirm) for the first person it concerns,
 // in the result's colour; a person with no match isn't named.
 function scanPerson(screen) {
-  const p = cardPeople(screen)[0];
+  const p = cardPeople(screen).find(x => x.status !== "worth_knowing");     // an allergen line only
   if (!p || !screen.summary?.length) return null;          // without chips, peopleSummary says it
   const who = profileByRef(p.ref);
   return el("span", { class: `scan-person ${PERSON_TONE[p.status] || "calm"}` },
@@ -519,10 +519,10 @@ function peopleSummary(screen) {
   return p ? fill(p.line, p.ref) : "";
 }
 
-// D-188: the people with a card: a match, or a line we can't confirm. A result kept on this phone
-// from before web-66 still lists everyone; its "not listed" lines don't show.
+// D-188: the people with a card: a match, a line we can't confirm, or a child's age line. A result
+// kept on this phone from before web-66 still lists everyone; its "not listed" lines don't show.
 function cardPeople(screen) {
-  return (screen?.people || []).filter(p => LISTED.includes(p.status) || p.status === "cannot_confirm");
+  return (screen?.people || []).filter(p => CARD.includes(p.status));
 }
 
 // D-070: "we'll tell you when it's ready" - checked on open; push comes later.
@@ -2041,6 +2041,7 @@ const PERSON_KIND = { contains: "avoid", may_contain: "avoid",
 // other. Any further match stays in view under the first line; a child's facts sit in More.
 // A photo scan's amber card offers the retake (D-170, D-173); a barcode-only hit took no photo.
 const LISTED = ["contains", "may_contain", "uncertain"];
+const CARD = [...LISTED, "cannot_confirm", "worth_knowing"];          // cardPeople()
 function personCard(p, h) {
   const who = profileByRef(p.ref);
   const also = p.allergens.slice(1).filter(a => LISTED.includes(a.state));
@@ -2061,8 +2062,9 @@ function personCard(p, h) {
           f.sources.map(x => el("a", { href: x.url, target: "_blank", rel: "noopener" }, x.cite))))))));
 }
 
-// D-188: "For you" opens with a child's age line for anyone without a card, then the one "may
-// contain" reminder. A person with no match has no line here (Sushil, 2026-10-08, option B).
+// D-188: "For you" opens with "Nothing extra for {name}'s age came up.", the weaker-check line
+// for sesame when it isn't listed, then the one "may contain" reminder. A person with no match
+// has no line here (Sushil, 2026-10-08, option B); a child's age line is a card at the top.
 // Every word is the server's (screen.for_you, screen.for_you_note).
 function forYouLines(s) {
   const rows = s.for_you || [];
