@@ -148,10 +148,11 @@ def _fn(name):
     return f[:f.index("\n}\n")]
 
 
-def test_inner_screens_show_their_name_and_a_back_arrow():
+def test_inner_screens_keep_the_centred_wordmark_and_get_a_back_arrow():   # D-180
     header = re.search(r'<header class="top">.*?</header>', APP_HTML, re.S).group(0)
-    assert 'id="top-title"' in header and 'class="wordmark"' in header
-    assert ".top.titled .wordmark { display: none; }" in APP_CSS
+    assert 'class="wordmark"' in header and "top-title" not in header
+    assert "titled" not in APP_CSS and "display: none" not in APP_CSS[APP_CSS.index(".top .wordmark"):][:200]
+    assert ".top .wordmark { justify-self: center; grid-column: 2;" in APP_CSS
     frame = _fn("frame")
     assert "FIRST_RUN.includes(name)" in frame                               # the wordmark on first-run screens
     assert 'name === "result"' in frame and 'href: "#/"' in frame           # a result goes home
@@ -199,3 +200,10 @@ def test_every_site_page_has_the_same_nav_and_footer():                 # D-179
     assert len(navs) == 1 and len(foots) == 1
     assert 'id="how-title"' in SITE["index"]                             # "How it works" lands on its section
     assert "<script" not in re.search(r"<header.*?</header>", SITE["about"], re.S).group(0)   # no JS for the menu
+
+
+def test_the_website_wordmark_stays_in_the_centre():                     # D-180
+    assert "grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr)" in SITE_CSS
+    assert ".site-top .wordmark { grid-column: 2;" in SITE_CSS and "margin-right: auto" not in SITE_CSS
+    for html in SITE.values():
+        assert '<header class="wrap wide site-top">' in html               # the same container on every page

@@ -34,12 +34,14 @@ body { margin: 0; min-height: 100vh; color: var(--ink); font: 17px/1.55 var(--fo
        background: var(--hero) no-repeat top / 100% 520px; }
 .wrap { max-width: 760px; margin: 0 auto; padding: 0 16px; }
 header.wrap { padding-top: 20px; padding-bottom: 4px; }   /* .wrap alone would zero it */
-/* D-179 (supersedes D-152's centred website wordmark): the wordmark on the left, the site's links and
-   "Open the app" on the right from 768 px; on phones a menu button holds them. The header keeps its
-   height (65 px) so nothing below it moves. */
-.site-top { display: flex; align-items: center; gap: 8px; position: relative; min-height: 65px; }
-.site-top .wordmark { margin-right: auto; }
-.site-nav { display: none; gap: 4px; margin: -7px 0; }
+/* D-180 (Sushil: "logo should be always in center"): the wordmark stays centred on every page, as
+   D-152 set it. From 1024 px the site's links sit to its left and "Open the app" to its right; below
+   that a menu button on the right holds them. The header keeps its height (65 px). */
+.site-top { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center;
+            gap: 8px; position: relative; min-height: 65px; }
+.site-top .wordmark { grid-column: 2; grid-row: 1; }
+.site-nav { display: none; gap: 4px; margin: -7px 0; grid-column: 1; grid-row: 1; justify-self: start; }
+.site-top > .nav-cta, .site-menu { grid-column: 3; grid-row: 1; justify-self: end; }
 .site-nav a, .site-menu nav a { color: var(--ink); text-decoration: none; font-weight: 600; padding: 12px 10px;
                                 border-radius: 10px; white-space: nowrap; }
 .site-nav a[aria-current="page"] { color: var(--brand); }
@@ -62,9 +64,9 @@ header.wrap { padding-top: 20px; padding-bottom: 4px; }   /* .wrap alone would z
   .site-menu[open] nav { animation: menu-in 180ms cubic-bezier(.1, .7, .1, 1) both; transform-origin: top right; }
 }
 @keyframes menu-in { from { opacity: 0; transform: translateY(-6px) scale(.97); } }
-@media (min-width: 768px) {
+@media (min-width: 1024px) {
   .site-nav { display: flex; }
-  .site-top > .nav-cta { display: inline-block; margin: -7px 0 -7px 8px; }
+  .site-top > .nav-cta { display: inline-block; margin: -7px 0; }
   .site-menu { display: none; }
 }
 /* The wordmark (made by tools/make_wordmark.py, inline in each page): the logo and "InsideLabel"
