@@ -3522,6 +3522,62 @@ he approved it the same day. Built by Claude.
   what was kept. It never changes the catalogue.
 `tests/test_sent_table.py`.
 
+### D-175 · A published pack is checked again against the real pack every 15 days `LOCKED` (2026-10-08)
+**Sushil, 2026-10-08:** "what if everytime we ask for barcode and photos then validate with database if ingredient
+changes or not once we will check per day if any column is there only updated_scan time field and don't need to
+change any and that day within 24 hrs it reads barcode only and give result instantly". After the advisor's reply
+(the result first, the photo optional, the free comparison first): "15 days will keep". The plan was accepted on
+2026-10-08, with the advisor's two changes (Sushil agreeing), and Sushil said to build it the same day: "Start
+D-175 on d175-recheck from current main, as approved, with the advisor's two changes." Built by Claude.
+- **Why:** brands change recipes under the same barcode. A barcode hit returned the published version (D-024) and a
+  change was noticed only when someone happened to send photos of the new pack. D-073's free comparison was never
+  built: its re-check button ran a normal paid scan.
+- **The result first, always.** A barcode hit answers at once, as before. A food pack whose last check is more than
+  `RECHECK_AFTER_DAYS` (15, `lenses/screen.py`) days old shows one optional card after the three answers: "Help keep
+  this pack up to date: one photo of the ingredient list.", button "Photograph the ingredient list". One tap opens
+  step 2 (the list) with the barcode kept; no table question, no front link.
+  - **One ask per scan:** while the card shows, and on the result of its photo, D-168's table offer and D-100's front
+    ask wait for a later scan. D-073's avoid-list ask, when it shows, does the same job, so the card doesn't.
+- **"Last check"** is the newer of the version's `verified_at` (publish, a person) and a new `last_verified_at` that a
+  matching photo sets (migration 024). Nothing else on the version changes when a photo matches.
+- **The photo is compared free first** (`review/checker.unchanged`), on its Cloud Vision text (Tesseract when Vision
+  is off, D-093). "Unchanged" only when all of these hold:
+  1. the list is there, and where it ends was found;
+  2. every word of every stored entry is in the text (D-118's MISSING);
+  3. no word of the text's list that the stored list and statement lack (LOST, with D-157 and D-158's stamp, panel
+     and cut words left out);
+  4. no new INS number (`lost_ins_numbers`, D-099);
+  5. no allergen word anywhere in the text, the "Contains" line too, whose allergen the stored list and statement
+     don't name (`lenses/allergens.mentioned`);
+  6. **the same number of entries** (the advisor's change): the text's list split at commas outside brackets has as
+     many entries as the stored list;
+  7. the same order: entry i of the text holds the words of stored entry i (the order feeds "2nd of 11").
+- **Unchanged:** `last_verified_at = now()`; the scan row is `resolved_via 'recheck'`, `cache_hit`, cost 0; no model
+  call, no review item, no new version. The catalogue result says "Pack checked again on 8 Oct 2026."
+- **Not clearly unchanged:** one paid read (about Rs 0.6), exactly the normal photo path. The same ingredients hash as
+  the published version sets `last_verified_at` (any photo scan of the same label does now); a different one is a
+  reformulation item, as before. Only `ReviewService.approve()` publishes.
+- **The free check only decides "same, skip the paid read"** (D-004, D-034). It never becomes a fact, a verdict or a
+  finding. A failure in it counts as "not clear".
+- **D-073 uses the same path:** its re-check photo is sent with `recheck=true` and compared free first. Its ask and
+  words are unchanged and not limited to 15 days.
+- **Two dates, never merged** (the advisor's change, Sushil agreeing, replacing rule 7 of the brief): a photo match
+  is a machine check, not our team's. When it is newer: "Our team checked this label on 20 Sep 2026; a photo of the
+  pack matched it on 8 Oct 2026." Otherwise as before. The catalogue block's `last_verified` is the newer date and
+  the 15 days count from it.
+- **Measured** on the four real Cloud Vision texts the repo keeps (the gold photos aren't in it): a pack that gained
+  one entry was caught 44 of 44 times ("Sugar" added beside "Invert sugar" is caught by the count); two neighbouring
+  entries swapped, 40 of 40; an added INS 211 and an added peanut, caught. 2 of the 4 real packs pass as unchanged:
+  the D-157 stamped pack prints some entries without commas (8 against 11) and the two-part read has overlap words.
+  Both only cost the paid read. `tools/recheck_measure.py` replays the rule on the server's published packs and
+  their stored texts, with no model or Google call.
+- **Cost per check:** about 13 paise with Cloud Vision, Rs 0 with Tesseract; about Rs 0.6 more only when not clear.
+  Only the person who sent the photo waits for the free check (Cloud Vision, usually 1 to 3 s), and never more than
+  `RECHECK_WAIT_S` (10 s, `api/main.py`): a read not done by then is "not clear" and the paid read goes on.
+- **Replayable (D-092):** `request.recheck`, and `ocr.back.recheck` = the decision, what each check found, its reader
+  and text. `repro.replay_scan` replays a free re-check from that text with no model.
+- The app: web-52. `tests/test_recheck.py`.
+
 ---
 
 ## Open and pending

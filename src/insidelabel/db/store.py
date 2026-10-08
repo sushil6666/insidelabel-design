@@ -197,7 +197,7 @@ class Store:
                 """SELECT p.id AS product_id, p.barcode, p.name, p.variant, b.name AS brand,
                           p.net_qty_value, p.net_qty_unit,
                           v.id AS product_version_id, v.version_no, v.ingredients,
-                          v.allergen_statement, v.front_claims, v.verified_at, v.nutrition,
+                          v.allergen_statement, v.front_claims, v.verified_at, v.last_verified_at, v.nutrition,
                           v.pack_kind, v.pack_kind_evidence, k.code AS category_code, """ + self._FRONT_WANTED + ", " + self._TABLE_WANTED + """
                      FROM products p
                      JOIN product_versions v ON v.product_id = p.id AND v.is_current
@@ -223,7 +223,7 @@ class Store:
                 """SELECT p.id AS product_id, p.barcode, p.name, p.variant, b.name AS brand,
                           p.net_qty_value, p.net_qty_unit,
                           v.id AS product_version_id, v.version_no, v.ingredients,
-                          v.allergen_statement, v.front_claims, v.verified_at, v.nutrition,
+                          v.allergen_statement, v.front_claims, v.verified_at, v.last_verified_at, v.nutrition,
                           v.pack_kind, v.pack_kind_evidence, k.code AS category_code, """ + self._FRONT_WANTED + ", " + self._TABLE_WANTED + """
                      FROM product_versions v
                      JOIN products p ON p.id = v.product_id
@@ -245,6 +245,29 @@ class Store:
                 (uid, hit["product_version_id"], latency_ms)).fetchone()["id"]
             self._set_trace(conn, sid, trace)
             return sid
+
+    def record_recheck(self, hit, *, back_key=None, device_id=None, latency_ms=None, trace=None):
+        """
+        D-175: a photo of the pack matched its published version by the free comparison
+        (review/checker.unchanged). The version's last_verified_at is set and nothing else
+        on it changes: no model call, no review item, no new version. The scan row says
+        'recheck', at no cost; its trace keeps the text and the decision (D-092).
+        Returns {"scan_id", "last_verified_at"}.
+        """
+        with self._connect() as conn:
+            uid = self._user(conn, device_id)
+            conn.execute("UPDATE products SET scan_count = scan_count + 1 WHERE id = %s",
+                         (hit["product_id"],))
+            at = conn.execute("""UPDATE product_versions SET last_verified_at = now()
+                                  WHERE id = %s RETURNING last_verified_at""",
+                              (hit["product_version_id"],)).fetchone()["last_verified_at"]
+            sid = conn.execute(
+                """INSERT INTO scans (user_id, product_version_id, resolved_via, cache_hit, outcome,
+                                      latency_ms, ai_cost_paise, back_image_key)
+                   VALUES (%s, %s, 'recheck', true, 'verdict', %s, 0, %s) RETURNING id""",
+                (uid, hit["product_version_id"], latency_ms, back_key)).fetchone()["id"]
+            self._set_trace(conn, sid, trace)
+            return {"scan_id": str(sid), "last_verified_at": at}
 
     def add_front(self, hit, *, front_key, device_id=None, latency_ms=None, trace=None):
         """
@@ -443,6 +466,11 @@ class Store:
             queued = None
             front_for_review = False
             same = bool(current and current["ingredients_hash"] == ihash)
+            if same:
+                # D-175: a photo of the pack read the published list again (a paid re-check,
+                # or any scan of the same label): the version was checked against it now.
+                conn.execute("UPDATE product_versions SET last_verified_at = now() WHERE id = %s",
+                             (current["id"],))
             if same and not (table and current["nutrition"] is None):
                 # A re-read of a published pack (e.g. the D-073 allergy
                 # re-check) found the same label. Nothing new to review,

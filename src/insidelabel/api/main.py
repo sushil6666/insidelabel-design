@@ -27,6 +27,7 @@ ingredient tokens, rather than passing an empty list through and letting a
 false CLEAN out the door.
 """
 
+import datetime as dt  # noqa: E402
 import hashlib  # noqa: E402
 import json  # noqa: E402
 import logging  # noqa: E402
@@ -782,6 +783,46 @@ async def _table_answer(hit, panel, barcode, barcode_source, images, keys, ocr_r
             "catalogue": {"source": "scan", "queued_for_review": saved and saved["queued"]}}
 
 
+# D-175: how long a re-check photo waits for its free read before the paid read decides
+# instead. Cloud Vision answers in 1 to 3 s; a Tesseract fallback can take far longer (44.6 s
+# seen on 2026-10-07), and the free check must never cost more time than it saves.
+RECHECK_WAIT_S = 10.0
+
+
+async def _free_recheck(hit, back_bytes, tr, wait_all=False):
+    """
+    D-175: the free comparison of a re-check photo with the published list. Waits for the
+    one independent read of the photo (Cloud Vision, about 13 paise, or Tesseract when
+    Vision is off, Rs 0; D-093) and asks review_checker.unchanged(). Its answer only ever
+    decides "same, skip the paid read" (D-004, D-034). Any failure is "not_clear": the
+    normal read runs, which costs money but never says "unchanged" wrongly.
+    Waits RECHECK_WAIT_S at most; a replay (wait_all) waits for the whole read, so it repeats
+    the original. Returns {"read": the BackRead, for the paid path to reuse, "check": the
+    decision with its input text and reader, kept on the scan's trace (D-092)}.
+    """
+    t = time.monotonic()
+    read = ocr_check.start_back_read(back_bytes)
+    try:
+        await run_in_threadpool(read.done.wait, None if wait_all else RECHECK_WAIT_S)
+        got = ocr_check.result_of(read, hit["ingredients"])
+        text = got.get("ocr_text") if got.get("available") else None
+        check = (review_checker.unchanged(hit["ingredients"], hit["allergen_statement"], text) if text
+                 else {"decision": "not_clear", "reason": got.get("reason") or "no_text"})
+        check.update({"reader": got.get("reader"), "text": text})
+    except Exception:                                                      # noqa: BLE001
+        log.exception("free re-check failed")
+        check = {"decision": "not_clear", "reason": "error", "reader": None, "text": None}
+    check["product_version_id"] = str(hit["product_version_id"])
+    tr["timings"]["recheck_ms"] = _ms(t)
+    if check["decision"] == "unchanged":
+        tr["ocr"] = {"back": {"reader": check["reader"], "text": check["text"],
+                              "recheck": {k: v for k, v in check.items() if k != "text"}}}
+    else:
+        # Kept now, so a paid read that fails still stores what the free check saw.
+        tr["ocr"] = {"back": {"recheck": check}}
+    return {"read": read, "check": check}
+
+
 def _ms(t0):
     return int((time.monotonic() - t0) * 1000)
 
@@ -842,18 +883,37 @@ def _catalogue_kind(hit):
     return pack_kind.decide({}, category=hit.get("category_code"))
 
 
-def _catalogue_result(hit, avoid_codes, who, compare_regulators, profiles=(), screen_pack=None):
+def _checked_at(hit):
+    """D-175: the version's last check, the newer of its publish (a person) and a photo match."""
+    return max(d for d in (hit["verified_at"], hit.get("last_verified_at")) if d is not None)
+
+
+def _catalogue_result(hit, avoid_codes, who, compare_regulators, profiles=(), screen_pack=None,
+                      rechecked_on=None, now=None):
     """
     A result built from a reviewed catalogue version. The engine re-runs on the
     stored ingredient list, so the verdict always reflects the current rules and
     tables, not the ones in force when the pack was first reviewed.
+    rechecked_on: D-175, this scan's photo matched the version for free (an ISO date).
+    now: the time the 15 days are counted to (tests; a replay of the original scan).
     """
     ingredients = hit["ingredients"]
     raw = ", ".join(ingredients)
     verdict = engine.analyze(raw)
     kind = _catalogue_kind(hit)
     front_claims = hit["front_claims"] or []
-    verified = hit["verified_at"].date().isoformat()
+    checked = _checked_at(hit)
+    verified = checked.date().isoformat()
+    team = hit["verified_at"].date().isoformat()
+    photo = hit["last_verified_at"].date().isoformat() if hit.get("last_verified_at") else None
+    # D-175: a food pack last checked over 15 days ago offers one photo of its list, unless this
+    # scan just checked it, or D-073's avoid-list ask shows (it does the same job). One ask per
+    # scan: the front (D-100) and table (D-168) offers wait for a later scan, also on the result
+    # of the photo just sent for this check.
+    now = now or dt.datetime.now(dt.timezone.utc if checked.tzinfo else None)
+    due = (kind["code"] == "food" and not rechecked_on and not any(p["avoid"] for p in profiles)
+           and now - checked > dt.timedelta(days=result_screen.RECHECK_AFTER_DAYS))
+    wait = due or bool(rechecked_on)
     reliability = {
         "error": None, "ingredients_complete": True, "verdict_safe_to_display": True,
         "caveats": [], "source": "catalogue",
@@ -866,9 +926,14 @@ def _catalogue_result(hit, avoid_codes, who, compare_regulators, profiles=(), sc
         # avoid list is asked for one back photo before relying on this.
         "allergen_recheck_suggested": bool(avoid_codes),
         # D-100: no front on file and none waiting for review; the app offers to add one.
-        "front_wanted": bool(hit.get("front_wanted")),
+        "front_wanted": bool(hit.get("front_wanted")) and not wait,
         # D-168: no nutrition table on file or waiting; the result offers one photo of it.
-        "table_wanted": bool(hit.get("table_wanted")),
+        "table_wanted": bool(hit.get("table_wanted")) and not wait,
+        # D-175: who checked the label and when; a photo match is a machine check, kept apart.
+        "team_verified": team,
+        "photo_matched": photo,
+        "recheck_due": due,
+        "rechecked_on": rechecked_on,
     }
     display = rel.apply_display_rule(verdict, reliability)
     claim_check = _user_claim_check(claim_checker.check_claims(
@@ -898,10 +963,7 @@ def _catalogue_result(hit, avoid_codes, who, compare_regulators, profiles=(), sc
         "claim_check": claim_check,
         "extracted": extracted,
         "reliability": reliability,
-        "disclosures": [
-            f"Our team last checked this label on {verified}. Packs change; if yours "
-            "looks different, scan the back of the pack.",
-        ] + rel.disclosures(reliability),
+        "disclosures": [result_screen.checked_disclosure(team, photo)] + rel.disclosures(reliability),
         "regulators": regulators.compare(verdict) if compare_regulators else None,
         "engine_version": ENGINE_VERSION,
     })
@@ -1316,6 +1378,9 @@ async def scan(
     screen_pack: Optional[str] = Form(None, examples=[""],
                                       description='D-130: JSON {"ingredients", "allergen_statement"} from an earlier '
                                                   'result read from a screen; the answer says what differs on this pack.'),
+    recheck: bool = Form(False, description="D-175: a photo of a published pack's ingredient list, to check it "
+                                            "again. Compared with the published list for free first; read by the "
+                                            "model only when it isn't clearly the same."),
 ):
     """
     barcode -> reviewed catalogue entry, else images -> Gemini -> engine -> claim check.
@@ -1446,7 +1511,7 @@ async def scan(
                     "back_kinds": kinds,
                     "replay": replay is not None,
                     "accept_unconfirmed": accept_unconfirmed, "screen_pack": screen_pack,
-                    "table_only": table_only},
+                    "table_only": table_only, "recheck": recheck},
         "timings": {},
     }
 
@@ -1505,7 +1570,27 @@ async def scan(
     # Every check below uses this one read. If the model fails, a Vision read
     # (~13 paise) was spent for nothing: rare, and cheaper than the wait.
     back_bytes = next((d for d, _m, r in images if r == "back"), None)
-    back_read = ocr_check.start_back_read(back_bytes)
+    # D-175: a re-check photo of a published pack is compared with the published list
+    # for free first; only a photo that isn't clearly the same goes on to the paid read.
+    recheck_check = None
+    if recheck and barcode and back_bytes and not table_only and [r for _d, _m, r in images] == ["back"]:
+        rc_hit = _persist(STORE.find_current, barcode) if STORE else None
+        if rc_hit:
+            free = await _free_recheck(rc_hit, back_bytes, tr, wait_all=replay is not None)
+            back_read, recheck_check = free["read"], free["check"]
+            if recheck_check["decision"] == "unchanged":
+                saved = _persist(STORE.record_recheck, rc_hit, back_key=keys.get("back"), device_id=device_id,
+                                 latency_ms=_ms(t0), trace=tr)
+                at = saved["last_verified_at"] if saved else dt.datetime.now(dt.timezone.utc)
+                if saved:
+                    rc_hit = {**rc_hit, "last_verified_at": at}
+                result = _catalogue_result(rc_hit, avoid_codes, who, compare_regulators, people, screen_pack,
+                                           rechecked_on=at.date().isoformat())
+                result["scan_id"] = saved and saved["scan_id"]
+                result["catalogue"]["recheck"] = "unchanged"
+                return result
+    if recheck_check is None:
+        back_read = ocr_check.start_back_read(back_bytes)
     # D-092: how long we waited on retries, so a slow scan can be told apart as
     # "the model was busy" (retries) or "the model was slow" (none).
     retries = tr["timings"].setdefault("vision_retries", [])
@@ -1643,6 +1728,9 @@ async def scan(
                 tr["timings"]["ocr"] = "skipped (deadline)"
         if back_read is not None and back_read.ms is not None:
             tr["timings"]["ocr_read_ms"] = back_read.ms
+    if recheck_check is not None:
+        # D-175: the free comparison's input and decision stay with the scan (D-092).
+        tr.setdefault("ocr", {}).setdefault("back", {})["recheck"] = recheck_check
     # D-133: the nutrition table, kept only where the second reading of the same
     # photo and the table's own arithmetic agree (lenses/nutrition.py).
     panel = nutrition.check(vision.get("nutrition"), ocr_result.get("ocr_text"),

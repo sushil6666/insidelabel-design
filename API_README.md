@@ -55,7 +55,8 @@ lint:
 | `additives` | every additive as a card (D-111): `{title, items[], open, folded_text}`; each item has `ins`, `label_line` (the whole label line) and `badge` `{kind, text, note?}` with kind `not_permitted` / `worth_knowing` / `permitted` (or `badge: null`); the first `open` items stay open, the rest fold behind `folded_text` |
 | `additive_alert` | only when an additive isn't permitted in India on a complete read at confidence ≥ 0.95: `{text, detail, source}` (D-111) |
 | `retake` | a prompt naming the problem (D-036), or `null` |
-| `last_verified`, `recheck` | catalogue hits only (D-073) |
+| `last_verified`, `recheck` | catalogue hits only (D-073); `last_verified` names both dates when a photo matched after our team's check (D-175) |
+| `recheck_card`, `rechecked` | D-175: `{text, button}` on a food pack last checked over 15 days ago; "Pack checked again on ..." after a photo sent with `recheck=true` matched for free |
 
 There is no score in `screen` (D-064); `verdict.score` stays for admin use.
 

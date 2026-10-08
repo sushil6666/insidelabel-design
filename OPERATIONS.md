@@ -330,6 +330,32 @@ and a similar `ocr_chars`. The review screen shows each scan's photo and reading
 camera app stamps "Shot on OnePlus" on its photos and Cloud Vision reads it as label text
 (harmless; the watermark can be turned off in the camera's settings; the app's shutter adds none).
 
+### The 15-day re-check (D-175)
+
+A published pack last checked more than 15 days ago asks, after its result, for one photo of its
+ingredient list. The photo is compared with the published list for free first; only a photo that
+isn't clearly the same pays for the normal read (about Rs 0.6). Re-checks per week, by outcome
+(the D-073 avoid-list re-check is counted too: it uses the same path):
+
+```bash
+sudo -u insidelabel psql -d insidelabel -P pager=off -c "
+SELECT date_trunc('week', created_at)::date AS week,
+  count(*) FILTER (WHERE resolved_via = 'recheck') AS unchanged_free,
+  count(*) FILTER (WHERE resolved_via = 'barcode') AS unchanged_paid,
+  count(*) FILTER (WHERE resolved_via = 'new_product') AS changed,
+  count(*) FILTER (WHERE outcome <> 'verdict') AS refused_or_failed
+FROM scans WHERE (request->>'recheck')::boolean
+GROUP BY 1 ORDER BY 1 DESC"
+```
+
+"changed" is a list that differs from the published one: it waits on `/review` as a reformulation
+item. Nothing is published without a person or the review agents (D-117). How often the free
+check would pass on the packs published so far, with no model or Google call:
+
+```bash
+il tools/recheck_measure.py
+```
+
 ### The review agents (D-117), in shadow
 
 Gemini drafts each new queue item (category, ingredients, claims, note); a rules checker confirms

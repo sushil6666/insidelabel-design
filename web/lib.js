@@ -12,7 +12,7 @@
 //    beyond the headline the user was shown.
 
 // Bump together with VERSION in sw.js: a report then says which shell was cached.
-export const APP_VERSION = "web-51";
+export const APP_VERSION = "web-52";
 
 // ------------------------------------------------------------------ storage
 // localStorage can throw (private mode, blocked site data); the app must still work.
@@ -217,7 +217,8 @@ function sendWithUpload(path, init, onUploaded) {
 
 export async function scanRequest({ barcode, barcodeSource, back, front, pairing, backSource, frontSource,
                                      acceptUnconfirmed, parts = [], partSources = [], partKinds = [], screenPack = null,
-                                     barcodeAnswer = null, tableOnly = false }, { onUploaded = null } = {}) {
+                                     barcodeAnswer = null, tableOnly = false, recheck = false },
+                                   { onUploaded = null } = {}) {
   const fd = new FormData();
   fd.append("device_id", deviceId());
   fd.append("profiles", JSON.stringify(profilesForServer()));
@@ -246,6 +247,8 @@ export async function scanRequest({ barcode, barcodeSource, back, front, pairing
   if (screenPack) fd.append("screen_pack", JSON.stringify(screenPack));
   // D-168: a published pack's nutrition table, alone; only the table is read.
   if (tableOnly) fd.append("table_only", "true");
+  // D-175: a photo of a published pack, compared with the published list for free first.
+  if (recheck && back) fd.append("recheck", "true");
   return call("/scan", { method: "POST", body: fd, ...(onUploaded ? { onUploaded } : {}) });
 }
 
