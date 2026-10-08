@@ -93,3 +93,38 @@ def test_the_invite_gate_is_gone():
     assert c.post("/join", json={"code": "K7PM4QXT", "device_id": "x"}).status_code in (404, 405)
     assert "function join(" not in JS["app.js"] and "joinRequest" not in JS["lib.js"]
     assert not any("Invite code" in t or "Join the" in t for t in js_strings(JS["app.js"]))
+
+
+# D-184 (Sushil, 2026-10-08, "yes"): everyone has the full plan free until billing ships, so no plan name,
+# price or upgrade shows. The future names ("Label", "Label Master") wait for billing too. "Free ·
+# shelf by shelf" describes a feature, not a plan, and "Label" alone is everywhere, so neither is matched.
+PLAN = re.compile(r"\bPro\b|\bLabel (Master|Plus)\b|\bupgrad(e|es|ed|ing)\b|(\bRs\.?|\u20b9)\s?\d|\bper month\b|\ba month\b",
+                  re.I)
+
+
+def assert_no_plan(texts, where):
+    bad = [t for t in texts if isinstance(t, str) and PLAN.search(t)]
+    assert not bad, f"{where}: names a plan, a price or an upgrade\n" + "\n".join(f"  {t!r}" for t in bad)
+
+
+def test_the_plan_lint_catches_it():
+    for t in ("Pro \u00b7 in preparation", "Label Master", "Label Plus", "Upgrade now", "Rs 51", "\u20b951",
+              "Rs. 51 a month"):
+        assert PLAN.search(t), t
+    for t in ("In preparation", "Free \u00b7 shelf by shelf", "InsideLabel", "Protein", "process", "provenance"):
+        assert not PLAN.search(t), t
+
+
+def test_no_plan_names_prices_or_upgrades():
+    for name, src in JS.items():
+        assert_no_plan(js_strings(src), f"web/{name}")
+    assert_no_plan(_page_text(HTML), "web/index.html")
+    texts = []
+    for name, value in vars(screen).items():
+        if name.isupper():
+            texts += list(strings(value, skip_keys=NOT_SHOWN))
+    assert_no_plan(texts, "lenses/screen.py")
+    pages = sorted(glob.glob(os.path.join(ROOT, "web", "site", "*.html"))) + [os.path.join(ROOT, "web", "design.html")]
+    for p in pages:
+        with open(p, encoding="utf-8") as f:
+            assert_no_plan(_page_text(f.read()), os.path.relpath(p, ROOT))

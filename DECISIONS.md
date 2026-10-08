@@ -3842,6 +3842,12 @@ already off by D-162); amends D-148's wording only (the daily photo limit stays,
 - **Sign-up and sign-in ON HOLD** (Sushil, 2026-10-08: "stop that signin and login part now. once it is available
   and testing done will implement"): no Google, email or phone sign-in is built now, including D-148's Google
   sign-in. It comes back with its own decision.
+- **No plan name shows now** (Sushil, 2026-10-08: "pro = Label Master and Free = Label, Yes"): the "Ask about this
+  pack" tag "Pro · in preparation" (app result screen, `web/design.html`) and "Pro · not yet available" (website
+  home) become plain **"In preparation"** (web-61). "Free · shelf by shelf" stays: it says the shelf feature
+  will cost nothing, not which plan. `tests/test_no_beta.py` also fails on "Pro" as a word, "Label Master",
+  "Label Plus", a price (Rs or the rupee sign with a number, "a month") or "upgrade" in any app string, screen.py
+  table, website page or the design page.
 - **Checked by** `tests/test_no_beta.py`: no app string, screen.py table, website page or meta description,
   "Before you start" text or server message says "beta" or "tester" ("beta-carotene" is a pigment and passes).
 - **Sushil's own steps:** the Play Store listing text and the Play Console track.

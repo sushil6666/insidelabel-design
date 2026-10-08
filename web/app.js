@@ -1551,7 +1551,7 @@ function result(id, sub, tileId) {
   you(el("div", { class: "pending" }, el("span", {}, "Other packs without what's on your avoid list"),
       el("span", { class: "pending-tag" }, "In preparation")),
     el("div", { class: "pending" }, el("span", {}, "Ask about this pack"),
-      el("span", { class: "pending-tag" }, "Pro · in preparation")));
+      el("span", { class: "pending-tag" }, "In preparation")));
 
   // What's inside: everything D-153 kept under "More about this pack", open.
   panels.inside.append(...moreAbout(h, !askTable, false));

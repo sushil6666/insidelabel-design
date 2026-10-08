@@ -58,7 +58,7 @@ def test_the_founder_note_is_the_same_on_the_home_and_about():
 def test_what_is_promised_says_it_is_not_built_yet():
     pending = re.findall(r'<div class="pending">(.*?)</div>', HOME, re.S)
     assert len(pending) == 2
-    assert "not yet available" in pending[0] and "Ask about this pack" in pending[0]          # D-113, Pro
+    assert "In preparation" in pending[0] and "Ask about this pack" in pending[0]             # D-113; no plan name, D-184
     assert "Free" in pending[1]                                                               # D-059
 
 
