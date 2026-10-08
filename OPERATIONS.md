@@ -211,6 +211,10 @@ The queue: https://insidelabel.ai/review (log in with the reviewer name and pass
 **A wrong barcode on a product (D-142).** Read the digits printed under the bars on the product's own
 photo first (`/review/media/<key>`). Never change `products.barcode` with SQL: the database refuses it.
 
+**Cropping a pack picture (D-186).** A front photo with a hand or a floor in it: on the item (or on `/review/pictures`
+for your own photo) press "Crop to the pack", drag a box round the pack, check "What will be shown", then tick; the
+ticks are about that cropped copy. `SELECT crop FROM pack_pictures` shows the box kept with each picture.
+
 ```bash
 il tools/barcode_audit.py                                  # every published barcode against its own photos (read-only)
 il tools/barcodes.py history <product id or barcode>       # the barcode and every recorded change

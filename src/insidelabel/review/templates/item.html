@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_crop.html" import crop_control, crop_assets %}
 {% block title %}Item {{ d.item.id }}{% endblock %}
 {% block body %}
 {% set labels = {"new_product": "New product", "reformulation": "Reformulation",
@@ -311,10 +312,13 @@
               (approved by {{ picture_offer.shown.approved_by }} on {{ picture_offer.shown.approved_at.date() }});
               ticking replaces it.</div>{% endif %}
             {% if picture_offer.ok %}
+              {# D-186: crop to the pack first when the photo shows more; the ticks are about what will be shown #}
+              {{ crop_control("/review/media/" ~ d.images.front, "Front of the pack") }}
               <label class="choice" style="margin-top:8px"><input type="checkbox" name="pack_picture" value="1">
                 Show this front photo to everyone who scans this barcode</label>
               <label class="choice"><input type="checkbox" name="pack_alone" value="1">
                 It shows the pack alone (no hand, face, person or room) and it is sharp</label>
+              <div class="muted" style="font-size:12px">Ticked about what will be shown: the cropped copy, when you crop.</div>
             {% else %}
               <div class="muted" style="margin-top:4px">This front photo can't be shown: {{ picture_offer.why }}</div>
             {% endif %}
@@ -374,4 +378,5 @@
     </details>
   </div>
 </div>
+{{ crop_assets() }}
 {% endblock %}

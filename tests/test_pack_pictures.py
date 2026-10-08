@@ -165,3 +165,156 @@ def test_a_reviewer_uploads_one_and_can_remove_it(env):
 def test_the_public_route_refuses_anything_else(env):
     assert TestClient(main.app).get("/pack-picture/../secret").status_code == 404
     assert TestClient(main.app).get("/pack-picture/" + "0" * 64 + ".jpg").status_code == 404
+
+
+# ---------------------------------------------------------------- crop to the pack (D-186)
+# Sushil, 2026-10-08: a shopper's front showed the pack in a hand over a floor; the pack was
+# clear but the photo couldn't be ticked. A reviewer may crop it to the pack first.
+
+def _quadrants(size=(1200, 1600), orientation=None):
+    """A photo whose top-left quarter (as shown) is red and the rest blue; stored rotated for EXIF 6."""
+    shown = Image.new("RGB", size, (0, 0, 255))
+    shown.paste((255, 0, 0), (0, 0, size[0] // 2, size[1] // 2))
+    buf = io.BytesIO()
+    if orientation == 6:                      # EXIF 6: turn 90 degrees clockwise to show it
+        ex = Image.Exif()
+        ex[0x0112] = 6
+        shown.transpose(Image.Transpose.ROTATE_90).save(buf, "JPEG", exif=ex.tobytes())
+    else:
+        shown.save(buf, "JPEG")
+    return buf.getvalue()
+
+
+def _crop(left, top, width, height):
+    return {"left": left, "top": top, "width": width, "height": height}
+
+
+def _colour(jpeg):
+    im = Image.open(io.BytesIO(jpeg)).convert("RGB")
+    return im.getpixel((im.width // 2, im.height // 2))
+
+
+def test_crop_then_shrink_keeps_the_cropped_shape_small_and_without_metadata():
+    data = _photo()                                               # 1200 x 1600 with camera EXIF
+    small = pictures.shrink(data, _crop(0.1, 0.2, 0.5, 0.3))      # 600 x 480 of the photo
+    im = Image.open(io.BytesIO(small))
+    assert im.format == "JPEG" and im.size == (480, 384)
+    assert not im.getexif() and "exif" not in im.info
+    # A small crop isn't blown up: 0.2 x 0.2 of 1200 x 1600 is 240 x 320.
+    assert Image.open(io.BytesIO(pictures.shrink(data, _crop(0.4, 0.4, 0.2, 0.2)))).size == (240, 320)
+
+
+def test_a_rotated_photo_is_cropped_as_shown():
+    data = _quadrants(orientation=6)
+    assert Image.open(io.BytesIO(data)).size == (1600, 1200)      # stored on its side
+    small = pictures.shrink(data, _crop(0, 0, 0.5, 0.5))
+    assert Image.open(io.BytesIO(small)).size == (360, 480)       # upright, a quarter of the photo
+    r, g, b = _colour(small)
+    assert r > 200 and b < 60                                     # the red corner the reviewer saw
+
+
+@pytest.mark.parametrize("crop, words", [
+    (_crop(0.6, 0.0, 0.5, 0.5), "outside the photo"),
+    (_crop(-0.1, 0.0, 0.5, 0.5), "outside the photo"),
+    (_crop(0.0, 0.0, 0.1, 0.5), "too small"),
+    (_crop(0.0, 0.0, 1.0, 0.2), "long and thin"),                 # 1200 x 320: wider than 3 to 1
+    (_crop(0.0, 0.0, 0.2, 1.0), "long and thin"),                 # 240 x 1600: taller than 1 to 3
+    (_crop(float("nan"), 0.0, 0.5, 0.5), "couldn't be read"),
+])
+def test_a_bad_crop_is_refused(crop, words):
+    with pytest.raises(pictures.PictureError, match=words):
+        pictures.shrink(_photo(), crop)
+
+
+def test_the_crop_fields_on_the_form():
+    assert pictures.crop_from_form({}) is None
+    assert pictures.crop_from_form({k: "" for k in ("crop_left", "crop_top", "crop_width", "crop_height")}) is None
+    assert pictures.crop_from_form({"crop_left": "0.1", "crop_top": "0.2", "crop_width": "0.5",
+                                    "crop_height": "0.3"}) == _crop(0.1, 0.2, 0.5, 0.3)
+    for bad in ({"crop_left": "0.1"}, {"crop_left": "nan", "crop_top": "0", "crop_width": "0.5", "crop_height": "0.5"},
+                {"crop_left": "x", "crop_top": "0", "crop_width": "0.5", "crop_height": "0.5"},
+                {"crop_left": "inf", "crop_top": "0", "crop_width": "0.5", "crop_height": "0.5"}):
+        with pytest.raises(pictures.PictureError):
+            pictures.crop_from_form(bad)
+
+
+def test_no_crop_behaves_as_before():
+    data = _photo()
+    assert pictures.shrink(data, None) == pictures.shrink(data)
+    assert Image.open(io.BytesIO(pictures.shrink(data))).size == (360, 480)
+
+
+def _fields(crop):
+    return {f"crop_{k}": str(v) for k, v in crop.items()}
+
+
+def test_a_reviewer_crops_a_shoppers_front_on_the_item(env):
+    bc = "8900000019946"
+    published(env, bc)
+    item = send_front(env, bc, agreed(env, "2026-10-08"), _quadrants())
+    c = reviewer()
+    page = c.get(f"/review/item/{item}").text
+    assert "Crop to the pack" in page and 'name="crop_left"' in page and "data-crop" in page
+    c.post(f"/review/item/{item}/claim", data={"csrf": csrf(page)})
+    before = q(env, "SELECT count(*) FROM pack_pictures")[0][0]
+    form = {"csrf": csrf(page), "name": "Atta Cookie", "brand": "Testco", "variant": "", "barcode": "",
+            "ingredients": "Whole wheat flour\nSugar\nGroundnut oil\nSalt", "allergen_statement": "Contains wheat, peanut.",
+            "front_claims": "", "note": "", "category": "7.2.1", "pack_picture": "1", "pack_alone": "1"}
+
+    # Bad rectangles: refused with a message for the reviewer; nothing saved, nothing published.
+    for bad, words in ((_crop(0.6, 0, 0.5, 0.5), "outside"), (_crop(0, 0, 0.1, 0.1), "too+small"),
+                       (_crop(0, 0, 1.0, 0.2), "long+and+thin"), ({"left": "nan", "top": 0, "width": 0.5, "height": 0.5}, "couldn")):
+        r = c.post(f"/review/item/{item}/approve", data=form | _fields(bad), follow_redirects=False)
+        loc = r.headers["location"].replace("%20", "+")
+        assert loc.startswith(f"/review/item/{item}?error=Pack+picture") and words in loc, loc
+        assert q(env, "SELECT count(*) FROM pack_pictures")[0][0] == before
+        assert q(env, "SELECT status FROM review_queue WHERE id = %s", item)[0][0] == "claimed"
+
+    r = c.post(f"/review/item/{item}/approve", data=form | _fields(_crop(0, 0, 0.5, 0.5)), follow_redirects=False)
+    assert r.headers["location"] == "/review"
+    (key, source, crop), = q(env, """SELECT pp.image_key, pp.source, pp.crop FROM pack_pictures pp
+                                      JOIN products p ON p.id = pp.product_id WHERE p.barcode = %s""", bc)
+    assert source == "shopper_photo" and crop == _crop(0, 0, 0.5, 0.5)
+    got = TestClient(main.app).get(f"/pack-picture/{key}").content
+    assert Image.open(io.BytesIO(got)).size == (360, 480)
+    r_, g_, b_ = _colour(got)
+    assert r_ > 200 and b_ < 60                                    # the red quarter, nothing else
+    # The shopper's own photo is untouched (it still goes at 30 days, D-098).
+    front_key = q(env, "SELECT front_image_key FROM scans WHERE front_image_key IS NOT NULL ORDER BY created_at DESC LIMIT 1")[0][0]
+    from insidelabel.review import routes
+    assert Image.open(io.BytesIO(routes.MEDIA.get(front_key)[0])).size == (1200, 1600)
+
+
+def test_a_reviewer_crops_their_own_upload(env):
+    bc = "8900000019953"
+    published(env, bc)
+    c = reviewer()
+    page = c.get("/review/pictures").text
+    assert "Crop to the pack" in page and 'data-crop-file="photo"' in page
+    form = {"csrf": csrf(page), "barcode": bc, "pack_alone": "1", "same_product": "1"}
+    files = {"photo": ("p.jpg", _photo(exif=False), "image/jpeg")}
+    r = c.post("/review/pictures", data=form | _fields(_crop(0, 0, 0.1, 0.5)), files=files, follow_redirects=False)
+    assert "too" in r.headers["location"] and "error=" in r.headers["location"]
+    assert q(env, "SELECT count(*) FROM pack_pictures pp JOIN products p ON p.id = pp.product_id WHERE p.barcode = %s",
+             bc)[0][0] == 0
+    r = c.post("/review/pictures", data=form | _fields(_crop(0.1, 0.2, 0.5, 0.3)), files=files, follow_redirects=False)
+    assert r.headers["location"] == f"/review/pictures?done={bc}"
+    (key, source, crop), = q(env, """SELECT pp.image_key, pp.source, pp.crop FROM pack_pictures pp
+                                      JOIN products p ON p.id = pp.product_id WHERE p.barcode = %s""", bc)
+    assert source == "reviewer_upload" and crop == _crop(0.1, 0.2, 0.5, 0.3)
+    assert Image.open(io.BytesIO(TestClient(main.app).get(f"/pack-picture/{key}").content)).size == (480, 384)
+
+
+def test_no_crop_stores_no_rectangle(env):
+    bc = "8900000019960"
+    published(env, bc)
+    c = reviewer()
+    page = c.get("/review/pictures").text
+    r = c.post("/review/pictures", data={"csrf": csrf(page), "barcode": bc, "pack_alone": "1", "same_product": "1",
+                                         **{f"crop_{k}": "" for k in ("left", "top", "width", "height")}},
+               files={"photo": ("p.jpg", _photo(exif=False), "image/jpeg")}, follow_redirects=False)
+    assert r.headers["location"] == f"/review/pictures?done={bc}"
+    (key, crop), = q(env, """SELECT pp.image_key, pp.crop FROM pack_pictures pp
+                              JOIN products p ON p.id = pp.product_id WHERE p.barcode = %s""", bc)
+    assert crop is None
+    assert Image.open(io.BytesIO(TestClient(main.app).get(f"/pack-picture/{key}").content)).size == (360, 480)

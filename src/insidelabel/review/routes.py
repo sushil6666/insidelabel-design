@@ -218,8 +218,21 @@ def _picture_offer(data):
                                                       "shopper's. Upload your own on Pack pictures."}}
 
 
-def _make_picture(item_id, front, name):
-    """After a publish: the ticked front photo becomes the product's pack picture."""
+def _check_picture_crop(front, crop):
+    """
+    D-186: before anything is published, a drawn crop must fit the front photo, so a bad
+    one is refused with nothing saved. No photo to check against is left to _make_picture.
+    """
+    got = MEDIA.get(front) if (crop is not None and front and MEDIA) else None
+    if got:
+        try:
+            pictures.shrink(got[0], crop)
+        except pictures.PictureError as e:
+            raise ReviewError(f"Pack picture: {e}") from e
+
+
+def _make_picture(item_id, front, name, crop=None):
+    """After a publish: the ticked front photo (cropped as drawn, D-186) becomes the product's pack picture."""
     who = pictures.shopper_front(SERVICE.conninfo, front)
     got = MEDIA.get(front) if (who and MEDIA) else None
     data = SERVICE.get(item_id)
@@ -227,7 +240,7 @@ def _make_picture(item_id, front, name):
     if not (got and pid):
         raise ReviewError("Published, but the front photo couldn't be used as the pack picture.")
     pictures.add(SERVICE.conninfo, MEDIA, product_id=pid, data=got[0], source="shopper_photo",
-                 approved_by=name, scan_id=who["scan_id"], taken_on=who["taken_on"])
+                 approved_by=name, scan_id=who["scan_id"], taken_on=who["taken_on"], crop=crop)
 
 
 
@@ -245,16 +258,22 @@ async def _decide(request, item_id, name, action):
     try:
         if action == "approve":
             # D-182: a person ticks both boxes; the review agent never sets these (it calls approve() itself).
-            front = None
+            front = crop = None
             if form.get("pack_picture"):
                 if not form.get("pack_alone"):
                     raise ReviewError("Pack picture: tick that the photo shows the pack alone, or untick it.")
                 data = SERVICE.get(item_id)
                 front = data and data["images"]["front"]
+                # D-186: the ticks are about the cropped copy; a bad crop stops the publish too.
+                try:
+                    crop = pictures.crop_from_form(form)
+                except pictures.PictureError as e:
+                    raise ReviewError(f"Pack picture: {e}") from e
+                _check_picture_crop(front, crop)
             SERVICE.approve(item_id, name, form)
             if front:
                 try:
-                    _make_picture(item_id, front, name)
+                    _make_picture(item_id, front, name, crop)
                 except (ReviewError, pictures.PictureError) as e:
                     from urllib.parse import quote
                     return RedirectResponse(f"/review/pictures?error={quote(str(e))}", status_code=303)
@@ -324,7 +343,7 @@ async def picture_upload(request: Request, name: str = Depends(reviewer)):
         if not (form.get("pack_alone") and form.get("same_product")):
             raise ReviewError("Tick both boxes: the photo shows the pack alone, and it is this product.")
         pictures.add(SERVICE.conninfo, MEDIA, product_id=pid, data=data, source="reviewer_upload",
-                     approved_by=name)
+                     approved_by=name, crop=pictures.crop_from_form(form))     # D-186: cropped as drawn
     except (ReviewError, pictures.PictureError) as e:
         return RedirectResponse(f"/review/pictures?error={quote(str(e))}", status_code=303)
     return RedirectResponse(f"/review/pictures?done={quote(code)}", status_code=303)

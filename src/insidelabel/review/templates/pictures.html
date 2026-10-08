@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_crop.html" import crop_control, crop_assets %}
 {% block title %}Pack pictures{% endblock %}
 {% block body %}
 {# D-182: the pack pictures shown on results, and a reviewer's own upload. #}
@@ -11,7 +12,7 @@
 
 <p class="muted">A pack picture is a small copy (480 px, no photo metadata) of a pack's front, shown on every
   result for its barcode when the shopper has no photo of their own. It is never read for findings. Use a photo
-  of the pack alone: no hand, face, person or room.</p>
+  of the pack alone: no hand, face, person or room, or crop it to the pack below.</p>
 
 <form method="post" action="/review/pictures" enctype="multipart/form-data" class="panel" style="max-width:560px">
   <input type="hidden" name="csrf" value="{{ csrf }}">
@@ -19,10 +20,12 @@
   <input type="text" id="barcode" name="barcode" inputmode="numeric" autocomplete="off" required>
   <label for="photo">Photo of the front of the pack</label>
   <input type="file" id="photo" name="photo" accept="image/jpeg,image/png,image/webp" required>
+  {{ crop_control(alt="The photo you chose", file_id="photo") }}{# D-186: crop to the pack before it is shown #}
   <label class="choice" style="margin-top:10px"><input type="checkbox" name="pack_alone" value="1">
     It shows the pack alone (no hand, face, person or room) and it is sharp</label>
   <label class="choice"><input type="checkbox" name="same_product" value="1">
     It is the product with this barcode</label>
+  <div class="muted" style="font-size:12px">Ticked about what will be shown: the cropped copy, when you crop.</div>
   <div style="margin-top:12px"><button class="primary" type="submit">Show this picture</button></div>
 </form>
 
@@ -47,4 +50,5 @@
 {% else %}
 <p class="muted">None yet.</p>
 {% endif %}
+{{ crop_assets() }}
 {% endblock %}

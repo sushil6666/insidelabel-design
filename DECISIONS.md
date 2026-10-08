@@ -4077,6 +4077,34 @@ Superseded, that part only: D-151's film as the hero (now one tap away lower on 
 before and after screenshots (WebP) and motion GIFs, each listed with its screen, theme, width and the reviewer's score.
 Not served by the app or the website.
 
+### D-186 · Crop a pack picture to the pack on /review `LOCKED` (2026-10-08)
+**Sushil, 2026-10-08:** "can we trim this and show", then "yes". His brief, the same day: a shopper's front photo
+(D-182, D-183) showed a DMart Premia Jeera 100 g pack held in a hand over a floor. The reviewer's ticks say "It shows
+the pack alone (no hand, face, person or room) and it is sharp", so it can't be ticked, although the pack itself is
+clear. Today /review can only tick a photo as it is. Built by Claude; no change to D-182 or D-183.
+
+- **Where:** only on /review (reviewers, D-097): the pack picture block on a review item (a shopper's front), and the
+  upload form on /review/pictures (a reviewer's own photo). Nothing changes in the app or the website.
+- **The control:** "Crop to the pack" over the photo. The reviewer drags a box (mouse or touch; corners resize, the
+  middle moves it; arrow keys move it, Shift and arrow keys change its size), sees "What will be shown" beside it,
+  and can go back with "Use the whole photo". A small inline script in the review page (`review/templates/_crop.html`);
+  no library. Without JavaScript the photo is used whole, as before.
+- **What travels:** four numbers, left, top, width and height, as fractions 0 to 1 of the photo as shown (after its
+  EXIF rotation; browsers apply it too). Empty means no crop.
+- **What the server checks** (`pictures.crop_from_form`, `pictures.shrink`): numbers, finite, inside the photo, at
+  least 20 percent of each side, the shape between 1:3 and 3:1 in pixels. A bad box is refused with a line for the
+  reviewer and nothing is saved; on a review item nothing is published either.
+- **The order in `pictures.shrink()`:** rotate by EXIF, crop, resize to 480 px, save without metadata. No crop
+  behaves exactly as before.
+- **The ticks** keep their words and mean the cropped result: "It shows the pack alone ... and it is sharp" is about
+  what will be shown. The preview is what the reviewer ticks against.
+- **Record:** `pack_pictures.crop` (migration 026, nullable jsonb `{"left", "top", "width", "height"}`; NULL is the
+  whole photo). `source` stays `shopper_photo`, or `reviewer_upload` for a reviewer's own; `approved_by` as before.
+- **The shopper's original** is not changed and not kept longer: it still goes at 30 days (D-080, D-098). Only the
+  small cropped copy is the pack's.
+- **Never read for findings (D-004).** The review agent (D-117) never crops or ticks a picture: it publishes through
+  `ReviewService.approve()`, which never makes one.
+
 ---
 
 ## Open and pending
