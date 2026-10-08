@@ -85,3 +85,43 @@ result. The refusal, Send it to us and Thank you screens have no before: main's 
 | [review.gif](phase2/review.gif) | Review: photos arriving (motion) | light | 390 | 98 |
 | [scanner.gif](phase2/scanner.gif) | Scanner corners and gold line (motion) | light | 390 | 97 |
 | [step.gif](phase2/step.gif) | A photo step opening: step pill, example card, tick drawing (motion) | light | 390 | 97 |
+
+## Phase 3: the website (web-65)
+
+Lighthouse mobile on the website home, gzip as live, run in turn with main, 3 each: 100/100/100/100 in every run; LCP
+1435 to 1448 ms (main 1517 to 1532, Accessibility 96), CLS 0. There is no GIF of the film: it plays only on a tap, and
+this headless browser cannot play its H.264 file.
+Before images are main at the same width and theme; the 360 px and 1280 dark images, and the reduced-motion still, are after only.
+
+| File | Screen | Theme | Width (px) | Score |
+|---|---|---|---|---|
+| [after-about-top-1280-dark.webp](phase3/after-about-top-1280-dark.webp) | About, first view | dark | 1280 | 98 |
+| [after-home-full-1280-dark.webp](phase3/after-home-full-1280-dark.webp) | Home, whole page | dark | 1280 | 98 |
+| [after-home-top-1280-dark.webp](phase3/after-home-top-1280-dark.webp) | Home, first view | dark | 1280 | 98 |
+| [after-home-top-360-dark.webp](phase3/after-home-top-360-dark.webp) | Home, first view | dark | 360 | 97 |
+| [after-home-top-390-light-still.webp](phase3/after-home-top-390-light-still.webp) | Home, first view, reduced motion (still) | light | 390 | 97 |
+| [after-how-top-1280-dark.webp](phase3/after-how-top-1280-dark.webp) | How we check, first view | dark | 1280 | 99 |
+| [after-menu-360-dark.webp](phase3/after-menu-360-dark.webp) | The menu, open | dark | 360 | 97 |
+| [after-privacy-top-1280-dark.webp](phase3/after-privacy-top-1280-dark.webp) | Privacy, first view | dark | 1280 | 97 |
+| [before-after-about-top-1280-light.webp](phase3/before-after-about-top-1280-light.webp) | About, first view | light | 1280 | 98 |
+| [before-after-about-top-390-dark.webp](phase3/before-after-about-top-390-dark.webp) | About, first view | dark | 390 | 98 |
+| [before-after-about-top-390-light.webp](phase3/before-after-about-top-390-light.webp) | About, first view | light | 390 | 98 |
+| [before-after-home-full-1280-light.webp](phase3/before-after-home-full-1280-light.webp) | Home, whole page | light | 1280 | 98 |
+| [before-after-home-full-390-dark.webp](phase3/before-after-home-full-390-dark.webp) | Home, whole page | dark | 390 | 97 |
+| [before-after-home-full-390-light.webp](phase3/before-after-home-full-390-light.webp) | Home, whole page | light | 390 | 97 |
+| [before-after-home-top-1280-light.webp](phase3/before-after-home-top-1280-light.webp) | Home, first view | light | 1280 | 98 |
+| [before-after-home-top-390-dark.webp](phase3/before-after-home-top-390-dark.webp) | Home, first view | dark | 390 | 97 |
+| [before-after-home-top-390-light.webp](phase3/before-after-home-top-390-light.webp) | Home, first view | light | 390 | 97 |
+| [before-after-how-full-1280-light.webp](phase3/before-after-how-full-1280-light.webp) | How we check, whole page | light | 1280 | 99 |
+| [before-after-how-top-1280-light.webp](phase3/before-after-how-top-1280-light.webp) | How we check, first view | light | 1280 | 99 |
+| [before-after-how-top-390-dark.webp](phase3/before-after-how-top-390-dark.webp) | How we check, first view | dark | 390 | 98 |
+| [before-after-how-top-390-light.webp](phase3/before-after-how-top-390-light.webp) | How we check, first view | light | 390 | 98 |
+| [before-after-menu-390-dark.webp](phase3/before-after-menu-390-dark.webp) | The menu, open | dark | 390 | 97 |
+| [before-after-menu-390-light.webp](phase3/before-after-menu-390-light.webp) | The menu, open | light | 390 | 97 |
+| [before-after-privacy-top-1280-light.webp](phase3/before-after-privacy-top-1280-light.webp) | Privacy, first view | light | 1280 | 97 |
+| [before-after-privacy-top-390-dark.webp](phase3/before-after-privacy-top-390-dark.webp) | Privacy, first view | dark | 390 | 97 |
+| [before-after-privacy-top-390-light.webp](phase3/before-after-privacy-top-390-light.webp) | Privacy, first view | light | 390 | 97 |
+| [hero-1280-dark.gif](phase3/hero-1280-dark.gif) | The hero phone on a computer (motion) | dark | 1280 | 98 |
+| [hero-390-light.gif](phase3/hero-390-light.gif) | The hero phone: scan, photograph, the result, sliding like pages, 9 s loop (motion) | light | 390 | 97 |
+| [reveal-1280-light.gif](phase3/reveal-1280-light.gif) | Scrolling on a computer: the step cards and the film rise in (motion) | light | 1280 | 98 |
+| [reveal-390-light.gif](phase3/reveal-390-light.gif) | Scrolling: How it works and the film rise in as they arrive (motion) | light | 390 | 97 |

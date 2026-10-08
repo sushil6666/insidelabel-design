@@ -2727,7 +2727,7 @@ Sushil's "accepted":
   (`web/app.js`); if the scan-speed query (OPERATIONS.md section 5) says otherwise, both change together.
 `tests/test_film.py`.
 
-### D-151 · The explainer film is on the website home only, as the hero; the app has no film `LOCKED` (2026-10-01)
+### D-151 · The explainer film is on the website home only, as the hero; the app has no film `LOCKED` (2026-10-01); the film as the hero `SUPERSEDED by D-185` (2026-10-08): an animated phone is the hero, the film one tap away lower on the page
 **Accepted by Sushil 2026-10-02 ("accepted")**, the details below included, with one change the same day: the
 caption under the film is "How InsideLabel checks a label, in 41 seconds." (Sushil: remove "No sound: the words
 are on screen.").
@@ -4034,7 +4034,46 @@ Measured on the branch:
 Superseded, that part only: D-171's and D-181's action placement on a phone (now docked); D-177's person lines,
 Worth knowing list, nutrition rows, "In preparation" block and desktop layout (as above). Headers marked.
 
-**Evidence** (Sushil, 2026-10-08: saved in the repo): [docs/design/d185/](docs/design/d185/README.md) holds both phases'
+**Phase 3, the website** (branch `claude/project-thread-n9uqxj` again, from `main` after #143, web-65,
+`il-shell-65`). **Sushil, 2026-10-08:** "Start Phase 3".
+- **Home:** the header sits on the hero's deep blue, so the first screen is one panel. The hero takes the accepted lead
+  (line 1 above) and, in the film's place (D-151, superseded as above), a phone drawn in HTML and CSS: the app's own
+  header (the wordmark centred, D-180), then three screens that slide in like pages, 9 s a loop: a gold line reads a
+  barcode, an ingredient list lights up under a lens, the result's cards settle in (the example's own lines with their
+  [1] to [3]). It pauses out of view, and under reduced motion shows the result alone, still. Decoration only
+  (`aria-hidden`): the example table below has every line in words. On a phone under 420 px it is drawn at 88 percent
+  so its screen starts in the first view.
+- **The film:** one tap away, its own section after How it works, under the heading "How InsideLabel checks a label, in
+  41 seconds" (D-151's caption). The still and a large play button; it never starts by itself, and pauses out of view.
+- **How it works** step 2 takes the accepted line 2; the steps are numbered discs (three cards on a computer). The
+  example table becomes a card per row on a phone, so no column is cut off.
+- **How we check, About, Privacy:** calm reading pages: a large title, the lead in ink, sections ruled by a hairline,
+  text at most 68 characters wide. Each page lists its own headings: a sticky row of chips on a phone, and from 1024 px
+  a column beside the text that stays in view; the section in view is marked (a small script per page, after the
+  footer). About's "Write to me at" moves into the founder block; Privacy's dated notice is a quiet outlined line.
+  Words unchanged.
+- **Header, menu and footer:** on a computer every page's header and footer use the home page's edges. The menu opens
+  over a scrim that closes it when tapped, and its button turns into a cross; still no script for the menu (D-179). On
+  the home page the menu no longer repeats "Open the app" (the hero's button is under it). Footer links are 48 px tall.
+- **Motion:** headings, cards and the film rise in as they scroll into view (`animation-timeline: view()`, where the
+  browser has it); the hero's words move in 320 ms without fading, so the first paint already shows them (a fade left
+  Lighthouse with no LCP at all on an earlier build). The phone's screens slide rather than fade, so no frame shows
+  text at part opacity (Lighthouse's contrast check failed on a caption caught mid-fade).
+- **Font preloads, measured as Phase 1 asked** (Lighthouse mobile, gzip as live, 3 runs each, in turn): with the two
+  preloads LCP 1287 to 1443 ms and CLS 0; without them LCP 770 to 1380 ms but CLS 0.004 in every run (the headline's
+  font swap moves the lines below it). The website keeps its two preloads; the app keeps none.
+Measured on the branch:
+- **Lighthouse mobile, website home, gzip as live,** run in turn with main, 3 each: Performance, Accessibility, Best
+  Practices and SEO 100 in every run (main: Accessibility 96, an About link under 4.5:1); LCP 1435 to 1448 ms (main 1517
+  to 1532), CLS 0.
+- **Headless walk** (home, How we check, About, Privacy, each first view and whole page, and the open menu) at 390 light
+  and dark, 360 dark, 1280 light and dark, and 390 with reduced motion: no console errors, layout shift 0 on every page.
+- **Review:** four rounds (81 to 88, then 91 to 95, 96 to 99, 97 to 99); final: home on a phone 97 (light, dark and
+  reduced motion), home on a computer 98, How we check 98 (phone) and 99 (computer), About 98, Privacy 97, the menu 97.
+  Kept on purpose: the menu does not close on Escape or on a link tap (that needs a script, D-179).
+Superseded, that part only: D-151's film as the hero (now one tap away lower on the page). Header marked.
+
+**Evidence** (Sushil, 2026-10-08: saved in the repo): [docs/design/d185/](docs/design/d185/README.md) holds the three phases'
 before and after screenshots (WebP) and motion GIFs, each listed with its screen, theme, width and the reviewer's score.
 Not served by the app or the website.
 
