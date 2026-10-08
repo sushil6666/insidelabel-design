@@ -135,10 +135,11 @@
     {% endif %}
 
     {% set pk = (d.version or {}).get("pack_kind") %}
-    {% if pk and pk != "food" %}
-      {% set pke = (d.version or {}).get("pack_kind_evidence") or {} %}
+    {% set pke = (d.version or {}).get("pack_kind_evidence") or {} %}
+    {# D-187: food with something to check (a probable FSSAI licence, a licence against a food signal) shows it too. #}
+    {% if pk and (pk != "food" or pke.get("review")) %}
       <div class="panel" style="margin-bottom:12px">
-        <b>Kind of pack: {{ {"supplement": "health supplement", "infant": "food for infants",
+        <b>Kind of pack: {{ {"food": "food", "supplement": "health supplement", "infant": "food for infants",
                               "special_medical": "food for special dietary or medical use",
                               "not_food": "not food: a non-FSSAI licence and no FSSAI licence on the photos"}[pk] }}</b>
         (D-139, D-140), decided from what the pack prints:
@@ -150,6 +151,9 @@
         {% if pk == "not_food" %}
           <div style="margin-top:6px">D-116: look at the whole pack for the FSSAI logo and 14-digit licence number
             first. If there is none, reject it with the reason below; the photos may miss a face.</div>
+        {% elif pk == "food" %}
+          <div class="muted" style="margin-top:6px">D-116, D-187: check the licence on the pack itself before
+            publishing.</div>
         {% else %}
           <div class="muted" style="margin-top:6px">Its own checks come with phase 2 (supplements) and phase 3
             (infant foods, in shadow). Check the category matches the kind.</div>

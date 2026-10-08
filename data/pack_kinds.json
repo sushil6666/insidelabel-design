@@ -48,10 +48,17 @@
   "licences": {
     "fssai_words": ["fssai", "f s s a i"],
     "fssai_number_digits": 14,
-    "licence_words": ["lic no", "lic", "licence no", "license no", "licence", "license", "mfg lic", "drug lic", "dl no", "reg no"],
-    "basis": "D-116 (FSS Act 3(1)(j): \"food\" does not include \"drugs and medicinal products\"); the FSSAI logo and 14-digit licence number, as D-116's reviewer checks them",
-    "verified_on": "2026-09-30"
+    "probable_fssai_number": {"min_digits": 10, "max_digits": 13, "first_digit": ["1", "2"],
+      "why": "D-187: FSSAI licence and registration numbers are 14 digits starting with 1 or 2; a thumb or a fold can hide the end (item #82 read \"Lic No. 100140470002\"). Such a line is a probable FSSAI licence: it never gives not_food, and a reviewer checks the pack."},
+    "non_food_licence_words": ["drug lic", "drug licence", "drug license", "mfg lic", "mfg licence", "mfg license", "dl no", "d l no"],
+    "medicine_words": {"phrases": ["ayush", "ayurvedic"], "next_to": ["lic", "licence", "license"],
+      "why": "D-116's case: an Ayurvedic (AYUSH) medicine licence, \"Ayurvedic Medicine Mfg. Lic. No. A-2755\". These words count only on a line that also names a licence."},
+    "plain_licence_words_alone_say_nothing": ["lic", "lic no", "licence", "license", "licence no", "license no", "reg no"],
+    "basis": "D-116 (FSS Act 3(1)(j): \"food\" does not include \"drugs and medicinal products\"; its case is an AYUSH medicine manufacturing licence) and D-187 (Sushil, 2026-10-08, item #82: Indian food packs print their FSSAI licence as \"Lic. No.\" beside the logo, so a plain \"Lic No.\" names no non-food licence); the FSSAI logo and 14-digit licence number, as D-116's reviewer checks them",
+    "verified_on": "2026-10-08"
   },
+  "food_signals": {"nutrition_status": ["read", "partial"],
+    "why": "D-187: not_food on the licence rule also needs no ordinary food signal. A pack in an ordinary food category, or one printing a nutrition table, goes to a reviewer instead (the review agent's clash check, made a rule)."},
   "comparable": ["food"],
   "catalogue_categories": {"13.1.3": "special_medical", "13.1": "infant", "13.2": "infant", "13.3": "special_medical", "13.4": "special_medical", "13.5": "special_medical", "13.6": "supplement"}
 }

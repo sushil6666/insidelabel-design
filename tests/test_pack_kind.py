@@ -174,6 +174,79 @@ def test_licences_decide_before_words_and_only_on_a_complete_read():
     assert k["code"] == "food" and "not both faces were read" in k["review"][0]
 
 
+# D-187 (item #82, Bambino Vermicelli POPULAR 850 g): the FSSAI logo is artwork, so the
+# model copied only "Lic No." and a number whose end was under the shopper's thumb.
+ITEM_82 = [st("Lic No. 100140470002"), st("Lic No. 11423999000016")]
+TABLE_READ = {"status": "read", "per_100_basis": "100 g", "rda_column": None, "serving_size": None,
+              "servings_per_pack": None, "rows": [{"nutrient": "Energy", "unit": "kcal", "per_100": "350",
+                                                   "per_serving": None, "rda_percent": None}]}
+CHYAWANPRASH = [st("Ayurvedic Proprietary Medicine Mfg Lic No. 25D/12/86 AYUSH")]
+
+
+def item_82(licences=ITEM_82, nutrition=TABLE_READ):
+    v = reading(["Wheat semolina"], [st("Product: Vermicelli (Sevai/Semia)")], licences=licences,
+                name="Vermicelli")
+    if nutrition:
+        v["nutrition"] = nutrition
+    return v
+
+
+def test_item_82_a_plain_lic_no_is_food():
+    k = pack_kind.decide(item_82(), category="6.4.2")
+    assert k["code"] == "food" and k["review"] == []
+    # The 12-digit line alone: a probable FSSAI licence, its end not read. Food, and a reviewer looks.
+    for v in (item_82([ITEM_82[0]]), item_82([ITEM_82[0]], nutrition=None)):
+        for cat in ("6.4.2", None):
+            k = pack_kind.decide(v, category=cat)
+            assert k["code"] == "food" and k["licences"]["probable"] == [ITEM_82[0]]
+            assert k["review"] == [f'{pack_kind.PROBABLE_NOTE} ("Lic No. 100140470002")']
+    # A plain "Lic No." with no number like FSSAI's names no licence at all: nothing to say.
+    for text in ("Lic No. 4471", "Licence No. ABC/12", "Reg No. 77/2020", "License no 55"):
+        k = pack_kind.decide(reading(["Wheat"], licences=[st(text)]))
+        assert k["code"] == "food" and k["review"] == [] and k["licences"]["other"] == [], text
+    # The number must look like FSSAI's: 10 to 13 digits starting 1 or 2.
+    assert pack_kind.licences({"licences": [st("Lic No. 300140470002")]})["probable"] == []
+    assert pack_kind.licences({"licences": [st("Lic No. 100140470")]})["probable"] == []
+    assert pack_kind.licences({"licences": [st("Lic No. 2001404700")]})["probable"] != []
+
+
+def test_a_medicine_licence_still_gives_not_food_on_a_complete_read():
+    k = pack_kind.decide(reading(["Amla", "Ghee", "Honey"], licences=CHYAWANPRASH))
+    assert k["code"] == "not_food" and k["evidence"][0]["text"] == CHYAWANPRASH[0]["text"]
+    for text in ("AYUSH Lic. No. AUS-1234", "Drug Licence No. 20B/45", "D.L. No. KA-123", "DL No. 45/77"):
+        assert pack_kind.decide(reading(["Amla"], licences=[st(text)]))["code"] == "not_food", text
+    # "Ayurvedic" or "AYUSH" counts only beside a licence.
+    assert pack_kind.decide(reading(["Amla"], [st("Ayurvedic recipe", "front")], licences=()))["code"] == "food"
+    # D-139, unchanged: a partial read never gives not_food.
+    k = pack_kind.decide(reading(["Amla"], licences=CHYAWANPRASH, front="not_provided"))
+    assert k["code"] == "food" and "not both faces were read" in k["review"][0]
+
+
+def test_an_ordinary_food_signal_overrules_the_licence_rule_alone():
+    # A nutrition table, or an ordinary food category: a reviewer looks, never not_food.
+    v = reading(["Amla"], licences=CHYAWANPRASH)
+    v["nutrition"] = TABLE_READ
+    k = pack_kind.decide(v)
+    assert k["code"] == "food" and "the pack shows a nutrition table" in k["review"][0]
+    k = pack_kind.decide(reading(["Amla"], licences=CHYAWANPRASH), category="6.4.2")
+    assert k["code"] == "food" and "category 6.4.2, an ordinary food category" in k["review"][0]
+    v["nutrition"] = {**TABLE_READ, "status": "not_found"}
+    assert pack_kind.decide(v)["code"] == "not_food"
+    # A 13.x category is not an ordinary food signal; the clash goes to a reviewer as before.
+    k = pack_kind.decide(reading(["Amla"], licences=CHYAWANPRASH), category="13.6")
+    assert k["code"] == "not_food" and "category 13.6 is supplement" in k["review"][0]
+
+
+def test_the_review_checker_sends_item_82_to_a_person_for_its_licence():
+    draft = {"ingredients": ["Wheat semolina"], "category": "6.4.2", "name": "Vermicelli"}
+    [c] = [c for c in checker.check(draft, {"kind": "new_product", "raw": item_82([ITEM_82[0]])})
+           if c["check"] == "pack_kind"]
+    assert not c["ok"] and "probable FSSAI licence, last digits not read" in c["detail"]
+    assert "not_food" not in c["detail"]
+    [c] = [c for c in checker.check(draft, {"kind": "new_product", "raw": item_82()}) if c["check"] == "pack_kind"]
+    assert c["ok"]
+
+
 def test_the_catalogue_category_and_disagreements():
     assert pack_kind.decide({}, category="13.6")["code"] == "supplement"
     assert pack_kind.decide({}, category="13.1.3")["code"] == "special_medical"
@@ -374,3 +447,18 @@ def test_no_ranking_part_for_an_infant_pack():
     for part in ("compare", "shop_list", "tallies", "score", "summary", "tiles"):
         assert part not in parts
     assert pack_kind.COMPARABLE == {"food"}
+
+
+def test_the_replay_tool_lists_item_82_as_changed():
+    # D-092, D-187: tools/pack_kind_replay.py replays decide() on stored answers.
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("pack_kind_replay", os.path.join(HERE, "..", "tools", "pack_kind_replay.py"))
+    tool = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(tool)
+    row = {"id": 1, "status": "pending_review", "barcode": "8904287001052", "name": "Vermicelli",
+           "category_code": "6.4.2", "review_items": "82 open", "pack_kind": "not_food",
+           "pack_kind_evidence": {"evidence": [], "review": []}, "raw_extraction": item_82([ITEM_82[0]])}
+    [r] = tool.replay([row])
+    assert r["changed"] and r["was"] == "not_food" and r["now"] == "food"
+    [r] = tool.replay([{**row, "pack_kind": "food", "raw_extraction": reading(["Wheat"])}])
+    assert not r["changed"]
