@@ -4105,6 +4105,36 @@ clear. Today /review can only tick a photo as it is. Built by Claude; no change 
 - **Never read for findings (D-004).** The review agent (D-117) never crops or ticks a picture: it publishes through
   `ReviewService.approve()`, which never makes one.
 
+### D-187 · A plain "Lic No." never makes a food pack not food `LOCKED` (2026-10-08)
+**Sushil, 2026-10-08,** on review item #82: "but fssai present". His brief, the same day: "Indian food packs print their
+FSSAI licence as "Lic. No." beside the logo all the time, so "Lic No." alone says nothing about a non-food
+licence." **Accepted by Sushil 2026-10-08** in that brief (the rule below is his). Built by Claude; narrows the licence rule of D-116 as extended by D-139 and D-140, nothing else of them.
+
+**What happened.** Item #82, Bambino Vermicelli POPULAR 850 g (8904287001052), taken with the app's own shutter. The
+back shows the FSSAI logo with "Lic No. 10014047000..." (the last digits under the shopper's thumb) and a second
+"Lic No. 11423999000016" on the manufacturer block. The model read the first as "Lic No. 100140470002" (12 digits) and
+had no "fssai" word to copy (the logo is artwork). `core/pack_kind.py` filed it as a non-FSSAI licence ("lic no" was a
+licence word), both faces counted as read, and `decide()` gave `not_food`: /review told the reviewer to reject a
+vermicelli pack with a nutrition table and category 6.4.2. The review agent had already flagged the clash.
+
+- **Only words that name a non-food licence count** (`data/pack_kinds.json` `licences.non_food_licence_words`): "Drug
+  Lic", "Mfg Lic", "DL No" (and their spellings), and D-116's own case, "Ayurvedic" or "AYUSH" on a line that also
+  names a licence ("Ayurvedic Medicine Mfg. Lic. No. A-2755"). "Lic", "Lic No", "Licence", "License", "Licence No",
+  "License No" and "Reg No" alone no longer make a licence non-FSSAI.
+- **A probable FSSAI licence:** a licence line with a number of 10 to 13 digits starting 1 or 2 (FSSAI licence and
+  registration numbers are 14 digits starting 1 or 2; a thumb or a fold can hide the end). It never gives `not_food`;
+  the pack stays food and /review says "probable FSSAI licence, last digits not read: check the pack". The review
+  checker sends it to a person. A full 14-digit number counts as FSSAI's, as before.
+- **not_food also needs no ordinary food signal:** when the pack prints a nutrition table (read or partial) or its
+  category is an ordinary food category (not 13.x), `decide()` never returns `not_food` on the licence rule alone; it
+  stays food and goes to a reviewer with the reason (the agent's clash check, made a rule).
+- **Unchanged:** an FSSAI licence decides food (D-116); a partial read never gives `not_food` (D-139); a pack licensed
+  only as an AYUSH medicine, with nothing that says ordinary food, is still `not_food` on a complete read.
+- **Replay (D-092):** stored answers replay with the new rule. `tools/pack_kind_replay.py` (read-only) lists every
+  stored version whose kind or reviewer notes change, with its review item.
+- **Tests:** `tests/test_pack_kind.py` (item #82's lines, the Chyawanprash-style licence, the food signals, the
+  checker, the replay tool) and `tests/test_pack_kind_db.py` (the /review note).
+
 ---
 
 ## Open and pending

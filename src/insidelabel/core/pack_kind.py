@@ -13,6 +13,13 @@ Order (data/pack_kinds.json _meta):
    licence on a complete read of both faces: `not_food` (FSS Act 3(1)(j) leaves out
    "drugs and medicinal products"). An FSSAI licence decides "food" whatever else
    is printed. The shape of the product never decides.
+   D-187 (item #82): only words that name a non-food licence ("Drug Lic", "Mfg Lic",
+   "DL No", "Ayurvedic" or "AYUSH" beside a licence) make a licence non-FSSAI; food
+   packs print their FSSAI licence as a plain "Lic. No." all the time. A line with
+   a 10 to 13 digit number starting 1 or 2 is a probable FSSAI licence whose end
+   wasn't read: never not_food, a reviewer checks the pack. And not_food needs no
+   ordinary food signal (a nutrition table, an ordinary food category): with one,
+   a reviewer looks instead.
 2. Medical words: `special_medical` (including preterm, hypoallergenic and other
    special medical infant foods).
 3. Infant words: `infant`.
@@ -40,6 +47,11 @@ WITHHOLD_REASON = {k: v.get("withhold_reason") for k, v in TABLE["kinds"].items(
 COMPARABLE = frozenset(TABLE["comparable"])
 _LIC = TABLE["licences"]
 _FSSAI_NUMBER = re.compile(r"(?<!\d)\d{%d}(?!\d)" % _LIC["fssai_number_digits"])
+_PROBABLE = _LIC["probable_fssai_number"]
+_PROBABLE_NUMBER = re.compile(r"(?<!\d)[%s]\d{%d,%d}(?!\d)" % (
+    "".join(_PROBABLE["first_digit"]), _PROBABLE["min_digits"] - 1, _PROBABLE["max_digits"] - 1))
+_MEDICINE = _LIC["medicine_words"]
+PROBABLE_NOTE = "probable FSSAI licence, last digits not read: check the pack"
 _ORDER = ("special_medical", "infant", "supplement")
 
 
@@ -65,9 +77,18 @@ def _printed(vision):
     return [x for x in out if not any(_has(norm(x[0]), w) for w in TABLE["company_words"]["phrases"])]
 
 
+def _non_food(n):
+    """D-187: a line naming a non-food licence; a plain "Lic No." names none."""
+    if any(_has(n, w) for w in _LIC["non_food_licence_words"]):
+        return True
+    return any(_has(n, w) for w in _MEDICINE["phrases"]) and any(_has(n, w) for w in _MEDICINE["next_to"])
+
+
 def licences(vision):
-    """({fssai: [...], other: [...]}) licence lines as printed. back_identity's FSSAI number counts too."""
-    fssai, other = [], []
+    """({fssai: [...], probable: [...], other: [...]}) licence lines as printed. back_identity's
+    FSSAI number counts too. `probable`: a number that looks like an FSSAI licence with its end
+    not read (D-187)."""
+    fssai, probable, other = [], [], []
     lines = list(vision.get("licences") or [])
     number = ((vision.get("back_identity") or {}).get("fssai_licence") or "").strip()
     if number:
@@ -76,9 +97,22 @@ def licences(vision):
         n = norm(line["text"])
         if any(_has(n, w) for w in _LIC["fssai_words"]) or _FSSAI_NUMBER.search(line["text"].replace(" ", "")):
             fssai.append(line)
-        elif any(_has(n, w) for w in _LIC["licence_words"]):
+        elif _PROBABLE_NUMBER.search(line["text"].replace(" ", "")):
+            probable.append(line)
+        elif _non_food(n):
             other.append(line)
-    return {"fssai": fssai, "other": other}
+    return {"fssai": fssai, "probable": probable, "other": other}
+
+
+def food_signals(vision, category=None):
+    """D-187: what says ordinary food whatever the licence lines say: a nutrition table
+    printed, an ordinary food category."""
+    out = []
+    if ((vision.get("nutrition") or {}).get("status")) in TABLE["food_signals"]["nutrition_status"]:
+        out.append("a nutrition table")
+    if category and category_kind(category) is None:
+        out.append(f"category {category}, an ordinary food category")
+    return out
 
 
 def category_kind(code):
@@ -102,9 +136,16 @@ def decide(vision, category=None):
     both_read = vision.get("front_status") == "read" and vision.get("back_status") == "read"
 
     code = None
-    if lic["other"] and not lic["fssai"]:
+    if lic["probable"] and not lic["fssai"]:
+        review.append(f'{PROBABLE_NOTE} ("{lic["probable"][0]["text"]}")')
+    if lic["other"] and not lic["fssai"] and not lic["probable"]:
         ev = {"rule": "licence", "text": lic["other"][0]["text"], "face": lic["other"][0].get("face")}
-        if both_read:
+        signals = food_signals(vision, category)
+        if both_read and signals:
+            # D-187: the licence rule alone never overrules an ordinary food signal.
+            review.append(f"a non-FSSAI licence is printed and no FSSAI licence was read, but the pack "
+                          f"shows {' and '.join(signals)} (D-116: look at the whole pack)")
+        elif both_read:
             code = "not_food"
             evidence.append(ev)
         else:

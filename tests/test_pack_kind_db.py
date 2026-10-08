@@ -108,6 +108,16 @@ def test_a_pack_that_isnt_food_offers_d116s_reason(env):
     assert "Ayurvedic Medicine Mfg. Lic. No. A-2755" in page
 
 
+def test_a_probable_fssai_licence_is_food_and_asks_the_reviewer_to_check_the_pack(env):
+    # D-187, item #82: "Lic No." and an FSSAI-like number whose end wasn't read.
+    j = post(gtin(), reading(["Wheat semolina"], licences=[st("Lic No. 100140470002")]))
+    vid = j["catalogue"]["product_version_id"]
+    assert j["pack_kind"]["code"] == "food"
+    _item, _c, page = item_page(env, vid)
+    assert "Kind of pack: food" in page and "probable FSSAI licence, last digits not read: check the pack" in page
+    assert "Not food under the FSS Act" not in page
+
+
 def test_food_is_stored_as_food_and_shows_no_kind_panel(env):
     j = post(gtin(), reading(["Whole wheat flour", "Salt"]))
     vid = j["catalogue"]["product_version_id"]
