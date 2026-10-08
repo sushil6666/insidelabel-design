@@ -100,6 +100,21 @@ class AllergenResult:
         return text
 
 
+def mentioned(text):
+    """
+    D-175: the allergens a text names anywhere, by their aliases and statement words
+    (each allergen's `exclude` phrases first taken out: "coconut milk" is no milk).
+    For the re-check's "nothing new" test only; never an allergen state.
+    """
+    low = (text or "").lower()
+    out = set()
+    for code, a in ALLERGENS.items():
+        t = _strip_excluded(low, a)
+        if any(_has(w, t) for w in a["aliases"] + a.get("statement_words", [])):
+            out.add(code)
+    return out
+
+
 def check(ingredients, allergen_statement, codes, confidence=1.0, reliable=True):
     """Return {code: AllergenResult} for each avoid-list code."""
     unknown = [c for c in codes if c not in ALLERGENS]

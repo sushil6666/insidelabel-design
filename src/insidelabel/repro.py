@@ -24,6 +24,7 @@ from fastapi.testclient import TestClient
 from insidelabel import ratelimit, trace
 from insidelabel.api import main
 from insidelabel.extraction.providers import cloud_vision, gemini, ocr_check
+from insidelabel.review import checker as review_checker
 
 # The 1x1 PNG the test suite uses: saved regressions carry no photos (photos can
 # hold the shop's location in EXIF, and they stay out of git).
@@ -75,6 +76,8 @@ def form_for(request, model_raw):
         data["screen_pack"] = json.dumps(request["screen_pack"])          # D-130
     if request.get("table_only"):
         data["table_only"] = "true"                                       # D-168
+    if request.get("recheck"):
+        data["recheck"] = "true"                                          # D-175
     return data
 
 
@@ -121,9 +124,21 @@ def replay_scan(scan, media=None, hit=None):
     if scan.get("cache_hit"):
         if hit is None:
             return {"status": None, "notes": notes + ["catalogue version no longer found"]}
+        rechecked_on = decision = None
+        if scan.get("resolved_via") == "recheck":
+            # D-175: a free re-check is replayed from its stored text, with no model call.
+            back = (scan.get("ocr") or {}).get("back") or {}
+            then = back.get("recheck") or {}
+            decision = review_checker.unchanged(hit["ingredients"], hit["allergen_statement"],
+                                                then.get("text") or back.get("text"))
+            if decision["decision"] != then.get("decision"):
+                notes.append(f"re-check decided {then.get('decision')!r} then, {decision['decision']!r} now")
+            if scan.get("created_at"):
+                rechecked_on = scan["created_at"].date().isoformat()
         result = main._catalogue_result(hit, req.get("avoid") or [], None,
-                                        bool(req.get("compare_regulators")), req.get("profiles") or [])
-        return {"status": 200, "screen": result["screen"], "body": result, "notes": notes}
+                                        bool(req.get("compare_regulators")), req.get("profiles") or [],
+                                        rechecked_on=rechecked_on, now=scan.get("created_at"))
+        return {"status": 200, "screen": result["screen"], "body": result, "notes": notes, "recheck": decision}
 
     if not scan.get("model_raw"):
         return {"status": None, "notes": notes + [

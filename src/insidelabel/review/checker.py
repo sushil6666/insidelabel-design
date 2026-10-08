@@ -22,6 +22,7 @@ import unicodedata
 from insidelabel import barcode as barcode_rules
 from insidelabel.core import pack_kind
 from insidelabel.core.tokenize import ins_numbers
+from insidelabel.lenses import allergens as allergen_checker
 from insidelabel.lenses import nutrition
 from insidelabel.trace import DATA_DIR
 
@@ -199,6 +200,10 @@ def rule_category(name, variant, ingredients, ocr_text):
 
 
 def _ingredient_section(ocr_text, ingredients):
+    return _section_bounds(ocr_text, ingredients)[0]
+
+
+def _section_bounds(ocr_text, ingredients):
     """
     The part of Cloud Vision's text that holds the ingredient list, or "".
 
@@ -207,11 +212,13 @@ def _ingredient_section(ocr_text, ingredients):
     draft's last ingredient ends, plus the rest of that sentence (up to 80
     characters), so words the draft dropped from the end of the list still show;
     and never past a heading like "Nutrition" or "Net Weight".
+    Returns (section, ended): ended is False when the draft's last word isn't in
+    the section, so where the list ends wasn't found (D-175).
     """
     low = _fold(ocr_text)
     starts = [m.start() for m in re.finditer("ingredient", low)]
     if not starts:
-        return ""
+        return "", False
     first = (_words(ingredients[0]) or [""])[0] if ingredients else ""
 
     def gap(s):
@@ -223,10 +230,10 @@ def _ingredient_section(ocr_text, ingredients):
     last = (_words(ingredients[-1]) or [""])[-1] if ingredients else ""
     j = low.rfind(last, start, stop) if last else -1
     if j < 0:
-        return low[start:stop]
+        return low[start:stop], False
     end = j + len(last)
     tail = re.search(r"(?<!\d)\.(?!\d)|\n\s*\n", low[end:end + 80])
-    return low[start:min(stop, end + (tail.start() if tail else 80))]
+    return low[start:min(stop, end + (tail.start() if tail else 80))], True
 
 
 def independent_read(ingredients, ocr_text, allergen_statement=None):
@@ -265,6 +272,78 @@ def lost_ins_numbers(ingredients, ocr_text):
     """
     section = _ingredient_section(ocr_text, ingredients)
     return sorted(ins_numbers(section) - ins_numbers(list(ingredients or [])))
+
+
+# D-175: the heading a printed list starts with, up to its colon when there is one.
+_HEADING = re.compile(r"^\W*ingredi\w*\s*(?:\([^)]*\))?\s*[:\-]?", re.I)
+
+
+def _top_entries(section):
+    """
+    The list's entries as printed: the section after its heading, split at the commas
+    outside brackets (D-175, the advisor, 2026-10-08). A bracket Cloud Vision misread
+    shut ("(500/))") never takes the depth below zero.
+    """
+    body = _HEADING.sub("", section, count=1)
+    out, depth, cur = [], 0, []
+    for ch in body:
+        if ch in "([{":
+            depth += 1
+        elif ch in ")]}":
+            depth = max(0, depth - 1)
+        if ch == "," and depth == 0:
+            out.append("".join(cur))
+            cur = []
+        else:
+            cur.append(ch)
+    out.append("".join(cur))
+    return [e for e in (x.strip().rstrip(".").strip() for x in out) if e]
+
+
+def unchanged(ingredients, allergen_statement, ocr_text):
+    """
+    D-175: is this photo's text clearly the published list again? Used by /scan to skip
+    the paid read of a re-check photo; it never becomes a fact, a verdict or a finding
+    (D-004, D-034), and a "not clear" only means the normal read runs.
+
+    "unchanged" only when all of these hold on the photo's text (Cloud Vision, or
+    Tesseract when Vision is off, D-093):
+      - the list is there, and where it ends was found (the stored list's last word);
+      - nothing missing: every word of every stored entry is in the text
+        (independent_read's MISSING, with its fuzzy match for OCR noise);
+      - nothing new: no word of the text's list that the stored list and allergen
+        statement lack (independent_read's LOST, with D-157 and D-158's stamp, panel
+        and cut words left out);
+      - no new INS number (lost_ins_numbers, core/tokenize, D-099);
+      - no new allergen: no allergen word anywhere in the text (the "Contains" line
+        too) whose allergen the stored list and statement don't name;
+      - the same number of entries (the advisor, 2026-10-08): the text's list split at
+        commas outside brackets has as many entries as the stored list, so "Sugar" added
+        beside "Invert sugar" counts;
+      - the same order: entry i of the text holds the words of stored entry i, because
+        the order feeds the sugar chip ("2nd of 11").
+    Returns {decision, ...} with what each check found, for the scan's trace (D-092).
+    """
+    ingredients = [x for x in ingredients or [] if x and x.strip()]
+    text = ocr_text or ""
+    section, ended = _section_bounds(text, ingredients)
+    found, missing, lost = independent_read(ingredients, text, allergen_statement)
+    lost_ins = lost_ins_numbers(ingredients, text) if section else []
+    stored = allergen_checker.mentioned(" , ".join(ingredients + [allergen_statement or ""]))
+    new_allergens = sorted(allergen_checker.mentioned(text) - stored)
+    entries = _top_entries(section) if section else []
+    out_of_order = []
+    if len(entries) == len(ingredients):
+        for want, got in zip(ingredients, entries):
+            pool = sorted(set(_words(got)))
+            if not all(_found(w, pool) for w in _words(want)):
+                out_of_order.append(want)
+    same = (found and ended and not missing and not lost and not lost_ins and not new_allergens
+            and len(entries) == len(ingredients) and not out_of_order)
+    return {"decision": "unchanged" if same else "not_clear", "section_found": bool(found),
+            "list_end_found": ended, "missing": missing, "lost": lost, "lost_ins": lost_ins,
+            "new_allergens": new_allergens, "entries": len(entries), "stored_entries": len(ingredients),
+            "out_of_order": out_of_order}
 
 
 def _claim_rule_hits(claims):

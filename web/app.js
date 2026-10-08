@@ -32,7 +32,7 @@ let navSeq = 0;               // async views check this so a late result can't r
 let pending = { barcode: null, barcodeSource: null, back: null, front: null, backSource: null,
                 frontSource: null, pairing: false, attempts: 0, refused: [], frontWanted: true,
                 acceptUnconfirmed: false, parts: [], partSources: [], partKinds: [],
-                screenPack: null, shopItem: null, barcodeAnswer: null, rescanned: false };
+                screenPack: null, shopItem: null, barcodeAnswer: null, rescanned: false, recheck: false };
 
 // ------------------------------------------------------------------ navigation
 const routes = {
@@ -572,7 +572,7 @@ function resetPending() {
   pending = { barcode: null, barcodeSource: null, back: null, front: null, backSource: null,
               frontSource: null, pairing: false, attempts: 0, refused: [], frontWanted: true,
               acceptUnconfirmed: false, parts: [], partSources: [], partKinds: [],
-              screenPack: null, shopItem: null, barcodeAnswer: null, rescanned: false };
+              screenPack: null, shopItem: null, barcodeAnswer: null, rescanned: false, recheck: false };
 }
 
 // D-146: back to the scanner after a code the user says isn't this pack's. The dropped
@@ -808,17 +808,20 @@ function shotReview(res = undefined, frontRes = undefined) {
           el("figcaption", { class: "muted" }, shownNames[i]))));
   const line = frontRes !== undefined ? checkLine(frontRes, () => show(frontShot()), "front")
     : res === undefined ? null : checkLine(res, retake);
-  const ask = !tableIn && n < MAX_PHOTOS;          // the table question, while there's room for its photo
+  // D-175: a re-check of a published pack asks for the list only; the table is on file or offered apart.
+  const listOnly = pending.recheck === "list";
+  const ask = !tableIn && n < MAX_PHOTOS && !listOnly;   // the table question, while there's room for its photo
   const check = button(ask ? "Yes, check this pack" : "Check this pack", () => sendPhotos(), "primary");
   return el("section", { class: "stack shot-review" },
     stepLine(tableIn && !kept ? 3 : 2, kept ? names[lists - 1] : names[n - 1]),
     pics, line,
     ask ? el("h1", {}, "Is the nutrition table in this photo too?")
-      : el("h1", {}, n === 2 ? "Both photos are in" : "All three photos are in"),
+      : el("h1", {}, n === 1 ? "The ingredient list is in" : n === 2 ? "Both photos are in" : "All three photos are in"),
     check,
     ask && button("No, photograph the table", () => show(tableShot())),
     el("div", { class: "row between" },
-      ask || (kept && n < MAX_PHOTOS) ? button("The list continues", () => show(listShot()), "link") : el("span", {}),
+      ask || (kept && n < MAX_PHOTOS) || (listOnly && n < MAX_PHOTOS)
+        ? button("The list continues", () => show(listShot()), "link") : el("span", {}),
       button(tableIn && !kept ? "Retake the table" : "Retake", retake, "link")),
     kept && button("Retake the table too", dropTable, "link"),
     // D-100: the reviewer reads the brand, name and claims from the front. A link, not a step:
@@ -1098,6 +1101,17 @@ function front(id) {
     button("Not now", () => go("result/" + encodeURIComponent(id)), "link"));
 }
 
+// D-073, D-175: a photo of a published pack's list, compared with the published list for free
+// first (recheck=true). listOnly: D-175's card asks for the list alone ("list"), no table question.
+function recheckPhoto(h, front, listOnly = false) {
+  resetPending();
+  pending.barcode = h.barcode;
+  pending.recheck = listOnly ? "list" : "full";
+  if (front) pending.frontWanted = !!h.catalogue?.front_wanted;           // D-100
+  if (listOnly) pending.frontWanted = false;              // D-175: one ask; a front would cost the free check
+  go("photo");
+}
+
 // ------------------------------------------------------------------ a table photo (D-168)
 // For a pack the catalogue has without its nutrition table: one photo, read once; only the
 // table is used. Every word is the server's (screen.TABLE_OFFER, TABLE_ANSWER).
@@ -1345,7 +1359,7 @@ function result(id, sub, tileId) {
     if (s.retake) put(partialRetake(s, h,
       button("Retake the ingredients photo", () => retakeList(h, "partial"))));
     if (s.recheck) put(el("div", { class: "card note" }, el("p", {}, s.recheck),
-      button("Photograph the ingredients list", () => { resetPending(); pending.barcode = h.barcode; go("photo"); })));
+      button("Photograph the ingredients list", () => recheckPhoto(h, false))));
     put(el("div", { class: "row wrap" }, button("Scan another", () => { resetPending(); go("scan"); }, "primary")),
       reportLink(h));
     put(el("details", { class: "item more-pack" }, el("summary", {}, s.more_title || "More about this pack"),
@@ -1384,12 +1398,12 @@ function result(id, sub, tileId) {
   if (askTable) put(el("div", { class: "card note" }, el("p", {}, s.nutrition.text),
     button(s.nutrition.ask, () => go("table"))));
   if (s.recheck) put(el("div", { class: "card note" }, el("p", {}, s.recheck),
-    button("Photograph the ingredients and nutrition table", () => {
-      resetPending();
-      pending.barcode = h.barcode;
-      pending.frontWanted = !!h.catalogue?.front_wanted;           // D-100
-      go("photo");
-    })));
+    button("Photograph the ingredients and nutrition table", () => recheckPhoto(h, true))));
+  // D-175: a pack last checked over 15 days ago; one optional photo of the list, after the answers.
+  if (s.recheck_card) put(el("div", { class: "card note" }, el("p", {}, s.recheck_card.text),
+    button(s.recheck_card.button, () => recheckPhoto(h, false, true))));
+  // D-175: this photo matched the published list; said where the ask was.
+  if (s.rechecked) put(kinded("p", "done", { class: "card" }, s.rechecked));
 
 
   // 5. Actions: compare (D-057), the shop list (D-130), report (D-076, on every result).

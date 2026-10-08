@@ -1163,6 +1163,32 @@ BARCODE_CHECK_AGAIN = "Scan again"
 RESCAN_TEXT = "Not this pack?"
 RESCAN_BUTTON = "Scan again"
 
+# D-175 (Sushil, 2026-10-08: "15 days will keep"): a published pack whose last check is
+# older than this offers one optional photo of its ingredient list. The result comes first.
+RECHECK_AFTER_DAYS = 15
+RECHECK_CARD = {"text": "Help keep this pack up to date: one photo of the ingredient list.",
+                "button": "Photograph the ingredient list"}
+RECHECKED = "Pack checked again on {day}."
+# A photo match is a machine check, not our team's: the two dates stay apart (the advisor,
+# Sushil agreeing, 2026-10-08, replacing D-175's rule 7).
+TEAM_CHECKED = "Label last verified on {day}."
+TEAM_AND_PHOTO = "Our team checked this label on {team}; a photo of the pack matched it on {photo}."
+
+
+def checked_line(catalogue):
+    """D-175: who checked the catalogue's label, and when; two dates when a photo matched it later."""
+    team, photo = catalogue.get("team_verified"), catalogue.get("photo_matched")
+    if team and photo and photo > team:
+        return TEAM_AND_PHOTO.format(team=_day(team), photo=_day(photo))
+    return TEAM_CHECKED.format(day=catalogue["last_verified"])
+
+
+def checked_disclosure(team, photo=None):
+    """The catalogue result's disclosure (D-024), with D-175's second date when a photo matched later."""
+    first = (TEAM_AND_PHOTO.format(team=_day(team), photo=_day(photo)) if photo and photo > team
+             else f"Our team last checked this label on {team}.")
+    return first + " Packs change; if yours looks different, scan the back of the pack."
+
 
 def barcode_check(code):
     """
@@ -1428,12 +1454,18 @@ def _notes_for_every_result(out, *, catalogue, profiles, screen_pack, ingredient
     if question and (out.get("kind") or {}).get("code") not in ("infant", "special_medical"):
         out["band_question"] = question
     if catalogue and catalogue.get("source") == "catalogue":
-        out["last_verified"] = f"Label last verified on {catalogue['last_verified']}."
+        out["last_verified"] = checked_line(catalogue)
         # D-146: a catalogue hit shows the product's name; the app offers the way back to the scanner.
         out["rescan"] = {"text": RESCAN_TEXT, "button": RESCAN_BUTTON}
         # D-073: a barcode can outlive a recipe. Ask anyone with an avoid list for one back photo.
         if any(p["avoid"] for p in profiles):
             out["recheck"] = "Packs change. Photograph the back of your pack to re-check the avoid list."
+        # D-175: last checked over RECHECK_AFTER_DAYS ago: one optional photo of the list. One
+        # ask per scan: D-073's, when it shows, does the same job, so this one waits.
+        elif catalogue.get("recheck_due"):
+            out["recheck_card"] = dict(RECHECK_CARD)
+        if catalogue.get("rechecked_on"):
+            out["rechecked"] = RECHECKED.format(day=_day(catalogue["rechecked_on"]))
     if screen_pack:
         since = _since_screen(profiles, screen_pack, ingredients, statement, allergen_confidence,
                               allergen_reliable)

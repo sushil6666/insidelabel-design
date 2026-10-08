@@ -663,11 +663,13 @@ setup alarms.
 
 **NEXT SESSION STARTS HERE (2026-10-01).** Where things stand, newest first:
 
-- **`d173-wording` (2026-10-08, no migration, server words only), from `main` a4ddfaf (#127).** D-173 wording follow-up (the advisor, Sushil agreeing):
-  - **Scope line on a partly read list:** "We checked the 11 ingredients we could read against ...". A complete read keeps "on the list".
-  - **Partial-list caveat:** now ends "What we did find still stands."
-  - **Waiting on Sushil:** merge; `update.sh`.
-  - **Next:** D-175 (the 15-day re-check; plan accepted) branches from main after this is merged.
+- **`d175-recheck` (2026-10-08, migration 024, web-52), from `main` 4ded7eb (#128).** D-175: a published pack is checked again every 15 days.
+  - A food pack last checked over 15 days ago shows one optional card: "Help keep this pack up to date: one photo of the ingredient list." The photo is compared with the published list for free first (`review/checker.unchanged`); only a "not clear" photo pays for the normal read.
+  - A match sets `product_versions.last_verified_at` and stores the scan as `resolved_via 'recheck'`, nothing else. The result shows both dates when a photo matched after our team's check.
+  - Measured on the repo's four real texts: 44 of 44 added entries and 40 of 40 swaps caught; 2 of 4 real packs pass.
+  - **Waiting on Sushil:** merge; `update.sh` (runs migration 024); then `il tools/recheck_measure.py` on the server to see how many published packs would pass for free.
+
+- **`d173-wording` merged (#128), 2026-10-08.** D-173 wording follow-up: "the 11 ingredients we could read"; "What we did find still stands." `update.sh` not confirmed yet.
 
 - **2026-10-07 evening (hand-off, docs only).**
   - **D-174 is live:** merged (#126) and `update.sh` run (migration 023).

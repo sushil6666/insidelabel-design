@@ -492,4 +492,4 @@ def test_a_retake_keeps_the_table_photo_and_the_front():                     # D
     review = app[app.index("function shotReview("):app.index("function frontShot(")]
     assert 'const kept = tableIn && pending.lastKind === "list";' in review
     assert 'kept && button("Retake the table too", dropTable, "link")' in review
-    assert 'ask || (kept && n < MAX_PHOTOS) ? button("The list continues"' in review
+    assert 'ask || (kept && n < MAX_PHOTOS) || (listOnly && n < MAX_PHOTOS)\n        ? button("The list continues"' in review
