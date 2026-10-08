@@ -37,8 +37,23 @@ let pending = { barcode: null, barcodeSource: null, back: null, front: null, bac
 // ------------------------------------------------------------------ navigation
 const routes = {
   "": home, welcome, who, household, person, scan, photo, front, result, report, compare, problem, send,
-  join, agree, feedback, data, table, tablephoto,
+  join, agree, feedback, data, table, tablephoto, scans,
 };
+
+// D-176: the app's frame around each screen. Home and the first-run screens show the wordmark
+// (D-152); every other screen shows its name in the header and a back arrow. The bottom bar is
+// on every screen but the first-run ones and the camera and photo steps, where it would cover
+// the shutter or pull a hand away from the pack.
+const TITLES = {
+  household: "Household", person: "Household", scan: "Scan", photo: "Photo", front: "Photo",
+  table: "Nutrition table", tablephoto: "Nutrition table", result: "Result", report: "Report a mistake",
+  compare: "Compare", problem: "Report a problem", send: "Send it to us", feedback: "Send feedback",
+  data: "Your data", scans: "Your scans",
+};
+const FIRST_RUN = ["welcome", "who", "join", "agree"];
+const NO_TABBAR = [...FIRST_RUN, "scan", "photo", "front", "table", "tablephoto"];
+let screenName = "home";      // the screen being shown, set by route() before its view is built
+let routed = 0;               // screens shown since the app opened: Back goes home from the first
 
 // Setting the hash it already has fires no hashchange, so the page wouldn't
 // change (e.g. "Skip for now" on a welcome shown at #/ after joining).
@@ -57,6 +72,7 @@ function route() {
   if (stopCamera) { stopCamera(); stopCamera = null; }
   const [name, arg, ...rest] = location.hash.replace(/^#\/?/, "").split("/");
   const sub = rest.join("/");
+  routed++;
   enterFrom = sub.startsWith("look") ? "right" : lastSub.startsWith("look") && name === "result" ? "back" : "up";
   lastSub = sub;
   // D-092: screens in the trail. `arg` is a scan id or a profile ref, never a name;
@@ -69,8 +85,8 @@ function route() {
     const seq = ++navSeq;
     return checkAccess().then(a => {
       if (seq !== navSeq) return;
-      if (!a.joined) return show(join());
-      if (a.needAgree) return show(agree());
+      if (!a.joined) { screenName = "join"; return show(join()); }
+      if (a.needAgree) { screenName = "agree"; return show(agree()); }
       routeAfterJoin(name, arg, rest);
     });
   }
@@ -79,8 +95,10 @@ function route() {
 
 function routeAfterJoin(name, arg, rest = []) {
   if (!store.get("welcomed", false) && !["welcome", "who", "household", "person", "join", "agree", "data"].includes(name)) {
+    screenName = "welcome";
     return show(welcome());
   }
+  screenName = routes[name] ? name || "home" : "home";
   const seq = ++navSeq;
   const view = routes[name] || home;
   const out = view(arg && decodeURIComponent(arg), ...rest.map(decodeURIComponent));
@@ -100,7 +118,7 @@ function show(node) {
     else if (enterFrom !== "back") node.dataset.enter = enterFrom;
   }
   shownOnce = true;
-  setBack(node instanceof Element ? node.dataset.back : null, node instanceof Element ? node.dataset.backLabel : null);
+  frame(node instanceof Element ? node.dataset.back : null, node instanceof Element ? node.dataset.backLabel : null);
   main.replaceChildren(node);
   // The footer shows once a screen is in place (CLS). A screen still loading its words
   // (aria-busy, e.g. "Before you start" on a first visit) calls settled() when they're in:
@@ -111,17 +129,43 @@ function show(node) {
   if (h) { h.setAttribute("tabindex", "-1"); h.focus({ preventScroll: true }); }
 }
 
-// site-desktop: the header's left slot. A back button only on the screens that had one (a
-// result's own page, D-134); every other screen leaves it empty, so the name stays centred.
 function settled(view) {
   if (view) view.removeAttribute("aria-busy");
   document.body.classList.add("ready");
 }
 
-function setBack(href, label) {
+// D-176: the header and the bottom bar for the screen in screenName. A result's own page (D-134)
+// goes back to its result; a result goes home (the photo steps behind it are done); any other
+// screen goes where the phone's Back would, or home when it is the first screen opened.
+function frame(href, label) {
+  const name = screenName;
+  const title = FIRST_RUN.includes(name) ? null : TITLES[name] || null;
+  const top = document.querySelector(".top");
+  const titleEl = document.getElementById("top-title");
+  if (top && titleEl) {
+    top.classList.toggle("titled", !!title);
+    titleEl.textContent = title || "";
+    titleEl.hidden = !title;
+  }
   const slot = document.getElementById("top-left");
-  if (!slot) return;
-  slot.replaceChildren(href ? el("a", { class: "top-back", href, "aria-label": label || "Back" }, icon("back")) : "");
+  if (slot) {
+    let back = "";
+    if (href) back = el("a", { class: "top-back", href, "aria-label": label || "Back" }, icon("back"));
+    else if (name === "result") back = el("a", { class: "top-back", href: "#/", "aria-label": "Back to home" }, icon("back"));
+    else if (title) back = el("button", { type: "button", class: "top-back", "aria-label": "Back",
+      onclick: () => { if (routed > 1) window.history.back(); else go(""); } }, icon("back"));
+    slot.replaceChildren(back);
+  }
+  const bar = document.getElementById("tabbar");
+  if (bar) {
+    bar.hidden = NO_TABBAR.includes(name);
+    for (const a of bar.querySelectorAll("a[data-tab]")) {
+      const here = a.dataset.tab === name || (a.dataset.tab === "household" && name === "person");
+      if (here) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
+    }
+  }
+  document.body.classList.toggle("has-tabbar", !NO_TABBAR.includes(name));
+  document.body.classList.toggle("at-home", name === "home");
 }
 
 function revealAfterPeople(view) {
@@ -135,7 +179,10 @@ function revealAfterPeople(view) {
 
 function updateNav() {
   const n = store.get("compare", []).length;
-  document.getElementById("nav-compare").textContent = n ? `Compare (${n})` : "Compare";
+  const badge = document.getElementById("nav-compare");       // D-176: the bottom bar's Compare count
+  if (!badge) return;
+  badge.textContent = n ? String(n) : "";
+  badge.hidden = !n;
 }
 
 function productName(product) {
@@ -346,12 +393,30 @@ async function home() {
       el("p", { class: "muted" }, `${done} of 3 done`)),
     yourScans(),
     recent.length > 0 && el("h2", {}, "Recent scans"),
-    recent.length > 0 && el("ul", { class: "list" }, recent.map(h =>
-      el("li", {}, el("a", { href: `#/result/${encodeURIComponent(h.id)}` },
-        el("strong", {}, productName(h.product)),
-        h.screen?.summary?.length
-          ? el("span", { class: "chips" }, h.screen.summary.map(toneChip))
-          : el("span", { class: "muted" }, peopleSummary(h.screen) || h.screen?.headline?.text || ""))))));
+    recent.length > 0 && scanList(recent));
+}
+
+function scanList(items) {
+  return el("ul", { class: "list" }, items.map(h =>
+    el("li", {}, el("a", { href: `#/result/${encodeURIComponent(h.id)}` },
+      el("strong", {}, productName(h.product)),
+      h.screen?.summary?.length
+        ? el("span", { class: "chips" }, h.screen.summary.map(toneChip))
+        : el("span", { class: "muted" }, peopleSummary(h.screen) || h.screen?.headline?.text || "")))));
+}
+
+// D-176: the bottom bar's "Your scans": every result kept on this phone (D-074), newest first,
+// under D-123's counts.
+function scans() {
+  const all = history();
+  return el("section", { class: "stack" },
+    el("h1", {}, "Your scans"),
+    yourScans(),
+    all.length
+      ? scanList(all)
+      : el("div", { class: "card" },
+          el("p", {}, "Nothing scanned yet. Your results stay on this phone."),
+          button("Scan a pack", () => { resetPending(); go("scan"); }, "primary")));
 }
 
 // D-130: packs planned from a screen, to scan from the pack in the shop. Kept
@@ -2163,8 +2228,16 @@ function setupMenu() {
   });
 }
 
+// D-176: the bottom bar's Scan button opens what "Scan here" opens.
+function setupTabbar() {
+  const scanBtn = document.getElementById("tab-scan");
+  if (scanBtn) scanBtn.addEventListener("click", () => { record("tab_scan"); resetPending(); go("scan"); });
+  updateNav();
+}
+
 // ------------------------------------------------------------------ start
 setupMenu();
+setupTabbar();
 window.addEventListener("hashchange", route);
 deviceId();
 record("start", { app_version: APP_VERSION });
