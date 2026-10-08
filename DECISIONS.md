@@ -3674,6 +3674,14 @@ screens already showed (D-091), and nothing is sent anywhere new (D-074).
   (`--stagger`, at most 6); a pressed card dips.
 `tests/test_web.py`.
 
+**Follow-up (2026-10-08, web-62), Sushil with a phone screenshot:** "Don't show everything here in checking for.
+Don't show directly all avoid list, keep one click option to see". Home's "Checking for" card shows one row per
+person: avatar, nickname and a count ("You · 9 to avoid", or "· no avoid list"). A person with a list is a
+`<details>` row, closed on every visit: a tap opens their full list underneath (the same `avoidNames()` labels),
+another closes it; the chevron is the app's own. "Edit" still goes to Household. Fixed in the same card: the
+name wrapped one letter per line beside a long list (`overflow-wrap: anywhere` let it shrink); it now never
+breaks or shrinks, and the list wraps under the line. Nicknames stay on the phone (D-074).
+
 ### D-179 · The website gets a header nav and a real footer `LOCKED` (2026-10-08); its wordmark-on-the-left part `SUPERSEDED by D-180` (2026-10-08)
 Step 4, the last, of the plan accepted in D-176 (**accepted by Sushil 2026-10-08**, "please proceed on UI design
 plan", taken as yes to every recommendation). Built by Claude. Supersedes D-152's centred wordmark on the website

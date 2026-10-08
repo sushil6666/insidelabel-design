@@ -349,16 +349,22 @@ async function home() {
 
 // D-178: who every pack is checked for, on home, with a way to change it. Nicknames stay on
 // this phone (D-074); the avoid list is named with the server's own allergen labels.
+// D-178 follow-up (Sushil, 2026-10-08): one short line per person, "You · 9 to avoid"; a tap
+// opens that person's list underneath. <details> gives the keyboard and screen readers the
+// open and close; closed on every visit, nothing remembered.
 function checkingFor() {
   const list = profiles();
+  const line = p => [avatar(p), el("span", { class: "who-name" }, p.nickname),
+    el("span", { class: "who-count muted" }, p.avoid.length ? `· ${p.avoid.length} to avoid` : "· no avoid list")];
   return el("div", { class: "card checking" },
     el("div", { class: "section-head" },
       el("h2", {}, "Checking for"),
       el("a", { href: "#/household" }, "Edit")),
     el("ul", { class: "who-chips" }, list.map(p => el("li", {},
-      avatar(p),
-      el("span", {}, p.nickname),
-      el("span", { class: "muted" }, p.avoid.length ? avoidNames(p.avoid).join(", ") : "no avoid list")))));
+      p.avoid.length
+        ? el("details", { class: "who" }, el("summary", {}, ...line(p)),
+            el("p", { class: "who-avoid muted" }, avoidNames(p.avoid).join(", ")))
+        : el("div", { class: "who-line" }, ...line(p))))));
 }
 
 function avatar(p) {
