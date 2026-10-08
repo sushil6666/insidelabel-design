@@ -52,7 +52,8 @@ def send_front(uri, barcode, device, data):
 
 
 def test_the_terms_that_allow_it_are_the_current_ones():
-    assert main.TERMS["version"] == pictures.TERMS_FROM == "2026-10-08"
+    assert pictures.TERMS_FROM == "2026-10-08"
+    assert main.TERMS["version"] >= pictures.TERMS_FROM          # D-184: 2026-10-08-2 still allows it
     text = " ".join(main.TERMS["points"])
     assert "shown to other InsideLabel users as that product's picture" in text
     assert [x["kind"] for x in main.TERMS["examples"]["items"]] == ["front", "list", "table"]

@@ -156,11 +156,6 @@ def test_public_pages_pass_the_wording_lint():
             assert_clean([text], name)
 
 
-def test_invite_and_feedback_errors_pass_the_wording_lint():
-    from insidelabel.api import main
-    assert_clean([t for _s, t in main._JOIN_ERRORS.values()], "join errors")
-
-
 def test_empty_report_sentence_matches_the_server():
     """D-109: the app refuses an empty report with the server's own sentence."""
     from insidelabel.api.main import EMPTY_REPORT
@@ -334,7 +329,7 @@ def test_the_footer_waits_for_a_loading_screen():                      # D-153 s
     show = app[app.index("function show(node)"):app.index("function settled(")]
     assert 'getAttribute("aria-busy") === "true"' in show and "settled()" in show
     assert 'document.body.classList.add("ready")' not in show
-    agree = app[app.index("function agree()"):app.index("function join(")]
+    agree = app[app.index("function agree()"):app.index("function feedback(")]
     assert agree.count("settled(view)") == 2                        # the terms, or the error in their place
 
 

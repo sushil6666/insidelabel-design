@@ -20,7 +20,7 @@ Confirm everything still passes before you shoot anything:
 ```bash
 source .venv/bin/activate
 pytest -q                     # 135 passing as of 2026-09-25
-python tools/release_check.py # where the beta release gates stand
+python tools/release_check.py # where the release gates stand
 ```
 
 ---

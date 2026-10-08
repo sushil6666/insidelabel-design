@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Release gate for the closed beta (blueprint §15, D-007). Prints every gate as
+Release gate (blueprint §15, D-007; D-184: no longer a beta). Prints every gate as
 PASS / FAIL / TODO and exits 1 if any computed gate fails, so it can run in CI.
 
     python tools/release_check.py                 # data + accuracy gates
@@ -195,7 +195,7 @@ MANUAL_ITEMS = [
     "Conflict-of-interest policy, methodology page, who is behind the app, 'last verified' dates (D-076)",
     "Play Console: developer account verified (D-011), closed-testing requirement met, target audience adults",
     "Rate limits (D-095): one server process (or shared counters), INSIDELABEL_PROXY_HOPS set behind the proxy",
-    "Beta access (D-162): INSIDELABEL_INVITE_ONLY=off on the deploy on purpose; the daily photo limit (D-148) and per-IP limits (D-095) on; testers opted in through the Play closed test",
+    "Open access (D-184): no invite codes; the daily photo limit (D-148) and per-IP limits (D-095) on",
 ]
 
 
@@ -219,7 +219,7 @@ def main():
         sections.append(("Tests", [(PASS if r.returncode == 0 else FAIL, "Test suite", last)]))
 
     failed = 0
-    print("\nINSIDELABEL - BETA RELEASE GATE\n" + "=" * 72)
+    print("\nINSIDELABEL - RELEASE GATE\n" + "=" * 72)
     for title, rows in sections:
         print(f"\n{title}")
         for status, name, detail in rows:

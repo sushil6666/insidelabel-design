@@ -1,5 +1,5 @@
 """
-D-148: the beta's daily photo-scan limit, 15 per install in any 24 hours, with
+D-148: the daily photo-scan limit, 15 per install in any 24 hours, with
 D-095's limiter. The real rules are used here with a test clock: no real time
 passes and no model is called (every scan is a replay). The limit screen's words
 come from lenses/screen.py and must stay true for a rolling window: they give the
@@ -72,7 +72,7 @@ def test_the_16th_photo_scan_gets_the_limit_screen(caplog):
     w = body["photo_limit"]
     assert w == screen.photo_limit(body["retry_after_s"], 15)
     assert w["title"] == "Photo scans used for now"
-    assert w["text"] == "During the beta, each phone can photograph 15 packs in any 24 hours."
+    assert w["text"] == "Each phone can photograph 15 packs in any 24 hours."
     assert w["barcode"] == "Scanning a barcode still works for packs we already know."
     # The first of the 15 was 15 minutes ago, so the next one is free in 23 h 45 min.
     assert body["retry_after_s"] == 86_400 - 15 * 60

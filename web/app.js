@@ -11,7 +11,7 @@ import {
   compareRequest,
   deviceId, el, fill, history, historyItem, lastIncident, prepareImage, problemRequest, profileByRef,
   profiles, record, reportRequest, saveProfiles, scanRequest, sendToUsRequest, store, trailSnapshot,
-  accessRequest, agreeRequest, checkPhotoRequest, feedbackRequest, joinRequest, termsRequest,
+  accessRequest, agreeRequest, checkPhotoRequest, feedbackRequest, termsRequest,
   updatesRequest, forgetRequest, clearTrail, packPhoto, savePackPhoto,
 } from "./lib.js";
 import { barcodeSupported, labelCameraSupported, startLabelCamera, startScanner } from "./camera.js";
@@ -37,7 +37,7 @@ let pending = { barcode: null, barcodeSource: null, back: null, front: null, bac
 // ------------------------------------------------------------------ navigation
 const routes = {
   "": home, welcome, who, household, person, scan, photo, front, result, report, compare, problem, send,
-  join, agree, feedback, data, table, tablephoto, scans,
+  agree, feedback, data, table, tablephoto, scans,
 };
 
 // D-176: the app's frame around each screen. Home and the first-run screens show the wordmark
@@ -50,7 +50,7 @@ const TITLES = {
   compare: "Compare", problem: "Report a problem", send: "Send it to us", feedback: "Send feedback",
   data: "Your data", scans: "Your scans",
 };
-const FIRST_RUN = ["welcome", "who", "join", "agree"];
+const FIRST_RUN = ["welcome", "who", "agree"];
 const NO_TABBAR = [...FIRST_RUN, "scan", "photo", "front", "table", "tablephoto"];
 let screenName = "home";      // the screen being shown, set by route() before its view is built
 let routed = 0;               // screens shown since the app opened: Back goes home from the first
@@ -79,22 +79,20 @@ function route() {
   // `sub` a result's own page (D-134: "look/<tile id>").
   record("route", { to: name || "home", arg: arg || undefined, sub: rest.join("/") || undefined });
   if (name !== "feedback") store.set("lastScreen", name || "home");     // where feedback was sent from
-  // D-102: an invite-only server lets a phone in once it has joined with a code.
-  // D-105: then "Before you start": the rules are agreed before anything else.
-  if (!["join", "agree", "problem", "data"].includes(name)) {
+  // D-105: "Before you start": the rules are agreed before anything else.
+  if (!["agree", "problem", "data"].includes(name)) {
     const seq = ++navSeq;
     return checkAccess().then(a => {
       if (seq !== navSeq) return;
-      if (!a.joined) { screenName = "join"; return show(join()); }
       if (a.needAgree) { screenName = "agree"; return show(agree()); }
-      routeAfterJoin(name, arg, rest);
+      routeAfterAgree(name, arg, rest);
     });
   }
-  routeAfterJoin(name, arg, rest);
+  routeAfterAgree(name, arg, rest);
 }
 
-function routeAfterJoin(name, arg, rest = []) {
-  if (!store.get("welcomed", false) && !["welcome", "who", "household", "person", "join", "agree", "data"].includes(name)) {
+function routeAfterAgree(name, arg, rest = []) {
+  if (!store.get("welcomed", false) && !["welcome", "who", "household", "person", "agree", "data"].includes(name)) {
     screenName = "welcome";
     return show(welcome());
   }
@@ -194,45 +192,23 @@ function button(label, onclick, cls = "") {
   return el("button", { type: "button", class: "btn " + cls, onclick }, label);
 }
 
-// ------------------------------------------------------------------ invite-only beta (D-102)
-// Asked once per session; a phone that has joined remembers it. If the server
-// says otherwise later (403 invite_required), the flag is cleared and the
-// join screen comes back.
+// ------------------------------------------------------------------ before you start (D-105)
+// Asked once per session. D-184: no invite codes; /access says whether this phone
+// agreed to the current rules and carries the app's switches (D-171).
 let accessChecked = null;
 function checkAccess() {
   if (!accessChecked) {
     accessChecked = accessRequest().then(({ body }) => {
-      const joined = !body.invite_only || body.joined;
-      if (joined) store.set("joined", true);
       store.set("termsVersion", body.terms_version);
       liveShutter = !!body.live_shutter;                                 // D-171
       // D-105: agreed on the server, or (a server without a database) on this phone.
       const needAgree = !body.agreed && store.get("agreed", null) !== body.terms_version;
-      return { joined, needAgree };
-    }).catch(() => ({                // offline: open the app; the server still checks every scan
-      joined: store.get("joined", true),
+      return { needAgree };
+    }).catch(() => ({                // offline: open the app
       needAgree: !store.get("agreed", null),
     }));
   }
   return accessChecked;
-}
-
-// A 403 from the server means this phone isn't (or is no longer) let in: no
-// invite (D-102), or the rules not agreed, e.g. after they changed (D-105).
-// Returns the screen to show, or null.
-function accessProblem(e) {
-  if (!(e instanceof ApiError)) return null;
-  if (e.body?.error === "invite_required") {
-    store.set("joined", false);
-    accessChecked = null;
-    return "join";
-  }
-  if (e.body?.error === "terms_required") {
-    store.set("agreed", null);
-    accessChecked = null;
-    return "agree";
-  }
-  return null;
 }
 
 function agree() {
@@ -257,7 +233,7 @@ function agree() {
       }
       store.set("agreed", t.version);
       record("agreed", { version: t.version });
-      accessChecked = Promise.resolve({ joined: true, needAgree: false });
+      accessChecked = Promise.resolve({ needAgree: false });
       go("");
     });
     view.replaceChildren(
@@ -274,37 +250,6 @@ function agree() {
     settled(view);
   }).catch(e => { view.replaceChildren(apiErrorView(e, () => show(agree()))); settled(view); });
   return view;
-}
-
-function join(code) {
-  const input = el("input", { id: "invite", autocomplete: "off", autocapitalize: "characters",
-                              maxlength: "12", placeholder: "e.g. K7PM4QXT", value: code || "" });
-  const err = errorLine();
-  const go_ = el("button", { type: "submit", class: "btn primary" }, "Join the beta");
-  const form = el("form", { class: "stack" },
-    el("h1", {}, "Welcome to the InsideLabel beta"),
-    el("p", { class: "lead" }, "InsideLabel is being tried by a small group first. Your invite has a code; " +
-                               "the link in your message fills it in for you."),
-    el("label", { for: "invite" }, "Invite code"), input, err, go_);
-  const submit = async () => {
-    const typed = input.value.trim();
-    if (!typed) { err.textContent = "Type the code from your invite."; return; }
-    go_.disabled = true;
-    try {
-      await joinRequest(typed);
-      store.set("joined", true);
-      accessChecked = null;                  // ask again: next comes "Before you start" (D-105)
-      record("joined", {});
-      go("");
-    } catch (ex) {
-      go_.disabled = false;
-      err.textContent = ex.status === 0 ? "No connection. Try again when you're online."
-        : (ex.body?.detail || "That didn't work. Check the code and try again.");
-    }
-  };
-  form.addEventListener("submit", e => { e.preventDefault(); submit(); });
-  if (code) setTimeout(submit, 0);          // opened from the invite link
-  return form;
 }
 
 function feedback() {
@@ -336,8 +281,6 @@ function feedback() {
         el("p", {}, "We read every note. It shapes what we build next."),
         button("Done", () => go(""), "primary")));
     } catch (ex) {
-      const gate = accessProblem(ex);
-      if (gate) return go(gate);
       err.textContent = ex.status === 0 ? "No connection. Try again when you're online." : apiMessage(ex);
     }
   });
@@ -553,8 +496,7 @@ function updateLine(r) {
 
 // ------------------------------------------------------------------ household (D-074)
 // D-129 "Your data": what we keep, this phone's id, and "Delete my data"
-// (DPDP Act s.12(3)). Works before joining: a tester whose code was revoked
-// can still erase.
+// (DPDP Act s.12(3)). Works before "Before you start": anyone can erase.
 function data() {
   const err = errorLine();
   const confirmBox = el("div", { class: "stack", hidden: true },
@@ -1141,8 +1083,7 @@ const TOUCH = window.matchMedia?.("(pointer: coarse)").matches ?? true;
 const liveOn = () => liveShutter && TOUCH && labelCameraSupported();
 
 // D-104: every photo is checked on the server as soon as it is picked. Returns {blob, res}:
-// res is {ok, message, barcode, label}, or null when the check couldn't run; null in place of
-// both when the phone has to join or agree first (the screen has changed). onReady(blob): the
+// res is {ok, message, barcode, label}, or null when the check couldn't run. onReady(blob): the
 // photo is ready to show while it's checked.
 async function checkPhoto(role, checkAs, file, onReady = null) {
   const blob = await prepareImage(file);
@@ -1151,8 +1092,6 @@ async function checkPhoto(role, checkAs, file, onReady = null) {
   try {
     res = (await checkPhotoRequest(checkAs, blob)).body;
   } catch (e) {
-    const gate = accessProblem(e);
-    if (gate) { go(gate); return null; }
     if (e.status === 429 || e.status === 413 || e.status === 415) res = { ok: false, message: apiMessage(e) };
   }
   record("photo_check", { role, ok: res ? res.ok : null, problem: res?.problem || null, barcode: !!res?.barcode });
@@ -2263,8 +2202,6 @@ function problemSpot(...names) {
 }
 
 function apiErrorView(e, retry) {
-  const gate = accessProblem(e);             // D-102/D-105: not joined, or rules not agreed
-  if (gate) return gate === "join" ? join() : agree();
   if (e instanceof ApiError && e.status === 429 && e.body?.photo_limit) return photoLimit(e.body.photo_limit);
   return el("section", { class: "stack" },
     problemSpot(e instanceof ApiError && e.status === 0 ? "wifi" : "retake"),

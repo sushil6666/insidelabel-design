@@ -17,7 +17,7 @@ the moat; the code is thin.
 python3.12 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 pytest -q                                  # 135 tests, no database or API key needed
-python tools/release_check.py              # how far from the closed beta
+python tools/release_check.py              # the release gates
 
 # try the engine on any ingredient list
 python -m insidelabel.core.engine "Refined wheat flour, Sugar, Palm oil, INS 471, INS 621, Added flavours"

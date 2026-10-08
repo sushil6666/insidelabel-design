@@ -227,9 +227,9 @@ def test_a_catalogue_hit_replays_from_its_own_version(db):
     assert repro.summary(out["screen"]) == repro.summary(hit["screen"])
 
 
-def test_a_replay_on_an_invite_only_server_reaches_the_scan(db, monkeypatch):
-    # Report #1 on the server: replay met the invite gate with no store and got a 503
-    # storage_unavailable, then compare() crashed on a result with no screen.
+def test_a_replay_with_no_store_reaches_the_scan(db):
+    # Report #1 on the server: replay met the invite gate (gone since D-184) with no store
+    # and got a 503 storage_unavailable, then compare() crashed on a result with no screen.
     from insidelabel import repro
     rid = str(uuid.uuid4())
     # (The report's own scans were screen photos; since D-130 a screen is read, so any
@@ -238,9 +238,7 @@ def test_a_replay_on_an_invite_only_server_reaches_the_scan(db, monkeypatch):
     assert first.status_code == 422
     s = row(db, "SELECT * FROM scans WHERE request_id = %s", rid)
     assert s["outcome"] == "refused" and s["error_code"]
-    monkeypatch.setattr(main, "INVITE_ONLY", True)
     out = repro.replay_scan(s, media=None)
-    assert main.INVITE_ONLY is True                                    # put back after the replay
     assert out["status"] == 422 and out["body"]["reliability"]["error"] == s["error_code"]
     shown = repro.summary(first.json()["screen"])
     assert repro.compare(shown, repro.summary(out["screen"])) == []

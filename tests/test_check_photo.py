@@ -135,12 +135,6 @@ def test_checking_is_rate_limited(monkeypatch):
     assert [check("back", label_photo()).status_code for _ in range(3)] == [200, 200, 429]
 
 
-def test_checking_needs_an_invite_when_the_beta_is_closed(monkeypatch):
-    monkeypatch.setattr(main, "INVITE_ONLY", True)
-    monkeypatch.setattr(main, "STORE", None)
-    assert check("back", label_photo()).status_code == 503
-
-
 def test_every_message_passes_the_wording_lint():
     import test_wording
     test_wording.assert_clean(list(main.CHECK_MESSAGES.values()), "check-photo messages")

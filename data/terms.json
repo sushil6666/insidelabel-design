@@ -1,16 +1,16 @@
 {
   "_meta": {
-    "purpose": "The 'Before you start' agreement every beta tester accepts before a first scan (D-105). Change the text, change the version: everyone is asked again.",
-    "who": "Wording by Claude from Sushil's direction (2026-09-26): correct data first; no AI-made pictures; a real person. 2026-10-08 (Sushil, D-182): a shopper's front photo may become the pack picture others see, after a person checks it; and example photos as a suggestion."
+    "purpose": "The 'Before you start' agreement every install accepts before a first scan (D-105). Change the text, change the version: everyone is asked again.",
+    "who": "Wording by Claude from Sushil's direction (2026-09-26): correct data first; no AI-made pictures; a real person. 2026-10-08 (Sushil, D-182): a shopper's front photo may become the pack picture others see, after a person checks it; and example photos as a suggestion. 2026-10-08 (Sushil, D-184, version 2026-10-08-2): no invite codes, so a made-up picture no longer 'can close my invite'."
   },
-  "version": "2026-10-08",
+  "version": "2026-10-08-2",
   "title": "Before you start",
   "intro": "InsideLabel only works if every photo is of a real pack. Each one is checked, by our rules and often by a person, before it joins the catalogue. Please agree to these few rules.",
   "points": [
     "I am a real person using InsideLabel myself, not an automated program.",
     "I will only photograph real packs that I am holding or that are in front of me.",
     "I will not upload pictures made or changed by AI, edited photos, or screenshots of websites and apps.",
-    "I understand that what I send may be checked by a person, and that made-up or altered pictures are removed and can close my invite.",
+    "I understand that what I send may be checked by a person, and that made-up or altered pictures are removed.",
     "I agree that a clear photo I take of the front of a pack may be shown to other InsideLabel users as that product's picture, after a person checks that it shows only the pack.",
     "I understand that InsideLabel shows ingredient facts from the label. It is not medical advice."
   ],

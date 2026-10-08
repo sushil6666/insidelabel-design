@@ -2,7 +2,7 @@
 D-128: after 30 days a scan keeps what the label said but loses who sent it: its
 install id and the household profiles in its request. Held scans keep the
 link until the hold ends, never past 12 months. Feedback, problem
-reports and installs go after 12 months. The beta's per-day counts survive in
+reports and installs go after 12 months. The per-day counts survive in
 device_days (D-055).
 """
 import json
@@ -117,15 +117,20 @@ def test_an_install_seen_lately_stays(env):
     assert sql(uri, "SELECT id FROM users WHERE id = %s", dev) != []
 
 
-def test_beta_counts_survive_unlinking(env):
+def test_day_counts_survive_unlinking(env):
     uri, _ = env
-    store = Store(uri)
-    [code] = store.create_invites(1, label="T99")
     dev = str(uuid.uuid4())
-    assert "error" not in store.join_invite(code, dev)
     scan(uri, dev, days_old=45)
     scan(uri, dev, days_old=10)
-    before = next(r for r in store.beta_testers() if r["code"] == code)
+
+    def counts():
+        # D-128: scans still linked, plus the day counts kept for unlinked ones
+        [r] = sql(uri, """SELECT coalesce(sum(scans), 0)::int AS scans, count(DISTINCT day) AS days
+                            FROM (SELECT created_at::date AS day, count(*) AS scans FROM scans
+                                   WHERE user_id = %s GROUP BY 1
+                                  UNION ALL
+                                  SELECT day, scans FROM device_days WHERE user_id = %s) s""", dev, dev)
+        return r["scans"], r["days"]
+    before = counts()
     retention.unlink(uri, apply=True)
-    after = next(r for r in store.beta_testers() if r["code"] == code)
-    assert (after["scans"], after["days_active"]) == (before["scans"], before["days_active"]) == (2, 2)
+    assert counts() == before == (2, 2)

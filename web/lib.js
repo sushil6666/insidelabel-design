@@ -12,7 +12,7 @@
 //    beyond the headline the user was shown.
 
 // Bump together with VERSION in sw.js: a report then says which shell was cached.
-export const APP_VERSION = "web-59";
+export const APP_VERSION = "web-60";
 
 // ------------------------------------------------------------------ storage
 // localStorage can throw (private mode, blocked site data); the app must still work.
@@ -313,16 +313,11 @@ export async function checkPhotoRequest(role, blob) {
   return call("/check-photo", { method: "POST", body: fd });
 }
 
-// D-102: the invite-only beta. The server says whether it needs a code and
-// whether this phone has joined; the code comes from the tester's link.
+// D-105: whether this phone agreed to the current rules, and the app's switches (D-171).
 export const accessRequest = () =>
   call("/access?device_id=" + encodeURIComponent(deviceId()));
 
-export const joinRequest = code =>
-  call("/join", { method: "POST", headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ code, device_id: deviceId() }) });
-
-// D-105: "Before you start", the rules every tester agrees to first.
+// D-105: "Before you start", the rules every install agrees to first.
 export const termsRequest = () => call("/terms");
 export const agreeRequest = version =>
   call("/agree", { method: "POST", headers: { "Content-Type": "application/json" },

@@ -2,7 +2,7 @@
  "_meta": {
   "table": "infant_composition",
   "version": "0.1",
-  "purpose": "D-140 phase 3, part 4: the composition each infant food type's standard sets, for reviewers only (docs/BABY_FOOD.md 4.5, Sushil's choice 5: reviewer-only in the beta). lenses/infant.py composition() sets a number the pack prints per 100 g, and the second reading of the photo shows, beside the type's range. Facts side by side: never 'fails' or 'outside the law' (D-042).",
+  "purpose": "D-140 phase 3, part 4: the composition each infant food type's standard sets, for reviewers only (docs/BABY_FOOD.md 4.5, Sushil's choice 5: reviewer-only). lenses/infant.py composition() sets a number the pack prints per 100 g, and the second reading of the photo shows, beside the type's range. Facts side by side: never 'fails' or 'outside the law' (D-042).",
   "source": {
    "title": "FSS (Foods for Infant Nutrition) Regulations, 2020, compendium Version II (04.01.2024); FSSAI direction of 18 October 2022, Annexure-1 (revised selenium, manganese, iron and biotin)",
    "urls": [
