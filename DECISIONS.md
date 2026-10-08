@@ -3597,7 +3597,7 @@ D-175 on d175-recheck from current main, as approved, with the advisor's two cha
   sulphite" from nutrition-panel values; their records match their labels. A new INS number in the list is still
   caught by `lost_ins_numbers`. The allergen check itself (`lenses/allergens.check`) is unchanged.
 
-### D-176 · The app gets a real frame: a header with the screen's name and a back arrow, and a bottom bar `LOCKED` (2026-10-08)
+### D-176 · The app gets a real frame: a header with the screen's name and a back arrow, and a bottom bar `LOCKED` (2026-10-08); its screen-name-in-the-header part `SUPERSEDED by D-180` (2026-10-08)
 **Sushil, 2026-10-08:** "we will make the best ui i am not happy with ui part take some reference attached, and
 suggest, plan only first, no proper header and footer etc till now", with two screen recordings of another food-label
 app; then "think about animation etc more focus on visually something describe and ey catching"; then, on the plan
@@ -3672,7 +3672,7 @@ screens already showed (D-091), and nothing is sent anywhere new (D-074).
   (`--stagger`, at most 6); a pressed card dips.
 `tests/test_web.py`.
 
-### D-179 · The website gets a header nav and a real footer `LOCKED` (2026-10-08)
+### D-179 · The website gets a header nav and a real footer `LOCKED` (2026-10-08); its wordmark-on-the-left part `SUPERSEDED by D-180` (2026-10-08)
 Step 4, the last, of the plan accepted in D-176 (**accepted by Sushil 2026-10-08**, "please proceed on UI design
 plan", taken as yes to every recommendation). Built by Claude. Supersedes D-152's centred wordmark on the website
 only; the app keeps D-176's header.
@@ -3687,6 +3687,21 @@ only; the app keeps D-176's header.
   whose labels we read pays us, and none can change what we show." The old one-line footers go.
 - Not added: a Google Play badge (the listing is not public yet).
 - Motion: the phone menu panel fades and drops in (transform and opacity, off under reduced motion).
+`tests/test_site_desktop.py`.
+
+### D-180 · The wordmark stays in the centre of the header, on every app screen and website page `LOCKED` (2026-10-08)
+**Sushil, 2026-10-08:** "web browser or all logo should be always in center, don't change the position". D-176 had
+replaced the wordmark with the screen's name on the app's inner screens, and D-179 had moved it to the left on
+the website; both are undone. Built by Claude.
+
+- **App:** the wordmark is centred on every screen, as D-152 set it. Inner screens keep D-176's back arrow on
+  the left and the profile icon on the right; their name is the page's own heading, not in the header.
+- **Website:** the wordmark is centred on every page. From 1024 px the site's links (How it works, How we check,
+  About, Privacy) sit to its left and "Open the app" to its right; below that, one menu button on the right holds
+  them (D-179's menu). Every page's header now uses the wide container, so the wordmark sits in the same place.
+- Measured in Chromium at 360, 390, 800 and 1280 px: the wordmark's centre is the window's centre on the website
+  home, About and Privacy and on the app's home, Your scans, a result and Household.
+- Unchanged: D-179's footer, D-176's bottom bar and back arrow, the header heights (65 px on the website).
 `tests/test_site_desktop.py`.
 
 ---

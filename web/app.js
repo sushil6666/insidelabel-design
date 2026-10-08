@@ -139,14 +139,9 @@ function settled(view) {
 // screen goes where the phone's Back would, or home when it is the first screen opened.
 function frame(href, label) {
   const name = screenName;
+  // D-180 (Sushil): the wordmark stays in the centre on every screen; an inner screen (one with a
+  // name in TITLES) gets the back arrow beside it, never its name in the wordmark's place.
   const title = FIRST_RUN.includes(name) ? null : TITLES[name] || null;
-  const top = document.querySelector(".top");
-  const titleEl = document.getElementById("top-title");
-  if (top && titleEl) {
-    top.classList.toggle("titled", !!title);
-    titleEl.textContent = title || "";
-    titleEl.hidden = !title;
-  }
   const slot = document.getElementById("top-left");
   if (slot) {
     let back = "";

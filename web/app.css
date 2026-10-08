@@ -109,10 +109,6 @@ body {
 .top .wordmark { justify-self: center; grid-column: 2; grid-row: 1; }
 .top-left { display: flex; grid-column: 1; grid-row: 1; }
 .menu-btn { grid-column: 3; grid-row: 1; }
-/* D-176: every screen but home and the first-run ones shows its name here instead of the wordmark. */
-.top-title { grid-column: 2; grid-row: 1; justify-self: center; max-width: 100%; overflow: hidden;
-             text-overflow: ellipsis; white-space: nowrap; font: 700 var(--fs-lg)/1.2 var(--display); }
-.top.titled .wordmark { display: none; }
 .top-back, .menu-btn {
   width: var(--tap); height: var(--tap); display: flex; align-items: center; justify-content: center; border: 0; padding: 0;
   border-radius: 50%; background: transparent; color: var(--ink); cursor: pointer;
