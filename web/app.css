@@ -769,6 +769,18 @@ details[open]:not(.look) > summary::after { transform: rotate(180deg); }
 .kicker.step span + span { text-align: right; }
 .label-cam.stack > * + *, .shot-review.stack > * + * { margin-top: var(--sp-3); }
 .label-cam h1, .shot-review h1 { margin: 0; font-size: var(--fs-xl); line-height: 1.2; }
+.cam-title { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); }
+/* Tips: a small pill beside the title (Sushil, 2026-10-08: no loose links under the picker). */
+.tips-btn {
+  flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 6px 14px 6px 10px;
+  border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--brand);
+  font: inherit; font-size: var(--fs-sm); font-weight: 700; cursor: pointer; box-shadow: var(--e-1);
+  position: relative; transition: transform var(--d-press) var(--ease-standard);
+}
+.tips-btn::after { content: ""; position: absolute; inset: -6px -2px; }      /* a 48 px tall hit area */
+.tips-btn .icon { width: 18px; height: 18px; }
+.tips-btn:active { transform: scale(.97); }
+.tips-btn:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
 .viewfinder-wrap.tall { aspect-ratio: 4 / 5; max-height: 58vh; margin-inline: auto; }
 .frame.label { inset: 13% 5% 6%; }
 .frame.label.table { inset: 13% 10% 10%; }

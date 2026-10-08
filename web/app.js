@@ -118,7 +118,8 @@ function show(node) {
     else if (enterFrom !== "back") node.dataset.enter = enterFrom;
   }
   shownOnce = true;
-  frame(node instanceof Element ? node.dataset.back : null, node instanceof Element ? node.dataset.backLabel : null);
+  frame(node instanceof Element ? node.dataset.back : null, node instanceof Element ? node.dataset.backLabel : null,
+        node instanceof Element ? node.backTo : null);
   main.replaceChildren(node);
   // The footer shows once a screen is in place (CLS). A screen still loading its words
   // (aria-busy, e.g. "Before you start" on a first visit) calls settled() when they're in:
@@ -137,7 +138,10 @@ function settled(view) {
 // D-176: the header and the bottom bar for the screen in screenName. A result's own page (D-134)
 // goes back to its result; a result goes home (the photo steps behind it are done); any other
 // screen goes where the phone's Back would, or home when it is the first screen opened.
-function frame(href, label) {
+// backTo: a screen shown in place (a camera step) says where its arrow goes, so the arrow
+// returns to the photos in hand instead of leaving the scan (Sushil, 2026-10-08: no loose
+// "Back" links on the camera pages).
+function frame(href, label, backTo = null) {
   const name = screenName;
   // D-180 (Sushil): the wordmark stays in the centre on every screen; an inner screen (one with a
   // name in TITLES) gets the back arrow beside it, never its name in the wordmark's place.
@@ -145,7 +149,8 @@ function frame(href, label) {
   const slot = document.getElementById("top-left");
   if (slot) {
     let back = "";
-    if (href) back = el("a", { class: "top-back", href, "aria-label": label || "Back" }, icon("back"));
+    if (backTo) back = el("button", { type: "button", class: "top-back", "aria-label": "Back", onclick: backTo }, icon("back"));
+    else if (href) back = el("a", { class: "top-back", href, "aria-label": label || "Back" }, icon("back"));
     else if (name === "result") back = el("a", { class: "top-back", href: "#/", "aria-label": "Back to home" }, icon("back"));
     else if (title) back = el("button", { type: "button", class: "top-back", "aria-label": "Back",
       onclick: () => { if (routed > 1) window.history.back(); else go(""); } }, icon("back"));
@@ -832,19 +837,21 @@ function listShot() {
     title: n === 1 ? "Photograph the ingredient list" : "Photograph the rest of the list",
     line: n === 1 ? "Fit the list, from \"Ingredients\" to the last word"
                   : "Start where the last photo ended. A little overlap is fine.",
+    back: pending.back ? () => show(shotReview()) : null,
     onShot: (b, res, source) => { addShot(n, "list", b, source, res); show(shotReview(res)); },
   });
 }
 
-// The nutrition table, as the next part. `after`: what else the screen offers.
-function tableShot(after = null) {
+// The nutrition table, as the next part. `after`: what else the screen offers; `back`: where
+// the header's arrow goes (the photos in hand, during a scan).
+function tableShot(after = null, back = () => show(shotReview())) {
   const n = pending.parts.length + 2;
   return labelShot({
-    role: "back" + n, table: true,
+    role: "back" + n, table: true, back,
     step: stepLine(3, "Nutrition table"),
     title: "Photograph the nutrition table",
     line: "Fit the whole table, from its title to the last row",
-    after: after || button("This pack has no table", () => sendPhotos(), "link"),
+    after: after || button("This pack has no table", () => frontNeeded() && !pending.front ? show(frontShot()) : sendPhotos()),
     onShot: (b, res, source) => { addShot(n, "table", b, source, res); show(shotReview(res)); },
   });
 }
@@ -963,15 +970,14 @@ function shotReview(res = undefined, frontRes = undefined) {
 }
 
 // The front photo (D-100), then back to the same answer screen. D-181: a required step while
-// the catalogue wants it ("Back" returns to the photos in hand; there is no "Not now").
+// the catalogue wants it (the header's arrow returns to the photos in hand; no "Not now").
 function frontShot() {
-  const back = () => show(shotReview());
   return labelShot({
     role: "front", checkAs: "front", front: true,
+    back: () => show(shotReview()),
     step: stepLine(4, "Front"),
     title: "Photograph the front",
     line: "Fill the frame with the front of the pack, including any words printed on it.",
-    after: button("Back", back, "link"),
     onShot: (b, res, source) => {
       pending.front = b;
       pending.frontSource = source;
@@ -981,11 +987,15 @@ function frontShot() {
 }
 
 // One photo of the label. o: { role, checkAs, step (a node), title, line, table, front, after,
-// onShot(blob, res, source) }.
+// back (where the header's arrow goes), onShot(blob, res, source) }.
 // onShot runs once a photo is in and the check didn't turn it down.
+// Tips is a small pill beside the title, not a loose link under the picker (Sushil, 2026-10-08).
 function labelShot(o) {
-  const tips = button("Tips", () => tipsSheet(liveOn()), "link");
-  const view = el("section", { class: "stack label-cam" }, o.step, el("h1", {}, o.title));
+  const tips = el("button", { type: "button", class: "tips-btn", onclick: () => tipsSheet(liveOn()) },
+    icon("info"), "Tips");
+  const view = el("section", { class: "stack label-cam" }, o.step,
+    el("div", { class: "cam-title" }, el("h1", {}, o.title), tips));
+  if (o.back) view.backTo = o.back;
   const shot = el("div", { class: "stack" });
   view.append(shot);
   if (o.after) view.append(o.after);
@@ -1002,8 +1012,7 @@ function labelShot(o) {
       (picker = photoPicker(o.role, "Take the photo", preview, (b, res, source) => {
         if (b && !(res && !res.ok)) o.onShot(b, res, source);
       }, o.checkAs || "back"), leadWith(picker, true), picker),
-      preview,
-      el("div", { class: "row" }, tips)].filter(Boolean));
+      preview].filter(Boolean));
   };
   if (!liveOn()) {
     appCamera(null);
@@ -1020,7 +1029,7 @@ function labelShot(o) {
   const shutter = el("button", { type: "button", class: "shutter", "aria-label": "Take the photo", disabled: true });
   const upload = uploadLink(o.role, file => checkShot(o, file, "upload", again));
   shot.replaceChildren(wrap, el("p", { class: "cam-line" }, o.line),
-    el("div", { class: "shutter-row" }, tips, shutter, upload));
+    el("div", { class: "shutter-row" }, el("span", {}), shutter, upload));
 
   const seq = navSeq;
   const onHint = h => hint.replaceChildren(h ? kinded("p", "problem", { class: "cam-hint check bad" },
@@ -1225,8 +1234,7 @@ function front(id) {
       leadWith(picker, !blob);
     }), leadWith(picker, true), picker),
     preview,
-    send,
-    button("Not now", () => go("result/" + encodeURIComponent(id)), "link"));
+    send);                                                 // the header's arrow goes back to the result
 }
 
 // D-073, D-175: a photo of a published pack's list, compared with the published list for free
@@ -1272,7 +1280,7 @@ function tablephoto(id) {
     role: "back", table: true,
     step: el("p", { class: "kicker product" }, productName(h.product)),
     title: w.title, line: w.lead,
-    after: el("div", { class: "stack" }, el("p", { class: "muted" }, w.barcode), button("Not now", back, "link")),
+    after: el("p", { class: "muted" }, w.barcode),         // the header's arrow goes back to the result
     onShot: (b, res, source) => show(el("section", { class: "stack shot-review" }, o.step,
       el("div", { class: "thumb" }, el("img", { src: URL.createObjectURL(b), alt: "Your photo of the table" }),
         res === undefined ? null : checkLine(res, () => show(labelShot(o)))),
@@ -1386,7 +1394,7 @@ function finish(body, { lookedUp = false } = {}) {
 function table() {
   if (!pending.back || pending.parts.length >= 2) return errorView("Scan the pack again to add its nutrition table.");
   // D-171: the same step 3 screen as a new pack's table photo.
-  return tableShot(button("Not now", () => history.back(), "link"));
+  return tableShot(el("span", {}), null);                // the header's arrow goes back
 }
 
 // D-133: the nutrition table beside ICMR-NIN's thresholds. Every sentence is the server's.

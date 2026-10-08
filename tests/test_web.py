@@ -251,7 +251,17 @@ def test_label_photos_come_in_steps():                                   # D-171
     front = app[app.index("function frontShot("):app.index("// One photo of the label.")]
     assert 'role: "front", checkAs: "front"' in front and "show(shotReview(undefined, res))" in front
     assert 'stepLine(4, "Front")' in front and '"Not now"' not in front and '"Optional"' not in front
-    assert 'button("Back", back, "link")' in front and "const back = () => show(shotReview());" in front
+    assert "back: () => show(shotReview())," in front and '"Back"' not in front
+    # Sushil, 2026-10-08: no loose "Tips" and "Back" links on the camera pages. Tips is a pill beside
+    # the title; the header's arrow goes back to the photos in hand (a screen's backTo).
+    shot = app[app.index("function labelShot("):app.index("function tipsSheet(")]
+    assert 'el("div", { class: "cam-title" }, el("h1", {}, o.title), tips)' in shot
+    assert 'class: "tips-btn"' in shot and 'button("Tips"' not in app
+    assert "if (o.back) view.backTo = o.back;" in shot
+    assert 'if (backTo) back = el("button", { type: "button", class: "top-back", "aria-label": "Back", onclick: backTo }' in app
+    # An answer, as a button; with the front still to take (D-181) it leads there, not to the read.
+    assert 'button("This pack has no table", () => frontNeeded() && !pending.front ? show(frontShot()) : sendPhotos())' in app
+    assert '"Not now"' not in app[app.index("function front("):app.index("function recheckPhoto(")]
     # Off where the front is on file, and for D-175's list-only re-check.
     recheck = app[app.index("function recheckPhoto("):app.index("// ------------------------------------------------------------------ a table photo")]
     assert "pending.frontWanted = !!h.catalogue?.front_wanted;" in recheck

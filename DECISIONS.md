@@ -3719,6 +3719,12 @@ the website; both are undone. Built by Claude.
   barcode alone (no photos are taken, so the result's "Add the front of the pack?" offer stays optional).
 - **App only.** `/scan` still accepts a back without a front (repro, tools, tests, an older app); the app is the
   only client that sends new packs.
+- **No loose links on the camera pages (Sushil, 2026-10-08: "this tips and back in every page does not look good").**
+  Tips is a small pill with an info icon beside each camera step's title, not a link under the picker (in the live
+  shutter row its place is left empty). The header's back arrow does what the "Back" and "Not now" links did: on
+  the table, front and later list steps it returns to the photos in hand (a screen shown in place sets `backTo`),
+  elsewhere it goes back as before. "This pack has no table" is a full-width answer button, and leads to the front
+  when it is still to take.
 `tests/test_web.py`.
 
 ### D-182 · The pack picture: a reviewed front photo taken by the team, shown for that barcode `RECOMMENDED` (2026-10-08)
