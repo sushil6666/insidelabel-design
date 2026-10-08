@@ -170,7 +170,7 @@ def test_sugar_added_beside_invert_sugar_is_caught_by_the_count():
     no_sugar = [x for x in BISCUIT if x != "SUGAR"]
     r = checker.unchanged(no_sugar, None, BISCUIT_OCR)
     assert (r["missing"], r["lost"], r["lost_ins"], r["new_allergens"]) == ([], [], [], [])
-    assert r["decision"] == "not_clear" and (r["entries"], r["stored_entries"]) == (11, 10)
+    assert r["decision"] == "not_clear" and (r["entries"], r["stored_entries"]) == (12, 11)
 
 
 def test_a_new_number_allergen_or_word_is_not_clear():
@@ -317,3 +317,78 @@ def test_a_failed_paid_read_still_keeps_what_the_free_check_saw(env, monkeypatch
     assert row[1]["back"]["recheck"]["decision"] == "not_clear"
     assert row[1]["back"]["recheck"]["text"] == text
     assert version(env, bc)[1] is None
+
+# ---------------------------------------------------------------- the count, on the server's packs
+
+# D-175 follow-up (2026-10-08): `tools/recheck_measure.py` on the server's 57 published packs
+# passed 20; 28 failed on the entry count. Three of them, as stored and as Cloud Vision read
+# them (cut at 600 characters from "ingredients"). The stored Oats list splits its chocolate
+# chips into parts; Oreo's text drops a bracket ("(500(ii), 503 (ii), STARCH"); Eat Fit's text
+# lost commas ("WHEY POWDER WHITE CUMIN").
+OATS = ["WHEAT FLOUR (ATTA) (31.3%)", "ROLLED OATS (20.3%)", "SUGAR", "REFINED PALM OIL", "PLAIN CHOCOLATE CHIPS (6.2%) {SUGAR", "COCOA SOLIDS", "COCOA BUTTER", "DEXTROSE", "EMULSIFIER [LECITHIN (FROM SOYBEAN)]", "NATURAL FLAVOURS AND NATURAL FLAVOURING SUBSTANCES}", "LIQUID GLUCOSE", "INVERT SYRUP", "RAISING AGENTS [503(ii), 500(ii), 450(i)]", "COCOA SOLIDS (1.4%)", "ALMOND BITS (1.4%)", "MALTODEXTRIN", "IODIZED SALT", "ARTIFICIAL FLAVOURING SUBSTANCES (MILK, VANILLA) AND EMULSIFIER [LECITHIN (FROM SOYBEAN)]"]
+OATS_OCR = """Ingredients
+WHEAT FLOUR (ATTA) (31.3%), ROLLED OATS (20.3%), SUGAR, REFINED PALM OIL, PLAIN
+CHOCOLATE CHIPS (6.2%) (SUGAR, COCOA SOLIDS, COCOA BUTTER, DEXTROSE, EMULSIFIER
+LECITHIN (FROM SOYBEAN)], NATURAL FLAVOURS AND NATURAL FLAVOURING
+SUBSTANCES, LIQUID GLUCOSE, INVERT SYRUP, RAISING AGENTS [503(ii), 500(ii), 450(6)],
+COCOA SOLIDS (1.4%), ALMOND BITS (1.4%), MALTODEXTRIN, IODIZED SALT, ARTIFICIAL
+FLAVOURING SUBSTANCES (MILK, VANILLA) AND EMULSIFIER [LECITHIN (FROM SOYABEAN)].
+CONTAINS WHEAT, OATS, SOY, NUT. MAY CONTAIN SULPHITE, MILK.
+NUTRITIONAL INFORMATION (APPROX. VALUES): PER 100 g (% R"""
+EATFIT = ["REFINED WHEAT FLOUR (MAIDA) (68.3%)", "EDIBLE VEGETABLE OIL [PALM, PALMOLEIN, ANTIOXIDANT (319)]", "HYDROGENATED VEGETABLE OIL (PALM, PALMOLEIN)", "YEAST", "MALT", "WHEY POWDER", "WHITE CUMIN (SAFED JEERA )(0.7%)", "BLACK CUMIN ( KALONJI ) (0.28%)", "CHILLI (0.16%)", "CAROM SEED (AJWAIN) (0.18%)", "MUSTARD(0.10%)", "FENUGREEK LEAVES (0.06%)", "EDIBLE STARCH (CORN)", "SALT", "DOUGH CONDITIONER (223)", "RAISING AGENTS [500(ii), 503(ii)]", "EMULSIFIER [450(i)] & FLOUR TREATMENT AGENT (1101) NUMBERS IN BRACKETS ARE AS PER INTERNATIONAL NUMBERING SYSTEM"]
+EATFIT_OCR = """INGREDIENTS:REFINED WHEAT FLOUR (MAIDA) (68.3%), EDIBLE VEGETABLE OIL PALM, PALMOLEIN.
+ANTIOXIDANT (319)], HYDROGENATED VEGETABLE OIL (PALM, PALMOLEIN), YEAST, MALT, WHEY POWDER
+WHITE CUMIN (SAFED JEERA ) (0.7%) BLACK CUMIN (KALONJI) (0.28%), CHILLI (0.16%), CAROM SEED (AJWAN
+(0.18%), MUSTARD (0.10%), FENUGREEK LEAVES (0.06%), EDIBLE STARCH (CORN), SALT, DOUGH CONDITIONER
+(223), RAISING AGENTS [500(ii), 503 (ii)], EMULSIFIER [450(i)) & FLOUR TREATMENT AGENT (1101)
+NUMBERS IN BRACKETS ARE AS PER INTERNATIONAL NUMBERING SYSTEM
+CONTAINS WHEAT AND MILK HYPERSENSITIVE INGREDIENTS
+FOR COMPLAINTS/SUG"""
+OREO = ["REFINED WHEAT FLOUR (MAIDA)", "SUGAR", "FRACTIONATED FAT", "PALMOLEIN", "INVERT SUGAR", "COCOA SOLIDS (2%*)", "LEAVENING AGENTS (500(ii), 503(ii))", "STARCH", "IODISED SALT", "EMULSIFIER (322)", "NATURE IDENTICAL FLAVOURING SUBSTANCES"]
+OREO_OCR = """Ingredients
+Oreo cookies 36
+Brick cream cheese
+(softened)-1 packet (225 g)
+Melted chocolate-500 g
+Instructions
+Crush the Oreo cookies to fine
+Mix cream cheese and powdered Oreos
+Form 40-50 smooth balls by rolling the
+mixture between your palms
+Freeze the balls for 10 min
+Dip the frozen balls in melted chocolate
+the chocolate-dinned hallinnon
+AD
+TOT
+SANDWICH BISCUIT
+INGREDIENTS: REFINED WHEAT FLOUR (MAIDA), SUGAR, FRACTIONATED FAT, PALMOLEIN, INVERT
+SUGAR, COCOA SOLIDS (2%*), LEAVENING AGENTS (500(ii), 503 (ii), STARCH, IODISED SALT,
+EMULSIFIER (322), NATURE IDENTICAL FLAVOURING SUBSTANCES.
+ALL"""
+
+
+def test_a_stored_list_split_inside_brackets_counts_as_printed():
+    r = checker.unchanged(OATS, "CONTAINS WHEAT, OATS, SOY, NUT. MAY CONTAIN SULPHITE, MILK.", OATS_OCR)
+    assert r["decision"] == "unchanged", r
+    assert r["entries"] == r["stored_entries"]
+
+
+def test_a_dropped_bracket_no_longer_merges_the_rest():
+    r = checker.unchanged(OREO, None, OREO_OCR)
+    assert r["entries"] == r["stored_entries"] == 12 and not r["out_of_order"]
+
+
+def test_lost_commas_still_go_to_the_paid_read():
+    r = checker.unchanged(EATFIT, "CONTAINS WHEAT AND MILK", EATFIT_OCR)
+    assert r["decision"] == "not_clear" and r["entries"] < r["stored_entries"]
+
+
+def test_the_server_packs_still_catch_an_added_or_swapped_entry():
+    for ings, stmt, text in ((OATS, "CONTAINS WHEAT, OATS, SOY, NUT. MAY CONTAIN SULPHITE, MILK.", OATS_OCR),
+                             (LIST, STATEMENT, MALIBAN_OCR), (BISCUIT, None, BISCUIT_OCR)):
+        for i in range(len(ings)):
+            assert checker.unchanged(ings[:i] + ings[i + 1:], stmt, text)["decision"] == "not_clear", ings[i]
+        for i in range(len(ings) - 1):
+            swapped = ings[:i] + [ings[i + 1], ings[i]] + ings[i + 2:]
+            assert checker.unchanged(swapped, stmt, text)["decision"] == "not_clear", ings[i]
+

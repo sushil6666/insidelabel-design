@@ -203,7 +203,7 @@ def _ingredient_section(ocr_text, ingredients):
     return _section_bounds(ocr_text, ingredients)[0]
 
 
-def _section_bounds(ocr_text, ingredients):
+def _section_bounds(ocr_text, ingredients, end_words=1):
     """
     The part of Cloud Vision's text that holds the ingredient list, or "".
 
@@ -214,6 +214,9 @@ def _section_bounds(ocr_text, ingredients):
     and never past a heading like "Nutrition" or "Net Weight".
     Returns (section, ended): ended is False when the draft's last word isn't in
     the section, so where the list ends wasn't found (D-175).
+    end_words: D-175's re-check ends at the latest of the last entry's final words (3), as
+    a misread last word can also sit earlier in the list ("(FROM SOYBEAN)" in the chocolate
+    chips, "(FROM SOYABEAN)" at the end). The D-117 and D-118 checks keep 1.
     """
     low = _fold(ocr_text)
     starts = [m.start() for m in re.finditer("ingredient", low)]
@@ -227,11 +230,13 @@ def _section_bounds(ocr_text, ingredients):
 
     start = min(starts, key=gap)
     stop = min([i for i in (low.find(t, start + 10) for t in _SECTION_END) if i > 0] or [len(low)])
-    last = (_words(ingredients[-1]) or [""])[-1] if ingredients else ""
-    j = low.rfind(last, start, stop) if last else -1
-    if j < 0:
+    end = -1
+    for last in (_words(ingredients[-1])[-end_words:] if ingredients else []):
+        j = low.rfind(last, start, stop)
+        if j >= 0:
+            end = max(end, j + len(last))
+    if end < 0:
         return low[start:stop], False
-    end = j + len(last)
     tail = re.search(r"(?<!\d)\.(?!\d)|\n\s*\n", low[end:end + 80])
     return low[start:min(stop, end + (tail.start() if tail else 80))], True
 
@@ -278,26 +283,17 @@ def lost_ins_numbers(ingredients, ocr_text):
 _HEADING = re.compile(r"^\W*ingredi\w*\s*(?:\([^)]*\))?\s*[:\-]?", re.I)
 
 
-def _top_entries(section):
+def _pieces(text):
     """
-    The list's entries as printed: the section after its heading, split at the commas
-    outside brackets (D-175, the advisor, 2026-10-08). A bracket Cloud Vision misread
-    shut ("(500/))") never takes the depth below zero.
+    D-175 (refined 2026-10-08, after the server's 57 packs): a list cut at every comma,
+    brackets or not. The same cut is made on the stored list joined, so like is compared
+    with like: a stored list that splits a compound entry ("PLAIN CHOCOLATE CHIPS (6.2%)
+    {SUGAR", "COCOA SOLIDS", ...) and a text whose bracket Cloud Vision dropped ("(500(ii),
+    503 (ii), STARCH") count the same as the printed list. A new entry is still one more
+    piece ("Sugar" beside "Invert sugar").
     """
-    body = _HEADING.sub("", section, count=1)
-    out, depth, cur = [], 0, []
-    for ch in body:
-        if ch in "([{":
-            depth += 1
-        elif ch in ")]}":
-            depth = max(0, depth - 1)
-        if ch == "," and depth == 0:
-            out.append("".join(cur))
-            cur = []
-        else:
-            cur.append(ch)
-    out.append("".join(cur))
-    return [e for e in (x.strip().rstrip(".").strip() for x in out) if e]
+    body = _HEADING.sub("", text, count=1)
+    return [e for e in (x.strip().rstrip(".").strip() for x in body.split(",")) if e]
 
 
 def unchanged(ingredients, allergen_statement, ocr_text):
@@ -317,10 +313,10 @@ def unchanged(ingredients, allergen_statement, ocr_text):
       - no new INS number (lost_ins_numbers, core/tokenize, D-099);
       - no new allergen: no allergen word anywhere in the text (the "Contains" line
         too) whose allergen the stored list and statement don't name;
-      - the same number of entries (the advisor, 2026-10-08): the text's list split at
-        commas outside brackets has as many entries as the stored list, so "Sugar" added
-        beside "Invert sugar" counts;
-      - the same order: entry i of the text holds the words of stored entry i, because
+      - the same number of entries (the advisor, 2026-10-08): the text's list and the
+        stored list, each cut at every comma (_pieces), have as many pieces, so "Sugar"
+        added beside "Invert sugar" counts;
+      - the same order: piece i of the text holds the words of stored piece i, because
         the order feeds the sugar chip ("2nd of 11").
     Returns {decision, ...} with what each check found, for the scan's trace (D-092).
     """
@@ -331,18 +327,20 @@ def unchanged(ingredients, allergen_statement, ocr_text):
     lost_ins = lost_ins_numbers(ingredients, text) if section else []
     stored = allergen_checker.mentioned(" , ".join(ingredients + [allergen_statement or ""]))
     new_allergens = sorted(allergen_checker.mentioned(text) - stored)
-    entries = _top_entries(section) if section else []
+    counted, _ended = _section_bounds(text, ingredients, end_words=3)
+    entries = _pieces(counted) if section else []
+    wanted = _pieces(_fold(", ".join(ingredients)))
     out_of_order = []
-    if len(entries) == len(ingredients):
-        for want, got in zip(ingredients, entries):
+    if len(entries) == len(wanted):
+        for want, got in zip(wanted, entries):
             pool = sorted(set(_words(got)))
             if not all(_found(w, pool) for w in _words(want)):
                 out_of_order.append(want)
     same = (found and ended and not missing and not lost and not lost_ins and not new_allergens
-            and len(entries) == len(ingredients) and not out_of_order)
+            and len(entries) == len(wanted) and not out_of_order)
     return {"decision": "unchanged" if same else "not_clear", "section_found": bool(found),
             "list_end_found": ended, "missing": missing, "lost": lost, "lost_ins": lost_ins,
-            "new_allergens": new_allergens, "entries": len(entries), "stored_entries": len(ingredients),
+            "new_allergens": new_allergens, "entries": len(entries), "stored_entries": len(wanted),
             "out_of_order": out_of_order}
 
 
