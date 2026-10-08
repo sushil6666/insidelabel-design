@@ -983,12 +983,17 @@ html:has(body.has-tabbar) { scroll-padding-bottom: calc(88px + env(safe-area-ins
 .avatar.av-p1 { background: var(--unsure-bg); color: var(--unsure); }
 .avatar.av-p2 { background: var(--calm-bg); color: var(--calm); }
 .avatar.av-p3 { background: var(--problem-bg); color: var(--problem); }
-.checking .who-chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.who-chips li { display: flex; align-items: center; gap: 8px; padding: 4px 12px 4px 4px; border-radius: var(--r-pill);
-                background: var(--surface-2); max-width: 100%; }
-.who-chips .avatar { width: 30px; height: 30px; font-size: .85rem; }
-.who-chips li > span:not(.avatar) { overflow-wrap: anywhere; }
-.who-chips li > span:last-child { font-size: var(--fs-sm); }
+/* D-178 follow-up (Sushil, 2026-10-08): a row per person, "You · 9 to avoid"; a tap opens the
+   list under it. The name never breaks or shrinks (it wrapped one letter per line beside a long
+   list); the list wraps under the line, at full width. */
+.checking .who-chips { display: grid; gap: 8px; }
+.who-chips li { border-radius: 18px; background: var(--surface-2); min-width: 0; }
+.who-chips :is(summary, .who-line) { display: flex; align-items: center; gap: 8px; min-height: var(--tap);
+                                     padding: 4px 12px 4px 6px; font-weight: 400; }
+.who-chips .avatar { flex: none; width: 30px; height: 30px; font-size: .85rem; }
+.who-name { white-space: nowrap; flex-shrink: 0; font-weight: 600; }
+.who-count { font-size: var(--fs-sm); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.who-avoid { margin: 0; padding: 0 14px 12px 44px; font-size: var(--fs-sm); overflow-wrap: break-word; }
 .people { display: grid; gap: 10px; }
 .person-card .avatar { width: 48px; height: 48px; font-size: 1.25rem; }
 .avoid-chip { background: var(--stop-bg); color: var(--stop); font-weight: 600; }

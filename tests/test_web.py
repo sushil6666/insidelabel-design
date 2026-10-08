@@ -579,6 +579,21 @@ def test_checking_for_and_household_keep_nicknames_on_the_phone():
     assert "checkingFor()," in _fn(app_js, "home")
 
 
+def test_checking_for_shows_a_count_and_opens_the_list_on_a_tap():
+    """D-178 follow-up (Sushil, 2026-10-08): "Don't show directly all avoid list, keep one click option
+    to see". One line per person with a count; the list sits inside a closed <details>."""
+    fn = _fn(JS["app.js"], "checkingFor")
+    assert "to avoid" in fn and "no avoid list" in fn and "p.avoid.length" in fn
+    summary = fn[fn.index('el("summary"'):fn.index('el("p", { class: "who-avoid')]
+    assert "avoidNames(" not in summary                                   # the line shows a count only
+    assert 'el("details", { class: "who" }' in fn and "open:" not in fn   # closed by default
+    assert "avoidNames(p.avoid)" in fn[fn.index('class: "who-avoid'):]    # the list, once opened
+    css = open(os.path.join(WEB_DIR, "app.css"), encoding="utf-8").read()
+    rule = css[css.index(".who-name {"):].split("}", 1)[0]
+    assert "white-space: nowrap" in rule and "flex-shrink: 0" in rule     # the name never wraps a letter a line
+    assert "overflow-wrap: anywhere" not in css[css.index(".checking .who-chips"):css.index(".who-avoid")]
+
+
 def test_compare_lays_the_packs_side_by_side_with_compare_py_words():
     fn = _fn(JS["app.js"], "compareResult")
     assert 'class: "compare-grid"' in fn and "p.facts" in fn and "score" not in fn
