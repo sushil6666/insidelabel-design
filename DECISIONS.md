@@ -3831,6 +3831,17 @@ already off by D-162); amends D-148's wording only (the daily photo limit stays,
   here."** (Sushil chose the reworded line). Nothing else in substance changes.
 - **Kept:** DECISIONS.md history; comments naming testers as where an idea came from; migration and table names.
   `tools/release_check.py` drops "beta" from its header and its access line.
+- **Everyone on the full plan, free** (Sushil, 2026-10-08: "by default everone now pro user"): until paid plans
+  and Play billing exist, every user gets what D-148 gives the paid plan, at no cost: 15 photo scans a day,
+  unlimited barcode lookups, every feature. D-148's lower free limit (5 photo scans a day) does not start now; it
+  waits for a later decision that ships billing. No plan name, price or upgrade appears anywhere in the app or
+  website now. (The live limit is already 15 a day, `ratelimit.PHOTO_SCANS_A_DAY`, so no code changes.)
+- **Plan names, for later** (Sushil, 2026-10-08, chosen from the advisor's list: first "Label  Label Plus", then
+  the same day "The plan names Label / Label master"): the free plan will be called **"Label"** and the paid plan
+  **"Label Master"**, replacing "Basic" and "Pro" for the future. Shown nowhere until billing ships.
+- **Sign-up and sign-in ON HOLD** (Sushil, 2026-10-08: "stop that signin and login part now. once it is available
+  and testing done will implement"): no Google, email or phone sign-in is built now, including D-148's Google
+  sign-in. It comes back with its own decision.
 - **Checked by** `tests/test_no_beta.py`: no app string, screen.py table, website page or meta description,
   "Before you start" text or server message says "beta" or "tester" ("beta-carotene" is a pigment and passes).
 - **Sushil's own steps:** the Play Store listing text and the Play Console track.
