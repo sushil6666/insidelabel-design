@@ -4034,6 +4034,10 @@ Measured on the branch:
 Superseded, that part only: D-171's and D-181's action placement on a phone (now docked); D-177's person lines,
 Worth knowing list, nutrition rows, "In preparation" block and desktop layout (as above). Headers marked.
 
+**Evidence** (Sushil, 2026-10-08: saved in the repo): [docs/design/d185/](docs/design/d185/README.md) holds both phases'
+before and after screenshots (WebP) and motion GIFs, each listed with its screen, theme, width and the reviewer's score.
+Not served by the app or the website.
+
 ---
 
 ## Open and pending
