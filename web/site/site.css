@@ -242,3 +242,41 @@ main:has(> .band-end:last-child) + .site-foot { margin-top: 0; border-top: 1px s
 .deep .btn-big { background: var(--deep-action); color: var(--deep); }
 @media (prefers-reduced-motion: reduce) { .btn-big { transition: none; } .btn-big:active { transform: none; } }
 /* ==== D-153 design system: end ==== */
+
+/* D-185 Phase 3: the inner pages (How we check, About, Privacy) as calm reading pages: a large title,
+   a lead, sections ruled by a hairline, lists with the brand's marks. Words unchanged. */
+.page { padding-bottom: 24px; }
+.page h1 { font: 800 clamp(40px, 10vw, 60px)/1 var(--display); letter-spacing: -.035em; margin: 36px 0 18px; text-wrap: balance; }
+.page h1 + p:not(.draft), .page > .lead { font-size: 19px; line-height: 1.55; color: var(--muted); margin-top: 0; }
+.page h2 { font: 800 26px/1.15 var(--display); letter-spacing: -.02em; margin: 44px 0 12px; padding-top: 28px;
+           border-top: 1px solid var(--line); scroll-margin-top: 16px; text-wrap: balance; }
+.page h1 + h2 { border-top: 0; padding-top: 0; margin-top: 32px; }
+.page :is(p, li) { text-wrap: pretty; }
+.page ul { list-style: none; padding: 0; }
+.page ul > li { position: relative; padding-left: 24px; margin: 12px 0; }
+.page ul > li::before { content: ""; position: absolute; left: 4px; top: .62em; width: 8px; height: 8px; border-radius: 50%; background: var(--brand); }
+.page ol { list-style: none; padding: 0; counter-reset: step; }
+.page ol > li { counter-increment: step; position: relative; padding-left: 48px; margin: 16px 0; min-height: 32px; }
+.page ol > li::before { content: counter(step); position: absolute; left: 0; top: -2px; width: 32px; height: 32px; border-radius: 10px;
+                        display: grid; place-items: center; font: 800 16px/1 var(--display); color: var(--brand); background: var(--mint); }
+.page .draft { display: inline-block; font-size: 15px; padding: 10px 16px; border-radius: 14px; }
+.page .founder-photo { border-radius: 20px; }
+.toc { display: none; }
+@media (prefers-reduced-motion: no-preference) {
+  .page > :is(h1, .lead, .draft) { animation: page-in 520ms cubic-bezier(.1, .7, .1, 1) both; }
+  .page > .lead, .page > .draft { animation-delay: 80ms; }
+  @supports (animation-timeline: view()) {
+    .page > :is(h2, .founder) { animation: page-in linear both; animation-timeline: view(); animation-range: entry 0% entry 60%; }
+  }
+}
+@keyframes page-in { from { opacity: 0; transform: translateY(20px); } }
+/* How we check: from 1024 px its headings sit in a column on the left, staying in view. */
+@media (min-width: 1024px) {
+  .how-page { max-width: 1120px; display: grid; grid-template-columns: 240px minmax(0, 720px); column-gap: 72px; align-items: start; }
+  .how-page > * { grid-column: 2; }
+  .how-page > .toc { display: grid; grid-column: 1; grid-row: 3 / span 60; position: sticky; top: 24px; margin-top: 44px;
+                     border-left: 1px solid var(--line); }
+  .toc a { color: var(--muted); text-decoration: none; font-size: 15px; padding: 7px 0 7px 16px; margin-left: -1px;
+           border-left: 2px solid transparent; }
+  .toc a:hover { color: var(--ink); border-left-color: var(--brand); }
+}

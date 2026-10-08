@@ -28,13 +28,16 @@ def sections():
 
 def test_the_sections_come_in_the_accepted_order():
     heads = [text(re.search(r"<h[12][^>]*>(.*?)</h[12]>", body, re.S).group(1)) for _attrs, body in sections()]
-    assert heads == ["Read the label for your family.", "How it works", "One real pack, every line sourced",
+    assert heads == ["Read the label for your family.", "How it works", "How InsideLabel checks a label, in 41 seconds",
+                     "One real pack, every line sourced",
                      "How we check", "In preparation", "Why I built InsideLabel", "Try it on your next shop."]
     assert 'class="hero deep band"' in sections()[0][0] and "deep band" in sections()[-1][0]
 
 
 def test_the_hero_cards_quote_the_example_with_its_source_numbers():
-    cards = re.search(r'<ul class="hero-cards".*?</ul>', HOME, re.S).group(0)
+    # D-185: the three lines are now the result screen of the hero's drawn phone
+    cards = re.search(r'<ul class="res hero-cards".*?</ul>', HOME, re.S).group(0)
+    assert len(re.findall(r"\[(\d)\]", cards)) == 3
     table = re.search(r'<table class="sourced">.*?</table>', HOME, re.S).group(0)
     for n in re.findall(r"\[(\d)\]", cards):
         assert f"[{n}]" in table, n

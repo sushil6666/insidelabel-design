@@ -1,14 +1,15 @@
 """
-The explainer film is on the website home only, as the hero (D-151, Sushil 2026-10-01: "not liked
-it, keep only web page website on desktop and mobile version video"). The app has no film.
+The explainer film is on the website home only (D-151, Sushil 2026-10-01: "not liked it, keep only
+web page website on desktop and mobile version video"). The app has no film. D-185 (accepted
+2026-10-08): it leaves the hero for a drawn phone and stays one tap away lower on the page.
 The film itself is built in videos/insidelabel-how-it-reads/.
 
 What must hold, checked statically and through the API:
 - The app serves no film: no card, no player, nothing in its shell.
 - The website picks ONE cut per screen (9:16 on phones and portrait screens, 16:9 otherwise),
   by the same rule for the still (<picture>), the CSS and the script, and sets the film's src
-  only after the page has loaded; never by itself with reduced motion, Save-Data or without
-  IntersectionObserver; a visible, labelled play/pause button (WCAG 2.2.2).
+  only when the play button is tapped; it never starts by itself; a visible, labelled
+  play/pause button (WCAG 2.2.2).
 - Each hero file is under 1.6 MB with no audio track (the words are on screen), and the
   posters exist. They are served in ranges, which phones need to play a video.
 - The service worker never caches an .mp4.
@@ -77,12 +78,13 @@ def test_the_service_worker_never_caches_an_mp4():
 
 def test_the_website_chooses_one_cut_per_screen_by_one_rule():
     video = re.search(r"<video\b[^>]*>", SITE).group(0)
-    for attr in ("muted", "autoplay", "loop", "playsinline", 'preload="none"'):
+    for attr in ("muted", "loop", "playsinline", 'preload="none"'):
         assert attr in video, attr
+    assert "autoplay" not in video                                # D-185: one tap away
     assert "src=" not in video and "<source" not in SITE[SITE.index("<video"):SITE.index("</video>")]
     # the still: <picture> with the same rule, sized so nothing shifts
     assert f'<source media="{RULE}" srcset="/app/film/hero2-9x16.webp" width="720" height="1280">' in SITE
-    assert '<img src="/app/film/hero2-16x9.webp" width="1280" height="720"' in SITE
+    assert '<img src="/app/film/hero2-16x9.webp" width="1280" height="720" alt="" loading="lazy"' in SITE
     # the CSS: the same rule turns the box 9:16
     assert f"@media {RULE} {{" in SITE_CSS and "aspect-ratio: 9 / 16" in SITE_CSS
     script = SITE[SITE.index("<script>"):]
@@ -91,17 +93,18 @@ def test_the_website_chooses_one_cut_per_screen_by_one_rule():
     assert script.count("film.src =") == 1                       # one file, set in one place
 
 
-def test_the_website_film_starts_only_after_load_in_view_and_never_with_reduced_motion():
+def test_the_website_film_starts_only_on_a_tap():                     # D-185
     script = SITE[SITE.index("<script>"):]
-    assert 'addEventListener("load", start)' in script and "IntersectionObserver" in script
-    assert "prefers-reduced-motion: reduce" in script and "saveData" in script
-    assert 'film.removeAttribute("autoplay")' in script
-    assert "film.pause()" in script and "held = 1" in script      # out of view, and the visitor's pause
+    click = script[script.index('btn.addEventListener("click"'):]
+    assert "play()" in click.split("\n")[0]                     # the tap is the one way in
+    assert script.count(" play();") == 1                             # called nowhere else
+    assert "film.pause()" in script and "IntersectionObserver" in script   # and out of view it stops
 
 
-def test_the_hero_has_a_labelled_pause_button_and_keeps_its_words_first():
+def test_the_film_has_a_labelled_pause_button_and_the_hero_keeps_its_words_first():
     button = re.search(r'<button class="film-toggle"[^>]*>', SITE).group(0)
     assert 'type="button"' in button and 'aria-label="Play the film"' in button
     assert '"Pause the film"' in SITE[SITE.index("<script>"):]
     hero = SITE[SITE.index('<section class="hero'):SITE.index("</section>")]
-    assert hero.index("<h1>") < hero.index('class="cta"') < hero.index("<video")   # words, then the film
+    assert hero.index("<h1") < hero.index('class="cta"') < hero.index('class="ph"')    # words, then the phone
+    assert "<video" not in hero and SITE.index("<video") > SITE.index('id="how-title"')  # the film after the steps
