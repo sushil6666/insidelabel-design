@@ -3577,6 +3577,19 @@ D-175 on d175-recheck from current main, as approved, with the advisor's two cha
 - **Replayable (D-092):** `request.recheck`, and `ocr.back.recheck` = the decision, what each check found, its reader
   and text. `repro.replay_scan` replays a free re-check from that text with no model.
 - The app: web-52. `tests/test_recheck.py`.
+- **Count follow-up (Sushil, 2026-10-08, "Build it" on the decision card), on its own branch:** on the server,
+  `tools/recheck_measure.py` passed 20 of 57 published packs; 28 failed on the entry count (missing 9, lost 9,
+  lost_ins 1, new_allergens 8). Three of them showed the count was ours, not the pack's: a stored list that splits a
+  compound entry inside its brackets (Oats & Chocolate Cookies, 18 stored against 13 printed), and Cloud Vision
+  dropping a closing bracket (Oreo, "(500(ii), 503 (ii), STARCH"), which merged the rest of the list into one entry.
+  - **Now:** both sides are cut at every comma, brackets or not, the stored list after joining it, so like is
+    compared with like; "Sugar" beside "Invert sugar" is still one more piece.
+  - **The list end, for the count only:** the latest of the last entry's final three words, as a misread last word
+    can also sit earlier in the list ("SOYBEAN" in the chips, "SOYABEAN" at the end). The D-117 and D-118 checks
+    keep the last word.
+  - **Measured** on the repo's 4 texts and those 3: Oats and Oreo now count equal; Eat Fit, where Cloud Vision lost
+    commas, still goes to the paid read; 90 of 90 added entries and 83 of 83 swaps still caught. The server number
+    comes from re-running the tool after deploy.
 
 ---
 
