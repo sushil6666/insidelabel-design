@@ -244,39 +244,87 @@ main:has(> .band-end:last-child) + .site-foot { margin-top: 0; border-top: 1px s
 /* ==== D-153 design system: end ==== */
 
 /* D-185 Phase 3: the inner pages (How we check, About, Privacy) as calm reading pages: a large title,
-   a lead, sections ruled by a hairline, lists with the brand's marks. Words unchanged. */
+   a lead, sections ruled by a hairline, lists with the brand's marks, and the page's own headings to
+   jump between (a row of chips on a phone, a column that stays in view on a computer). Words unchanged. */
 .page { padding-bottom: 24px; }
 .page h1 { font: 800 clamp(40px, 10vw, 60px)/1 var(--display); letter-spacing: -.035em; margin: 36px 0 18px; text-wrap: balance; }
-.page h1 + p:not(.draft), .page > .lead { font-size: 19px; line-height: 1.55; color: var(--muted); margin-top: 0; }
-.page h2 { font: 800 26px/1.15 var(--display); letter-spacing: -.02em; margin: 44px 0 12px; padding-top: 28px;
-           border-top: 1px solid var(--line); scroll-margin-top: 16px; text-wrap: balance; }
-.page h1 + h2 { border-top: 0; padding-top: 0; margin-top: 32px; }
-.page :is(p, li) { text-wrap: pretty; }
+.page h1 + p:not(.draft), .page > .lead { font-size: 19px; line-height: 1.55; color: var(--ink); margin-top: 0; }
+.page h2 { font: 800 26px/1.15 var(--display); letter-spacing: -.02em; margin: 36px 0 8px; padding-top: 24px;
+           border-top: 1px solid var(--line); scroll-margin-top: 84px; text-wrap: balance; }
+.page h1 + h2, .page h1 + .toc + h2 { border-top: 0; padding-top: 0; margin-top: 32px; }
+.page :is(p, li) { text-wrap: pretty; max-width: 68ch; }
 .page ul { list-style: none; padding: 0; }
-.page ul > li { position: relative; padding-left: 24px; margin: 12px 0; }
-.page ul > li::before { content: ""; position: absolute; left: 4px; top: .62em; width: 8px; height: 8px; border-radius: 50%; background: var(--brand); }
+.page ul > li { position: relative; padding-left: 20px; margin: 12px 0; }
+.page ul > li::before { content: ""; position: absolute; left: 2px; top: .62em; width: 8px; height: 8px; border-radius: 50%; background: var(--brand); }
 .page ol { list-style: none; padding: 0; counter-reset: step; }
-.page ol > li { counter-increment: step; position: relative; padding-left: 48px; margin: 16px 0; min-height: 32px; }
-.page ol > li::before { content: counter(step); position: absolute; left: 0; top: -2px; width: 32px; height: 32px; border-radius: 10px;
-                        display: grid; place-items: center; font: 800 16px/1 var(--display); color: var(--brand); background: var(--mint); }
-.page .draft { display: inline-block; font-size: 15px; padding: 10px 16px; border-radius: 14px; }
+.page ol > li { counter-increment: step; position: relative; padding-left: 52px; margin: 16px 0; min-height: 36px; }
+.page ol > li::before { content: counter(step); position: absolute; left: 0; top: -4px; width: 36px; height: 36px; border-radius: 12px;
+                        display: grid; place-items: center; font: 800 18px/1 var(--display); color: var(--brand); background: var(--mint); }
+.page .draft { display: inline-block; max-width: 68ch; box-sizing: border-box; font-size: 15px; padding: 9px 14px; border-radius: 12px; background: none;
+               border: 1px solid var(--line); color: var(--note); }
 .page .founder-photo { border-radius: 20px; }
-.toc { display: none; }
+.page .founder-mail { margin-top: 4px; }
+/* the headings as chips under the title on a phone; the row stays at the top while the page scrolls */
+.toc { position: sticky; top: 0; z-index: 5; display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none;
+       margin: 24px -16px 0; padding: 10px 16px; background: var(--bg);
+       box-shadow: 0 1px 0 var(--line), 0 6px 12px -8px rgba(0, 0, 0, .12); }
+.toc::-webkit-scrollbar { display: none; }
+.toc a { flex: none; display: flex; align-items: center; min-height: 44px; padding: 0 16px; border-radius: 999px;
+         border: 1px solid var(--line); background: var(--surface); color: var(--ink); text-decoration: none;
+         font-size: 15px; font-weight: 600; white-space: nowrap; transition: background-color 150ms, color 150ms, border-color 150ms; }
+.toc a[aria-current="true"] { background: var(--mint); border-color: transparent; color: var(--brand); }
+.page .toc + h2 { border-top: 0; padding-top: 8px; }   /* the row's own line is the rule */
 @media (prefers-reduced-motion: no-preference) {
-  .page > :is(h1, .lead, .draft) { animation: page-in 520ms cubic-bezier(.1, .7, .1, 1) both; }
-  .page > .lead, .page > .draft { animation-delay: 80ms; }
+  .page > :is(h1, .lead, .draft) { animation: page-in 320ms cubic-bezier(.1, .7, .1, 1) both; }
+  .page > .lead, .page > .draft { animation-delay: 60ms; }
   @supports (animation-timeline: view()) {
-    .page > :is(h2, .founder) { animation: page-in linear both; animation-timeline: view(); animation-range: entry 0% entry 60%; }
+    .page > :is(h2, .founder) { animation: page-rise linear both; animation-timeline: view(); animation-range: entry 0% entry 60%; }
   }
 }
-@keyframes page-in { from { opacity: 0; transform: translateY(20px); } }
-/* How we check: from 1024 px its headings sit in a column on the left, staying in view. */
-@media (min-width: 1024px) {
-  .how-page { max-width: 1120px; display: grid; grid-template-columns: 240px minmax(0, 720px); column-gap: 72px; align-items: start; }
-  .how-page > * { grid-column: 2; }
-  .how-page > .toc { display: grid; grid-column: 1; grid-row: 3 / span 60; position: sticky; top: 24px; margin-top: 44px;
-                     border-left: 1px solid var(--line); }
-  .toc a { color: var(--muted); text-decoration: none; font-size: 15px; padding: 7px 0 7px 16px; margin-left: -1px;
-           border-left: 2px solid transparent; }
-  .toc a:hover { color: var(--ink); border-left-color: var(--brand); }
+/* the title and lead move only (no fade), so the first paint already shows them */
+@keyframes page-in { from { transform: translateY(12px); } }
+@keyframes page-rise { from { opacity: 0; transform: translateY(16px); } }
+/* the footer's links: 48 px to tap; two columns on a narrow phone so a link stays on one line */
+.site-foot a { padding: 12px 0; }
+@media (max-width: 479px) {
+  .foot-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .foot-grid > nav:last-child { grid-column: 1 / -1; display: flex; flex-wrap: wrap; column-gap: 24px; }
+  .foot-grid > nav:last-child h2 { flex-basis: 100%; }
 }
+/* the open menu: a scrim behind it (a tap on it closes the menu: it belongs to the button), the
+   button turns into a cross, the page in view marked. No script (D-179). */
+.site-menu[open] summary::before { content: ""; position: fixed; inset: 0; z-index: 9; background: rgba(4, 20, 34, .4); cursor: default; }
+.site-menu summary svg, .site-top .wordmark { position: relative; z-index: 11; }
+.site-menu nav { z-index: 12; }
+.site-menu summary path { transform-box: fill-box; transform-origin: center; }
+.site-menu[open] summary .m1 { transform: translateY(5px) rotate(45deg); }
+.site-menu[open] summary .m2 { opacity: 0; }
+.site-menu[open] summary .m3 { transform: translateY(-5px) rotate(-45deg); }
+.site-menu nav a[aria-current="page"] { box-shadow: inset 3px 0 0 var(--brand); }
+@media (prefers-reduced-motion: no-preference) {
+  .site-menu summary path { transition: transform 200ms cubic-bezier(.1, .7, .1, 1), opacity 150ms; }
+}
+/* the header and the footer, on a computer, on the same edges as the home page's sections on every page */
+@media (min-width: 1024px) {
+  header.site-top.wide, .site-foot .wide { max-width: 1200px; padding-left: 32px; padding-right: 32px; }
+}
+@media (min-width: 1280px) { header.site-top.wide, .site-foot .wide { padding-left: 40px; padding-right: 40px; } }
+@media (min-width: 1440px) { header.site-top.wide, .site-foot .wide { max-width: 1280px; padding-left: 48px; padding-right: 48px; } }
+/* from 1024 px the headings sit in a column on the left, staying in view, on the header's edges */
+@media (min-width: 1024px) {
+  .doc-page { max-width: 1200px; padding-left: 32px; padding-right: 32px; display: grid;
+              grid-template-columns: 220px minmax(0, 720px); column-gap: 88px; align-items: start; }
+  .doc-page > * { grid-column: 2; }
+  .doc-page > .toc { grid-column: 1; grid-row: 1 / span 80; position: sticky; top: 32px; z-index: auto;
+                     display: grid; gap: 0; margin: 44px 0 0; padding: 0; overflow: visible; background: none; box-shadow: none;
+                     border-left: 1px solid var(--line); }
+  .doc-page .toc a { min-height: 0; padding: 7px 0 7px 8px; margin-left: -1px; border: 0; border-left: 2px solid transparent;
+                     border-radius: 0; background: none; color: color-mix(in srgb, var(--ink) 72%, var(--bg)); font-size: 16px;
+                     font-weight: 400; white-space: normal; }
+  .doc-page .toc a:hover { color: var(--ink); border-left-color: var(--line); }
+  .doc-page .toc a[aria-current="true"] { color: var(--ink); font-weight: 600; border-left-color: var(--brand); background: none; }
+  .doc-page h2 { scroll-margin-top: 24px; }
+  .doc-page > .toc + h2 { border-top: 1px solid var(--line); padding-top: 24px; }
+}
+@media (min-width: 1280px) { .doc-page { padding-left: 40px; padding-right: 40px; } }
+@media (min-width: 1440px) { .doc-page { max-width: 1280px; padding-left: 48px; padding-right: 48px; } }
