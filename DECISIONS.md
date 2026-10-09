@@ -4217,6 +4217,45 @@ option each. Built by Claude.
    `fssai_mandatory: false` in `data/allergens.json`, so a mustard avoider sees the same weaker-check line when
    mustard isn't listed. No code change.
 
+### D-190 · An Ayurvedic medicine gets the not-food screen, not "no ingredient list" `LOCKED` (2026-10-09)
+**Sushil, 2026-10-09,** "yes", to the advisor's proposal. Built by Claude.
+
+**What happened** (review item #85, scan c8193e8a-3045-4f8f-9eaa-08e96d54847a, 2026-10-09). A Baidyanath
+CHYAWANPRASH "Special Pack". Both faces read (`front_status` and `back_status` "read"), `ingredients_status`
+"not_found" (an Ayurvedic pack prints a formula, not an "Ingredients:" list), `licences` [] (no licence line read),
+`pack_statements`: "AYURVEDIC MEDICINE", "(Ayurveda Sara Samgraha)", "Mfd. in India in a GMP Certified Plant".
+- `/scan` refused it as `no_ingredient_list_found` in the reliability gate, before `pack_kind.decide()` ran. The
+  shopper got "couldn't find the ingredient list", tapped "Send it to us", and a send_to_us item (#85) landed on
+  /review for a pack that can never be published as food.
+- Even had it reached `decide()`, the answer was `food`: "Ayurvedic"/"AYUSH" counted only on a line that also names
+  a licence (D-116 as narrowed by D-187), and no licence line was read.
+
+1. **"Ayurvedic medicine" printed is a non-food sign on its own.** The phrases "Ayurvedic medicine", "Ayurvedic
+   proprietary medicine" and "AYUSH medicine" (any case, any spacing), in a pack statement, the product's name or
+   variant, a front claim or a licence line, count without a licence line (`data/pack_kinds.json`
+   `licences.medicine_label_words`). "Ayurvedic" alone, "Ayurvedic recipe", "Ayurvedic tea", "with Ayurvedic herbs"
+   stay food: "medicine" must follow. Everything that beats the licence rule beats this too: an FSSAI licence (or a
+   probable one, D-187) decides food; a nutrition table or an ordinary food category (not 13.x) stops not_food and
+   a reviewer looks (D-187); a partial read never gives not_food (D-139). The evidence quotes the pack's own words
+   (`AYURVEDIC MEDICINE`, face back), so /review and the not-food screen show what was read; /review names it
+   ("not food: "Ayurvedic medicine" printed and no FSSAI licence on the photos") and offers a matching reason.
+2. **A refused "no ingredient list" is checked for not-food first.** When the reliability gate would refuse with
+   `no_ingredient_list_found`, both faces were read and the read is not from a screen, `/scan` runs
+   `pack_kind.decide()` first. On `not_food` it answers with the not-food result (the same screen and words a not_food
+   pack gets; the "We checked the ingredients against your avoid lists" line is left out, since no list was read),
+   with every avoided allergen "couldn't confirm" (D-072). No "Send it to us", no review item, no product or version,
+   barcode or not: only the scan row (outcome `unlisted`, `resolved_via` "barcode" when one came with it), with
+   its trace for replay (D-092). Every other refusal, and `no_ingredient_list_found` on a partial read or with a
+   food kind, is unchanged.
+3. **`tools/pack_kind_replay.py --apply` keeps every correction note.** On 2026-10-08 its single `corrected` string
+   replaced Sushil's manual note on version 74 (D-187). Now `pack_kind_evidence.corrections` is a list, oldest first:
+   --apply appends its note and carries over the existing list and any old single `corrected` string (as the first
+   entry). /review shows every note under the kind of pack. The default run stays read-only.
+
+**Open:** the rule matches the pack's printed words as printed. We record only what the pack prints and make no
+claim about which law makes it a medicine; the label term "Ayurvedic Proprietary Medicine" has not been checked
+against a primary document (D-046).
+
 ---
 
 ## Open and pending

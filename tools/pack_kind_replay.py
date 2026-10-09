@@ -11,15 +11,21 @@ review checker now sees with the product's category. No model call. By default
 nothing is written.
 
 D-188: --apply --by <name> writes today's kind on each changed version: pack_kind
-and pack_kind_evidence (today's evidence and review notes, plus a `corrected` note
-naming the decision, the old and new kind, the date and who ran it), and nothing
-else on the version. Each written row is printed. Version 74 (item #82) was fixed
-by hand on 2026-10-08 before this existed (D-187's follow-up line).
+and pack_kind_evidence (today's evidence and review notes, plus a note naming the
+decision, the old and new kind, the date and who ran it), and nothing else on the
+version.
+
+Each written row is printed. Version 74 (item #82) was fixed by hand on 2026-10-08
+before this existed (D-187's follow-up line).
+
+D-190: the notes are a list, `corrections`, oldest first. --apply appends its note and
+keeps every earlier one, including an old single `corrected` string (D-188's form) as
+the first entry: on 2026-10-08 the single string replaced the manual note on version 74.
 
     INSIDELABEL_DB=... python tools/pack_kind_replay.py
     il tools/pack_kind_replay.py                    # on the server
     il tools/pack_kind_replay.py --all              # unchanged versions listed too
-    il tools/pack_kind_replay.py --apply --by Sushil
+    il tools/pack_kind_replay.py --apply --by Sushil --decision D-190
 """
 import datetime
 import argparse
@@ -54,7 +60,7 @@ def replay(rows):
         was_review = (r["pack_kind_evidence"] or {}).get("review") or []
         out.append({**{k: r[k] for k in ("id", "status", "barcode", "name", "category_code", "review_items")},
                     "was": r["pack_kind"], "now": now["code"], "now_review": now["review"],
-                    "now_evidence": now["evidence"],
+                    "now_evidence": now["evidence"], "was_evidence": r["pack_kind_evidence"],
                     "checker": with_category["code"], "checker_review": with_category["review"],
                     "changed": r["pack_kind"] != now["code"] or was_review != now["review"]})
     return out
@@ -73,14 +79,23 @@ def corrected(r, decision, by, day):
             f"Applied with --apply by {by}, {day}")
 
 
+def corrections(stored):
+    """D-190: the notes already on a version, oldest first: its `corrections` list, after
+    an old single `corrected` string (D-188's form) when there is one."""
+    stored = stored or {}
+    old = [stored["corrected"]] if stored.get("corrected") else []
+    return old + [n for n in stored.get("corrections") or [] if n not in old]
+
+
 def apply(conn, changed, decision, by, day=None):
-    """Write today's kind and evidence on each changed version. Returns the rows written."""
+    """Write today's kind and evidence on each changed version, keeping its earlier
+    notes (D-190). Returns the rows written."""
     from psycopg.types.json import Jsonb
     day = day or datetime.date.today().isoformat()
     done = []
     for r in changed:
         evidence = {"evidence": r["now_evidence"], "review": r["now_review"],
-                    "corrected": corrected(r, decision, by, day)}
+                    "corrections": corrections(r.get("was_evidence")) + [corrected(r, decision, by, day)]}
         n = conn.execute(APPLY, (r["now"], Jsonb(evidence), r["id"], r["was"])).rowcount
         if n:
             done.append({**r, "evidence": evidence})
@@ -116,7 +131,7 @@ def main():
         if r["checker"] != r["now"] or r["checker_review"] != r["now_review"]:
             print(f"    with category {r['category_code']}: {r['checker']}; " + "; ".join(r["checker_review"]))
     for r in written:
-        print(f"written: version {r['id']}: pack_kind {r['was']} -> {r['now']}; corrected: {r['evidence']['corrected']}")
+        print(f"written: version {r['id']}: pack_kind {r['was']} -> {r['now']}; corrected: {r['evidence']['corrections'][-1]}")
     print(f"{len(out)} versions replayed, {len(changed)} changed"
           + (f", {len(written)} written" if args.apply else ", nothing written"))
 

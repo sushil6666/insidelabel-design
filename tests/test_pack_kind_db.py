@@ -16,7 +16,7 @@ psycopg = pytest.importorskip("psycopg")
 
 from fastapi.testclient import TestClient  # noqa: E402
 from gtins import gtin  # noqa: E402
-from test_pack_kind import reading, st  # noqa: E402
+from test_pack_kind import ITEM_85, item_85, reading, st  # noqa: E402
 
 from insidelabel.api import main  # noqa: E402
 from insidelabel.db.store import Store  # noqa: E402
@@ -259,8 +259,9 @@ def test_the_replay_tool_writes_only_with_apply_and_only_the_kind(env):
     assert f"written: version {vid}: pack_kind not_food -> food" in out
     [(kind, evidence)] = q(env, "SELECT pack_kind, pack_kind_evidence FROM product_versions WHERE id = %s", vid)
     assert kind == "food" and evidence["evidence"] == [] and evidence["review"] == []
+    [note] = evidence["corrections"]
     assert re.fullmatch(r"D-187: was not_food; pack_kind_replay gives food\. Applied with --apply by Sushil, "
-                        r"\d{4}-\d\d-\d\d", evidence["corrected"])
+                        r"\d{4}-\d\d-\d\d", note)
     assert q(env, row, vid) == [(before,)]                     # nothing else on the version moved
 
     out = subprocess.run(tool + ["--apply", "--by", "Sushil"], env=run, capture_output=True, text=True,
@@ -289,3 +290,91 @@ def test_a_barcode_hit_says_the_pack_we_checked_not_the_photo(env):
                                              "so check the pack for one.")
     [row] = hit["allergens"]["results"]
     assert "on the pack we checked" in row["text"] and "photo" not in row["text"]
+
+
+def test_apply_keeps_every_correction_note_oldest_first(env):
+    # D-190: on 2026-10-08 --apply's single `corrected` string replaced the manual note on
+    # version 74. Now the notes are a list; an old single string is kept as the first entry.
+    import importlib.util
+    import os
+    from psycopg.rows import dict_row
+    spec = importlib.util.spec_from_file_location(
+        "pack_kind_replay", os.path.join(os.path.dirname(__file__), "..", "tools", "pack_kind_replay.py"))
+    tool = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(tool)
+    vid = post(gtin(), reading(["Durum wheat semolina"], [st("Vermicelli", "front")]))["catalogue"]["product_version_id"]
+    manual = "D-187: set to food by hand, Sushil, 2026-10-08"
+
+    def run_apply(decision, day):
+        with psycopg.connect(env, row_factory=dict_row) as conn:
+            changed = [r for r in tool.replay(conn.execute(tool.VERSIONS).fetchall()) if r["id"] == vid]
+            assert changed and changed[0]["changed"]
+            tool.apply(conn, changed, decision, "Sushil", day)
+        return q(env, "SELECT pack_kind_evidence FROM product_versions WHERE id = %s", vid)[0][0]
+
+    def stored_as_not_food(extra):
+        with psycopg.connect(env) as c:
+            c.execute("UPDATE product_versions SET pack_kind = 'not_food', "
+                      "pack_kind_evidence = pack_kind_evidence || %s::jsonb WHERE id = %s",
+                      (json.dumps(extra), vid))
+
+    stored_as_not_food({"corrected": manual})
+    first = run_apply("D-187", "2026-10-09")
+    assert first["corrections"] == [manual, "D-187: was not_food; pack_kind_replay gives food. "
+                                            "Applied with --apply by Sushil, 2026-10-09"]
+    assert "corrected" not in first
+    stored_as_not_food({})                                     # the list stays on the version
+    second = run_apply("D-190", "2026-10-10")
+    assert second["corrections"] == first["corrections"] + [
+        "D-190: was not_food; pack_kind_replay gives food. Applied with --apply by Sushil, 2026-10-10"]
+    _item, _c, page = item_page(env, vid)
+    assert manual in page and "D-190: was not_food" in page    # /review shows every note
+
+
+def test_item_85_answers_not_food_and_nothing_reaches_the_catalogue_or_review(env):
+    # D-190 (item #85): no ingredient list on an Ayurvedic medicine. The not-food result, the
+    # scan kept for replay (D-092), and no product, version or review item, barcode or not.
+    for bc in (gtin(), None):
+        tag = uuid.uuid4().bytes
+        files = {"back": ("b.jpg", b"\xff\xd8\xff\xe0back" + tag, "image/jpeg"),
+                 "front": ("f.jpg", b"\xff\xd8\xff\xe0front" + tag, "image/jpeg")}
+        data = {"replay": json.dumps(item_85()), "pairing_confirmed": "true"}
+        if bc:
+            data["barcode"] = bc
+        r = TestClient(main.app).post("/scan", files=files, data=data)
+        assert r.status_code == 200, r.text
+        j = r.json()
+        assert j["pack_kind"]["code"] == "not_food" and j["screen"]["state"] == "result"
+        [(outcome, via, version, request_id, request)] = q(
+            env, "SELECT outcome, resolved_via, product_version_id, request_id, request FROM scans WHERE id = %s",
+            j["scan_id"])
+        assert outcome == "unlisted" and version is None and request_id == j["request_id"]
+        assert via == ("barcode" if bc else "no_barcode") and (request or {}).get("barcode") == bc
+        assert q(env, "SELECT count(*) FROM review_queue WHERE scan_id = %s", j["scan_id"]) == [(0,)]
+        if bc:
+            assert q(env, "SELECT count(*) FROM products WHERE barcode = %s", bc) == [(0,)]
+        assert outcome not in Store.SEND_OUTCOMES               # not a refusal: "Send it to us" refuses it
+
+
+def test_the_same_reading_without_the_medicine_words_still_refuses(env):
+    bc = gtin()
+    tag = uuid.uuid4().bytes
+    r = TestClient(main.app).post("/scan", files={
+        "back": ("b.jpg", b"\xff\xd8\xff\xe0back" + tag, "image/jpeg"),
+        "front": ("f.jpg", b"\xff\xd8\xff\xe0front" + tag, "image/jpeg")},
+        data={"barcode": bc, "replay": json.dumps(item_85(ITEM_85[1:])), "pairing_confirmed": "true"})
+    assert r.status_code == 422 and r.json()["reliability"]["error"] == "no_ingredient_list_found"
+    assert q(env, "SELECT outcome, error_code FROM scans WHERE id = %s", r.json()["scan_id"]) == [
+        ("refused", "no_ingredient_list_found")]
+
+
+def test_a_version_not_food_from_its_printed_words_says_so_on_review(env):
+    j = post(gtin(), reading(["Amla", "Ghee", "Honey"], ITEM_85, licences=()))
+    vid = j["catalogue"]["product_version_id"]
+    assert j["pack_kind"]["code"] == "not_food"
+    item_id, c, page = item_page(env, vid)
+    assert "not food: &#34;Ayurvedic medicine&#34; printed and no FSSAI licence on the photos" in page
+    token = re.search(r'name="csrf" value="([0-9a-f]+)"', page).group(1)
+    c.post(f"/review/item/{item_id}/claim", data={"csrf": token})
+    page = c.get(f"/review/item/{item_id}").text
+    assert "the pack prints Ayurvedic medicine, no FSSAI licence (D-116, D-190)" in page

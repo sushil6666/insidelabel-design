@@ -53,6 +53,8 @@
     "non_food_licence_words": ["drug lic", "drug licence", "drug license", "mfg lic", "mfg licence", "mfg license", "dl no", "d l no"],
     "medicine_words": {"phrases": ["ayush", "ayurvedic"], "next_to": ["lic", "licence", "license"],
       "why": "D-116's case: an Ayurvedic (AYUSH) medicine licence, \"Ayurvedic Medicine Mfg. Lic. No. A-2755\". These words count only on a line that also names a licence."},
+    "medicine_label_words": {"phrases": ["ayurvedic medicine", "ayurvedic proprietary medicine", "ayush medicine"],
+      "why": "D-190 (Sushil, 2026-10-09, review item #85: a Baidyanath Chyawanprash printing \"AYURVEDIC MEDICINE\" with no licence line read): these printed phrases are a non-food sign on their own, in a pack statement, the product's name or variant, a front claim or a licence line. \"Ayurvedic\" alone, \"Ayurvedic recipe\", \"Ayurvedic tea\" stay food: \"medicine\" must follow. Matched as the pack prints them; the label term \"Ayurvedic Proprietary Medicine\" has not been checked against a primary document (D-046). Everything that beats the licence rule beats this too."},
     "plain_licence_words_alone_say_nothing": ["lic", "lic no", "licence", "license", "licence no", "license no", "reg no"],
     "basis": "D-116 (FSS Act 3(1)(j): \"food\" does not include \"drugs and medicinal products\"; its case is an AYUSH medicine manufacturing licence) and D-187 (Sushil, 2026-10-08, item #82: Indian food packs print their FSSAI licence as \"Lic. No.\" beside the logo, so a plain \"Lic No.\" names no non-food licence); the FSSAI logo and 14-digit licence number, as D-116's reviewer checks them",
     "verified_on": "2026-10-08"

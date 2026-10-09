@@ -385,18 +385,20 @@ class Store:
             return sid
 
     def record_unlisted_scan(self, *, device_id=None, latency_ms=None, front_key=None, back_key=None,
-                             trace=None):
+                             trace=None, resolved_via="no_barcode"):
         """
         D-107: a result for a pack without a barcode. Only the scan row, for
-        replay (D-092): no product, version or review item.
+        replay (D-092): no product, version or review item. D-190: also the
+        not-food result for a pack with no ingredient list, barcode or not
+        (resolved_via "barcode" then; the barcode stays in the request).
         """
         with self._connect() as conn:
             uid = self._user(conn, device_id)
             sid = conn.execute(
                 """INSERT INTO scans (user_id, resolved_via, cache_hit, outcome, latency_ms,
                                       front_image_key, back_image_key)
-                   VALUES (%s, 'no_barcode', false, 'unlisted', %s, %s, %s) RETURNING id""",
-                (uid, latency_ms, front_key, back_key)).fetchone()["id"]
+                   VALUES (%s, %s, false, 'unlisted', %s, %s, %s) RETURNING id""",
+                (uid, resolved_via, latency_ms, front_key, back_key)).fetchone()["id"]
             self._set_trace(conn, sid, trace)
             return sid
 

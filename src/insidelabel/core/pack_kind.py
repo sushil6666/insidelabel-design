@@ -20,6 +20,10 @@ Order (data/pack_kinds.json _meta):
    wasn't read: never not_food, a reviewer checks the pack. And not_food needs no
    ordinary food signal (a nutrition table, an ordinary food category): with one,
    a reviewer looks instead.
+   D-190 (item #85): "Ayurvedic medicine", "Ayurvedic proprietary medicine" or "AYUSH
+   medicine" printed anywhere the kind is read from (or on a licence line) is the same
+   non-food sign without a licence line, and loses to the same things: an FSSAI or
+   probable FSSAI licence, an ordinary food signal, a partial read.
 2. Medical words: `special_medical` (including preterm, hypoallergenic and other
    special medical infant foods).
 3. Infant words: `infant`.
@@ -51,6 +55,7 @@ _PROBABLE = _LIC["probable_fssai_number"]
 _PROBABLE_NUMBER = re.compile(r"(?<!\d)[%s]\d{%d,%d}(?!\d)" % (
     "".join(_PROBABLE["first_digit"]), _PROBABLE["min_digits"] - 1, _PROBABLE["max_digits"] - 1))
 _MEDICINE = _LIC["medicine_words"]
+_MEDICINE_LABEL = _LIC["medicine_label_words"]["phrases"]
 PROBABLE_NOTE = "probable FSSAI licence, last digits not read: check the pack"
 _ORDER = ("special_medical", "infant", "supplement")
 
@@ -82,6 +87,18 @@ def _non_food(n):
     if any(_has(n, w) for w in _LIC["non_food_licence_words"]):
         return True
     return any(_has(n, w) for w in _MEDICINE["phrases"]) and any(_has(n, w) for w in _MEDICINE["next_to"])
+
+
+def medicine_printed(vision):
+    """D-190: the first line printing "Ayurvedic medicine" (or a listed phrase), as
+    {rule, text, face, where}, or None. "Ayurvedic" alone, "Ayurvedic recipe" say nothing."""
+    lines = [(t, face, where) for t, face, where in _printed(vision)]
+    lines += [(l["text"], l.get("face"), "licence") for l in vision.get("licences") or []]
+    for text, face, where in lines:
+        n = norm(text)
+        if any(_has(n, p) for p in _MEDICINE_LABEL):
+            return {"rule": "medicine_printed", "text": text, "face": face, "where": where}
+    return None
 
 
 def licences(vision):
@@ -138,19 +155,27 @@ def decide(vision, category=None):
     code = None
     if lic["probable"] and not lic["fssai"]:
         review.append(f'{PROBABLE_NOTE} ("{lic["probable"][0]["text"]}")')
-    if lic["other"] and not lic["fssai"] and not lic["probable"]:
-        ev = {"rule": "licence", "text": lic["other"][0]["text"], "face": lic["other"][0].get("face")}
+    sign = ev = None
+    if not lic["fssai"] and not lic["probable"]:
+        if lic["other"]:
+            ev = {"rule": "licence", "text": lic["other"][0]["text"], "face": lic["other"][0].get("face")}
+            sign = "a non-FSSAI licence is printed"
+        else:
+            # D-190: "Ayurvedic medicine" printed is the same sign without a licence line.
+            ev = medicine_printed(vision)
+            sign = ev and f'"{ev["text"]}" is printed'
+    if sign:
         signals = food_signals(vision, category)
         if both_read and signals:
             # D-187: the licence rule alone never overrules an ordinary food signal.
-            review.append(f"a non-FSSAI licence is printed and no FSSAI licence was read, but the pack "
+            review.append(f"{sign} and no FSSAI licence was read, but the pack "
                           f"shows {' and '.join(signals)} (D-116: look at the whole pack)")
         elif both_read:
             code = "not_food"
             evidence.append(ev)
         else:
             # D-139: a partial read never gives not_food; the licence may be on the face not read.
-            review.append("a non-FSSAI licence is printed and no FSSAI licence was read, "
+            review.append(f"{sign} and no FSSAI licence was read, "
                           "but not both faces were read (D-116: look at the whole pack)")
 
     if code is None:

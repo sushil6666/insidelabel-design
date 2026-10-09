@@ -231,6 +231,85 @@ def test_a_medicine_licence_still_gives_not_food_on_a_complete_read():
     assert k["code"] == "food" and "not both faces were read" in k["review"][0]
 
 
+# D-190 (review item #85, scan c8193e8a, 2026-10-09): a Baidyanath Chyawanprash "Special Pack".
+# Both faces read, no "Ingredients:" list (an Ayurvedic pack prints a formula), no licence line.
+ITEM_85 = [st("AYURVEDIC MEDICINE"), st("(Ayurveda Sara Samgraha)"), st("Mfd. in India in a GMP Certified Plant")]
+
+
+def item_85(statements=ITEM_85, licences=(), **kw):
+    v = reading([], statements, licences=licences, name="Chyawanprash Special Pack", **kw)
+    v["ingredients_status"] = "not_found"
+    v["ingredient_lines"], v["ingredient_count"] = [], 0
+    return v
+
+
+def test_item_85_ayurvedic_medicine_printed_is_not_food_without_a_licence_line():
+    k = pack_kind.decide(item_85())
+    assert k["code"] == "not_food" and k["review"] == []
+    assert k["evidence"] == [{"rule": "medicine_printed", "text": "AYURVEDIC MEDICINE", "face": "back",
+                              "where": "statement"}]
+    # Any case, any spacing, the longer phrases, the product block and a licence line too.
+    assert pack_kind.decide(item_85([st("Ayurvedic  Proprietary   Medicine", "front")]))["code"] == "not_food"
+    assert pack_kind.decide(item_85([st("AYUSH-Medicine")]))["code"] == "not_food"
+    v = item_85([])
+    v["product"]["variant"] = "Ayurvedic Medicine"
+    assert pack_kind.decide(v)["evidence"][0]["where"] == "product.variant"
+    v = item_85([], licences=[st("Ayurvedic Medicine, Reg. 77")])
+    assert pack_kind.decide(v)["code"] == "not_food"
+
+
+def test_ayurvedic_without_medicine_stays_food():
+    for text in ("Ayurvedic", "Ayurvedic recipe", "Ayurvedic tea", "with Ayurvedic herbs", "Ayurvedic medicinal herbs"):
+        k = pack_kind.decide(item_85([st(text, "front")]))
+        assert k["code"] == "food" and k["review"] == [], text
+
+
+def test_what_beats_the_licence_rule_beats_ayurvedic_medicine_too():
+    # An FSSAI licence decides food; so does a probable one (D-187), with a reviewer's look.
+    k = pack_kind.decide(item_85(licences=[st("Lic. No. 10019022001234")]))
+    assert k["code"] == "food" and k["review"] == []
+    k = pack_kind.decide(item_85(licences=[st("Lic No. 100140470002")]))
+    assert k["code"] == "food" and pack_kind.PROBABLE_NOTE in k["review"][0]
+    # A nutrition table or an ordinary food category: a reviewer looks, never not_food.
+    v = item_85()
+    v["nutrition"] = TABLE_READ
+    k = pack_kind.decide(v)
+    assert k["code"] == "food" and k["review"] == [
+        '"AYURVEDIC MEDICINE" is printed and no FSSAI licence was read, but the pack shows a nutrition '
+        "table (D-116: look at the whole pack)"]
+    assert pack_kind.decide(item_85(), category="6.4.2")["code"] == "food"
+    # A partial read never gives not_food (D-139).
+    k = pack_kind.decide(item_85(front="not_provided"))
+    assert k["code"] == "food" and "not both faces were read" in k["review"][0]
+
+
+def test_scan_answers_item_85_with_the_not_food_result_not_the_refusal():
+    j = run(item_85())
+    s = j["screen"]
+    assert list(j)[0] == "allergens" and j["pack_kind"]["code"] == "not_food"
+    assert s["state"] == "result" and "can_send" not in s and "problem" not in s
+    assert s["headline"]["text"] == "We didn't find an FSSAI licence number on the photos."
+    assert s["kind"]["lines"][0] == 'The pack prints "AYURVEDIC MEDICINE".'
+    assert s["kind"]["evidence"] == [{"text": "AYURVEDIC MEDICINE", "face": "back"}]
+    assert s["checked"] is None and s["ingredients"] == []           # no list read, nothing checked
+    # No list: an avoided allergen can't be confirmed (D-072), never "not listed".
+    assert {r["state"] for r in j["allergens"]["results"]} == {"cannot_confirm"}
+    assert j["verdict"] is None and j["catalogue"]["reason"] == "not_food"
+    assert_clean(list(strings(s)), "item_85")
+
+
+def test_scan_still_refuses_no_list_without_the_medicine_words_or_on_a_partial_read():
+    from fastapi.testclient import TestClient
+    for v, files in ((item_85(ITEM_85[1:]), ("front", "back")), (item_85(front="not_provided"), ("back",))):
+        r = TestClient(main.app).post("/scan", files={f: (f"{f}.png", b"\x89PNG " + f.encode(), "image/png")
+                                                      for f in files},
+                                      data={"replay": json.dumps(v), "profiles": json.dumps(FAM),
+                                            "pairing_confirmed": "true"})
+        assert r.status_code == 422, r.text
+        j = r.json()
+        assert j["reliability"]["error"] == "no_ingredient_list_found" and j["screen"]["state"] == "retake"
+
+
 def test_an_ordinary_food_signal_overrules_the_licence_rule_alone():
     # A nutrition table, or an ordinary food category: a reviewer looks, never not_food.
     v = reading(["Amla"], licences=CHYAWANPRASH)

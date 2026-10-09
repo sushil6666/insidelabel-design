@@ -1456,7 +1456,9 @@ def _build(*, verdict, display, claim_check, extracted, reliability, profiles,
             "can_send": False,
         }
 
-    if verdict is None:
+    # D-190: a pack with no ingredient list whose printed words say it isn't food gets
+    # the not-food result, not the refusal: there is no verdict to give it either way.
+    if verdict is None and not (kind and kind["code"] == "not_food"):
         error = reliability.get("error")
         recipe = reliability.get("reason") == "recipe"
         blocked = error == "vision_blocked"                                       # D-172
@@ -1865,7 +1867,8 @@ def _kind_screen(kind, *, people, ingredients, reliability, nutra_input=None, pr
         "ingredients": ingredients,
         "retake": None if reliability.get("ingredients_complete", True) else RETAKE_PARTIAL,
         "more_title": MORE_TITLE,
-        "checked": "We checked the ingredients against your avoid lists.",
+        # D-190: a not-food pack with no list read (an Ayurvedic formula) had nothing checked.
+        "checked": "We checked the ingredients against your avoid lists." if ingredients else None,
     }
     _partial_problem(out, reliability)
     if code == "supplement":

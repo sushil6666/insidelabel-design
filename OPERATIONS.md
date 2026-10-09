@@ -359,15 +359,19 @@ il tools/pack_kind_replay.py --all      # every version
 ```
 
 To write the new kind on every changed version, add `--apply` and your name. It changes only
-`pack_kind` and `pack_kind_evidence` (with a `corrected` note: the decision, old and new kind,
-your name, the date), prints each row it wrote, and touches nothing else:
+`pack_kind` and `pack_kind_evidence`, adding a note (the decision, old and new kind, your name,
+the date) to the version's `corrections` list, oldest first; earlier notes, including an old
+single `corrected` note, are kept (D-190). It prints each row it wrote and touches nothing else.
+/review shows every note under the kind of pack:
 
 ```bash
 il tools/pack_kind_replay.py --apply --by Sushil
+il tools/pack_kind_replay.py --apply --by Sushil --decision D-190
 ```
 
-Run the read-only form first and look at the list. `--decision D-1xx` names the rule when it
-isn't D-187. Running it again writes nothing: the corrected versions no longer change.
+Without `--apply` nothing is written. Run the read-only form first and look at the list.
+`--decision D-1xx` names the rule when it isn't D-187 (D-190 for the Ayurvedic medicine rule).
+Running it again writes nothing: the corrected versions no longer change.
 
 ### The review agents (D-117), in shadow
 
