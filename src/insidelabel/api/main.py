@@ -838,6 +838,43 @@ def _withhold(kind, result):
     return result
 
 
+def _not_food_answer(kind, vision, reliability, barcode, images, keys, device_id, t0, tr, *,
+                     avoid_codes, who, people):
+    """
+    D-190: the not-food result for a pack with no ingredient list read (an Ayurvedic
+    medicine's formula). The same screen a not_food pack gets; no verdict, since there
+    is no list to judge. Only the scan row is kept, for replay (D-092): no product,
+    version or review item, with or without a barcode, so nothing reaches /review.
+    """
+    statement = vision.get("allergen_statement")
+    scan_id = _persist(STORE and STORE.record_unlisted_scan, device_id=device_id, latency_ms=_ms(t0),
+                       front_key=keys.get("front"), back_key=keys.get("back"), trace=tr,
+                       resolved_via="barcode" if barcode else "no_barcode")
+    extracted = {"ingredients": [], "ingredients_status": vision.get("ingredients_status"),
+                 "front_claims": vision.get("front_claims", []), "allergen_statement": statement}
+    if vision.get("pack_statements"):
+        extracted["pack_statements"] = vision["pack_statements"]
+    return _withhold(kind, {
+        # D-060: first. No list read, so every avoided allergen is "couldn't confirm" (D-072).
+        "allergens": allergen_block(avoid_codes, [], statement, reliable=False, who=who),
+        "screen": result_screen.build(
+            verdict=None, display=None, claim_check=None, extracted=extracted, reliability=reliability,
+            profiles=people, allergen_confidence=0.0, allergen_reliable=False,
+            has_barcode=barcode is not None, photos_sent=[r for _d, _m, r in images], kind=kind),
+        "pack_kind": {k: kind[k] for k in ("code", "evidence", "review")},
+        "scan_id": _str(scan_id),
+        "request_id": tr["request_id"],
+        "catalogue": {"source": "scan", "status": "not_saved", "reason": "not_food"},
+        "product": vision.get("product"),
+        "verdict": None,
+        "display": None,
+        "claim_check": None,
+        "extracted": extracted,
+        "reliability": reliability,
+        "engine_version": ENGINE_VERSION,
+    })
+
+
 def _catalogue_kind(hit):
     """D-139: the kind stored on the version, or, for one stored before it, the category's (else food)."""
     if hit.get("pack_kind"):
@@ -1712,6 +1749,17 @@ async def scan(
             ),
         })
 
+    if (not proceed and reliability.get("error") == "no_ingredient_list_found"
+            and not reliability.get("from_screen")
+            and vision.get("front_status") == "read" and vision.get("back_status") == "read"):
+        # D-190 (item #85): an Ayurvedic pack prints a formula, not an "Ingredients:" list. A
+        # complete read whose printed words say it isn't food gets the not-food result, not
+        # "couldn't find the ingredient list" (which offers "Send it to us" for a pack that
+        # can never be published as food).
+        kind = pack_kind.decide(vision)
+        if kind["code"] == "not_food":
+            return _not_food_answer(kind, vision, reliability, barcode, images, keys, device_id, t0, tr,
+                                    avoid_codes=avoid_codes, who=who, people=people)
     if not proceed:
         scan_id = _persist(STORE and STORE.record_failed_scan, "refused",
                            error_code=reliability.get("error"), device_id=device_id,

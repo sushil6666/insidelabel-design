@@ -660,7 +660,10 @@ to see where each gate stands. §11 has the full list. Done today: D-051/52/55 d
 food categories, PWA built, D-092 reproduction, D-093 Cloud Vision, scan speed,
 setup alarms.
 
-**NEXT SESSION STARTS HERE (2026-10-08).** The redesign (D-185, accepted by Sushil 2026-10-08) is in three phases, each its own branch from `main` after the previous one merges. Phase 1 merged (#141), Phase 2 merged (#142), the evidence folder merged (#143). Phase 3 (the website) is on `claude/project-thread-n9uqxj`; with it the redesign is complete. Where things stand, newest first:
+**NEXT SESSION STARTS HERE (2026-10-09).** The redesign (D-185) is complete: Phase 1 (#141), Phase 2 (#142), the evidence folder (#143) and Phase 3, the website (#144), are merged; D-186 to D-188 merged as #145 to #148, D-189 as #149. Where things stand, newest first:
+
+- **`claude/ayurvedic-medicine-not-food-zcly0h` (2026-10-09, data, rule and /scan, no migration, no web change), from `main` 416c485 (#149).** D-190 (Sushil, review item #85): "Ayurvedic medicine", "Ayurvedic proprietary medicine" or "AYUSH medicine" printed on the pack is a non-food sign without a licence line (losing, like the licence rule, to an FSSAI licence, a food signal or a partial read). A complete read refused as `no_ingredient_list_found` is checked for not-food first and, if not food, gets the not-food result: no "Send it to us", no review item, only the scan row. `tools/pack_kind_replay.py --apply` now keeps a `corrections` list (an old `corrected` string first).
+  - **Waiting on Sushil:** merge; `update.sh`; then `il tools/pack_kind_replay.py` (read-only). Expected: no published version changes (a version is only made from a read with an ingredient list, and one printing "Ayurvedic medicine" with no licence line, no FSSAI licence and no table would now say not_food: a reviewer should look at any listed). Close item #85 on /review as not food.
 
 - **`claude/project-thread-68trxb` (2026-10-09, website text only, no migration), from `main` a37290e (#148).** D-189 (Sushil): the privacy page says Your data is "in the profile menu, top right" (was "at the bottom of every screen"), last updated 9 October 2026; the sesame note for mustard stays (no change). D-188 merged as #147 and #148.
   - **Waiting on Sushil:** merge; `update.sh`.
