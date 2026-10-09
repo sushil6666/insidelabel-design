@@ -4204,6 +4204,19 @@ version changes. D-187's follow-up line records version 74, fixed by hand before
   (the gold labels' cards), `tests/test_pack_kind_db.py` (a barcode hit says "on the pack we checked"; `--apply`
   writes only the two columns, the default run writes nothing), `tests/test_pack_pictures.py` (the front tick).
 
+### D-189 · Privacy: "Your data" is in the profile menu; the mustard note stays `LOCKED` (2026-10-09)
+**Sushil, 2026-10-09,** "you are right continue", answering two questions in the project chat with the recommended
+option each. Built by Claude.
+
+1. **Privacy page.** Since D-185 Phase 1, Your data is in the menu behind the person icon at the top right, not at the
+   bottom of the screen. `web/site/privacy.html`, "Your choices": `<b>Your data</b> (at the bottom of every screen)`
+   becomes `<b>Your data</b> (in the profile menu, top right)`; "Last updated 8 October 2026." becomes "Last updated
+   9 October 2026." Nothing else in the policy changes; the terms version does not change, so no one sees "Before
+   you start" again.
+2. **The sesame note for mustard stays** (D-188 already shows it): mustard, like sesame, is marked
+   `fssai_mandatory: false` in `data/allergens.json`, so a mustard avoider sees the same weaker-check line when
+   mustard isn't listed. No code change.
+
 ---
 
 ## Open and pending
