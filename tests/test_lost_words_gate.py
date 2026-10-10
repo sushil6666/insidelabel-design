@@ -110,9 +110,14 @@ def test_a_lost_allergen_still_asks(env):
     assert r.status_code == 422, r.text
 
 
-def test_missing_words_or_no_list_still_ask(env):
-    r = scan(PARTS, ingredients=GEMINI + ["Rice bran oil"])    # words Cloud Vision never saw
-    assert r.status_code == 422, r.text
+def test_missing_words_ask_only_when_they_matter(env):
+    # D-191 (Sushil, 2026-10-10): words of Gemini's list Cloud Vision never saw get D-159's
+    # test too. "Rice bran oil" changes nothing; a "Sucralose" it never saw does (an additive).
+    r = scan(PARTS, ingredients=GEMINI + ["Rice bran oil"])
+    assert r.status_code == 200, r.text
+    r1 = scan(PARTS, ingredients=GEMINI + ["Sucralose"])
+    assert r1.status_code == 422, r1.text
+    # No list in Cloud Vision's text: Gemini's allergen words aren't in it, so it still asks.
     r2 = scan("Best before 6 months from packaging. Net Weight 100 g.")
     assert r2.status_code == 422, r2.text
 

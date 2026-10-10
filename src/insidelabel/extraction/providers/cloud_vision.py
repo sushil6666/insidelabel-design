@@ -133,6 +133,19 @@ def cached(image_bytes):
     return _CACHE.get(d)
 
 
+def remember(image_bytes, text):
+    """
+    D-191: a stored Cloud Vision read of this exact photo (same content hash), so reading
+    it again costs no call. Only this photo's own text, unlike replaying(), which holds for
+    every read in the process and so is for repro and tests only.
+    """
+    if image_bytes and text is not None:
+        _CACHE[digest(image_bytes)] = text
+        _CACHE.move_to_end(digest(image_bytes))
+        if len(_CACHE) > _CACHE_SIZE:
+            _CACHE.popitem(last=False)
+
+
 def _shrink(image_bytes):
     if len(image_bytes) <= MAX_SEND_BYTES:
         return image_bytes
@@ -153,17 +166,20 @@ def read_text(image_bytes):
         text = _REPLAY.get(digest(image_bytes)) if image_bytes else None
         LAST.update(ms=0, status="replayed" if text is not None else "not_recorded", cached=True)
         return text
-    key = os.environ.get("GOOGLE_VISION_KEY")
-    if not key or not image_bytes:
+    if not image_bytes:
         return None
-    if time.monotonic() < _down_until:
-        LAST.update(ms=0, status=LAST.get("status", "down"), cached=False, skipped=True)
-        return None
+    # A photo already read (or remembered from a stored read, D-191) costs no call.
     d = digest(image_bytes)
     if d in _CACHE:
         _CACHE.move_to_end(d)
         LAST.update(ms=0, status="ok", cached=True)
         return _CACHE[d]
+    key = os.environ.get("GOOGLE_VISION_KEY")
+    if not key:
+        return None
+    if time.monotonic() < _down_until:
+        LAST.update(ms=0, status=LAST.get("status", "down"), cached=False, skipped=True)
+        return None
 
     body = json.dumps({"requests": [{
         "image": {"content": base64.b64encode(_shrink(image_bytes)).decode()},

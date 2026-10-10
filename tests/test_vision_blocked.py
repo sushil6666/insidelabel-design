@@ -250,6 +250,9 @@ MODEL_RAW_READERS = {
     "tools/review_agent.py": "review_drafts.model_raw (recheck), not scans",
     # D-174: a sent pack's earlier answers are checked for a table; blocked_reason() first.
     "src/insidelabel/review/table_read.py": "from_stored_answer() skips the marker (blocked_reason)",
+    # D-191: read-only measuring tools.
+    "tools/cross_check_replay.py": "independent_read_failed rows only (never blocked); re-read via analyze_images",
+    "tools/table_hint_measure.py": "table_read() treats an answer that isn't JSON (the marker) as no table",
 }
 
 

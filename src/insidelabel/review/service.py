@@ -294,15 +294,15 @@ class ReviewService:
         return sorted(r["id"] for r in rows)
 
     def save_draft(self, item_id, *, drafter, model, prompt_version, build, model_raw, draft, checks,
-                   outcome, error, mode):
-        """Store one agent draft (never edited afterwards) and return it."""
+                   outcome, error, mode, usage=None):
+        """Store one agent draft (never edited afterwards) and return it. usage: its Gemini tokens (D-193)."""
         with self._connect() as c:
             return c.execute(
                 """INSERT INTO review_drafts (review_item_id, drafter, model, prompt_version, build,
-                                              model_raw, draft, checks, outcome, error, mode)
-                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING *""",
+                                              model_raw, draft, checks, outcome, error, mode, usage)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING *""",
                 (item_id, drafter, model, prompt_version, build, model_raw, Jsonb(draft), Jsonb(checks),
-                 outcome, error, mode)).fetchone()
+                 outcome, error, mode, Jsonb(usage) if usage else None)).fetchone()
 
     def items_to_draft(self, prompt_version, limit=5, include_decided=False):
         """
@@ -368,16 +368,18 @@ class ReviewService:
 
     def save_table_read(self, item_id, *, source, scan_id=None, model=None, prompt_version=None, build=None,
                         model_raw=None, model_error=None, ocr_reader=None, ocr_text=None, panel=None,
-                        requested_by=None):
-        """Store one attempt to read an item's table (never edited afterwards, D-092) and return it."""
+                        requested_by=None, usage=None):
+        """Store one attempt to read an item's table (never edited afterwards, D-092) and return it.
+        usage: the paid read's Gemini tokens (D-193), None for a stored answer."""
         with self._connect() as c:
             return c.execute(
                 """INSERT INTO review_table_reads (review_item_id, scan_id, source, model, prompt_version, build,
                                                    model_raw, model_error, ocr_reader, ocr_text, panel,
-                                                   requested_by)
-                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING *""",
+                                                   requested_by, usage)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING *""",
                 (item_id, scan_id, source, model, prompt_version, build, model_raw, model_error, ocr_reader,
-                 ocr_text, Jsonb(panel) if panel is not None else None, requested_by)).fetchone()
+                 ocr_text, Jsonb(panel) if panel is not None else None, requested_by,
+                 Jsonb(usage) if usage else None)).fetchone()
 
     def table_reads(self, item_id):
         """Every attempt to read an item's table, the newest first."""

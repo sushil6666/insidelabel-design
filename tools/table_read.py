@@ -65,8 +65,8 @@ def main(argv=None):
         print("Nothing to read: not a send_to_us item, no photo, or (with --free) no stored answer with a table.")
         return 1
     _show(row)
-    if row["source"] == "table_read" and not a.replay and gemini.LAST_USAGE:
-        print(f"  tokens: {gemini.LAST_USAGE}")
+    if row["source"] == "table_read" and row.get("usage"):             # D-193: stored with the read
+        print(f"  tokens: {row['usage']}")
     return 0
 
 

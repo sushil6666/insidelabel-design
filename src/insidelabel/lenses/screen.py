@@ -117,6 +117,23 @@ RETAKE_RECIPE = ("This looks like a recipe printed on the pack, not its own ingr
                  "side, and photograph that.")
 RETAKE_PARTIAL = "Part of the ingredient list was cut off or hard to read. Retake it to check the rest."
 
+# D-191 (Sushil, 2026-10-10): "no ingredient list" on a photo where the nutrition table
+# was read says what we did see, and where the list usually is. When the table was read
+# cleanly (nutrition.check() "read", D-133), its photo is kept as the table (as D-173 keeps
+# a table photo), so the next photo is only the list.
+TABLE_ONLY_HEADLINE = "We read the nutrition table, but not the ingredient list."
+TABLE_ONLY_LABEL = "Nutrition table, no ingredient list"
+TABLE_ONLY_RETAKE = ("The ingredient list is a separate block that starts with \"Ingredients\", usually beside "
+                     "the table or on another side of the pack. Photograph that one")
+TABLE_ONLY_KEPT = "; we'll keep this photo for the table."
+TABLE_ONLY_BUTTON = "Photograph the ingredient list"
+# D-191: the same photos sent again after a refusal get the same answer, from the stored read.
+SAME_PHOTO = ("This is the same photo as last time, so the answer is the same. Take a new photo of the "
+              "ingredient list.")
+# D-191: /check-photo's free table hint (INSIDELABEL_TABLE_HINT, off until its numbers are accepted).
+TABLE_HINT = {"text": "This looks like the nutrition table. Is the ingredient list in it?",
+              "retake": "Retake", "use": "Use this photo"}
+
 # D-170 (Sushil, 2026-10-07, "Accept, no hint line"): a refused or rejected photo is shown
 # back to the user with its problem named in a short label; the fix line is the sentence
 # above (RETAKE and friends), unchanged. Keyed by what the server already knows: the
@@ -139,6 +156,7 @@ PROBLEM_LABEL = {
     "not_a_food_pack": "Not a food pack",
     "product_mismatch": "Front and back look like different packs",
     "independent_read_failed": "One clearer photo, please",
+    "table_only": TABLE_ONLY_LABEL,                                             # D-191
     "vision_blocked": "Our reader couldn't read this label",                    # D-172
     "unknown": "We couldn't read this label",
     # A barcode photo (D-104). A code that fails its length or check digit was misread.
@@ -1420,7 +1438,7 @@ def build(**kw):
 def _build(*, verdict, display, claim_check, extracted, reliability, profiles,
            allergen_confidence, allergen_reliable, catalogue=None, has_barcode=True,
            photos_sent=("back",), pack=None, screen_pack=None, nutrition=None, parts_sent=1, kind=None,
-           nutra_input=None, barcode_answer=None, unchecked=False):
+           nutra_input=None, barcode_answer=None, unchecked=False, table_only=None, repeat=False):
     """
     The `screen` block of a /scan response. verdict=None means the scan was refused.
     pack: for a result read from a screen (D-130), our catalogue's version of the
@@ -1432,6 +1450,9 @@ def _build(*, verdict, display, claim_check, extracted, reliability, profiles,
     barcode_answer: D-146's digit check answered in this scan ("confirmed", "rescanned"),
     so no second question is asked on its result.
     unchecked: D-167, the scan saved a version of a barcode that has no checked one yet.
+    table_only: D-191, on a "no ingredient list" refusal whose photo showed the nutrition
+    table: {"keep": the table was read cleanly, so the app keeps the photo as the table}.
+    repeat: D-191, the same photos as an earlier refused scan, answered from its read.
     """
     ingredients = (extracted or {}).get("ingredients") or []
     statement = (extracted or {}).get("allergen_statement")
@@ -1462,24 +1483,33 @@ def _build(*, verdict, display, claim_check, extracted, reliability, profiles,
         error = reliability.get("error")
         recipe = reliability.get("reason") == "recipe"
         blocked = error == "vision_blocked"                                       # D-172
+        table = table_only if error == "no_ingredient_list_found" and not recipe else None   # D-191
         retake = ((RETAKE_RECIPE if recipe else None)
+                  or (TABLE_ONLY_RETAKE + (TABLE_ONLY_KEPT if table["keep"] else ".") if table else None)
                   or (RETAKE_BLOCKED_NO_BARCODE if blocked and not has_barcode else None)
                   or (RETAKE_BACK.get(error) if "front" in photos_sent else None)
                   or RETAKE.get(error, RETAKE_DEFAULT))
-        return {
+        out = {
             "state": "retake",
             "people": people,
-            "headline": {"text": (HEADLINE_BACK.get(error) if "front" in photos_sent else None)
+            "headline": {"text": (TABLE_ONLY_HEADLINE if table else None)
+                                 or (HEADLINE_BACK.get(error) if "front" in photos_sent else None)
                                  or HEADLINE.get(error, "We couldn't read this label clearly."),
                          "source": {"kind": "reliability", "ref": error}},
             "retake": retake,
-            "problem": problem("recipe" if recipe else error, retake),     # D-170
+            "problem": problem("recipe" if recipe else "table_only" if table else error, retake),     # D-170
             # D-096/D-103: a pack we couldn't read can go to a reviewer; a photo
             # that isn't a pack can't, and neither can a pack without a barcode (D-107).
             "can_send": error not in NOT_A_PACK and error != "product_mismatch" and has_barcode,
             # D-172: a blocked read goes to a person after one scan, not D-070's two.
             "send_now": blocked and has_barcode,
         }
+        if table:
+            out["retake_button"] = TABLE_ONLY_BUTTON
+            out["keep_table"] = bool(table["keep"])
+        if repeat:
+            out["repeat"] = SAME_PHOTO
+        return out
 
     if kind and kind["code"] != "food":
         out = _kind_screen(kind, people=people, ingredients=ingredients, reliability=reliability,

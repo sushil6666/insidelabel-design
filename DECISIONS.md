@@ -4258,6 +4258,86 @@ against a primary document (D-046).
 
 ---
 
+### D-191 · Fewer retakes: table-only words, a table hint (off), same photo same answer, the cross-check asks when it matters `LOCKED` (2026-10-10)
+**Sushil, 2026-10-10,** "yes D-191", then "accept" to the plan (/mnt/project-files/fewer-retakes/plan.md, with
+390x844 light and dark screenshots). The advisor reviews before merge. Built by Claude.
+
+**Why** (Sushil): "many complain i am getting like performance issue while checking the photo as it asks multiple
+time to take a new pic". The server, 2026-10-03 to 10-10: 86 photo scans, 39 refused (45%): 18
+`independent_read_failed`, 15 `no_ingredient_list_found`, 6 others; each read takes about 9 s.
+- `no_ingredient_list_found`: 2 were the Ayurvedic pack (D-190). In 10 of the other 13 the nutrition table was read
+  but no list: the shopper photographed the table.
+- The same pack refused 2 or 3 times in a row: 8901063371101, 8904422708501, 8908017658295. Identical photos sent
+  again: 8901063371101 (14:24:18 and 14:33:12 on 10-07), 8901058022216 (13:45:51 and 13:46:29 on 10-08),
+  8904422700826 (14:52:42 and 14:56:22 on 10-09).
+- `independent_read_failed` since D-159: 15. Maggi 8901058022216 asked 4 times, the last two on `missing:
+  ["ginger"]` only; 8901058022223 on `missing: ["nut"]`; 8901928222401 on `missing: ["contaadded"]`; 4 with
+  `section_found: false`. One ask was right and must stay: 8901725121228, a may-contain oats and soy line.
+
+1. **Table-only words, and the table photo kept.** A `no_ingredient_list_found` refusal of a one-photo back whose
+   nutrition table was read (or partly read) says so: "We read the nutrition table, but not the ingredient list.",
+   then 'The ingredient list is a separate block that starts with "Ingredients", usually beside the table or on
+   another side of the pack. Photograph that one; we'll keep this photo for the table.' (the "keep" half only when
+   the table was read in full), and the button "Photograph the ingredient list". The kept photo goes into the
+   table step (D-173), so the retake is one photo. Words in `lenses/screen.py` (D-091). Every other refusal is
+   unchanged.
+2. **A free table hint, OFF.** `INSIDELABEL_TABLE_HINT=on` lets `/check-photo` run one local Tesseract read (at most
+   3 s) of the first list photo of a scan; when it finds table words and no "Ingredients", the app asks "This looks
+   like the nutrition table. Is the ingredient list in it?" with "Retake" and "Use this photo". It never refuses or
+   stores anything. Word lists in `data/table_hint.json`. It stays off until `tools/table_hint_measure.py` (false
+   alarms, catches, misses, time, on stored scans; read-only) gives numbers Sushil accepts.
+3. **Same photo, same answer.** A phone that sends the same photos with the same choices as its own refusal in the
+   last 24 hours gets that answer again from the stored read: no Gemini or Cloud Vision call, the limiter hit given
+   back (D-095), and a scan row with `request.repeat_of` and its trace (D-092), so it replays. The screen adds "This
+   is the same photo as last time, so the answer is the same. Take a new photo of the ingredient list." A
+   `vision_blocked` refusal (D-172) is read again. In the app, the phone's Back after a refusal resent the same
+   photos; it now opens that result instead.
+4. **The cross-check asks only when it matters, once.** D-159's test for what only Cloud Vision read (LOST) now also
+   covers the words of Gemini's list Cloud Vision never saw (MISSING): a clearer photo is asked for only if a word
+   would change the result. A word Cloud Vision read glued to a neighbour ("groundnut" for "nut", "contaadded") counts
+   as seen. No list found in Cloud Vision's text no longer asks on its own; MISSING is checked against the whole
+   text. At most one ask per pack per phone in 24 hours; a second goes to the result, as "Use this one anyway" does.
+   The D-117 checker still sends every such word to a person. Before and after (`tests/test_fewer_retakes.py`, 8
+   cases from the week, each asked before): 3 still ask, among them 8901725121228's may-contain line. The exact
+   count for the 15 comes from `tools/cross_check_replay.py` on the server (read-only).
+
+---
+
+### D-192 · A second reader: Claude Haiku 5.5 behind a switch `PLANNED` (2026-10-10)
+**Sushil, 2026-10-10,** "keep it in plan only d-192 not now". Not built.
+
+The plan: `claude-haiku-5-5` ($0.10 input and $0.50 output per million tokens, for prompts up to 100,000 tokens)
+as a second label reader behind `INSIDELABEL_READER=gemini|claude`, default `gemini`. The gold set first: it is
+built only after a gold-set run shows it reads as well as Gemini. AI reads, rules judge (D-004) either way.
+
+---
+
+### D-193 · A faster read: tokens recorded, three read switches, all off `LOCKED` (2026-10-10)
+**Sushil, 2026-10-10,** "yes D-193", then "accept" to the plan. The advisor reviews before merge. Built by Claude.
+
+**Why:** photo scan median 8.9 s, slowest tenth 12.0 s. Gemini's call (`vision_ms`) median 8.6 s, 97% of the scan.
+Cloud Vision takes 1.1 s and the wait for it after Gemini is 0. 64 of 86 photo scans sent the front in the same
+call; only 1 Gemini retry. The time is Gemini's own read, so that is what the switches try.
+
+1. **Tokens per call, stored.** Every Gemini call records its usage (prompt, output, thinking and total tokens,
+   model, thinking level, media resolution, ms): a scan in `scans.timings->'gemini'` (and `gemini_front` for a split
+   read; no migration for scans), the review agent in `review_drafts.usage`, the table read in
+   `review_table_reads.usage` (migration 027). `tools/repro.py show` prints it.
+2. **Three switches, each one line in /etc/insidelabel/settings.env, all off:**
+   - `INSIDELABEL_READ_SPLIT_FRONT=on`: the back and the front in two Gemini calls at once; the front's answer is
+     joined to the back's before the rules run. A front that hasn't answered when the back has is saved on the row
+     later (`model_raw_front`, migration 027); the result doesn't wait for it.
+   - `INSIDELABEL_THINKING_LEVEL=minimal|low|medium|high` (unset: today's `low`).
+   - `INSIDELABEL_MEDIA_RESOLUTION=low|medium|high` (unset: the API's default). A value the API doesn't take is
+     ignored.
+   Each scan records the settings it ran with (`timings.read`), so a replay uses the same.
+3. **`tools/batch_scan.py --split-front --thinking-level --media-resolution`** prints seconds and tokens per photo;
+   it refuses an `--out` under reports/.
+4. **PROMPT_VERSION unchanged.** A switch goes on only after the advisor's gold-set run (about Rs 15 to 20) shows it
+   is faster with no loss in reading.
+
+---
+
 ## Open and pending
 
 ### D-050 · Numeric score in the consumer UI `SUPERSEDED by D-064` (removed)

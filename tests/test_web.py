@@ -498,7 +498,10 @@ def test_a_retake_keeps_the_table_photo_and_the_front():                     # D
     app = JS["app.js"]
     fn = app[app.index("function retakeList("):app.index("// After a shot: the photos in hand")]
     # The list's photos go; the table's stay, unless the photos aren't of a pack at all.
-    assert 'setParts(mine && !NOT_A_PACK.includes(code) ? partRows().filter(r => r[2] === "table") : []);' in fn
+    assert 'const tables = mine && !NOT_A_PACK.includes(code) ? partRows().filter(r => r[2] === "table") : [];' in fn
+    # D-191: a refusal that read the table cleanly keeps this photo as the table (once).
+    assert ('setParts(mine && keepTable && !tables.length && pending.back ? [[pending.back, pending.backSource, "table"]]'
+            ' : tables);') in fn
     assert 'const NOT_A_PACK = ["back_is_a_screen", "not_a_food_pack", "screen_unread"];' in app
     assert "pending.back = null;" in fn and "pending.acceptUnconfirmed = false;" in fn
     # The front stays, except after two packs (D-108) or for another scan's photos.
@@ -506,7 +509,7 @@ def test_a_retake_keeps_the_table_photo_and_the_front():                     # D
     # Every retake of the list uses it: the refusal (and D-118's clearer photo), both partial reads
     # and D-188's amber allergen card.
     assert app.count("() => retakeList(h, ") == 4
-    assert 'retakeList(h, s.problem?.code || s.headline?.source?.ref)' in app
+    assert 'retakeList(h, s.problem?.code || s.headline?.source?.ref, s.keep_table)' in app
     assert app.count('retakeList(h, "partial")') == 3
     assert "pending.parts = []; pending.partSources = []; pending.partKinds = [];" not in app
     # A new first photo keeps a kept table, and a list part goes before it: the table is the last part.

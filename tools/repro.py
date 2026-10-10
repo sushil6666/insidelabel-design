@@ -90,6 +90,8 @@ def show(store, media, pid, save=None):
         print(f"    ran build {s['build']} · data {s['data_version']} · engine {s['engine_version']} · "
               f"prompt {s['prompt_version']} · timings {s['timings']}")
         print(f"    request {json.dumps(s['request'])}")
+        for line in repro.read_lines(s.get("timings"), s.get("request")):    # D-193
+            print(f"    {line}")
         print(f"    photos back={s['back_image_key']} front={s['front_image_key']} hold={s['evidence_hold']}")
         if s.get("model_error"):                                           # D-172
             print(f"    model error {s['model_error']}")

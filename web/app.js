@@ -860,8 +860,19 @@ function stepLine(n, what) {
 }
 
 function photo() {
+  // D-191: the phone's Back from a result lands here with the same photos, and one tap on
+  // "Check this pack" sent them again unchanged (the same photos refused twice in minutes,
+  // 2026-10-07 to 10-09). Until a photo changes, this opens that result instead.
+  if (pending.back && pending.resultId && samePhotos(pending.answered)) {
+    location.replace("#/result/" + encodeURIComponent(pending.resultId));
+    return null;
+  }
   return pending.back ? shotReview() : listShot();
 }
+
+// D-191: the photos in hand, as the objects they are; any retake or new photo is a new object.
+const photosInHand = () => [pending.back, ...pending.parts, pending.front];
+const samePhotos = was => !!was && was.length === photosInHand().length && photosInHand().every((b, i) => b === was[i]);
 
 // The ingredient list, or its next part (D-119).
 function listShot() {
@@ -871,6 +882,7 @@ function listShot() {
     role: n === 1 ? "back" : "back" + n,
     step: stepLine(2, n === 1 ? "Ingredients" : `Ingredients, part ${n}`),
     title: n === 1 ? "Photograph the ingredient list" : "Photograph the rest of the list",
+    kept: n === 1 && partRows().some(r => r[2] === "table"),
     line: n === 1 ? "Fit the list, from \"Ingredients\" to the last word"
                   : "Start where the last photo ended. A little overlap is fine.",
     back: pending.back ? () => show(shotReview()) : null,
@@ -924,9 +936,10 @@ function addShot(n, kind, b, source, res) {
 // D-103, D-130): the table photo goes too, as before. D-108: two packs, the front goes.
 // h: the result being retaken; its photos are kept only while this phone still holds them.
 const NOT_A_PACK = ["back_is_a_screen", "not_a_food_pack", "screen_unread"];
-function retakeList(h, code = null) {
+function retakeList(h, code = null, keepTable = false) {
   const mine = pending.resultId === h.id;
-  setParts(mine && !NOT_A_PACK.includes(code) ? partRows().filter(r => r[2] === "table") : []);
+  const tables = mine && !NOT_A_PACK.includes(code) ? partRows().filter(r => r[2] === "table") : [];
+  setParts(mine && keepTable && !tables.length && pending.back ? [[pending.back, pending.backSource, "table"]] : tables);
   pending.back = null;
   pending.acceptUnconfirmed = false;
   if (!mine) pending.barcode = h.barcode;              // photos from another scan aren't this pack's
@@ -965,8 +978,10 @@ function shotReview(res = undefined, frontRes = undefined) {
       ? el("img", { src: URL.createObjectURL(b), alt: "Your photo of the ingredient list" })
       : el("figure", { class: "thumb", style: `--i:${i}` }, el("img", { src: URL.createObjectURL(b), alt: `Your photo: ${shownNames[i]}` }),
           el("figcaption", { class: "muted" }, shownNames[i]))));
+  // D-191: the free table hint, once per scan; it takes the dock until it is answered.
+  const hint = res?.ok && res.hint && !pending.hintUsed ? res.hint : null;
   const line = frontRes !== undefined ? checkLine(frontRes, () => show(frontShot()), "front")
-    : res === undefined ? null : checkLine(res, retake);
+    : res === undefined || hint ? null : checkLine(res, retake);
   // D-175: a re-check of a published pack asks for the list only; the table is on file or offered apart.
   const listOnly = pending.recheck === "list";
   // D-181: the front is the last photo; once it's in, the table question has had its answer.
@@ -984,7 +999,7 @@ function shotReview(res = undefined, frontRes = undefined) {
       : stepLine(tableIn && !kept ? 3 : 2, kept ? names[lists - 1] : names[n - 1]),
     pics,
     // D-185 Phase 2: the retakes sit under the photos they act on.
-    el("div", { class: "retakes" },
+    !hint && el("div", { class: "retakes" },
       (ask || (kept && n < MAX_PHOTOS) || (listOnly && n < MAX_PHOTOS))
         && button("The list continues", () => show(listShot()), "link"),
       button(tableIn && !kept ? "Retake the table" : "Retake", retake, "link"),
@@ -996,6 +1011,9 @@ function shotReview(res = undefined, frontRes = undefined) {
     !ask && el("h1", { class: "photos-in" }, kindIcon("done", true), m === 1 ? "The ingredient list is in" : m === 2 ? "Both photos are in"
         : m === 3 ? "All three photos are in" : "All four photos are in"),
     // D-185 Phase 2 (D-171): the answer docks at the bottom on a phone, in thumb reach.
+    hint ? el("div", { class: "dock" }, el("h1", { class: "dock-q" }, hint.text),
+      button(hint.retake, retake, "primary"),
+      button(hint.use, () => { pending.hintUsed = true; show(shotReview(res)); })) :
     el("div", { class: "dock" },
       ask && el("h1", { class: "dock-q" }, "Is the nutrition table in this photo too?"),
       // D-100: the reviewer reads the brand, name and claims from the front. D-181: required while
@@ -1055,6 +1073,7 @@ function labelShot(o) {
       el("div", { class: "card shot-card" },
         exampleShot(o.front ? "front" : o.table ? "table" : "list", "Like this: flat, sharp, the whole panel"),
         el("p", { class: "cam-line" }, o.line)),
+      o.kept && kinded("p", "done", { class: "muted kept-note" }, "We kept your photo of the nutrition table."),   // D-191
       why && kinded("p", "info", { class: "muted" }, why),
       preview].filter(Boolean));
     picker = photoPicker(o.role, "Take the photo", preview, (b, res, source) => {
@@ -1081,8 +1100,9 @@ function labelShot(o) {
     hint);
   const shutter = el("button", { type: "button", class: "shutter", "aria-label": "Take the photo", disabled: true });
   const upload = uploadLink(o.role, file => checkShot(o, file, "upload", again));
-  shot.replaceChildren(wrap, el("p", { class: "cam-line" }, o.line),
-    el("div", { class: "shutter-row" }, el("span", {}), shutter, upload));
+  shot.replaceChildren(...[wrap, el("p", { class: "cam-line" }, o.line),
+    o.kept && kinded("p", "done", { class: "muted kept-note" }, "We kept your photo of the nutrition table."),   // D-191
+    el("div", { class: "shutter-row" }, el("span", {}), shutter, upload)].filter(Boolean));
 
   const seq = navSeq;
   const onHint = h => hint.replaceChildren(h ? kinded("p", "problem", { class: "cam-hint check bad" },
@@ -1188,12 +1208,16 @@ async function checkPhoto(role, checkAs, file, onReady = null) {
   const blob = await prepareImage(file);
   onReady?.(blob);
   let res = null;
+  // D-191: the free table hint looks at the scan's first ingredient-list photo only, once a scan.
+  const firstList = role === "back" && checkAs === "back" && !pending.hintAsked;
+  if (firstList) pending.hintAsked = true;
   try {
-    res = (await checkPhotoRequest(checkAs, blob)).body;
+    res = (await checkPhotoRequest(checkAs, blob, firstList)).body;
   } catch (e) {
     if (e.status === 429 || e.status === 413 || e.status === 415) res = { ok: false, message: apiMessage(e) };
   }
-  record("photo_check", { role, ok: res ? res.ok : null, problem: res?.problem || null, barcode: !!res?.barcode });
+  record("photo_check", { role, ok: res ? res.ok : null, problem: res?.problem || null, barcode: !!res?.barcode,
+                          hint: !!res?.hint });
   return { blob, res };
 }
 
@@ -1447,6 +1471,7 @@ function finish(body, { lookedUp = false } = {}) {
     pending.sendNow = !!body.screen.send_now;                   // D-172: one blocked scan is enough
   }
   pending.resultId = id;           // D-133: the photos in hand belong to this result
+  pending.answered = photosInHand();                         // D-191: what this result answered
   // D-177: a small copy of the photo for the result's pack card, kept on this phone only.
   const shot = body.screen?.state === "result" && (pending.front || pending.back);
   if (shot) packPhoto(shot).then(url => {
@@ -1547,6 +1572,7 @@ function result(id, sub, tileId) {
       // D-170: the user's own photo with its problem named; older results keep the one line.
       s.problem ? photoProblem(s.problem, heldPhotos(h, s.problem.code === "product_mismatch"))
                 : kinded("p", "problem", { class: "card" }, s.retake),
+      s.repeat && el("p", { class: "muted" }, s.repeat),
       pending.attempts >= 2 && s.can_send !== false && el("p", { class: "muted" },
         "Still not working? Try daylight, or another pack. Some labels are printed too small or too shiny to read."),
       // D-070: after two refusals, a person reads the photos instead. Beside the hint, so the dock
@@ -1557,7 +1583,7 @@ function result(id, sub, tileId) {
         // D-172: Gemini's guard blocked the read; the photos are fine, so a person reads them now.
         s.send_now && pending.refused.length >= 1 && button("Send it to us", () => go("send"), "primary"),
         // D-173: the list is retaken; the table photo and the front stay (D-108: not after two packs).
-        button("Retake the photo", () => retakeList(h, s.problem?.code || s.headline?.source?.ref),
+        button(s.retake_button || "Retake the photo", () => retakeList(h, s.problem?.code || s.headline?.source?.ref, s.keep_table),
                s.send_now ? "" : "primary"),
         // D-118: our second reader couldn't confirm a new pack's list. The person
         // can still have their result from these photos.

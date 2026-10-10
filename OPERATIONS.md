@@ -257,6 +257,58 @@ sudo -u insidelabel psql -d insidelabel -c "SELECT (created_at AT TIME ZONE 'Asi
 
 `no_reader` is a scan that ended before the cross-check (a refused photo, a model error).
 
+**Where the time goes, and the tokens** (D-193). Photo scans of the last 7 days: the median and
+slowest tenth of the whole scan, the median of Gemini's call (`timings.vision_ms`) and its share of
+the scan. Read-only:
+
+```bash
+# Photo scan speed and Gemini's share
+sudo -u insidelabel psql -d insidelabel -c "SELECT count(*) AS photo_scans,
+  round((percentile_cont(0.5) WITHIN GROUP (ORDER BY latency_ms) / 1000)::numeric, 1) AS scan_p50_s,
+  round((percentile_cont(0.9) WITHIN GROUP (ORDER BY latency_ms) / 1000)::numeric, 1) AS scan_p90_s,
+  round((percentile_cont(0.5) WITHIN GROUP (ORDER BY (timings->>'vision_ms')::int) / 1000)::numeric, 1) AS gemini_p50_s,
+  round(100.0 * sum((timings->>'vision_ms')::int) / nullif(sum(latency_ms), 0)) AS gemini_share_pct
+  FROM scans WHERE created_at > now() - interval '7 days' AND NOT cache_hit
+  AND back_image_key IS NOT NULL AND timings ? 'vision_ms'"
+```
+
+Tokens per Gemini call (input, output, thinking, total, with the model, thinking level, media
+resolution and ms) are in `scans.timings->'gemini'` (and `->'gemini_front'` for a split read), the
+settings the read ran with in `scans.timings->'read'`; for the review agent in `review_drafts.usage`
+and the table read in `review_table_reads.usage` (migration 027, run by `update.sh`).
+`il tools/repro.py show <id>` prints them. A scan answered from an earlier refusal of the same photos
+(D-191) has `request->>'repeat_of'` and no Gemini call:
+
+```bash
+# Tokens of the last 10 photo scans
+sudo -u insidelabel psql -d insidelabel -c "SELECT created_at, latency_ms, timings->'read'->>'thinking_level' AS thinking,
+  timings->'gemini'->>'input_tokens' AS input, timings->'gemini'->>'output_tokens' AS output,
+  timings->'gemini'->>'thinking_tokens' AS thinking_tokens, request->>'repeat_of' AS repeat_of
+  FROM scans WHERE back_image_key IS NOT NULL ORDER BY created_at DESC LIMIT 10"
+```
+
+### Read switches (D-191, D-193), all off
+
+Each is one line in `/etc/insidelabel/settings.env` (`sudoedit`, then
+`sudo systemctl restart insidelabel`, §5 "Change a setting or a key"). Delete the line to turn it off
+again. Turn one on only after its numbers are accepted (D-191: Sushil; D-193: the advisor's gold-set run).
+
+| Line | What it does |
+|---|---|
+| `INSIDELABEL_TABLE_HINT=on` | A free local check of the first list photo; asks "This looks like the nutrition table. Is the ingredient list in it?" (D-191) |
+| `INSIDELABEL_READ_SPLIT_FRONT=on` | The back and the front read in two Gemini calls at once (D-193) |
+| `INSIDELABEL_THINKING_LEVEL=minimal` | Or `low` (today's), `medium`, `high` (D-193) |
+| `INSIDELABEL_MEDIA_RESOLUTION=low` | Or `medium`, `high`; unset is the API's default (D-193) |
+
+A value the API doesn't take is ignored. Measure first, both read-only, on stored scans:
+
+```bash
+il tools/table_hint_measure.py              # the hint: false alarms, catches, misses, ms per photo (D-191)
+il tools/cross_check_replay.py              # each clearer-photo ask since 2026-10-05: asked then, asks now (D-191)
+il tools/batch_scan.py --help               # --split-front, --thinking-level, --media-resolution: seconds and
+                                            # tokens per photo; paid calls, --out to a scratch folder, never reports/
+```
+
 D-172: a scan whose `error_code` starts `vision_blocked:` is one Gemini's guard refused to answer
 (`recitation` so far: a widely published label), after two retries; the user was offered "Send it to us".
 Every model failure keeps its own words in `scans.model_error`, and `il tools/repro.py show <id>` prints them:
