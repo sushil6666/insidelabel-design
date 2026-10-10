@@ -30,3 +30,6 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# The repo root on the path: some tests import shared set-ups as `tests.<module>`, which a plain
+# `pytest` (unlike `python -m pytest`) could not find.
+pythonpath = ["."]
