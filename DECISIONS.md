@@ -4300,6 +4300,13 @@ time to take a new pic". The server, 2026-10-03 to 10-10: 86 photo scans, 39 ref
    The D-117 checker still sends every such word to a person. Before and after (`tests/test_fewer_retakes.py`, 8
    cases from the week, each asked before): 3 still ask, among them 8901725121228's may-contain line. The exact
    count for the 15 comes from `tools/cross_check_replay.py` on the server (read-only).
+- **Follow-up (advisor, 2026-10-10, after deploy, read-only on the server).** `tools/cross_check_replay.py --since
+  2026-10-03`: of 18 clearer-photo requests, 7 would ask today, at most one per pack per phone. Still asking: the
+  may-contain oats and soy line (8901725121228), "cheese" and "artificial flavours" Gemini dropped (8901928222401),
+  honey (8904422700826), chocolate and cocoa (8906044545144), and Cloud Vision reading too little on a curved pouch
+  (8904004400687). `tools/table_hint_measure.py --days 30`: false alarms 5 of 88 scans that gave a result, catches 3
+  of 11 table-only scans, misses 8, median 1.4 s added to every photo check (8 at the 3 s cap). The table hint
+  stays OFF: it would save three retakes a month and slow every photo check (low friction, Sushil).
 
 ---
 
@@ -4335,6 +4342,14 @@ call; only 1 Gemini retry. The time is Gemini's own read, so that is what the sw
    it refuses an `--out` under reports/.
 4. **PROMPT_VERSION unchanged.** A switch goes on only after the advisor's gold-set run (about Rs 15 to 20) shows it
    is faster with no loss in reading.
+- **Follow-up (advisor, 2026-10-10): the gold-set run.** Sushil: "run the speed test" (about Rs 10 spent). The 6
+  gold labels with `tools/batch_scan.py`, each setting once, on the laptop (laptop times are higher than the server's;
+  only the comparison counts). Seconds per read, median of 6: today's 23.9; `--split-front` 28.6; `--thinking-level
+  minimal` 31.1; `--media-resolution medium` 28.6. Ingredient set F1 0.980 and INS number F1 1.000 in all four, 0
+  verdict flips. Front claim F1: 0.911 today, 0.933 split, 0.883 minimal, 0.921 medium. The split read returned Limca
+  2.25 L as a mismatch (no result) and the veg mark right on 3 of 6. Medium used 18 % fewer input tokens but was not
+  faster. **No switch goes on.** The read's time is Gemini writing its answer (about 1,300 output tokens); the levers
+  left are a shorter answer (a prompt change, measured on the gold set) and a faster reader (D-192, planned).
 
 ---
 
