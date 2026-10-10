@@ -49,6 +49,7 @@ from insidelabel import photo_check  # noqa: E402
 from insidelabel import photo_join  # noqa: E402
 from insidelabel import pictures  # noqa: E402
 from insidelabel import ratelimit  # noqa: E402
+from insidelabel import table_hint  # noqa: E402
 from insidelabel import trace  # noqa: E402
 from insidelabel.core import engine, pack_kind  # noqa: E402
 from insidelabel.claims import checker as claim_checker  # noqa: E402
@@ -696,23 +697,89 @@ def lost_words_matter(ingredients, lost, allergen_statement=None, lost_ins=()):
     """
     if not lost and not lost_ins:
         return False
-
-    def answers(entries):
-        verdict = engine.analyze(", ".join(entries))
-        flags = sorted((f["matched_as"], f["type"], f["concern"]) for f in verdict["flags"])
-        verdict = {k: v for k, v in verdict.items() if k not in ("flags", "ingredient_count_parsed")}
-        states = {c: r.state for c, r in allergen_checker.check(
-            entries, allergen_statement, list(allergen_checker.ALLERGENS)).items()}
-        notes = [n["id"] for n in engine.ingredient_notes(entries)]
-        facts = {age: [(f.key, f.tier, f.parent_text) for f in
-                       shelf.extract_facts(shelf.Product("x", "x", entries), age).facts if f.tier == "strong"]
-                 for age in shelf.AGE_BANDS}
-        baby = [line["text"] for line in result_screen.baby_lines("food", entries, True)]
-        return flags, verdict, states, notes, facts, baby
-
     listed = list(ingredients or [])
     added = list(lost) + ([" ".join(lost)] if len(lost) > 1 else []) + [f"INS {n}" for n in lost_ins]
-    return answers(listed) != answers(listed + added)
+    return _rule_answers(listed, allergen_statement) != _rule_answers(listed + added, allergen_statement)
+
+
+def cross_check(ingredients, allergen_statement, ocr_text):
+    """
+    D-118's question: does Cloud Vision's text of the back confirm Gemini's list, and when
+    it doesn't, would what differs change the user's result? Returns (matters, check):
+    check is None when the text confirms the list, else what it found, for the scan's
+    trace (D-092). /scan asks for a clearer photo only when it matters (and once per pack,
+    D-191); tools/cross_check_replay.py runs the same on stored scans.
+
+    D-159: what only Cloud Vision read (LOST, and D-160's numbers) matters only when it
+    would change the user's result. D-191 (Sushil, 2026-10-10): so do the words of Gemini's
+    list it never saw (MISSING), after the ones it read glued to a neighbour; and no list
+    found in its text no longer asks on its own (MISSING is counted against the whole text).
+    The D-117 checker still sends the words to a person.
+    """
+    section, missing, lost = review_checker.independent_read(ingredients, ocr_text, allergen_statement)
+    check, error = {"section_found": bool(section), "missing": missing, "lost": lost}, False
+    try:
+        # D-160: the numbers too; LOST holds words only. Against the list as it now
+        # stands (after D-093's recovery), so a number recovered in a form the parser
+        # can't read ("Raising agents (500(ii)") still counts as lost.
+        check["lost_ins"] = review_checker.lost_ins_numbers(ingredients, ocr_text)
+    except Exception:                                                      # noqa: BLE001
+        log.exception("lost-numbers check failed")
+        check["lost_ins"], error = [], True
+    if not error and section and not missing and not lost and not check["lost_ins"]:
+        return False, None
+    matters = error or missing == ["(no text)"]
+    if not matters:
+        try:
+            glued = review_checker.glued_seen(missing, ingredients, ocr_text)
+            if glued:
+                check["glued"] = glued
+            unseen = [w for w in missing if w not in glued]
+            matters = (lost_words_matter(ingredients, lost, allergen_statement, check["lost_ins"])
+                       or missing_words_matter(ingredients, unseen, allergen_statement))
+        except Exception:                                                  # noqa: BLE001
+            # D-160: a failed check never costs the result; it asks, as before D-159.
+            log.exception("lost-words check failed")
+            matters, error = True, True
+    if error:
+        check["error"] = True
+    return matters, check
+
+
+def _rule_answers(entries, allergen_statement):
+    """What the rules make of a list (D-159): everything a word could change on the result."""
+    verdict = engine.analyze(", ".join(entries))
+    flags = sorted((f["matched_as"], f["type"], f["concern"]) for f in verdict["flags"])
+    verdict = {k: v for k, v in verdict.items() if k not in ("flags", "ingredient_count_parsed")}
+    states = {c: r.state for c, r in allergen_checker.check(
+        entries, allergen_statement, list(allergen_checker.ALLERGENS)).items()}
+    notes = [n["id"] for n in engine.ingredient_notes(entries)]
+    facts = {age: [(f.key, f.tier, f.parent_text) for f in
+                   shelf.extract_facts(shelf.Product("x", "x", entries), age).facts if f.tier == "strong"]
+             for age in shelf.AGE_BANDS}
+    baby = [line["text"] for line in result_screen.baby_lines("food", entries, True)]
+    return flags, verdict, states, notes, facts, baby
+
+
+def missing_words_matter(ingredients, missing, allergen_statement=None):
+    """
+    D-191: lost_words_matter()'s sibling for MISSING, the words of Gemini's list that Cloud
+    Vision never saw (review_checker.independent_read). Such a word may be one Gemini made
+    up, so the rules run on the list as read and on the list with those words struck out;
+    True when any answer differs (an allergen for any code, an additive or INS number, the
+    verdict, the notes, the age lines, the baby lines). "ginger", "peas" or a glued reader
+    word ("contaadded") change nothing and don't ask; "milk" or "INS 211" do.
+    """
+    if not missing:
+        return False
+    listed = list(ingredients or [])
+    struck = []
+    for entry in listed:
+        for w in missing:
+            entry = re.sub(rf"(?i)(?<![a-z]){re.escape(w)}(?![a-z])", " ", entry)
+        if re.search(r"[A-Za-z0-9]", entry):
+            struck.append(" ".join(entry.split()))
+    return _rule_answers(listed, allergen_statement) != _rule_answers(struck, allergen_statement)
 
 
 async def _table_answer(hit, panel, barcode, barcode_source, images, keys, ocr_result, vision, device_id, t0, tr):
@@ -785,6 +852,37 @@ async def _free_recheck(hit, back_bytes, tr, wait_all=False):
         # Kept now, so a paid read that fails still stores what the free check saw.
         tr["ocr"] = {"back": {"recheck": check}}
     return {"read": read, "check": check}
+
+
+# D-191: what must be the same for a scan to be the same as an earlier one: the photos (by
+# content hash, matched in the query) and every choice sent with them. Where each photo came
+# from (camera, upload) is not a choice: the same picture from the gallery is the same photo.
+SAME_CHOICES = ("barcode", "barcode_answer", "avoid", "profiles", "pairing_confirmed", "compare_regulators",
+                "images", "back_parts", "back_kinds", "accept_unconfirmed", "screen_pack", "table_only", "recheck")
+
+
+def _same_photos(device_id, keys, request):
+    """D-191: this phone's refused scan of these photos with these choices in the last day, or None."""
+    for row in _persist(STORE.recent_refusals, device_id, keys.get("back"), keys.get("front")) or []:
+        if (row["error_code"] or "").startswith("vision_blocked"):
+            continue                       # D-172: Google's guard, not the photo; another read may pass
+        then = row["request"] or {}
+        if all(then.get(k) == request.get(k) for k in SAME_CHOICES):
+            return row
+    return None
+
+
+# D-193: how long a late front answer is waited for after the result went (the SDK's own
+# timeout is 120 s, and retries can add to it).
+LATE_FRONT_WAIT_S = 300
+
+
+def _save_late_front(front_read, request_id):
+    """D-193: the front's split-read answer that came after the result, on the scan row."""
+    front_read.done.wait(LATE_FRONT_WAIT_S)
+    _persist(STORE and STORE.save_late_front, request_id, model_raw_front=front_read.raw,
+             usage=dict(front_read.usage) or None,
+             error=front_read.error or (None if front_read.done.is_set() else "no answer in time"))
 
 
 def _ms(t0):
@@ -1119,6 +1217,8 @@ async def check_photo(
     role: str = Form(..., description='"barcode", "back" or "front".'),
     photo: Optional[UploadFile] = File(None),
     device_id: Optional[str] = Form(None, examples=[""]),
+    first_list: bool = Form(False, description="D-191: the scan's first ingredient-list photo; the free "
+                                               "table hint looks only at this one (INSIDELABEL_TABLE_HINT)."),
 ):
     """
     D-104: the tick or cross the app shows on each photo as soon as it is picked.
@@ -1148,7 +1248,15 @@ async def check_photo(
             return _photo_problem(role, reasons[0], barcode_rules.MESSAGES[reasons[0]])
         return _photo_problem(role, "no_barcode", CHECK_MESSAGES["no_barcode"])
     msg = CHECK_MESSAGES[f"{role}_ok"] + (CHECK_MESSAGES["barcode_too"].format(code=code) if code else "")
-    return {"role": role, "ok": True, "problem": None, "message": msg, "barcode": code}
+    out = {"role": role, "ok": True, "problem": None, "message": msg, "barcode": code}
+    if role == "back" and first_list and table_hint.enabled():
+        # D-191: a free local read; a nutrition table with no list word gets one question.
+        hint = await run_in_threadpool(table_hint.check, data)
+        log.info("table hint: fires=%s words=%s list_word=%s ms=%s", hint["fires"], len(hint["table_words"]),
+                 hint["list_word"], hint["ms"])
+        if hint["fires"]:
+            out["hint"] = dict(result_screen.TABLE_HINT)
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -1327,6 +1435,7 @@ async def _read_image(upload, role):
 @app.post("/scan")
 async def scan(
     request: Request,
+    background: BackgroundTasks,
     back: Optional[UploadFile] = File(None, description="Back of pack - the ingredient list."),
     front: Optional[UploadFile] = File(None, description="Front of pack - marketing claims."),
     back2: Optional[UploadFile] = File(None, description="D-119: the ingredient list's second part, when it doesn't fit one photo."),
@@ -1369,6 +1478,9 @@ async def scan(
     recheck: bool = Form(False, description="D-175: a photo of a published pack's ingredient list, to check it "
                                             "again. Compared with the published list for free first; read by the "
                                             "model only when it isn't clearly the same."),
+    replay_front: Optional[str] = Form(None, examples=[""],
+                                       description='Testing only, with replay: the front\'s own recorded answer from a '
+                                                   'split read (D-193), or "-" when it wasn\'t joined. Leave empty.'),
 ):
     """
     barcode -> reviewed catalogue entry, else images -> Gemini -> engine -> claim check.
@@ -1381,6 +1493,8 @@ async def scan(
     # Form tools (/docs included) can send an empty box as "". An empty replay is
     # not a model answer, and an empty avoid is not an avoid list.
     replay = replay if replay and replay.strip() else None
+    # D-193: only beside a replay; a live scan never takes an answer from the form.
+    replay_front = replay_front if replay is not None and replay_front and replay_front.strip() else None
     if replay is not None and not _replay_allowed():
         # D-101: refused before anything is read or stored, like a 429 (D-095).
         log.warning("replay refused: INSIDELABEL_ALLOW_REPLAY is off")
@@ -1499,7 +1613,9 @@ async def scan(
                     "replay": replay is not None,
                     "accept_unconfirmed": accept_unconfirmed, "screen_pack": screen_pack,
                     "table_only": table_only, "recheck": recheck},
-        "timings": {},
+        # D-193: how the label is read (model, thinking level, image detail, split), so a
+        # replay and the speed numbers know which setting each scan was read with.
+        "timings": {"read": gemini.read_settings()},
     }
 
     # D-024: a barcode alone is a catalogue lookup - no vision call, ~₹0.
@@ -1550,6 +1666,29 @@ async def scan(
             "detail": "Supply at least a back-of-pack image.",
         })
 
+    # D-191 (Sushil, 2026-10-10): the same photos and choices as a scan this phone sent in the
+    # last 24 hours that was refused get that scan's answer again, from its stored read (D-092):
+    # no Gemini or Cloud Vision call, and not counted in the day's photo scans (D-148). Today's
+    # rules run on it, so a clearer-photo ask already made goes to the result (one per pack).
+    repeat_of, repeat_text = None, False
+    if replay is None and STORE and device_id and keys.get("back") and not table_only:
+        earlier = _same_photos(device_id, keys, tr["request"])
+        if earlier:
+            repeat_of = str(earlier["id"])
+            replay = earlier["model_raw"]
+            joined = (earlier.get("timings") or {}).get("front_joined")
+            if joined is not None:
+                replay_front = earlier.get("model_raw_front") if joined else None
+                replay_front = replay_front or gemini.SKIPPED_FRONT
+            stored = ((earlier.get("ocr") or {}).get("back") or {})
+            repeat_text = stored.get("reader") == "cloud_vision" and stored.get("text") is not None
+            if repeat_text:
+                cloud_vision.remember(next((d for d, _m, r in images if r == "back"), None), stored["text"])
+            tr["request"]["repeat_of"] = repeat_of
+            ratelimit.LIMITER.give_back("scan", device=str(uuid.UUID(str(device_id))),
+                                        ip=ratelimit.client_ip(request))
+            log.info("same photos as scan %s: answered from its stored read", repeat_of)
+
     # The model call and the OCR are blocking; on worker threads they don't freeze
     # every other request for 10-15 s. The independent read of the back photo
     # doesn't need the model's answer, so it starts now, alongside Gemini: Cloud
@@ -1577,7 +1716,9 @@ async def scan(
                 result["catalogue"]["recheck"] = "unchanged"
                 return result
     if recheck_check is None:
-        back_read = ocr_check.start_back_read(back_bytes)
+        # D-191: a repeat reads nothing again: its stored Cloud Vision text, or no second read
+        # at all when the earlier scan had none in time (its answer didn't use one either).
+        back_read = None if repeat_of and not repeat_text else ocr_check.start_back_read(back_bytes)
     # D-092: how long we waited on retries, so a slow scan can be told apart as
     # "the model was busy" (retries) or "the model was slow" (none).
     retries = tr["timings"].setdefault("vision_retries", [])
@@ -1586,10 +1727,25 @@ async def scan(
         retries.append({"attempt": attempt, "wait_s": round(delay, 1), "error": type(err).__name__})
         log.warning("model retry %s after %s, waiting %.1fs", attempt, type(err).__name__, delay)
 
+    # D-193: with INSIDELABEL_READ_SPLIT_FRONT=on the front is read in its own call, started
+    # now; the result waits only for the back's. A replay of a split scan repeats it from the
+    # recorded front answer (or "-": it wasn't joined).
+    front_imgs = [x for x in images if x[2] == "front"]
+    split = bool(front_imgs) and not table_only and (
+        replay_front is not None if replay is not None else tr["timings"]["read"]["split_front"])
+    front_read = None
+    if split and replay_front != gemini.SKIPPED_FRONT:
+        front_read = gemini.FrontRead(front_imgs, raw_response=replay_front)
+        if replay is not None:
+            await run_in_threadpool(front_read.done.wait)
     t_vision = time.monotonic()
     try:
-        vision, corrections = await run_in_threadpool(gemini.analyze_images, images, raw_response=replay,
-                                                      on_attempt=on_retry)
+        if split:
+            vision, corrections = await run_in_threadpool(gemini.analyze_split, images, front_read,
+                                                          raw_response=replay, on_attempt=on_retry)
+        else:
+            vision, corrections = await run_in_threadpool(gemini.analyze_images, images, raw_response=replay,
+                                                          on_attempt=on_retry)
     except gemini.VisionBlocked as e:
         # D-172: a guard stopped the answer (report #7: RECITATION on a Britannia pack), after
         # D-172's retries. Not the photo and not a 502: a refusal a person can read instead.
@@ -1640,6 +1796,22 @@ async def scan(
 
     tr["timings"]["vision_ms"] = _ms(t_vision)
     tr["model_raw"] = vision.pop("_raw_text", None)
+    # D-193: this scan's own token counts (never a shared global), stored in scans.timings.
+    usage = vision.pop("_usage", None)
+    if usage:
+        tr["timings"]["gemini"] = usage
+    joined = vision.pop("_front_joined", None)
+    if split:
+        tr["timings"]["front_joined"] = bool(joined)
+        if joined:
+            tr["model_raw_front"] = front_read.raw
+            if front_read.usage:
+                tr["timings"]["gemini_front"] = dict(front_read.usage)
+        elif front_read is not None and front_read.error:
+            tr["timings"]["front_error"] = front_read.error
+        elif front_read is not None and replay is None and STORE:
+            # Still reading: kept on this scan's row when it comes, for the reviewer and replay.
+            background.add_task(_save_late_front, front_read, tr["request_id"])
     # D-103: a front photo that isn't a food pack is set aside before anything
     # uses it (claims, pairing, identity); the back still decides the scan.
     front_caveat = rel.drop_unusable_front(vision)
@@ -1765,6 +1937,12 @@ async def scan(
                            error_code=reliability.get("error"), device_id=device_id,
                            latency_ms=_ms(t0), front_key=keys.get("front"), back_key=keys.get("back"),
                            trace=tr)
+        # D-191: no list, but the photo showed the nutrition table (Gemini read it), and it was
+        # the only back photo: say so, and keep the photo as the table when it was read cleanly.
+        table_seen = None
+        if (reliability.get("error") == "no_ingredient_list_found" and len(parts) <= 1
+                and (vision.get("nutrition") or {}).get("status") in ("read", "partial")):
+            table_seen = {"keep": (panel or {}).get("status") == "read"}
         return JSONResponse(status_code=422, content={
             # A refused scan still answers the allergy question: "couldn't
             # confirm", never silence (D-037, D-072).
@@ -1773,7 +1951,7 @@ async def scan(
                 verdict=None, display=None, claim_check=None, extracted=None,
                 reliability=reliability, profiles=people, allergen_confidence=0.0,
                 allergen_reliable=False, has_barcode=barcode is not None,
-                photos_sent=[r for _d, _m, r in images]),
+                photos_sent=[r for _d, _m, r in images], table_only=table_seen, repeat=bool(repeat_of)),
             "scan_id": _str(scan_id),
             "request_id": tr["request_id"],
             "verdict": None,
@@ -1839,33 +2017,15 @@ async def scan(
     if (barcode and STORE and not accept_unconfirmed and not from_screen
             and ocr_text.get("reader") == "cloud_vision"
             and (ocr_text.get("text") or "").strip()):
-        section, missing, lost = review_checker.independent_read(
-            vision["ingredients"], ocr_text["text"], vision.get("allergen_statement"))
-        check, error = {"section_found": bool(section), "missing": missing, "lost": lost}, False
-        try:
-            # D-160: the numbers too; LOST holds words only. Against the list as it now
-            # stands (after D-093's recovery), so a number recovered in a form the parser
-            # can't read ("Raising agents (500(ii)") still counts as lost.
-            check["lost_ins"] = review_checker.lost_ins_numbers(vision["ingredients"], ocr_text["text"])
-        except Exception:                                                  # noqa: BLE001
-            log.exception("lost-numbers check failed")
-            check["lost_ins"], error = [], True
-        if error or not (section and not missing and not lost and not check["lost_ins"]):
-            # D-159: no list in Cloud Vision's text, or words of Gemini's list it never
-            # saw, still ask. What only Cloud Vision read (LOST, and D-160's numbers) asks
-            # only when it would change the user's result; the D-117 checker still sends
-            # the words to a person.
-            matters = error or not section or bool(missing)
-            if not matters:
-                try:
-                    matters = lost_words_matter(vision["ingredients"], lost, vision.get("allergen_statement"),
-                                                check["lost_ins"])
-                except Exception:                                          # noqa: BLE001
-                    # D-160: a failed check never costs the result; it asks, as before D-159.
-                    log.exception("lost-words check failed")
-                    matters, error = True, True
-            if error:
-                check["error"] = True
+        matters, check = cross_check(vision["ingredients"], vision.get("allergen_statement"), ocr_text["text"])
+        if check is not None:
+            if matters and device_id:
+                # D-191: one clearer-photo request per pack per phone in 24 hours. A second photo
+                # that still can't be confirmed goes to the result, as "Use this one anyway" does.
+                earlier = _persist(STORE.recent_ask, device_id, barcode)
+                if earlier:
+                    check["already_asked"] = str(earlier)
+                    matters = False
             ask_again = matters and bool(_persist(STORE.adds_version, barcode, vision["ingredients"]))
             # Kept with the back's Cloud Vision read (scans.ocr), so repro.py shows it (D-092).
             ocr_text["independent_read"] = {**check, "asked": ask_again}
@@ -1877,7 +2037,7 @@ async def scan(
         screen = result_screen.build(
             verdict=None, display=None, claim_check=None, extracted=None, reliability=reliability,
             profiles=people, allergen_confidence=0.0, allergen_reliable=False,
-            has_barcode=True, photos_sent=[r for _d, _m, r in images])
+            has_barcode=True, photos_sent=[r for _d, _m, r in images], repeat=bool(repeat_of))
         screen["can_use_anyway"] = True
         return JSONResponse(status_code=422, content={
             "allergens": allergen_block(avoid_codes, [], None, reliable=False, who=who),

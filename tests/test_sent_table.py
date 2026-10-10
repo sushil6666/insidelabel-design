@@ -224,7 +224,7 @@ def test_a_person_can_ask_for_the_read_again(env, calls, monkeypatch):
     calls.answer = gemini.VisionBlocked("recitation")
     bc = gtin()
     item = blocked_pack(bc)
-    monkeypatch.setattr(table_read, "_paid_call", lambda prompt, images: answer())
+    monkeypatch.setattr(table_read, "_paid_call", lambda prompt, images, usage=None: answer())
     client = reviewer()
     page = client.get(f"/review/item/{item}").text
     r = client.post(f"/review/item/{item}/read-table", data={"csrf": csrf(page)}, follow_redirects=False)

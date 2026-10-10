@@ -139,7 +139,7 @@ def main():
         for c in corrections:
             print(f"  - {c}")
 
-    u = gemini.LAST_USAGE
+    u = vision.get("_usage") or {}                                      # D-193: this call's own
     if u.get("total_tokens"):
         cost = ((u.get("input_tokens") or 0) * RATE_IN
                 + (u.get("output_tokens") or 0) * RATE_OUT) / 1_000_000

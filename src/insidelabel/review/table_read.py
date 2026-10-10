@@ -82,11 +82,12 @@ def _second_reading(scan, photo):
     return got.get("ocr_text"), got.get("reader")
 
 
-def _paid_call(prompt, images):
-    """One table-only answer, with the label reader's retries (D-172: RECITATION twice more)."""
+def _paid_call(prompt, images, usage=None):
+    """One table-only answer, with the label reader's retries (D-172: RECITATION twice more).
+    usage: filled with the call's tokens (D-193)."""
     for tries in range(1, gemini.RECITATION_RETRIES + 2):
         try:
-            return gemini._with_retries(lambda: gemini.call_gemini_json(prompt, images, TABLE_SCHEMA))
+            return gemini._with_retries(lambda: gemini.call_gemini_json(prompt, images, TABLE_SCHEMA, usage=usage))
         except gemini.VisionBlocked as e:
             if e.reason != "recitation" or tries > gemini.RECITATION_RETRIES:
                 raise
@@ -125,18 +126,19 @@ def read_for_item(service, media, item_id, *, paid=True, call=None, requested_by
     if got is None:
         return service.save_table_read(item_id, **row, model_error="The photo is no longer stored.")
     photo, mime = got
-    raw = None
+    raw, usage = None, {}
     try:
-        raw = (call or _paid_call)(TABLE_PROMPT, [(photo, mime, "back")])
+        raw = (call or (lambda p, i: _paid_call(p, i, usage)))(TABLE_PROMPT, [(photo, mime, "back")])
         answer = json.loads(gemini._FENCE.sub("", raw or ""))
         if not isinstance(answer, dict):
             raise ValueError("not a JSON object")
     except gemini.VisionBlocked as e:
         return service.save_table_read(item_id, **row, model_raw=gemini.blocked_marker(e.reason),
-                                       model_error=f"{type(e).__name__}: {e}"[:1000])
+                                       model_error=f"{type(e).__name__}: {e}"[:1000], usage=usage or None)
     except (gemini.VisionError, ValueError, TypeError) as e:
         return service.save_table_read(item_id, **row, model_raw=raw,
-                                       model_error=f"{type(e).__name__}: {e}"[:1000])
+                                       model_error=f"{type(e).__name__}: {e}"[:1000], usage=usage or None)
     text, reader = _second_reading(scan, photo)
     panel = nutrition.check(answer.get("nutrition"), text, answer.get("net_quantity"), reader=reader)
-    return service.save_table_read(item_id, **row, model_raw=raw, ocr_reader=reader, ocr_text=text, panel=panel)
+    return service.save_table_read(item_id, **row, model_raw=raw, ocr_reader=reader, ocr_text=text, panel=panel,
+                                   usage=usage or None)

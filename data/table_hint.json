@@ -1,0 +1,13 @@
+{
+  "_meta": {
+    "table": "table_hint",
+    "version": "1",
+    "purpose": "D-191: the free table hint on /check-photo (INSIDELABEL_TABLE_HINT, off until tools/table_hint_measure.py's numbers are accepted). A local Tesseract read of the first ingredient-list photo with at least min_table_words of table_words and no list word gets one question: is the ingredient list in it? A hint only: it never refuses a photo, and nothing is stored.",
+    "verified_on": "2026-10-10"
+  },
+  "min_table_words": 4,
+  "table_words": ["nutrition", "nutritional", "energy", "kcal", "kj", "protein", "carbohydrate", "carbohydrates",
+                  "sugars", "fat", "saturated", "trans", "sodium", "cholesterol", "fibre", "fiber",
+                  "per 100", "per serving", "serving size", "rda"],
+  "list_words": ["ngredient", "ngrediant", "ngredent"]
+}

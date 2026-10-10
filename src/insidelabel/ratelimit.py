@@ -154,6 +154,18 @@ class Limiter:
                 self._hits.popitem(last=False)          # least recently used key
             return None
 
+    def give_back(self, bucket, **keys):
+        """
+        D-191: un-count the newest request on every key given: one that turned out to cost
+        nothing (the same photos as a refused scan, answered from its stored read).
+        """
+        rules = self.rules.get(bucket) or {}
+        with self._lock:
+            for kind, value in keys.items():
+                q = self._hits.get((bucket, kind, value)) if value is not None and rules.get(kind) else None
+                if q:
+                    q.pop()
+
 
 LIMITER = Limiter(RULES)
 

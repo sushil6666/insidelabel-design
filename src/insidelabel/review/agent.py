@@ -100,8 +100,9 @@ def draft_item(service, media, item_id, mode="shadow", call=None):
         raise ValueError(f"No queue item {item_id}.")
     categories = service.categories()
     ctx = context(data, categories)
+    usage = {}                                                   # D-193: this draft's own tokens
     call = call or (lambda prompt, imgs: gemini._with_retries(
-        lambda: gemini.call_gemini_json(prompt, imgs, DRAFT_SCHEMA)))
+        lambda: gemini.call_gemini_json(prompt, imgs, DRAFT_SCHEMA, usage=usage)))
     raw_text, draft, checks, outcome, error = None, {}, [], "error", None
     try:
         raw_text = call(prompt_text(ctx, categories), images_for(data, media))
@@ -112,7 +113,7 @@ def draft_item(service, media, item_id, mode="shadow", call=None):
         error = f"{type(e).__name__}: {e}"
     return service.save_draft(item_id, drafter=DRAFTER, model=gemini.MODEL, prompt_version=PROMPT_VERSION,
                               build=trace.BUILD, model_raw=raw_text, draft=draft, checks=checks,
-                              outcome=outcome, error=error, mode=mode)
+                              outcome=outcome, error=error, mode=mode, usage=usage or None)
 
 
 # ---------------------------------------------------------------- D-117 point 4

@@ -14,6 +14,17 @@ Scan a whole directory of label photos.
 Files pair on the stem before -back / -front. A back image is required; a
 front is optional.
 
+D-193: the read's settings, for the advisor's gold-set run (each one a switch on the
+server, all off there until this run shows a setting faster with no loss in reading):
+
+    python3 tools/batch_scan.py --photos photos/ --out <scratch>/pred-minimal --thinking-level minimal
+    python3 tools/batch_scan.py --photos photos/ --out <scratch>/pred-split --split-front
+    python3 tools/batch_scan.py --photos photos/ --out <scratch>/pred-low-media --media-resolution low
+
+Each prints seconds per read and tokens, and each prediction keeps its settings
+(_read_settings) and tokens (_usage). Predictions go to a scratch folder: --out
+inside reports/ is refused (CLAUDE.md).
+
 DESIGN NOTE
     Skips ids that already have a prediction unless --force. Vision calls cost
     money and time, and re-running thirty labels to add one is the kind of
@@ -65,7 +76,22 @@ def load(path, role):
 
 def scan_one(paths, note=None):
     images = [i for i in (load(paths["back"], "back"), load(paths["front"], "front")) if i]
-    vision, corrections = gemini.analyze_images(images, on_attempt=note)
+    settings = gemini.read_settings()
+    t0 = time.monotonic()
+    if settings["split_front"] and paths["front"]:
+        # D-193: as /scan does it: the front's call beside the back's, joined only when it is
+        # in by the time the back's answer is (the result never waits for the front).
+        front = gemini.FrontRead([i for i in images if i[2] == "front"])
+        vision, corrections = gemini.analyze_split(images, front, on_attempt=note)
+        back_s = time.monotonic() - t0
+        front.done.wait()
+        vision["_front"] = {"joined": vision.pop("_front_joined", False), "error": front.error,
+                            "seconds": round(time.monotonic() - t0, 2), "usage": dict(front.usage) or None}
+    else:
+        vision, corrections = gemini.analyze_images(images, on_attempt=note)
+        back_s = time.monotonic() - t0
+    vision["_read_settings"] = settings
+    vision["_seconds"] = round(back_s, 2)
 
     back_bytes = next((d for d, _m, r in images if r == "back"), None)
     front_bytes = next((d for d, _m, r in images if r == "front"), None)
@@ -95,7 +121,20 @@ def main():
     ap.add_argument("--out", default="predictions")
     ap.add_argument("--force", action="store_true", help="Re-scan ids that already have a prediction.")
     ap.add_argument("--sleep", type=float, default=1.0)
+    # D-193: the read's settings for this run (the same switches the server reads).
+    ap.add_argument("--split-front", action="store_true", help="Read the back and the front in two calls at once.")
+    ap.add_argument("--thinking-level", choices=gemini.THINKING_LEVELS, help="Default: low, as the server.")
+    ap.add_argument("--media-resolution", choices=gemini.MEDIA_RESOLUTIONS, help="Default: the API's own.")
     args = ap.parse_args()
+    if os.path.realpath(args.out).startswith(os.path.realpath(os.path.join(ROOT, "reports")) + os.sep) or \
+            os.path.realpath(args.out) == os.path.realpath(os.path.join(ROOT, "reports")):
+        sys.exit("--out is inside reports/: write predictions to a scratch folder (CLAUDE.md).")
+    for flag, env, value in ((args.split_front, "INSIDELABEL_READ_SPLIT_FRONT", "on"),
+                             (args.thinking_level, "INSIDELABEL_THINKING_LEVEL", args.thinking_level),
+                             (args.media_resolution, "INSIDELABEL_MEDIA_RESOLUTION", args.media_resolution)):
+        if flag:
+            os.environ[env] = value
+    print(f"read settings: {gemini.read_settings()}", file=sys.stderr)
 
     pairs = discover(args.photos)
     if not pairs:
@@ -135,8 +174,10 @@ def main():
         with open(target, "w", encoding="utf-8") as f:
             json.dump(vision, f, ensure_ascii=False, indent=2)
         done += 1
-        u = dict(gemini.LAST_USAGE)
+        u = vision.get("_usage") or {}                         # D-193: this read's own tokens
         summary.append({
+            "seconds": vision.get("_seconds"),
+            "input": u.get("input_tokens"), "output": u.get("output_tokens"), "thinking": u.get("thinking_tokens"),
             "tokens": u.get("total_tokens"),
             "cost": ((u.get("input_tokens") or 0) * RATE_IN
                      + (u.get("output_tokens") or 0) * RATE_OUT) / 1_000_000,
@@ -159,6 +200,15 @@ def main():
         print(f"tokens {total_tok:,}  ~${total_cost:.4f} this batch  "
               f"(~${(total_cost/max(done,1))*1000:.2f} per 1,000 scans)\n")
     else:
+        print()
+    secs = sorted(s["seconds"] for s in summary if s.get("seconds") is not None)
+    if secs:
+        print(f"seconds per read: median {secs[len(secs) // 2]:.1f}, slowest {secs[-1]:.1f} "
+              f"(the result's wait; with --split-front, the back's call only)")
+        for key in ("input", "output", "thinking"):
+            vals = [s[key] for s in summary if s.get(key) is not None]
+            if vals:
+                print(f"  {key} tokens: total {sum(vals):,}, mean {sum(vals) / len(vals):,.0f}")
         print()
     if summary:
         hdr = f"{'id':<32}{'gold':<6}{'verdict':<18}{'gr':<4}{'score':<7}{'flags':<7}{'fixes':<7}{'claims':<8}pairing"

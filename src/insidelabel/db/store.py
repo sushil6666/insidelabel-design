@@ -173,6 +173,42 @@ class Store:
                            WHERE pv.product_id = p.id AND pv.status = 'pending_review'
                              AND pv.nutrition IS NOT NULL) AS table_wanted"""
 
+    def recent_ask(self, device_id, barcode, hours=24):
+        """
+        D-191: this phone's clearer-photo request (D-118) for this barcode in the last
+        `hours`, newest first: its scan id, or None. One ask per pack per phone.
+        """
+        try:
+            uid = str(uuid.UUID(str(device_id)))
+        except (TypeError, ValueError):
+            return None
+        with self._connect() as conn:
+            row = conn.execute(
+                """SELECT id FROM scans WHERE user_id = %s AND error_code = 'independent_read_failed'
+                     AND request->>'barcode' = %s AND created_at > now() - make_interval(hours => %s)
+                   ORDER BY created_at DESC LIMIT 1""", (uid, barcode, hours)).fetchone()
+            return row and row["id"]
+
+    def recent_refusals(self, device_id, back_key, front_key, hours=24):
+        """
+        D-191: this phone's refused scans of exactly these photos (content hashes) in the
+        last `hours`, newest first, with what a replay needs (D-092): the model's answers,
+        the OCR text, the request and the timings.
+        """
+        try:
+            uid = str(uuid.UUID(str(device_id)))
+        except (TypeError, ValueError):
+            return []
+        if not back_key:
+            return []
+        with self._connect() as conn:
+            return conn.execute(
+                """SELECT id, error_code, request, model_raw, model_raw_front, ocr, timings FROM scans
+                   WHERE user_id = %s AND outcome = 'refused' AND back_image_key = %s
+                     AND front_image_key IS NOT DISTINCT FROM %s AND model_raw IS NOT NULL
+                     AND created_at > now() - make_interval(hours => %s)
+                   ORDER BY created_at DESC LIMIT 5""", (uid, back_key, front_key, hours)).fetchall()
+
     def adds_version(self, barcode, ingredients):
         """
         Would save_scan() add a catalogue version for this pack (a new product
@@ -544,7 +580,21 @@ class Store:
                     "version_status": vstatus, "queued": queued, "checked": bool(current)}
 
     _TRACE_COLS = ("request_id", "build", "data_version", "engine_version", "prompt_version",
-                   "model_raw", "model_error", "request", "timings", "ocr", "barcode_check")
+                   "model_raw", "model_error", "request", "timings", "ocr", "barcode_check",
+                   "model_raw_front")
+
+    def save_late_front(self, request_id, *, model_raw_front=None, usage=None, error=None):
+        """
+        D-193: the front's own answer that came after the result went (split read). Kept on
+        the scan row of this request for the reviewer and replay; the result doesn't change.
+        """
+        late = {"front_late": True, **({"front_error": error} if error else {}),
+                **({"gemini_front": usage} if usage else {})}
+        with self._connect() as conn:
+            conn.execute(
+                """UPDATE scans SET model_raw_front = COALESCE(%s, model_raw_front), timings = timings || %s
+                   WHERE id = (SELECT id FROM scans WHERE request_id = %s ORDER BY created_at DESC LIMIT 1)""",
+                (model_raw_front, Jsonb(late), request_id))
 
     @classmethod
     def _set_trace(cls, conn, sid, trace):

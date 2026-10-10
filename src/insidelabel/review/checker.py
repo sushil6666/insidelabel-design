@@ -267,6 +267,25 @@ def independent_read_confirmed(ingredients, ocr_text, allergen_statement=None):
     return found and not missing and not lost
 
 
+def glued_seen(missing, ingredients, ocr_text):
+    """
+    D-191: the MISSING words Cloud Vision did read, glued to their neighbour: Gemini's
+    "Ground Nut Oil" printed or read as "groundnut" leaves "nut" missing although the
+    text has it (8901058022223, 2026-10). A word counts as seen when it and the word
+    before or after it in the same entry, joined, are in the text (the same fuzzy match
+    as MISSING). Used only by /scan's ask (D-118); the D-117 checker stays strict.
+    """
+    pool = sorted(set(_words(ocr_text)))
+    seen = set()
+    for entry in ingredients or []:
+        ws = _words(entry)
+        for i, w in enumerate(ws):
+            if w in missing and any(_found(g, pool) for g in
+                                    ([ws[i - 1] + w] if i else []) + ([w + ws[i + 1]] if i + 1 < len(ws) else [])):
+                seen.add(w)
+    return sorted(seen)
+
+
 def lost_ins_numbers(ingredients, ocr_text):
     """
     D-160: the INS numbers in Cloud Vision's ingredient list (the section

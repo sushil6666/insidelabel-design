@@ -12,7 +12,7 @@
 //    beyond the headline the user was shown.
 
 // Bump together with VERSION in sw.js: a report then says which shell was cached.
-export const APP_VERSION = "web-66";
+export const APP_VERSION = "web-67";
 
 // ------------------------------------------------------------------ storage
 // localStorage can throw (private mode, blocked site data); the app must still work.
@@ -305,10 +305,11 @@ export const sendToUsRequest = scanIds =>
 
 // D-104: the tick or cross on a photo as soon as it is picked. The server
 // reads any barcode on it (never typed) and checks the file; no model call.
-export async function checkPhotoRequest(role, blob) {
+export async function checkPhotoRequest(role, blob, firstList = false) {
   const fd = new FormData();
   fd.append("device_id", deviceId());
   fd.append("role", role);
+  if (firstList) fd.append("first_list", "true");          // D-191: the table hint's one look
   fd.append("photo", blob, role + ".jpg");
   return call("/check-photo", { method: "POST", body: fd });
 }

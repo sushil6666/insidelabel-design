@@ -17,6 +17,7 @@ import json
 import os
 import random
 import re
+import threading
 import time
 import urllib.error
 import urllib.request
@@ -29,11 +30,49 @@ from insidelabel.extraction.providers.prompt import (
     VISION_RESPONSE_SCHEMA,
 )
 
-# Populated by the last SDK call so callers can report real token usage
-# instead of guessing at cost. Guessing was the alternative and it is a bad
-# one: image token counts vary with resolution, and thinking tokens are
-# invisible until you look.
-LAST_USAGE = {}
+# D-193: each call fills the caller's own `usage` dict with real token counts
+# instead of a guess at cost (image token counts vary with resolution, and
+# thinking tokens are invisible until you look). It was a module global
+# (LAST_USAGE), which two scans on the threadpool overwrote, and was never stored.
+USAGE_KEYS = ("input_tokens", "output_tokens", "thinking_tokens", "total_tokens")
+
+# D-193 (Sushil, 2026-10-10): the read's settings, each a switch in
+# /etc/insidelabel/settings.env and all off by default, until the advisor's gold-set
+# run shows a setting faster with no loss in reading.
+# Levels: Google's thinking table (ai.google.dev/gemini-api/docs/thinking, read
+# 2026-10-10) lists gemini-3.6-flash with minimal, low, medium, high (default medium).
+# Media resolution (ai.google.dev/gemini-api/docs/media-resolution): low 280, medium
+# 560, high 1120 tokens per image on Gemini 3; unset is the API's default (1120).
+THINKING_LEVELS = ("minimal", "low", "medium", "high")
+MEDIA_RESOLUTIONS = ("low", "medium", "high")
+
+
+def read_settings():
+    """
+    D-193: how this read is made, from the environment at call time: the model,
+    INSIDELABEL_THINKING_LEVEL (unset: prompt.THINKING_LEVEL, "low"),
+    INSIDELABEL_MEDIA_RESOLUTION (unset: None, the API's default) and
+    INSIDELABEL_READ_SPLIT_FRONT=on (back and front in two calls at once). A value
+    the API doesn't take is ignored, so a typo in settings.env reads as today.
+    Stored with every scan (D-092) and every batch prediction.
+    """
+    level = os.environ.get("INSIDELABEL_THINKING_LEVEL", "").strip().lower()
+    media = os.environ.get("INSIDELABEL_MEDIA_RESOLUTION", "").strip().lower()
+    return {"model": MODEL,
+            "thinking_level": level if level in THINKING_LEVELS else THINKING_LEVEL,
+            "media_resolution": media if media in MEDIA_RESOLUTIONS else None,
+            "split_front": os.environ.get("INSIDELABEL_READ_SPLIT_FRONT", "").strip().lower() == "on"}
+
+
+def _fill_usage(usage, counts, settings, t0):
+    """D-193: one call's tokens and settings into the caller's dict."""
+    if usage is None:
+        return
+    usage.clear()
+    usage.update({k: counts.get(k) for k in USAGE_KEYS})
+    usage.update({"model": settings["model"], "thinking_level": settings["thinking_level"],
+                  "media_resolution": settings["media_resolution"],
+                  "ms": int((time.monotonic() - t0) * 1000)})
 
 API_BASE = "https://generativelanguage.googleapis.com/v1beta/models"
 
@@ -205,7 +244,7 @@ def _with_retries(fn, on_attempt=None):
 
 
 # ---------------------------------------------------------------------------
-def build_request(images):
+def build_request(images, settings=None):
     """
     images: list of (bytes, mime_type, role_hint) where role_hint is
             "front" | "back" | "unknown". The hint is NOT sent to the model -
@@ -223,6 +262,12 @@ def build_request(images):
 
     config = dict(GENERATION_CONFIG)
     config["response_schema"] = VISION_RESPONSE_SCHEMA
+    # D-193: only a switched setting is sent, so this fallback reads as before by default.
+    settings = settings or read_settings()
+    if settings["thinking_level"] != THINKING_LEVEL:
+        config["thinkingConfig"] = {"thinkingLevel": settings["thinking_level"].upper()}
+    if settings["media_resolution"]:
+        config["mediaResolution"] = "MEDIA_RESOLUTION_" + settings["media_resolution"].upper()
 
     return {
         "contents": [{"role": "user", "parts": parts}],
@@ -237,18 +282,23 @@ def build_request(images):
 SDK_TIMEOUT_MS = 120_000
 
 
-def call_gemini_sdk(images, api_key=None):
+def call_gemini_sdk(images, api_key=None, usage=None, settings=None):
     """Preferred path. The SDK handles both AIza and AQ. credential types."""
-    return call_gemini_json(VISION_PROMPT, images, VISION_RESPONSE_SCHEMA, api_key=api_key)
+    return call_gemini_json(VISION_PROMPT, images, VISION_RESPONSE_SCHEMA, api_key=api_key,
+                            usage=usage, settings=settings)
 
 
-def call_gemini_json(prompt_text, images, schema, api_key=None):
+def call_gemini_json(prompt_text, images, schema, api_key=None, usage=None, settings=None):
     """
     One JSON answer from Gemini for a prompt and some photos, with the same
     client, timeout and error mapping as the label reader: a busy model raises
     VisionUnavailable (retry it), a key or credit problem VisionConfigError
     (a setup alarm, not a retry). The review drafter (D-117) uses it too.
+    usage: a dict of the caller's, filled with this call's tokens and settings (D-193).
+    settings: read_settings()'s answer; None reads it now.
     """
+    settings = settings or read_settings()
+    t0 = time.monotonic()
     api_key = api_key or os.environ.get("GEMINI_API_KEY")
     if not api_key:
         raise VisionConfigError("GEMINI_API_KEY is not set.")
@@ -277,10 +327,14 @@ def call_gemini_json(prompt_text, images, schema, api_key=None):
             cfg_kwargs["automatic_function_calling"] = genai_types.AutomaticFunctionCallingConfig(disable=True)
         except Exception:                                        # noqa: BLE001 - older SDKs
             pass
+        # D-193: the image detail setting, only when switched on.
+        if settings["media_resolution"]:
+            cfg_kwargs["media_resolution"] = getattr(
+                genai_types.MediaResolution, "MEDIA_RESOLUTION_" + settings["media_resolution"].upper())
         # thinking_level is 3.x-only; older SDKs and models reject it.
         try:
             cfg = genai_types.GenerateContentConfig(
-                thinking_config=genai_types.ThinkingConfig(thinking_level=THINKING_LEVEL),
+                thinking_config=genai_types.ThinkingConfig(thinking_level=settings["thinking_level"]),
                 **cfg_kwargs)
         except Exception:                                        # noqa: BLE001
             cfg = genai_types.GenerateContentConfig(**cfg_kwargs)
@@ -299,14 +353,12 @@ def call_gemini_json(prompt_text, images, schema, api_key=None):
         raise VisionError(f"Gemini call failed: {type(e).__name__}: {e}") from e
 
     um = getattr(resp, "usage_metadata", None)
-    if um:
-        LAST_USAGE.clear()
-        LAST_USAGE.update({
-            "input_tokens": getattr(um, "prompt_token_count", None),
-            "output_tokens": getattr(um, "candidates_token_count", None),
-            "thinking_tokens": getattr(um, "thoughts_token_count", None),
-            "total_tokens": getattr(um, "total_token_count", None),
-        })
+    _fill_usage(usage, {
+        "input_tokens": getattr(um, "prompt_token_count", None),
+        "output_tokens": getattr(um, "candidates_token_count", None),
+        "thinking_tokens": getattr(um, "thoughts_token_count", None),
+        "total_tokens": getattr(um, "total_token_count", None),
+    }, settings, t0)
 
     if not getattr(resp, "text", None):
         candidates = getattr(resp, "candidates", None)
@@ -317,17 +369,19 @@ def call_gemini_json(prompt_text, images, schema, api_key=None):
     return resp.text
 
 
-def call_gemini_rest(images, api_key=None, timeout=90):
+def call_gemini_rest(images, api_key=None, timeout=90, usage=None, settings=None):
     """
     Fallback only. Known to fail on AQ.-format keys with
     401 ACCESS_TOKEN_TYPE_UNSUPPORTED. Kept for environments where the SDK
     cannot be installed; if you get a 401 here, that is the reason.
     """
+    settings = settings or read_settings()
+    t0 = time.monotonic()
     api_key = api_key or os.environ.get("GEMINI_API_KEY")
     if not api_key:
         raise VisionConfigError("GEMINI_API_KEY is not set.")
 
-    body = json.dumps(build_request(images)).encode("utf-8")
+    body = json.dumps(build_request(images, settings)).encode("utf-8")
     url = f"{API_BASE}/{MODEL}:generateContent"
     req = urllib.request.Request(
         url,
@@ -355,6 +409,10 @@ def call_gemini_rest(images, api_key=None, timeout=90):
             raise err from e
         raise VisionError(f"HTTP {e.code}: {detail}") from e
 
+    um = (payload.get("usageMetadata") if isinstance(payload, dict) else None) or {}
+    _fill_usage(usage, {"input_tokens": um.get("promptTokenCount"), "output_tokens": um.get("candidatesTokenCount"),
+                        "thinking_tokens": um.get("thoughtsTokenCount"), "total_tokens": um.get("totalTokenCount")},
+                settings, t0)
     try:
         text = payload["candidates"][0]["content"]["parts"][0]["text"]
     except (KeyError, IndexError) as e:
@@ -855,25 +913,8 @@ def analyze_images(images, api_key=None, raw_response=None, on_attempt=None):
     if any(r == "unknown" for _, _, r in images):
         sent_front = sent_back = True
 
-    if raw_response is not None:
-        # D-172: a stored blocked answer replays to the same refusal; it is never parsed.
-        reason = blocked_reason(raw_response)
-        if reason:
-            raise VisionBlocked(reason)
-        text = raw_response
-    else:
-        caller = (lambda: call_gemini_sdk(images, api_key)) if _HAVE_SDK else \
-                 (lambda: call_gemini_rest(images, api_key))
-        for tries in range(1, RECITATION_RETRIES + 2):
-            try:
-                text = _with_retries(caller, on_attempt=on_attempt)
-                break
-            except VisionBlocked as e:
-                # D-172: only RECITATION is worth another try; the others are about content.
-                if e.reason != "recitation" or tries > RECITATION_RETRIES:
-                    raise
-                if on_attempt:
-                    on_attempt(tries, 0.0, e)
+    usage = {}
+    text = _read_text(images, api_key, raw_response, on_attempt, usage)
     # D-092: the raw answer is what makes a scan replayable, so it travels with
     # the result, and with the error when the answer can't be parsed.
     try:
@@ -883,7 +924,125 @@ def analyze_images(images, api_key=None, raw_response=None, on_attempt=None):
         raise
     vision["_model"] = MODEL
     vision["_raw_text"] = text
+    vision["_usage"] = dict(usage) if usage else None              # D-193; none on a replay
     return harden(vision, sent_front, sent_back)
+
+
+def _read_text(images, api_key, raw_response, on_attempt, usage):
+    """One answer's text: the recorded one on a replay, else a call with D-172's retries."""
+    if raw_response is not None:
+        # D-172: a stored blocked answer replays to the same refusal; it is never parsed.
+        reason = blocked_reason(raw_response)
+        if reason:
+            raise VisionBlocked(reason)
+        return raw_response
+    settings = read_settings()
+    caller = (lambda: call_gemini_sdk(images, api_key, usage=usage, settings=settings)) if _HAVE_SDK else \
+             (lambda: call_gemini_rest(images, api_key, usage=usage, settings=settings))
+    for tries in range(1, RECITATION_RETRIES + 2):
+        try:
+            return _with_retries(caller, on_attempt=on_attempt)
+        except VisionBlocked as e:
+            # D-172: only RECITATION is worth another try; the others are about content.
+            if e.reason != "recitation" or tries > RECITATION_RETRIES:
+                raise
+            if on_attempt:
+                on_attempt(tries, 0.0, e)
+
+
+# ---------------------------------------------------------------------------
+# D-193 point 2: the back and the front in two calls at once
+# ---------------------------------------------------------------------------
+# INSIDELABEL_READ_SPLIT_FRONT=on. The result waits only for the back's call; the
+# front's answer joins it when it is already in, and is otherwise kept for the
+# reviewer and replay only. Same prompt (PROMPT_VERSION unchanged): it already reads
+# "one or two photographs" and works each one's role out from its content.
+SKIPPED_FRONT = "-"            # replay_front's value for "the front's answer wasn't joined"
+
+
+class FrontRead:
+    """The front photo's own call, started beside the back's, on a thread of its own."""
+
+    def __init__(self, front_images, api_key=None, raw_response=None):
+        self.raw, self.parsed, self.error, self.usage = None, None, None, {}
+        self.done = threading.Event()
+        self._args = (front_images, api_key, raw_response)
+        threading.Thread(target=self._run, daemon=True, name="front-read").start()
+
+    def _run(self):
+        images, api_key, raw_response = self._args
+        try:
+            self.raw = _read_text(images, api_key, raw_response, None, self.usage)
+            self.parsed = parse_vision_json(self.raw)
+        except Exception as e:                                   # noqa: BLE001 - never costs the result
+            self.error = f"{type(e).__name__}: {e}"[:500]
+        finally:
+            self.done.set()
+
+
+def _brand_differs(back, front):
+    a = _clean((back.get("back_identity") or {}).get("brand") or (back.get("product") or {}).get("brand"))
+    b = _clean((front.get("front_identity") or {}).get("brand") or (front.get("product") or {}).get("brand"))
+    return (a and b and not (a == b or a in b or b in a)) and (a, b)
+
+
+def join_answers(back, front):
+    """
+    D-193: one answer in the single call's shape from the back's and the front's,
+    before harden(), so every check after it runs as for one call. The back's call
+    gives everything about the back; the front's gives its status, identity, claims
+    and image content; the product's name fills its gaps from the front; pack
+    statements and licences (D-139, D-190) come from both, each item keeping its
+    face. product_match (D-108): neither call saw both faces, so code says it:
+    "mismatch" only when both faces name a brand and they differ (stated as a
+    difference, which harden() requires), else "match", which harden() keeps only
+    with an anchor on both faces (_verified_anchors) and otherwise makes
+    "indeterminate".
+    """
+    v = dict(back)
+    ic = dict(back.get("image_content") or {})
+    ic["front"] = (front.get("image_content") or {}).get("front", "not_provided")
+    v["image_content"] = ic
+    for k in ("front_status", "front_identity", "front_claims", "front_claim_footnotes"):
+        v[k] = front.get(k, [] if k.startswith("front_claim") else None)
+    product = dict(back.get("product") or {})
+    for k, val in (front.get("product") or {}).items():
+        if product.get(k) in (None, "") and val not in (None, ""):
+            product[k] = val
+    v["product"] = product
+    for k in ("pack_statements", "licences"):
+        both = list(back.get(k) or []) + list(front.get(k) or [])
+        if both or k in back or k in front:
+            v[k] = both
+    differs = _brand_differs(back, front)
+    v["product_match"] = (
+        {"status": "mismatch", "evidence": [f"the front's brand {differs[1]!r} and the back's brand {differs[0]!r} are different"]}
+        if differs else {"status": "match", "evidence": ["the brand and name read from each face"]})
+    return v
+
+
+def analyze_split(images, front_read, api_key=None, raw_response=None, on_attempt=None):
+    """
+    D-193: the back's call (or its recorded answer), joined with front_read's answer
+    when it is already in. front_read: a FrontRead started by the caller, or None
+    for "not joined" (a replay of a scan whose front came too late). Returns (vision,
+    corrections) as analyze_images() does, with vision["_front_joined"].
+    """
+    back_images = [x for x in images if x[2] != "front"]
+    usage = {}
+    text = _read_text(back_images, api_key, raw_response, on_attempt, usage)
+    try:
+        back = parse_vision_json(text)
+    except VisionError as e:
+        e.raw_text = text
+        raise
+    joined = front_read is not None and front_read.done.is_set() and front_read.parsed is not None
+    vision = join_answers(back, front_read.parsed) if joined else back
+    vision["_model"] = MODEL
+    vision["_raw_text"] = text
+    vision["_usage"] = dict(usage) if usage else None
+    vision["_front_joined"] = joined
+    return harden(vision, sent_front=joined, sent_back=True)
 
 
 # ---------------------------------------------------------------------------

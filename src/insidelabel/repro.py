@@ -55,7 +55,7 @@ def no_storage():
         main.STORE, main.MEDIA, ratelimit.LIMITER.rules, main.REPLAY_ALLOWED = old
 
 
-def form_for(request, model_raw):
+def form_for(request, model_raw, model_raw_front=None, timings=None):
     """The /scan form fields that recreate a stored request."""
     data = {"replay": model_raw,
             "pairing_confirmed": "true" if request.get("pairing_confirmed") else "false",
@@ -76,6 +76,10 @@ def form_for(request, model_raw):
         data["table_only"] = "true"                                       # D-168
     if request.get("recheck"):
         data["recheck"] = "true"                                          # D-175
+    joined = (timings or {}).get("front_joined")
+    if joined is not None:
+        # D-193: a split read, with the front's own answer when it was joined, else "-".
+        data["replay_front"] = model_raw_front if joined and model_raw_front else gemini.SKIPPED_FRONT
     return data
 
 
@@ -161,8 +165,28 @@ def replay_scan(scan, media=None, hit=None):
     if "back" in files and not ocr:
         notes.append("OCR text not stored (scan predates migration 007): cross-check re-read with "
                      "Tesseract, not Google, so it may differ")
-    out = post_scan(form_for(req, scan["model_raw"]), files, ocr)
+    out = post_scan(form_for(req, scan["model_raw"], scan.get("model_raw_front"), scan.get("timings")), files, ocr)
     return {**out, "notes": notes}
+
+
+def read_lines(timings, request=None):
+    """D-193: the read's settings and each Gemini call's tokens, as `repro.py show` prints them."""
+    t, out = timings or {}, []
+    if t.get("read"):
+        r = t["read"]
+        out.append(f"read {r.get('model')} · thinking {r.get('thinking_level')} · "
+                   f"media {r.get('media_resolution') or 'default'} · split {'on' if r.get('split_front') else 'off'}")
+    for key, name in (("gemini", "label"), ("gemini_front", "front")):
+        u = t.get(key)
+        if u:
+            out.append(f"tokens {name}: in {u.get('input_tokens')} · out {u.get('output_tokens')} · "
+                       f"thinking {u.get('thinking_tokens')} · {u.get('ms')} ms")
+    if "front_joined" in t:
+        out.append(f"front joined: {t['front_joined']}" + (f" ({t['front_error']})" if t.get("front_error") else ""))
+    repeat_of = (request or {}).get("repeat_of")                          # D-191
+    if repeat_of:
+        out.append(f"same photos as scan {repeat_of}: answered from its stored read")
+    return out
 
 
 def compare(shown, now):
