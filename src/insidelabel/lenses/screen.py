@@ -115,7 +115,14 @@ RETAKE_DEFAULT = "We couldn't read this label. Retake the photo of the ingredien
 RETAKE_RECIPE = ("This looks like a recipe printed on the pack, not its own ingredient list. Look for the "
                  "list that starts with \"Ingredients\" near the nutrition table, usually on the back or a "
                  "side, and photograph that.")
-RETAKE_PARTIAL = "Part of the ingredient list was cut off or hard to read. Retake it to check the rest."
+# D-194 (Sushil, 2026-10-11, "Ask only when cut off"): a partial read asks for the rest of the
+# list as its own photo and keeps the photos in hand, while there is room for one more part
+# (MAX_PARTS); the whole list can still be retaken. The read doesn't say whether "partial" is
+# cut off or hard to read, so the line names both and the two buttons say the rest (Sushil,
+# accepting: "Shorter card words ... and nothing more", little on top, D-185).
+RETAKE_PARTIAL = "Part of the ingredient list was cut off or hard to read."
+PARTIAL_HEADLINE = "We couldn't read all of the ingredient list."             # D-194: a partial refusal
+LIST_CHOICES = {"add": "Photograph the rest of the list", "retake": "Retake the whole list"}
 
 # D-191 (Sushil, 2026-10-10): "no ingredient list" on a photo where the nutrition table
 # was read says what we did see, and where the list usually is. When the table was read
@@ -178,11 +185,15 @@ def problem(code, fix):
     return {"code": code, "label": PROBLEM_LABEL[code], "fix": fix}
 
 
-def _partial_problem(out, reliability):
+def _partial_problem(out, reliability, parts_sent=1):
     """D-170: a partial read's retake card names its problem. Added only then, so a full
-    read's screen block is exactly as before."""
+    read's screen block is exactly as before. D-194: it also carries the two choices
+    (`list_choices`), "add" only while one more back photo fits (MAX_PARTS)."""
     if not reliability.get("ingredients_complete", True):
+        out["retake"] = RETAKE_PARTIAL
         out["problem"] = problem("partial", RETAKE_PARTIAL)
+        out["list_choices"] = {"add": LIST_CHOICES["add"] if parts_sent < MAX_PARTS else None,
+                               "retake": LIST_CHOICES["retake"]}
 
 
 _STRONGEST = {"contains": 0, "may_contain": 1, "cannot_confirm": 2, "uncertain": 3, "not_listed": 4}
@@ -1504,6 +1515,10 @@ def _build(*, verdict, display, claim_check, extracted, reliability, profiles,
             # D-172: a blocked read goes to a person after one scan, not D-070's two.
             "send_now": blocked and has_barcode,
         }
+        if error == "independent_read_failed" and not reliability.get("ingredients_complete", True):
+            # D-194: the second reader's ask on a list read only in part: the rest may be past the photo.
+            out["headline"]["text"] = PARTIAL_HEADLINE
+            _partial_problem(out, reliability, parts_sent)
         if table:
             out["retake_button"] = TABLE_ONLY_BUTTON
             out["keep_table"] = bool(table["keep"])
@@ -1513,7 +1528,7 @@ def _build(*, verdict, display, claim_check, extracted, reliability, profiles,
 
     if kind and kind["code"] != "food":
         out = _kind_screen(kind, people=people, ingredients=ingredients, reliability=reliability,
-                           nutra_input=nutra_input, profiles=profiles)
+                           nutra_input=nutra_input, profiles=profiles, parts_sent=parts_sent)
         return _notes_for_every_result(out, catalogue=catalogue, profiles=profiles, screen_pack=screen_pack,
                                        ingredients=ingredients, statement=statement,
                                        allergen_confidence=allergen_confidence,
@@ -1562,7 +1577,7 @@ def _build(*, verdict, display, claim_check, extracted, reliability, profiles,
         "ingredients": ingredients,
         "retake": None if reliability.get("ingredients_complete", True) else RETAKE_PARTIAL,
     }
-    _partial_problem(out, reliability)
+    _partial_problem(out, reliability, parts_sent)
     # D-111: every additive as a card with its badge, most serious first. The same
     # items stay in worth_knowing / ordinary for older app versions.
     adds = sorted((i for i in worth + ordinary if i["source"]["kind"] == "additive"),
@@ -1871,7 +1886,7 @@ def _supplement_parts(kind, *, ingredients, vision, ocr_text, profiles, product=
     return tiles, details, sections, summary
 
 
-def _kind_screen(kind, *, people, ingredients, reliability, nutra_input=None, profiles=()):
+def _kind_screen(kind, *, people, ingredients, reliability, nutra_input=None, profiles=(), parts_sent=1):
     """The result for a supplement, an infant food, a special medical food or a pack that isn't food."""
     code, parts = kind["code"], pack_kind.parts(kind["code"])
     printed = [e for e in kind["evidence"] if not e.get("supporting") and e.get("rule") != "catalogue_category"]
@@ -1900,7 +1915,7 @@ def _kind_screen(kind, *, people, ingredients, reliability, nutra_input=None, pr
         # D-190: a not-food pack with no list read (an Ayurvedic formula) had nothing checked.
         "checked": "We checked the ingredients against your avoid lists." if ingredients else None,
     }
-    _partial_problem(out, reliability)
+    _partial_problem(out, reliability, parts_sent)
     if code == "supplement":
         tiles, details, sections, summary = _supplement_parts(
             kind, ingredients=ingredients, vision=(nutra_input or {}).get("vision"),

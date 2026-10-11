@@ -219,7 +219,7 @@ def test_label_photos_come_in_steps():                                   # D-171
     assert '"Fit the list, from \\"Ingredients\\" to the last word"' in app
     assert 'el("h1", { class: "dock-q" }, "Is the nutrition table in this photo too?")' in app   # D-185: by its answers
     assert '"Yes, check this pack"' in app and '"No, photograph the table"' in app
-    assert '"The list continues"' in app and '"This pack has no table"' in app
+    assert '"The list goes on: add the next part"' in app and '"This pack has no table"' in app   # D-194
     assert 'title: "Photograph the nutrition table"' in app
     # The table rides as the next part, so /scan's roles are unchanged (back, back2, back3).
     assert "const MAX_PHOTOS = 3;" in app and 'role: "back" + n, table: true' in app
@@ -510,7 +510,10 @@ def test_a_retake_keeps_the_table_photo_and_the_front():                     # D
     # and D-188's amber allergen card.
     assert app.count("() => retakeList(h, ") == 4
     assert 'retakeList(h, s.problem?.code || s.headline?.source?.ref, s.keep_table)' in app
-    assert app.count('retakeList(h, "partial")') == 3
+    # D-194: a partial read's retake on a result and a kind's goes through listChoices(), whose
+    # default code is "partial"; D-188's allergen card keeps its own for older results.
+    assert app.count('retakeList(h, "partial")') == 1
+    assert app.count("listChoices(s, h)") == 2 and 'function listChoices(s, h, code = "partial", keepTable = false)' in app
     assert "pending.parts = []; pending.partSources = []; pending.partKinds = [];" not in app
     # A new first photo keeps a kept table, and a list part goes before it: the table is the last part.
     add = app[app.index("function addShot("):app.index("// D-173 (Sushil")]
@@ -519,7 +522,7 @@ def test_a_retake_keeps_the_table_photo_and_the_front():                     # D
     review = app[app.index("function shotReview("):app.index("function frontShot(")]
     assert 'const kept = tableIn && pending.lastKind === "list";' in review
     assert 'kept && button("Retake the table too", dropTable, "link")' in review
-    assert '(ask || (kept && n < MAX_PHOTOS) || (listOnly && n < MAX_PHOTOS))\n        && button("The list continues"' in review
+    assert '(ask || (kept && n < MAX_PHOTOS) || (listOnly && n < MAX_PHOTOS))\n        && button("The list goes on: add the next part"' in review
 
 
 # ---------------------------------------------------------------- D-177: the result screen

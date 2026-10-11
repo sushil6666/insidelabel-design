@@ -1642,3 +1642,8 @@ main.wrap { overflow-x: clip; }
 .scan-person.stop { color: var(--stop); }
 .scan-person.unsure { color: var(--unsure); }
 .for-you-lines > .note-line { display: block; font-size: var(--fs-sm); }
+
+/* D-194: a long list in parts. The camera line's second sentence is quieter than the first; the
+   review screen's "add the next part" is a visible button under the photos, the whole row wide. */
+.cam-line.cam-more { font-weight: 400; color: var(--muted); }
+.retakes > .btn.more-part { flex: 1 1 100%; margin-bottom: var(--sp-1); }
