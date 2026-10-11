@@ -48,3 +48,6 @@ android/app/release/
 *.aab
 *.apk
 *.idsig
+
+# Written by pip install -e . on every deploy (deploy/update.sh); tracked, it blocked the next checkout (2026-10-11).
+*.egg-info/
