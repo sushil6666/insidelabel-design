@@ -4399,6 +4399,30 @@ Unchanged: barcode-only results, D-191's table-only words, the D-118 cross-check
 
 ---
 
+### D-195 · "Ayurvedic medicine" printed is not food even with a nutrition table `LOCKED` (2026-10-11)
+**Sushil, 2026-10-11:** "Baidyanath chywanprash i scanned now, its asking again and again to scan the ingredient but
+it is a ayurvedic pack", then "yes, build here" to the advisor's fix. Built by Claude in the advisor session (laptop).
+D-194 is the long-list build in the cloud session; this number follows it.
+
+**What happened.** Two scans at 12:25 and 12:26 (UTC) read both faces, one statement "AYURVEDIC MEDICINE (Ayurveda Sara
+Sangraha)" (and "Samgraha"), no licence line, no ingredient list, and a nutrition table (`nutrition.status` read).
+D-190 makes the printed phrase a non-food sign, but it inherited D-187's guard: a nutrition table is an ordinary food
+signal, so `decide()` kept the pack `food` and /scan refused it as `no_ingredient_list_found`, again and again. The
+advisor's miss: item #85's stored reading (2026-10-09) had a table read too, and D-190's test used one without.
+
+- **A nutrition table no longer overrules the pack's own "Ayurvedic medicine"** ("Ayurvedic proprietary medicine",
+  "AYUSH medicine", `data/pack_kinds.json` `medicine_label_words`): Ayurvedic packs print nutrition values too.
+  `core/pack_kind.food_signals(..., table=False)` for that sign only.
+- **Unchanged:** an FSSAI or probable FSSAI licence decides food; an ordinary food category (the catalogue's) still
+  keeps it food with a reviewer's look; a partial read never gives not_food (D-139); D-187's table guard stays for
+  licence lines (a drug licence alone against a table stays food, the Bambino "Lic No." case).
+- **Tests:** `tests/test_pack_kind.py` (both readings, the licence, probable licence and partial-read exceptions, the
+  licence-line guard), `tests/test_pack_kind_db.py` (the /scan answer: not-food result, no review item).
+- **After deploy:** `il tools/pack_kind_replay.py` lists any stored version that changes (expected: none published
+  as food that prints "Ayurvedic medicine"); apply only after a look.
+
+---
+
 ## Open and pending
 
 ### D-050 · Numeric score in the consumer UI `SUPERSEDED by D-064` (removed)

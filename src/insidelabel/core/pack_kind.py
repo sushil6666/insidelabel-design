@@ -23,7 +23,8 @@ Order (data/pack_kinds.json _meta):
    D-190 (item #85): "Ayurvedic medicine", "Ayurvedic proprietary medicine" or "AYUSH
    medicine" printed anywhere the kind is read from (or on a licence line) is the same
    non-food sign without a licence line, and loses to the same things: an FSSAI or
-   probable FSSAI licence, an ordinary food signal, a partial read.
+   probable FSSAI licence, an ordinary food signal, a partial read. D-195: except a
+   nutrition table, which Ayurvedic packs print too (a Baidyanath Chyawanprash, 2026-10-11).
 2. Medical words: `special_medical` (including preterm, hypoallergenic and other
    special medical infant foods).
 3. Infant words: `infant`.
@@ -121,11 +122,12 @@ def licences(vision):
     return {"fssai": fssai, "probable": probable, "other": other}
 
 
-def food_signals(vision, category=None):
+def food_signals(vision, category=None, table=True):
     """D-187: what says ordinary food whatever the licence lines say: a nutrition table
-    printed, an ordinary food category."""
+    printed, an ordinary food category. D-195: `table=False` leaves the table out, for a
+    pack that prints "Ayurvedic medicine" itself (Ayurvedic packs print nutrition values too)."""
     out = []
-    if ((vision.get("nutrition") or {}).get("status")) in TABLE["food_signals"]["nutrition_status"]:
+    if table and ((vision.get("nutrition") or {}).get("status")) in TABLE["food_signals"]["nutrition_status"]:
         out.append("a nutrition table")
     if category and category_kind(category) is None:
         out.append(f"category {category}, an ordinary food category")
@@ -165,7 +167,10 @@ def decide(vision, category=None):
             ev = medicine_printed(vision)
             sign = ev and f'"{ev["text"]}" is printed'
     if sign:
-        signals = food_signals(vision, category)
+        # D-195 (Baidyanath Chyawanprash, 2026-10-11): a nutrition table doesn't overrule the
+        # pack's own "Ayurvedic medicine"; D-187's table guard stays for licence lines, where a
+        # misread "Lic No." was the risk. An ordinary food category still does.
+        signals = food_signals(vision, category, table=ev.get("rule") != "medicine_printed")
         if both_read and signals:
             # D-187: the licence rule alone never overrules an ordinary food signal.
             review.append(f"{sign} and no FSSAI licence was read, but the pack "
