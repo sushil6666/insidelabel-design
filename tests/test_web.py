@@ -218,7 +218,7 @@ def test_label_photos_come_in_steps():                                   # D-171
     assert 'title: n === 1 ? "Photograph the ingredient list"' in app
     assert '"Fit the list, from \\"Ingredients\\" to the last word"' in app
     assert 'el("h1", { class: "dock-q" }, "Is the nutrition table in this photo too?")' in app   # D-185: by its answers
-    assert '"Yes, check this pack"' in app and '"No, photograph the table"' in app
+    assert '"Yes, it\'s in this photo"' in app and '"No, photograph the table"' in app          # D-199
     assert '"The list goes on: add the next part"' in app and '"This pack has no table"' in app   # D-194
     assert 'title: "Photograph the nutrition table"' in app
     # The table rides as the next part, so /scan's roles are unchanged (back, back2, back3).
@@ -235,8 +235,8 @@ def test_label_photos_come_in_steps():                                   # D-171
     review = app[app.index("function shotReview("):app.index("function frontShot(")]
     assert "front of the pack too (optional)" not in app
     assert "const frontNeeded = () => !!pending.frontWanted;" in app
-    assert "const check = frontNeeded() && !pending.front" in review
-    assert 'button(ask ? "Yes, now the front of the pack" : "Next: the front of the pack", () => show(frontShot()), "primary")' in review
+    assert "const yes = frontNeeded() && !pending.front ? () => show(frontShot()) : () => sendPhotos();" in review
+    assert ': frontNeeded() && !pending.front ? button("Next: the front of the pack", yes, "primary")' in review
     assert "&& !frontIn;   // the table question" in review                  # answered before the front
     assert "if (frontIn && !pending.pairing) check.disabled = true;" in review
     assert "if (frontIn) check.disabled = !pending.pairing;" in review
@@ -664,3 +664,33 @@ def test_a_scan_card_names_a_match_and_never_a_no_match():
     assert 'cardPeople(screen).find(x => x.status !== "worth_knowing")' in person
     assert "PERSON_TONE[p.status]" in person
     assert "cardPeople(screen)[0]" in _fn(app, "peopleSummary")
+
+
+def test_the_table_question_has_two_equal_answers():                       # D-199
+    """Sushil, 2026-10-11: "sometimes during scan of ingredients it skips step3 nutrition table".
+    The big green Yes was tapped without reading; now neither answer is the highlighted default."""
+    app = JS["app.js"]
+    review = app[app.index("function shotReview("):app.index("function frontShot(")]
+    # The question: both answers, same class, Yes first, both in the dock, neither primary.
+    assert 'const check = ask ? button("Yes, it\'s in this photo", yes, "table-answer")' in review
+    assert 'ask && button("No, photograph the table", () => show(tableShot()), "table-answer")' in review
+    dock = review[review.rindex('el("div", { class: "dock" }'):]
+    assert dock.index("    check,\n") < dock.index('"No, photograph the table"')
+    assert review.count('"table-answer"') == 2
+    assert '"Yes, now the front of the pack"' not in app and '"Yes, check this pack"' not in app
+    # Yes does what the big button did: the front step while it is needed, else send.
+    assert "const yes = frontNeeded() && !pending.front ? () => show(frontShot()) : () => sendPhotos();" in review
+    # No question (listOnly, frontIn, every photo taken): the one primary check, words unchanged.
+    assert "const ask = !tableIn && n < MAX_PHOTOS && !listOnly && !frontIn;" in review
+    assert ': frontNeeded() && !pending.front ? button("Next: the front of the pack", yes, "primary")' in review
+    assert ': button("Check this pack", yes, "primary");' in review
+
+
+def test_the_table_card_is_first_in_for_you():                              # D-199
+    """D-133's card was last in For you, below the first screen; it now follows the per-person lines."""
+    body = JS["app.js"][JS["app.js"].index("function result("):JS["app.js"].index("function packHead(")]
+    you = body.index("you(forYouLines(s));")
+    card = body.index("if (askTable) you(")
+    assert you < card < body.index("if (serious.length) you(")
+    assert card < body.index("if (s.retake) you(partialRetake(")
+    assert body.count("if (askTable) you(") == 1
