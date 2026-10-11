@@ -16,7 +16,7 @@ psycopg = pytest.importorskip("psycopg")
 
 from fastapi.testclient import TestClient  # noqa: E402
 from gtins import gtin  # noqa: E402
-from test_pack_kind import ITEM_85, item_85, reading, st  # noqa: E402
+from test_pack_kind import ITEM_85, TABLE_READ, item_85, reading, st  # noqa: E402
 
 from insidelabel.api import main  # noqa: E402
 from insidelabel.db.store import Store  # noqa: E402
@@ -354,6 +354,22 @@ def test_item_85_answers_not_food_and_nothing_reaches_the_catalogue_or_review(en
         if bc:
             assert q(env, "SELECT count(*) FROM products WHERE barcode = %s", bc) == [(0,)]
         assert outcome not in Store.SEND_OUTCOMES               # not a refusal: "Send it to us" refuses it
+
+
+def test_d195_chyawanprash_with_a_table_answers_not_food_not_a_retake(env):
+    # D-195 (Sushil, 2026-10-11): the Baidyanath Chyawanprash scans of 12:25 and 12:26, which
+    # also read a nutrition table, refused "no ingredient list" again and again.
+    v = item_85([st("AYURVEDIC MEDICINE (Ayurveda Sara Sangraha)")])
+    v["nutrition"] = TABLE_READ
+    tag = uuid.uuid4().bytes
+    r = TestClient(main.app).post("/scan", files={
+        "back": ("b.jpg", b"\xff\xd8\xff\xe0back" + tag, "image/jpeg"),
+        "front": ("f.jpg", b"\xff\xd8\xff\xe0front" + tag, "image/jpeg")},
+        data={"barcode": gtin(), "replay": json.dumps(v), "pairing_confirmed": "true"})
+    assert r.status_code == 200, r.text
+    j = r.json()
+    assert j["pack_kind"]["code"] == "not_food" and j["screen"]["state"] == "result"
+    assert q(env, "SELECT count(*) FROM review_queue WHERE scan_id = %s", j["scan_id"]) == [(0,)]
 
 
 def test_the_same_reading_without_the_medicine_words_still_refuses(env):

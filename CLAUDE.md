@@ -6,7 +6,7 @@ PostgreSQL 19. Solo founder: Sushil.
 ## Start here
 
 1. Read `STATE.md` (status, setup, open items, lessons) and skim `DECISIONS.md`.
-2. `source .venv/bin/activate && pytest -q` - expect 1274 passing (8 skipped, 1 xfailed) before you change anything
+2. `source .venv/bin/activate && pytest -q` - expect 1276 passing (8 skipped, 1 xfailed) before you change anything
    (a cloud session: 1273 and 9 skipped, no gold photos; Tesseract and pytesseract must be installed).
    `python tools/release_check.py` shows how far the beta is from release.
 3. The "Next" list in `STATE.md` §8 is the default work queue.

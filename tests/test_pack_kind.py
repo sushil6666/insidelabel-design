@@ -270,13 +270,15 @@ def test_what_beats_the_licence_rule_beats_ayurvedic_medicine_too():
     assert k["code"] == "food" and k["review"] == []
     k = pack_kind.decide(item_85(licences=[st("Lic No. 100140470002")]))
     assert k["code"] == "food" and pack_kind.PROBABLE_NOTE in k["review"][0]
-    # A nutrition table or an ordinary food category: a reviewer looks, never not_food.
+    # D-195: a nutrition table doesn't overrule the pack's own "Ayurvedic medicine" (Ayurvedic
+    # packs print nutrition values too). An ordinary food category still does: a reviewer looks.
     v = item_85()
     v["nutrition"] = TABLE_READ
-    k = pack_kind.decide(v)
+    assert pack_kind.decide(v)["code"] == "not_food"
+    k = pack_kind.decide(v, category="6.4.2")
     assert k["code"] == "food" and k["review"] == [
-        '"AYURVEDIC MEDICINE" is printed and no FSSAI licence was read, but the pack shows a nutrition '
-        "table (D-116: look at the whole pack)"]
+        '"AYURVEDIC MEDICINE" is printed and no FSSAI licence was read, but the pack shows '
+        "category 6.4.2, an ordinary food category (D-116: look at the whole pack)"]
     assert pack_kind.decide(item_85(), category="6.4.2")["code"] == "food"
     # A partial read never gives not_food (D-139).
     k = pack_kind.decide(item_85(front="not_provided"))
@@ -550,3 +552,26 @@ def test_the_replay_tool_lists_item_82_as_changed():
     assert r["changed"] and r["was"] == "not_food" and r["now"] == "food"
     [r] = tool.replay([{**row, "pack_kind": "food", "raw_extraction": reading(["Wheat"])}])
     assert not r["changed"]
+
+
+def test_d195_baidyanath_chyawanprash_with_a_nutrition_table_is_not_food():
+    # D-195 (Sushil, 2026-10-11): the scans of 12:25 and 12:26 read both faces, one statement
+    # "AYURVEDIC MEDICINE (Ayurveda Sara Sangraha)", no licence line, no ingredient list, and a
+    # nutrition table; D-187's table guard kept them food, so the scan refused again and again.
+    for text in ("AYURVEDIC MEDICINE (Ayurveda Sara Sangraha)", "AYURVEDIC MEDICINE (Ayurveda Sara Samgraha)"):
+        v = item_85([st(text)])
+        v["nutrition"] = TABLE_READ
+        k = pack_kind.decide(v)
+        assert k["code"] == "not_food" and k["evidence"][0]["rule"] == "medicine_printed"
+        # What still keeps it food: an FSSAI licence, a probable one, a partial read.
+        for lic in ("Lic. No. 10019022001234", "Lic No. 100140470002"):
+            w = item_85([st(text)], licences=[st(lic)])
+            w["nutrition"] = TABLE_READ
+            assert pack_kind.decide(w)["code"] == "food"
+        w = item_85([st(text)], front="not_provided")
+        w["nutrition"] = TABLE_READ
+        assert pack_kind.decide(w)["code"] == "food"
+    # D-187 unchanged for licence lines: a table still overrules a drug licence alone.
+    v = reading(["Amla"], licences=CHYAWANPRASH)
+    v["nutrition"] = TABLE_READ
+    assert pack_kind.decide(v)["code"] == "food"
