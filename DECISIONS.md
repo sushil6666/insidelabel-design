@@ -4423,6 +4423,24 @@ advisor's miss: item #85's stored reading (2026-10-09) had a table read too, and
 
 ---
 
+### D-196 · An Ayurvedic pack's result quotes the label and says why we don't check it `LOCKED` (2026-10-11)
+**Sushil, 2026-10-11:** "we need to read the lbel and say why we are not considering Ayurvedic", then, of two
+options the advisor showed, "Quote the label, say why (Recommended)" (the other: also read and list the pack's
+printed formula, which needs a prompt change). Built by Claude in the advisor session (laptop).
+
+- A not-food result decided by the pack's own "Ayurvedic medicine" (D-190, D-195) has the headline `This pack says
+  "<the printed words>".` (was "We didn't find an FSSAI licence number on the photos.", which didn't give the
+  reason), then one line: "The pack calls itself an Ayurvedic medicine. We check packaged food under FSSAI's rules,
+  so we don't check this pack.", then the FSS Act 3(1)(j) line and its source as before. Words in `lenses/screen.py`
+  (`AYURVEDIC_LINE`, D-091); no app change.
+- We quote the label and say what we check; we don't say which law covers an Ayurvedic medicine (D-046: not checked
+  against a primary document).
+- Unchanged: a pack that is not food from a licence line (a drug or AYUSH manufacturing licence) keeps "We didn't find
+  an FSSAI licence number on the photos." and "The pack prints ..."; allergens first (D-060); an avoided allergen with
+  no list read is cannot_confirm.
+
+---
+
 ## Open and pending
 
 ### D-050 · Numeric score in the consumer UI `SUPERSEDED by D-064` (removed)

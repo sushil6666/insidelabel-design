@@ -1704,6 +1704,11 @@ KIND_TEXT = {
                  "on the list and nothing else."),
 }
 NOT_FOOD_HEADLINE = "We didn't find an FSSAI licence number on the photos."
+# D-196 (Sushil, 2026-10-11: "say why we are not considering Ayurvedic"): a pack that prints
+# "Ayurvedic medicine" (D-190) is quoted in the headline and told why in one line; the FSS Act
+# line and its source follow. Which law covers an Ayurvedic medicine is not said (D-046).
+AYURVEDIC_LINE = ("The pack calls itself an Ayurvedic medicine. We check packaged food under FSSAI's rules, "
+                  "so we don't check this pack.")
 # A kind known only from our catalogue's category, with no words printed to quote.
 CATEGORY_HEADLINE = {
     "supplement": "Filed in our catalogue as a food supplement.",
@@ -1892,14 +1897,19 @@ def _kind_screen(kind, *, people, ingredients, reliability, nutra_input=None, pr
     printed = [e for e in kind["evidence"] if not e.get("supporting") and e.get("rule") != "catalogue_category"]
     shown = min(printed, key=lambda e: (_HEADLINE_RULES.index(e["rule"]) if e.get("rule") in _HEADLINE_RULES
                                         else len(_HEADLINE_RULES)), default=None)
-    if code == "not_food":
+    medicine = code == "not_food" and bool(shown) and shown.get("rule") == "medicine_printed"
+    if medicine:
+        headline = f"This pack says \"{shown['text']}\"."     # D-196: the pack's own words, first
+    elif code == "not_food":
         headline = NOT_FOOD_HEADLINE
     elif shown:
         headline = f"This pack says \"{shown['text']}\"."        # the kind in the pack's own words
     else:
         headline = CATEGORY_HEADLINE[code]
     lines = [KIND_TEXT[code]]
-    if code == "not_food":
+    if medicine:
+        lines.insert(0, AYURVEDIC_LINE)
+    elif code == "not_food":
         lines.insert(0, f"The pack prints \"{shown['text']}\".")
     out = {
         "state": "result",

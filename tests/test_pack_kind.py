@@ -290,8 +290,11 @@ def test_scan_answers_item_85_with_the_not_food_result_not_the_refusal():
     s = j["screen"]
     assert list(j)[0] == "allergens" and j["pack_kind"]["code"] == "not_food"
     assert s["state"] == "result" and "can_send" not in s and "problem" not in s
-    assert s["headline"]["text"] == "We didn't find an FSSAI licence number on the photos."
-    assert s["kind"]["lines"][0] == 'The pack prints "AYURVEDIC MEDICINE".'
+    # D-196: the pack's own words in the headline, and why we don't check it.
+    assert s["headline"]["text"] == 'This pack says "AYURVEDIC MEDICINE".'
+    assert s["kind"]["lines"][0] == ("The pack calls itself an Ayurvedic medicine. We check packaged food under "
+                                     "FSSAI's rules, so we don't check this pack.")
+    assert "section 3(1)(j)" in s["kind"]["lines"][1] and s["kind"]["sources"]
     assert s["kind"]["evidence"] == [{"text": "AYURVEDIC MEDICINE", "face": "back"}]
     assert s["checked"] is None and s["ingredients"] == []           # no list read, nothing checked
     # No list: an avoided allergen can't be confirmed (D-072), never "not listed".
