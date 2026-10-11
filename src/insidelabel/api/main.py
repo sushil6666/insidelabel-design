@@ -2037,7 +2037,8 @@ async def scan(
         screen = result_screen.build(
             verdict=None, display=None, claim_check=None, extracted=None, reliability=reliability,
             profiles=people, allergen_confidence=0.0, allergen_reliable=False,
-            has_barcode=True, photos_sent=[r for _d, _m, r in images], repeat=bool(repeat_of))
+            has_barcode=True, photos_sent=[r for _d, _m, r in images], repeat=bool(repeat_of),
+            parts_sent=max(1, len(parts)))
         screen["can_use_anyway"] = True
         return JSONResponse(status_code=422, content={
             "allergens": allergen_block(avoid_codes, [], None, reliable=False, who=who),

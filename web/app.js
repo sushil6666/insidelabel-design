@@ -37,7 +37,7 @@ let pending = { barcode: null, barcodeSource: null, back: null, front: null, bac
 // ------------------------------------------------------------------ navigation
 const routes = {
   "": home, welcome, who, household, person, scan, photo, front, result, report, compare, problem, send,
-  agree, feedback, data, table, tablephoto, scans,
+  agree, feedback, data, table, tablephoto, scans, listpart,
 };
 
 // D-176: the app's frame around each screen. Home and the first-run screens show the wordmark
@@ -45,13 +45,13 @@ const routes = {
 // on every screen but the first-run ones and the camera and photo steps, where it would cover
 // the shutter or pull a hand away from the pack.
 const TITLES = {
-  household: "Household", person: "Household", scan: "Scan", photo: "Photo", front: "Photo",
+  household: "Household", person: "Household", scan: "Scan", photo: "Photo", front: "Photo", listpart: "Photo",
   table: "Nutrition table", tablephoto: "Nutrition table", result: "Result", report: "Report a mistake",
   compare: "Compare", problem: "Report a problem", send: "Send it to us", feedback: "Send feedback",
   data: "Your data", scans: "Your scans",
 };
 const FIRST_RUN = ["welcome", "who", "agree"];
-const NO_TABBAR = [...FIRST_RUN, "scan", "photo", "front", "table", "tablephoto"];
+const NO_TABBAR = [...FIRST_RUN, "scan", "photo", "front", "table", "tablephoto", "listpart"];
 let screenName = "home";      // the screen being shown, set by route() before its view is built
 let routed = 0;               // screens shown since the app opened: Back goes home from the first
 
@@ -874,8 +874,9 @@ function photo() {
 const photosInHand = () => [pending.back, ...pending.parts, pending.front];
 const samePhotos = was => !!was && was.length === photosInHand().length && photosInHand().every((b, i) => b === was[i]);
 
-// The ingredient list, or its next part (D-119).
-function listShot() {
+// The ingredient list, or its next part (D-119). back: where the header's arrow goes, when not
+// the photos in hand (D-194: the result that asked for the rest).
+function listShot(back = null) {
   // D-173: counts the list's photos only; a kept table photo stays after them.
   const n = pending.back ? partRows().filter(r => r[2] === "list").length + 2 : 1;
   return labelShot({
@@ -885,7 +886,10 @@ function listShot() {
     kept: n === 1 && partRows().some(r => r[2] === "table"),
     line: n === 1 ? "Fit the list, from \"Ingredients\" to the last word"
                   : "Start where the last photo ended. A little overlap is fine.",
-    back: pending.back ? () => show(shotReview()) : null,
+    // D-194: a long list may come in parts; said once, on the first photo, with no new tap.
+    more: n === 1 ? "Too long for one photo? Take it in parts, one photo each." : null,
+    keptList: back && n > 1 ? (n === 2 ? "We kept your first photo of the list." : "We kept your photos of the list.") : null,
+    back: back || (pending.back ? () => show(shotReview()) : null),
     onShot: (b, res, source) => { addShot(n, "list", b, source, res); show(shotReview(res)); },
   });
 }
@@ -995,13 +999,14 @@ function shotReview(res = undefined, frontRes = undefined) {
   if (frontIn && !pending.pairing) check.disabled = true;
   const m = shown.length;
   return el("section", { class: "stack shot-review" },
-    frontIn ? stepLine(4, "Front")
+    // D-194: a list part added after the front (the rest of a cut-off list) names that part.
+    frontIn && pending.lastKind === "front" ? stepLine(4, "Front")
       : stepLine(tableIn && !kept ? 3 : 2, kept ? names[lists - 1] : names[n - 1]),
     pics,
     // D-185 Phase 2: the retakes sit under the photos they act on.
     !hint && el("div", { class: "retakes" },
       (ask || (kept && n < MAX_PHOTOS) || (listOnly && n < MAX_PHOTOS))
-        && button("The list continues", () => show(listShot()), "link"),
+        && button("The list goes on: add the next part", () => show(listShot()), "secondary more-part"),
       button(tableIn && !kept ? "Retake the table" : "Retake", retake, "link"),
       kept && button("Retake the table too", dropTable, "link"),
       pending.front && button("Retake the front", () => show(frontShot()), "link")),
@@ -1042,6 +1047,7 @@ function frontShot() {
     onShot: (b, res, source) => {
       pending.front = b;
       pending.frontSource = source;
+      pending.lastKind = "front";
       show(shotReview(undefined, res));
     },
   });
@@ -1072,7 +1078,9 @@ function labelShot(o) {
     shot.replaceChildren(...[
       el("div", { class: "card shot-card" },
         exampleShot(o.front ? "front" : o.table ? "table" : "list", "Like this: flat, sharp, the whole panel"),
-        el("p", { class: "cam-line" }, o.line)),
+        el("p", { class: "cam-line" }, o.line),
+        o.more && el("p", { class: "cam-line cam-more" }, o.more)),
+      o.keptList && kinded("p", "done", { class: "muted kept-note" }, o.keptList),                         // D-194
       o.kept && kinded("p", "done", { class: "muted kept-note" }, "We kept your photo of the nutrition table."),   // D-191
       why && kinded("p", "info", { class: "muted" }, why),
       preview].filter(Boolean));
@@ -1101,6 +1109,8 @@ function labelShot(o) {
   const shutter = el("button", { type: "button", class: "shutter", "aria-label": "Take the photo", disabled: true });
   const upload = uploadLink(o.role, file => checkShot(o, file, "upload", again));
   shot.replaceChildren(...[wrap, el("p", { class: "cam-line" }, o.line),
+    o.more && el("p", { class: "cam-line cam-more" }, o.more),
+    o.keptList && kinded("p", "done", { class: "muted kept-note" }, o.keptList),                           // D-194
     o.kept && kinded("p", "done", { class: "muted kept-note" }, "We kept your photo of the nutrition table."),   // D-191
     el("div", { class: "shutter-row" }, el("span", {}), shutter, upload)].filter(Boolean));
 
@@ -1492,6 +1502,33 @@ function table() {
   return tableShot(el("span", {}), null);                // the header's arrow goes back
 }
 
+// D-194 (Sushil, 2026-10-11, "Ask only when cut off"): a partial read asks for the rest of the
+// list as its own photo. Every photo in hand stays (the list's parts, the table, the front and
+// the "same pack" tick); the next part joins them as D-119's parts and the pack is read again
+// in one new /scan. The header's arrow goes back to the result that asked.
+function listpart() {
+  if (!canAddPart()) return errorView("Scan the pack again to add the rest of the list.");
+  pending.acceptUnconfirmed = false;
+  const id = pending.resultId;
+  return listShot(() => go("result/" + encodeURIComponent(id)));
+}
+
+// The photos in hand belong to the result h and one more back photo fits (D-119's three).
+const canAddPart = (h = null) => !!(pending.back && pending.resultId && (!h || pending.resultId === h.id)
+                                    && pending.parts.length < MAX_PHOTOS - 1);
+
+// D-194: a partial read's choices, from the server's list_choices (the words are the server's,
+// D-091): the rest of the list as its own photo, while the photos are in hand and one more
+// fits, then the whole list again (D-173 keeps the table and the front). Older results have
+// no list_choices and keep their one retake button.
+function listChoices(s, h, code = "partial", keepTable = false) {
+  const c = s.list_choices;
+  if (!c) return [button("Retake the ingredients photo", () => retakeList(h, code, keepTable))];
+  const add = !!c.add && canAddPart(h);
+  return [add && button(c.add, () => go("listpart"), "primary"),
+          button(c.retake, () => retakeList(h, code, keepTable), add ? "" : "primary")];
+}
+
 // D-133: the nutrition table beside ICMR-NIN's thresholds. Every sentence is the server's.
 // `ask`: offer the table photo here; off when the first screen already offers it (D-134).
 // D-185 Phase 2 (D-177): a row leads with its label and amount, then its bar, then the rest of its
@@ -1583,6 +1620,8 @@ function result(id, sub, tileId) {
         // D-172: Gemini's guard blocked the read; the photos are fine, so a person reads them now.
         s.send_now && pending.refused.length >= 1 && button("Send it to us", () => go("send"), "primary"),
         // D-173: the list is retaken; the table photo and the front stay (D-108: not after two packs).
+        // D-194: a list read only in part offers its rest first (list_choices).
+        s.list_choices ? listChoices(s, h, s.problem?.code, s.keep_table) :
         button(s.retake_button || "Retake the photo", () => retakeList(h, s.problem?.code || s.headline?.source?.ref, s.keep_table),
                s.send_now ? "" : "primary"),
         // D-118: our second reader couldn't confirm a new pack's list. The person
@@ -1608,8 +1647,7 @@ function result(id, sub, tileId) {
     (s.sections || []).forEach(x => put(el("div", { class: "card section" },
       el("h2", {}, x.title), x.lines.map(t => el("p", {}, t)),
       x.sources?.length > 0 && el("details", { class: "more" }, el("summary", {}, "Sources"), sourceList(x.sources)))));
-    if (s.retake) put(partialRetake(s, h,
-      button("Retake the ingredients photo", () => retakeList(h, "partial"))));
+    if (s.retake) put(partialRetake(s, h, ...listChoices(s, h)));
     if (s.recheck) put(el("div", { class: "card note" }, el("p", {}, s.recheck),
       button("Photograph the ingredients list", () => recheckPhoto(h))));
     put(el("div", { class: "row wrap" }, button("Scan another", () => { resetPending(); go("scan"); }, "primary")),
@@ -1658,9 +1696,10 @@ function result(id, sub, tileId) {
   // A partial read, the table photo and the D-073 re-check ask for something now,
   // with the pack in hand, so they stay on the first tab.
   // D-188: an amber allergen card above carries the retake button; the card here keeps its words.
-  const cardRetake = cardPeople(s).some(p => p.status === "cannot_confirm") && !h.looked_up;
-  if (s.retake) you(partialRetake(s, h,
-    !cardRetake && button("Retake the ingredients photo", () => retakeList(h, "partial"))));
+  // D-194 (Sushil, accepting): a result with list_choices shows them here, once, for everyone,
+  // whether or not anyone has an avoid list; the allergen card keeps its words and no buttons.
+  const cardRetake = !s.list_choices && cardPeople(s).some(p => p.status === "cannot_confirm") && !h.looked_up;
+  if (s.retake) you(partialRetake(s, h, ...(cardRetake ? [] : listChoices(s, h))));
   const askTable = s.nutrition && canAskTable(s.nutrition, h);
   if (askTable) you(el("div", { class: "card note" }, el("p", {}, s.nutrition.text),
     button(s.nutrition.ask, () => go("table"))));
@@ -2074,7 +2113,8 @@ function personCard(p, h) {
   // D-140: a baby line carries its source; the cite is the server's words.
   const detail = p.status === "cannot_confirm" ? [] : p.child_facts;
   const kind = PERSON_KIND[p.status];
-  const retake = h && p.status === "cannot_confirm" && h.screen?.state === "result" && !h.looked_up;
+  const retake = h && p.status === "cannot_confirm" && h.screen?.state === "result" && !h.looked_up
+    && !h.screen.list_choices;                                           // D-194: once, on the partial card
   // D-185 Phase 2 (D-177): the person's initial beside their line, the same disc as on home.
   return el("div", { class: `person-line ${PERSON_TONE[p.status] || "calm"}`, "data-status": p.status },
     who && avatar(who),
