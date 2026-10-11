@@ -28,7 +28,10 @@ FORBIDDEN = [
     "dangerous", "poison", "poisonous", "fraud", "cheat", "cheating",
 ]
 # D-071 / D-063: the strongest negative is "isn't listed"; nothing implies safety.
-FORBIDDEN_SAFETY = ["safe", "safely", "free from", "allergen-free", "allergen free", "healthy"]
+FORBIDDEN_SAFETY = ["safe", "safely", "free from", "allergen-free", "allergen free", "healthy",
+                    # D-198: the diet choices quote the label; they never certify a pack.
+                    "pure veg", "veg-safe", "veg safe", "jain-friendly", "jain friendly", "100% veg",
+                    "suitable for vegetarians", "suitable for vegetarian"]
 
 _PATTERN = re.compile(
     r"(?<![a-z0-9-])(" + "|".join(re.escape(w) for w in FORBIDDEN + FORBIDDEN_SAFETY) + r")(?![a-z0-9-])",
@@ -40,6 +43,7 @@ CONSUMER_FIELDS = {
     "additives.json": ("additives", ["name", "why"]),
     "nova_markers.json": ("markers", ["name"]),
     "allergens.json": ("allergens", ["label", "short"]),
+    "diet.json": ("diets", ["label", "short"]),
     "claim_rules.json": ("rules", ["label"]),
 }
 
@@ -143,6 +147,26 @@ def test_every_allergen_sentence():
              for seen in (True, False)
              for who in ("your child", "Riya")]
     assert_clean(texts, "allergens.parent_text")
+
+
+def test_every_diet_sentence():
+    """D-198: every line diet.py can build, for both choices, each state, mark and place."""
+    from insidelabel.lenses import diet
+    lists = [["Gelatine"], ["Gelling Agent (INS 441)"], ["Colour (INS 120)"], ["Egg Powder"],
+             ["Emulsifier (471)"], ["Emulsifier (322)"], ["Chicken Flavour"], ["Onion Powder"], ["Spices"],
+             ["Garlic"], ["Masala"], ["Salt"]]
+    texts = list(diet.NO_MARK.values()) + [diet.cannot_confirm_both(c) for c in (True, False)]
+    for ings in lists:
+        for mark in ("veg", "non_veg", "not_visible", None):
+            for kw in ({}, {"confidence": 0.5}, {"complete": False}):
+                for r in diet.check(ings, list(diet.DIETS), veg_mark=mark, **kw).values():
+                    for where in ("photo", "pack"):
+                        texts += [diet.text(r, where), diet.mark_note(r, where)]
+    assert_clean([t for t in texts if t], "diet.text")
+
+
+def test_lint_catches_the_diet_words():
+    assert hits("Pure veg, Jain-friendly and veg-safe") == ["Pure veg", "Jain-friendly", "veg-safe"]
 
 
 def test_compare_render():

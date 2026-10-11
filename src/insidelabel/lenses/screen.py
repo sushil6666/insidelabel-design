@@ -33,6 +33,7 @@ from insidelabel.core import engine, pack_kind
 from insidelabel.core.tokenize import extract_ins, ins_numbers
 from insidelabel.lenses import allergens as allergen_checker
 from insidelabel.lenses import compare as kids
+from insidelabel.lenses import diet as diet_checker
 from insidelabel.lenses import nutra, nutrition
 
 NAME = "{name}"
@@ -236,8 +237,10 @@ def parse_profiles(items):
             raise ProfileError("ref must be a distinct id of up to 8 letters or digits.")
         if age not in AGES:
             raise ProfileError(f"age must be one of {', '.join(AGES)}.")
-        if not isinstance(avoid, list) or any(c not in allergen_checker.ALLERGENS for c in avoid):
-            raise ProfileError("avoid must list allergen codes from GET /allergens.")
+        # D-198: the two diet choices share the avoid list, so the profile keeps its shape (D-074).
+        if not isinstance(avoid, list) or any(c not in allergen_checker.ALLERGENS and c not in diet_checker.DIETS
+                                              for c in avoid):
+            raise ProfileError("avoid must list allergen or diet codes from GET /allergens.")
         seen.add(ref)
         out.append({"ref": ref, "age": age, "avoid": list(dict.fromkeys(avoid))})
     return out
@@ -386,7 +389,7 @@ MAY_CONTAIN_NOTE = {
 
 
 def _person(profile, ingredients, statement, confidence, reliable, screen=False, pack=None, baby=(),
-            complete=True, where="photo"):
+            complete=True, where="photo", veg_mark=None, product_name=None):
     """
     D-064: the glanceable signal for one person, allergens first. baby: baby_lines().
     D-188: `line` is the card at the top of the result; build() keeps a card only for a match
@@ -395,10 +398,19 @@ def _person(profile, ingredients, statement, confidence, reliable, screen=False,
     """
     who, whose = _who(profile), _whose(profile)
     rows = []
-    if profile["avoid"]:
-        res = allergen_checker.check(ingredients or [], statement, profile["avoid"],
+    codes = [c for c in profile["avoid"] if c in allergen_checker.ALLERGENS]
+    if codes:
+        res = allergen_checker.check(ingredients or [], statement, codes,
                                      confidence=confidence, reliable=reliable)
         rows = sorted(res.values(), key=lambda r: _STRONGEST[r.state])
+    # D-198: "Vegetarian only" and "No onion or garlic", by the same display rules (D-188).
+    diet_codes = [c for c in profile["avoid"] if c in diet_checker.DIETS]
+    drows = []
+    if diet_codes and not screen:
+        dres = diet_checker.check(ingredients or [], diet_codes, veg_mark=veg_mark, mark_from=where,
+                                  confidence=confidence, reliable=reliable, complete=complete,
+                                  product_name=product_name)
+        drows = sorted(dres.values(), key=lambda r: _STRONGEST[r.state])
     if screen and rows:
         status, line, allergens = _screen_person(profile, rows, pack)
         out = {"ref": profile["ref"], "status": status, "line": line, "allergens": allergens,
@@ -420,6 +432,21 @@ def _person(profile, ingredients, statement, confidence, reliable, screen=False,
         status, line = "not_listed", None
     else:
         status = line = None
+    dtexts = {r.code: diet_checker.text(r, where) for r in drows}
+    dlines = {r.code: diet_checker.words(r, where)[0] for r in drows}
+    if len(drows) > 1 and all(r.state == "cannot_confirm" for r in drows):
+        dtexts = dlines = {r.code: diet_checker.cannot_confirm_both(complete) for r in drows}
+    # D-198 (Sushil, 2026-10-11, "Quiet line"): an additive of either origin on a pack with the green
+    # mark (the brand's declaration under reg. 5(4)(b)) is a quiet line in "For you", not a card.
+    green = [r for r in drows if diet_checker.green_quiet(r)]
+    shown = [r for r in drows if r.state != "not_listed" and r not in green]
+    more = None
+    if shown and (status in (None, "not_listed") or _STRONGEST[shown[0].state] < _STRONGEST[status]):
+        # A diet line leads only when stronger; its fact sits under it (card text stays short).
+        line, status = dlines[shown[0].code], shown[0].state
+        more = None if line == dtexts[shown[0].code] else dtexts[shown[0].code][len(line):].strip()
+    elif drows and status is None:
+        status = "not_listed"
     if status in (None, "not_listed"):
         if child_facts:
             status = "worth_knowing"
@@ -438,9 +465,16 @@ def _person(profile, ingredients, statement, confidence, reliable, screen=False,
                        "text": texts.get(r.code) or r.parent_text(who, where)} for r in rows],
         "child_facts": child_facts,
     }
+    if more:
+        out["more"] = more
+    if drows:
+        out["diet"] = [{"code": r.code, "state": r.state, "evidence": r.evidence or None,
+                        "line": dlines[r.code], "text": dtexts[r.code]}
+                       | ({"quiet": True} if r in green else {}) for r in drows]
     weak = [_weaker_text(r) for r in rows
             if r.state == "not_listed" and not allergen_checker.ALLERGENS[r.code].get("fssai_mandatory", True)]
-    quiet = [x for x in [quiet, *weak] if x]
+    marks = [dtexts[r.code] for r in green] + [m for m in (diet_checker.mark_note(r, where) for r in drows) if m]
+    quiet = [x for x in [quiet, *weak, *marks] if x]
     if quiet:
         out["quiet"] = quiet
     if any(r.state == "not_listed" and not r.statement_seen for r in rows):
@@ -1437,7 +1471,7 @@ def build(**kw):
         if p["status"] in ("contains", "may_contain", "uncertain", "cannot_confirm"):
             # Share sends the lines without the nickname (D-074, D-177): "For your child: ...".
             whom = "you" if p["ref"] == "me" else NAME
-            p["share"] = f"For {whom}, {p['line'][0].lower() + p['line'][1:]}"
+            p["share"] = f"For {whom}, {p['line'][0].lower() + p['line'][1:]}" + (f" {p['more']}" if p.get("more") else "")
     out["people"] = cards
     if quiet:
         out["for_you"] = quiet
@@ -1449,9 +1483,13 @@ def build(**kw):
 def _build(*, verdict, display, claim_check, extracted, reliability, profiles,
            allergen_confidence, allergen_reliable, catalogue=None, has_barcode=True,
            photos_sent=("back",), pack=None, screen_pack=None, nutrition=None, parts_sent=1, kind=None,
-           nutra_input=None, barcode_answer=None, unchecked=False, table_only=None, repeat=False):
+           nutra_input=None, barcode_answer=None, unchecked=False, table_only=None, repeat=False,
+           veg_mark=None, product_name=None):
     """
     The `screen` block of a /scan response. verdict=None means the scan was refused.
+    veg_mark: product.veg_mark as read, or the catalogue version's stored one; None when
+    none is known (D-198: "Vegetarian only" then checks the list only, and says so).
+    product_name: the name as read or published, for reg. 5(4)(d)'s products that carry no mark.
     pack: for a result read from a screen (D-130), our catalogue's version of the
     same barcode ({ingredients, allergen_statement, verified_on}), or None.
     nutrition: the checked table from lenses/nutrition.check() (D-133), or None.
@@ -1473,7 +1511,8 @@ def _build(*, verdict, display, claim_check, extracted, reliability, profiles,
     where = "pack" if (catalogue or {}).get("source") == "catalogue" else "photo"     # D-188
     people = [p for p in (_person(pr, ingredients, statement, allergen_confidence, allergen_reliable,
                                   screen=from_screen and verdict is not None, pack=pack, baby=baby,
-                                  complete=reliability.get("ingredients_complete", True), where=where)
+                                  complete=reliability.get("ingredients_complete", True), where=where,
+                                  veg_mark=veg_mark, product_name=product_name)
                           for pr in profiles) if p]
 
     if verdict is None and from_screen and reliability.get("error") not in ("product_mismatch", "not_a_food_pack"):
