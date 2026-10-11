@@ -4358,6 +4358,47 @@ call; only 1 Gemini retry. The time is Gemini's own read, so that is what the sw
 
 ---
 
+### D-194 · A long ingredient list in parts, asked only when it is cut off `LOCKED` (2026-10-11)
+**Sushil, 2026-10-11:** "and we will ask user if ingredient list is not fit in a single photo upload it by taking
+single photo". Of the three options the advisor showed (ask before every list photo; a "the list goes on" step on
+every scan; ask only when cut off), Sushil chose **"Ask only when cut off (Recommended)"**: no extra tap on a normal
+scan. Then "accept" to the plan, with two changes: the choices must not depend on the allergen card (a shopper with
+no avoid list gets them too), shown once where today's partial retake sits; and shorter card words, "Part of the
+ingredient list was cut off or hard to read." and nothing more. The advisor reviews before merge. Built by Claude.
+
+Same day, separately (the D-171 result), Sushil: "shutter we will off, as we face more issue here". Every label photo
+now comes from the phone's camera app or an upload; this is built for that path, and the live-shutter code stays as
+it is behind its switch.
+
+**Why:** a list longer than one photo came back as a partial read with "Retake it to check the rest", and a retake
+of the whole list in one photo cuts it off again. D-119's parts existed, but the only way in was a small "The list
+continues" link on the photo review screen that people missed.
+
+1. **The camera line.** The first list photo's line ("Fit the list, from "Ingredients" to the last word") gains a
+   quieter second line: "Too long for one photo? Take it in parts, one photo each." No new question, no new tap.
+2. **A partial read offers the rest of the list.** On a partial result (ingredients_status "partial") and on D-118's
+   clearer-photo refusal when the list was read only in part, the screen block carries `list_choices`: "Photograph
+   the rest of the list" and "Retake the whole list" (lenses/screen.py, D-091). The card line is "Part of the
+   ingredient list was cut off or hard to read."; the refusal's headline "We couldn't read all of the ingredient
+   list." The read doesn't say whether "partial" is cut off or hard to read (the prompt is unchanged), so both ways
+   are offered. "add" is null once the three back photos are used (list parts and table share them, D-119), so only
+   the retake shows. The app shows the choices once, on the partial card ("For you", or the refusal's dock with "Use
+   this one anyway"); the amber allergen card keeps its words and no buttons (D-188). Older results kept on the phone
+   keep their one retake button.
+3. **The rest of the list** (`#/listpart`) keeps every photo in hand: the list's parts, the table, the front and the
+   "same pack" tick. The next part joins them (D-119), the review screen follows ("We kept your first photo of the
+   list."), and "Check this pack" sends one new /scan with all of them: a paid read in the day's limit, like any
+   scan. "Retake the whole list" is D-173's retake (the table and the front stay).
+4. **The review screen.** "The list continues" becomes a visible full-width button, "The list goes on: add the next
+   part", in the same place. A list part added after the front is named as that part, not "Front".
+5. **Not the same photo (D-191).** The parts are joined into one back photo before its hash, so a scan with an added
+   part is a new scan; a test pins it.
+
+Unchanged: barcode-only results, D-191's table-only words, the D-118 cross-check (once per pack), allergens first
+(D-060), cannot_confirm below 0.95 or on a partial read, PROMPT_VERSION.
+
+---
+
 ## Open and pending
 
 ### D-050 · Numeric score in the consumer UI `SUPERSEDED by D-064` (removed)

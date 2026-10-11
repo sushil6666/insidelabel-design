@@ -660,7 +660,9 @@ to see where each gate stands. §11 has the full list. Done today: D-051/52/55 d
 food categories, PWA built, D-092 reproduction, D-093 Cloud Vision, scan speed,
 setup alarms.
 
-**NEXT SESSION STARTS HERE (2026-10-10).** The redesign (D-185) is complete: Phase 1 (#141), Phase 2 (#142), the evidence folder (#143) and Phase 3, the website (#144), are merged; D-186 to D-188 merged as #145 to #148, D-189 as #149, D-190 as #150, D-191 to D-193 as #151 (deployed 2026-10-10, migration 027 in). Where things stand, newest first:
+**NEXT SESSION STARTS HERE (2026-10-11).** The redesign (D-185) is complete: Phase 1 (#141), Phase 2 (#142), the evidence folder (#143) and Phase 3, the website (#144), are merged; D-186 to D-188 merged as #145 to #148, D-189 as #149, D-190 as #150, D-191 to D-193 as #151 (deployed 2026-10-10, migration 027 in). Where things stand, newest first:
+
+- **`claude/list-in-parts-when-cut-off-bnnuts` (2026-10-11, web-68), from `main` 452c78b (#152).** D-194 (Sushil: "Ask only when cut off"): the first list photo's camera line adds "Too long for one photo? Take it in parts, one photo each."; a partial result, and D-118's clearer-photo refusal on a list read in part, offer "Photograph the rest of the list" (keeps every photo, adds the next part, one new /scan) and "Retake the whole list", once on the partial card (`screen.list_choices`), only the retake at three back photos; "The list continues" is now the button "The list goes on: add the next part". The app's own shutter is off (Sushil, 2026-10-11); this is built for the camera-app and upload path. No migration. **Waiting on Sushil:** the advisor's review; merge; `update.sh`.
 
 - **`shutter-off` (2026-10-11, records only).** Sushil: "shutter we will off, as we face more issue here". D-171's result recorded: the app's own shutter is OFF; every label step uses the phone's camera app or an upload. **Waiting on Sushil:** set `INSIDELABEL_LIVE_SHUTTER=off` on the server and restart (OPERATIONS.md "The label shutter"); merge.
 
