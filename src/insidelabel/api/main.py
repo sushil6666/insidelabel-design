@@ -54,6 +54,7 @@ from insidelabel import trace  # noqa: E402
 from insidelabel.core import engine, pack_kind  # noqa: E402
 from insidelabel.claims import checker as claim_checker  # noqa: E402
 from insidelabel.lenses import allergens as allergen_checker  # noqa: E402
+from insidelabel.lenses import diet as diet_checker  # noqa: E402
 from insidelabel.lenses import compare as shelf  # noqa: E402
 from insidelabel.lenses import infant as infant_lens  # noqa: E402
 from insidelabel.lenses import nutrition  # noqa: E402
@@ -186,6 +187,7 @@ def _blocked_refusal(e, tr, *, back_read, back_bytes, t_vision, t0, keys, images
     return JSONResponse(status_code=422, content={
         # A refused scan still answers the allergy question: "couldn't confirm" (D-037, D-072).
         "allergens": allergen_block(avoid_codes, [], None, reliable=False, who=who),
+        "diet": diet_block(avoid_codes, [], reliable=False),
         "screen": result_screen.build(
             verdict=None, display=None, claim_check=None, extracted=None,
             reliability=reliability, profiles=people, allergen_confidence=0.0,
@@ -455,12 +457,13 @@ def parse_avoid(avoid):
         return []
     items = avoid.split(",") if isinstance(avoid, str) else avoid
     codes = list(dict.fromkeys(c.strip().lower() for c in items if c and c.strip()))
-    unknown = [c for c in codes if c not in allergen_checker.ALLERGENS]
+    # D-198: the two diet codes share the avoid list; allergen_block() reads only allergens.
+    unknown = [c for c in codes if c not in allergen_checker.ALLERGENS and c not in diet_checker.DIETS]
     if unknown:
         raise HTTPException(status_code=422, detail={
             "error": "unknown_allergen",
             "detail": f"Unknown allergen code(s): {', '.join(unknown)}.",
-            "hint": "Valid codes: " + ", ".join(allergen_checker.ALLERGENS) + ".",
+            "hint": "Valid codes: " + ", ".join([*allergen_checker.ALLERGENS, *diet_checker.DIETS]) + ".",
         })
     return codes
 
@@ -481,6 +484,7 @@ def allergen_block(codes, ingredients, statement, confidence=1.0, reliable=True,
     where="pack": a catalogue hit, so no line says "in the photo" (D-188).
     Results are sorted strongest state first, so results[0] is the headline.
     """
+    codes = [c for c in (codes or []) if c in allergen_checker.ALLERGENS]      # D-198: diet codes go to diet_block()
     if not codes:
         return None
     results = allergen_checker.check(
@@ -503,6 +507,32 @@ def allergen_block(codes, ingredients, statement, confidence=1.0, reliable=True,
     }
 
 
+def diet_block(codes, ingredients, veg_mark=None, confidence=1.0, reliable=True, complete=True, where="photo",
+               product_name=None):
+    """
+    D-198: /scan's `diet` block, right after `allergens` (which stays first and unchanged,
+    D-060): "Vegetarian only" and "No onion or garlic" for the avoid list's diet codes.
+    veg_mark: product.veg_mark as read, or the catalogue version's stored one (None: none
+    known, so the list only). Never a verdict, score or concern level (D-004).
+    """
+    codes = [c for c in (codes or []) if c in diet_checker.DIETS]
+    if not codes:
+        return None
+    results = diet_checker.check(ingredients or [], codes, veg_mark=veg_mark, mark_from=where,
+                                 confidence=confidence, reliable=reliable, complete=complete,
+                                 product_name=product_name)
+    order = {"contains": 0, "cannot_confirm": 1, "uncertain": 2, "not_listed": 3}
+    rows = sorted(results.values(), key=lambda r: order[r.state])
+    return {
+        "avoid": codes,
+        "veg_mark": veg_mark if veg_mark in diet_checker.MARKS else None,
+        "mark_from": where if veg_mark in diet_checker.MARKS else None,
+        "min_confidence": diet_checker.MIN_CONFIDENCE,
+        "results": [{"code": r.code, "state": r.state, "evidence": r.evidence or None,
+                     "sources": r.sources, "text": diet_checker.text(r, where)} for r in rows],
+    }
+
+
 @app.get("/allergens")
 def list_allergens():
     """Codes a client may put on an avoid list, with display labels."""
@@ -511,7 +541,9 @@ def list_allergens():
             {"code": a["code"], "label": a["label"],
              "fssai_mandatory": a.get("fssai_mandatory", True)}
             for a in allergen_checker.ALLERGENS.values()
-        ]
+        ],
+        # D-198: shown after the allergens in the avoid-list editor; same `avoid` list.
+        "diets": [{"code": d["code"], "label": d["label"]} for d in diet_checker.DIETS.values()],
     }
 
 
@@ -543,6 +575,12 @@ def _pack_out(p, who):
             {"code": r.code, "state": r.state, "evidence": r.evidence or None,
              "text": r.parent_text(who)}
             for r in p.allergens.values()
+        ],
+        # D-198: the diet choices, by the same rules; a quiet line never blocks a pick.
+        "diet": [
+            {"code": r.code, "state": r.state, "evidence": r.evidence or None,
+             "text": diet_checker.text(r)} | ({"quiet": True} if diet_checker.green_quiet(r) else {})
+            for r in p.diet.values()
         ],
     }
 
@@ -579,7 +617,8 @@ def compare_packs(req: CompareRequest):
             })
     codes = parse_avoid(req.avoid)
     packs = [shelf.Product(p.id, p.name, p.ingredients, reliable=p.reliable,
-                           allergen_statement=p.allergen_statement, confidence=p.confidence)
+                           allergen_statement=p.allergen_statement, confidence=p.confidence,
+                           veg_mark=p.veg_mark)
              for p in req.packs]
     if len({p.id for p in packs}) != len(packs):
         raise HTTPException(status_code=422, detail={
@@ -955,6 +994,7 @@ def _not_food_answer(kind, vision, reliability, barcode, images, keys, device_id
     return _withhold(kind, {
         # D-060: first. No list read, so every avoided allergen is "couldn't confirm" (D-072).
         "allergens": allergen_block(avoid_codes, [], statement, reliable=False, who=who),
+        "diet": diet_block(avoid_codes, [], reliable=False),
         "screen": result_screen.build(
             verdict=None, display=None, claim_check=None, extracted=extracted, reliability=reliability,
             profiles=people, allergen_confidence=0.0, allergen_reliable=False,
@@ -991,6 +1031,12 @@ def _pack_picture(hit):
     """D-182: the screen's pack picture, when the product has one: {"pack_picture": {...}} or {}."""
     pic = result_screen.pack_picture(hit.get("pack_picture"), lambda key: f"/pack-picture/{key}")
     return {"pack_picture": pic} if pic else {}
+
+
+def _stored_veg_mark(hit):
+    """D-198: the veg mark read when this version was scanned (raw_extraction), or None."""
+    mark = hit.get("veg_mark")
+    return mark if mark in ("veg", "non_veg") else None
 
 
 def _catalogue_result(hit, avoid_codes, who, compare_regulators, profiles=(), screen_pack=None,
@@ -1053,16 +1099,20 @@ def _catalogue_result(hit, avoid_codes, who, compare_regulators, profiles=(), sc
         # Reviewed data: read in full by a person, so the allergen gate is met.
         "allergens": allergen_block(avoid_codes, ingredients, hit["allergen_statement"], who=who,
                                     where="pack"),
+        # D-198: the reviewed version's list and its stored veg mark ("on the pack we checked").
+        "diet": diet_block(avoid_codes, ingredients, veg_mark=_stored_veg_mark(hit), where="pack",
+                           product_name=hit["name"]),
         "screen": result_screen.build(
             verdict=verdict, display=display, claim_check=claim_check, extracted=extracted,
             reliability=reliability, profiles=profiles, allergen_confidence=1.0,
             allergen_reliable=True, catalogue=catalogue, screen_pack=screen_pack,
-            nutrition=hit.get("nutrition"), kind=kind,
+            nutrition=hit.get("nutrition"), kind=kind, veg_mark=_stored_veg_mark(hit), product_name=hit["name"],
             # D-139: no reading from the catalogue; the published name still says tablet or powder.
             nutra_input={"product": {"name": hit["name"], "variant": hit["variant"]}}) | _pack_picture(hit),
         "pack_kind": {k: kind[k] for k in ("code", "evidence", "review")},
         "catalogue": catalogue,
-        "product": {"brand": hit["brand"], "name": hit["name"], "variant": hit["variant"]},
+        "product": {"brand": hit["brand"], "name": hit["name"], "variant": hit["variant"],
+                    "veg_mark": _stored_veg_mark(hit)},                 # D-198: kept for Compare
         "nutrition": nutrition.public(hit.get("nutrition")),
         "verdict": verdict,
         "display": display,
@@ -1947,6 +1997,7 @@ async def scan(
             # A refused scan still answers the allergy question: "couldn't
             # confirm", never silence (D-037, D-072).
             "allergens": allergen_block(avoid_codes, [], None, reliable=False, who=who),
+            "diet": diet_block(avoid_codes, [], reliable=False),
             "screen": result_screen.build(
                 verdict=None, display=None, claim_check=None, extracted=None,
                 reliability=reliability, profiles=people, allergen_confidence=0.0,
@@ -2042,6 +2093,7 @@ async def scan(
         screen["can_use_anyway"] = True
         return JSONResponse(status_code=422, content={
             "allergens": allergen_block(avoid_codes, [], None, reliable=False, who=who),
+            "diet": diet_block(avoid_codes, [], reliable=False),
             "screen": screen, "scan_id": _str(scan_id), "request_id": tr["request_id"],
             "verdict": None, "product": vision.get("product"), "reliability": reliability,
             "engine_version": ENGINE_VERSION,
@@ -2119,6 +2171,10 @@ async def scan(
         extracted["pack_statements"] = vision["pack_statements"]      # D-140: /compare re-decides the kind
     return _withhold(kind, {
         "allergens": allergens,           # D-060: always the first thing a client reads
+        "diet": diet_block(avoid_codes, vision["ingredients"], veg_mark=(vision.get("product") or {}).get("veg_mark"),
+                           confidence=allergen_confidence, reliable=allergen_reliable and not from_screen,
+                           complete=reliability.get("ingredients_complete", True),
+                           product_name=(vision.get("product") or {}).get("name")),
         # What the app renders, in order (D-060-D-066). Built from the fields below.
         "screen": result_screen.build(
             verdict=verdict, display=display, claim_check=user_claims, extracted=extracted,
@@ -2127,7 +2183,8 @@ async def scan(
             screen_pack=None if from_screen else screen_pack, nutrition=panel,
             parts_sent=max(1, len(parts)), kind=kind,
             nutra_input={"vision": vision, "ocr_text": ocr_result.get("ocr_text")},
-            barcode_answer=barcode_answer,
+            barcode_answer=barcode_answer, veg_mark=(vision.get("product") or {}).get("veg_mark"),
+            product_name=(vision.get("product") or {}).get("name"),
             # D-167: a food pack with a barcode and no checked version yet, before its review.
             unchecked=bool(saved and saved["version_status"] == "pending_review"
                            and not saved.get("checked") and kind["code"] == "food")),

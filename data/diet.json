@@ -1,0 +1,110 @@
+{
+  "_meta": {
+    "table": "diet",
+    "version": "0.1",
+    "purpose": "Two diet choices in a person's avoid list (D-198): 'Vegetarian only' and 'No onion or garlic'. Deterministic word and INS matching over the ingredient list prompt.py already returns, plus the veg mark it already reads (product.veg_mark). No prompt change. Same states and display rules as allergens (D-188); never a verdict, score or concern level (D-004).",
+    "output_states": {
+      "contains": "An animal word or additive in the list, or the brown non-vegetarian mark; an onion or garlic word in the list.",
+      "uncertain": "Something in the list that can come from either source and the label doesn't say which (INS 471 with no source named; 'spices' with no breakdown).",
+      "not_listed": "Nothing found. Shown nowhere on the result (D-188). NEVER rendered as 'veg', 'pure veg', 'free from' or 'safe'.",
+      "cannot_confirm": "Scan confidence below 0.95 or a partial read (D-072). A brown mark read on the front still counts."
+    },
+    "rule": "Quote the label; never 'pure veg', 'veg-safe', 'Jain-friendly', 'free from' or 'safe'. Asafoetida (hing) is not onion or garlic."
+  },
+
+  "diets": [
+    {
+      "code": "vegetarian",
+      "label": "Vegetarian only",
+      "short": "vegetarian",
+      "basis": {
+        "document": "Food Safety and Standards (Labelling and Display) Regulations, 2020, FSSAI compendium Version-I (23.09.2021), https://www.fssai.gov.in/upload/uploadfiles/files/Compendium_Labelling_Display_23_09_2021.pdf (page numbers checked by the advisor, 2026-10-11). The text is the same in Version-II (29.12.2021)",
+        "non_vegetarian": "Reg. 2(1)(o), PDF page 3: \"Non-vegetarian food\" means an article of food which contains whole or part of any animal including birds, insects, fresh water or marine animals or eggs or products of any animal origin, but does not include milk, milk products, honey or bees wax or carnauba wax or shellac;",
+        "vegetarian": "Reg. 2(1)(v), PDF page 4: \"Vegetarian food\" means any article of food other than Non-Vegetarian Food as defined in these regulations.",
+        "brown_mark": "Reg. 5(4)(a), PDF page 14: Every package of Non-Vegetarian Food containing ingredients including food additives, processing aids of animal origin shall bear a declaration to this effect made by a symbol and colour code as stipulated below. The symbol shall consist of a brown colour filled triangle inside a square with brown outline ... Provided where any article of food contains egg only as Non-Vegetarian ingredient, the manufacturer, or packer or seller may give declaration to this effect in addition to the said symbol.",
+        "green_mark": "Reg. 5(4)(b), PDF page 14: Every package of Vegetarian Food containing ingredients including food additives, processing aids of plant origin shall bear a declaration to this effect by a symbol and colour code as stipulated below. The symbol shall consist of a green colour filled circle inside a square with green outline ...",
+        "exempt": "Reg. 5(4)(d), PDF page 15: Provisions of regulations 5(4)(a) and 5(4)(b) shall not apply in respect of mineral water, packaged drinking water, carbonated water, alcoholic beverages, liquid milk, milk powders and honey.",
+        "page_note": "PDF page numbers, counted from the cover; the compendium prints none.",
+        "verified_on": "2026-10-11"
+      },
+      "words": [
+        {"name": "meat", "aliases": ["meat", "mutton", "lamb", "goat meat", "beef", "pork", "bacon", "ham", "salami", "pepperoni", "sausage", "keema", "gosht", "veal", "venison"]},
+        {"name": "chicken", "aliases": ["chicken", "murgh", "murg", "turkey", "duck"]},
+        {"name": "fish", "aliases": ["fish", "machli", "machhi", "anchovy", "anchovies", "tuna", "sardine", "sardines", "mackerel", "salmon", "cod", "surimi", "fish sauce", "fish oil", "cod liver oil", "fish extract"]},
+        {"name": "seafood", "aliases": ["prawn", "prawns", "shrimp", "shrimps", "jhinga", "crab", "lobster", "krill", "squid", "octopus", "oyster", "oyster sauce", "mussel", "mussels", "clam", "clams", "shrimp paste"]},
+        {"name": "egg", "aliases": ["egg", "eggs", "egg powder", "egg white", "egg yolk", "whole egg", "albumen", "ovalbumin", "mayonnaise", "anda"], "basis": "Reg. 2(1)(o) names eggs; reg. 5(4)(a) proviso lets an egg-only pack say so beside the brown mark."},
+        {"name": "gelatin", "aliases": ["gelatin", "gelatine"], "comes_from": "animal collagen (skin and bones)", "source": "JECFA specification, Edible gelatin, 14th JECFA (1970): \"A protein produced by partial hydrolysis of collagen in skin, tendons, ligaments, bones, etc. of animals.\""},
+        {"name": "animal fat", "aliases": ["lard", "tallow", "suet", "animal fat", "chicken fat", "beef fat", "pork fat"]},
+        {"name": "collagen", "aliases": ["collagen", "bone broth", "bone stock", "isinglass"]},
+        {"name": "carmine", "aliases": ["carmine", "carmines", "cochineal"], "comes_from": "the dried bodies of an insect, the cochineal (Dactylopius coccus)", "source": "JECFA specification, Carmines, 55th JECFA (2000): \"the dried bodies of the female insect Dactylopius coccus Costa\""},
+        {"name": "animal rennet", "aliases": ["animal rennet", "calf rennet"]},
+        {"name": "meat extract", "aliases": ["meat extract", "chicken extract", "beef extract", "chicken stock", "chicken broth", "chicken powder"]}
+      ],
+      "exclude": [
+        "eggless", "egg-free", "egg free", "eggplant", "egg plant", "without egg", "no egg",
+        "fish-shaped", "shellac", "bees wax", "beeswax", "carnauba wax", "vegetable rennet", "microbial rennet",
+        "coconut milk"
+      ],
+      "uncertain_words": [
+        {"pattern": "flavour", "with": ["chicken", "meat", "mutton", "fish", "prawn", "shrimp", "egg", "beef", "pork", "bacon", "ham", "crab"], "aliases": ["flavour", "flavor", "flavouring", "flavoring", "flavoured", "flavored", "taste"],
+         "note": "A flavour named after an animal food can be made with or without it; the label doesn't say."}
+      ],
+      "ins": [
+        {"ins": "441", "name": "gelatin", "state": "contains", "comes_from": "animal collagen (skin and bones)",
+         "source": "JECFA specification, Edible gelatin, 14th JECFA (1970), fao.org/fileadmin/user_upload/jecfa_additives/docs/Monograph1/Additive-171.pdf: \"A protein produced by partial hydrolysis of collagen in skin, tendons, ligaments, bones, etc. of animals.\"",
+         "fssai_basis": "Reg. 2(1)(o): products of any animal origin", "verified_on": "2026-10-11"},
+        {"ins": "120", "name": "carmine", "state": "contains", "comes_from": "the dried bodies of an insect, the cochineal (Dactylopius coccus)",
+         "source": "JECFA specification, Carmines, 55th JECFA (2000), fao.org/fileadmin/user_upload/jecfa_additives/docs/Monograph1/additive-108-m1.pdf: \"the dried bodies of the female insect Dactylopius coccus Costa\"",
+         "fssai_basis": "Reg. 2(1)(o): whole or part of any animal including ... insects", "verified_on": "2026-10-11"},
+        {"ins": "542", "name": "bone phosphate", "state": "contains", "comes_from": "ground animal bones",
+         "source": "JECFA specification, Edible bone phosphate, 33rd JECFA (1988), fao.org/fileadmin/user_upload/jecfa_additives/docs/Monograph1/Additive-057.pdf: \"obtained by the grinding of bones which have been treated with hot water and steam under pressure\"",
+         "fssai_basis": "Reg. 2(1)(o): part of any animal", "verified_on": "2026-10-11"},
+        {"ins": "1105", "name": "lysozyme", "state": "contains", "comes_from": "hen's egg white",
+         "source": "JECFA evaluation, Lysozyme hydrochloride, 39th JECFA (1992), inchem.org/documents/jecfa/jeceval/jec_1292.htm: \"polypeptide obtained from hen's egg whites\"",
+         "fssai_basis": "Reg. 2(1)(o): eggs", "verified_on": "2026-10-11"},
+        {"ins": "471", "name": "mono- and diglycerides", "state": "uncertain", "can_be": "plant or animal fat",
+         "cleared_by": ["vegetable", "plant", "palm", "soy", "soya", "sunflower"],
+         "source": "JECFA specification, Mono- and diglycerides, 17th JECFA (1973), fao.org/fileadmin/user_upload/jecfa_additives/docs/Monograph1/Additive-288.pdf: \"usually manufactured by the glycerolysis of edible fats and oils\" (the specification names no source of the fat)",
+         "fssai_basis": "Reg. 5(4)(a) and (b): food additives of animal or plant origin", "verified_on": "2026-10-11"},
+        {"ins": "322", "name": "lecithin", "state": "uncertain", "can_be": "plants or animal sources",
+         "cleared_by": ["soy", "soya", "sunflower", "rapeseed", "vegetable", "plant"],
+         "source": "JECFA specification, Lecithin, 41st JECFA (1993), fao.org/fileadmin/user_upload/jecfa_additives/docs/monograph4/additive-250-m4.pdf: \"Usually prepared from oil-bearing seeds used for food, especially soybeans; may also be prepared from animal sources\"",
+         "fssai_basis": "Reg. 5(4)(a) and (b): food additives of animal or plant origin", "verified_on": "2026-10-11"}
+      ],
+      "not_counted": {
+        "words": ["milk", "milk products", "ghee", "butter", "cheese", "paneer", "whey", "honey", "beeswax", "carnauba wax", "shellac"],
+        "basis": "Reg. 2(1)(o) excludes milk, milk products, honey, bees wax, carnauba wax and shellac from non-vegetarian food."
+      },
+      "mark_exempt": {
+        "basis": "Reg. 5(4)(d), PDF page 15: Provisions of regulations 5(4)(a) and 5(4)(b) shall not apply in respect of mineral water, packaged drinking water, carbonated water, alcoholic beverages, liquid milk, milk powders and honey. No mark is expected on these, so a missing mark is not a finding (advisor, 2026-10-11).",
+        "names": ["mineral water", "drinking water", "packaged drinking water", "soda water", "carbonated water", "club soda", "honey", "milk powder", "skimmed milk powder", "whole milk powder", "toned milk", "double toned milk", "full cream milk", "standardised milk", "standardized milk", "skimmed milk", "beer", "wine", "whisky", "whiskey", "rum", "vodka", "gin", "brandy"],
+        "only_ingredients": ["water", "mineral water", "carbon dioxide", "carbonated water", "minerals", "added minerals", "honey", "milk", "toned milk", "skimmed milk", "milk powder", "skimmed milk powder", "whole milk powder", "vitamin a", "vitamin d"],
+        "note": "Exempt when the product name is one of these (as a whole word phrase that ends the name, e.g. 'Forest Honey', 'Packaged Drinking Water'), or when every ingredient entry is one of these."
+      },
+      "not_in_v1": "No primary specification we read names a source for INS 627, 631, 635 (ribonucleotides), INS 920 (L-cysteine), vitamin D3 or DHA; they are not checked until one does (D-046)."
+    },
+    {
+      "code": "no_onion_garlic",
+      "label": "No onion or garlic",
+      "short": "onion or garlic",
+      "basis": {
+        "document": "Sushil, 2026-10-11 (D-198): a household choice, not a legal category. FSSAI has no definition for it; the words are the plain names of the onion family as printed on Indian packs.",
+        "verified_on": "2026-10-11"
+      },
+      "words": [
+        {"name": "onion", "aliases": ["onion", "onions", "pyaz", "pyaaz", "piyaz", "kanda", "spring onion", "spring onions", "green onion", "scallion", "scallions"]},
+        {"name": "garlic", "aliases": ["garlic", "lahsun", "lehsun", "lasun", "lahsoon"]},
+        {"name": "shallot", "aliases": ["shallot", "shallots"]},
+        {"name": "leek", "aliases": ["leek", "leeks"]},
+        {"name": "chives", "aliases": ["chive", "chives"]}
+      ],
+      "exclude": ["onion seed", "onion seeds", "kalonji", "nigella", "asafoetida", "hing"],
+      "exclude_note": "'Onion seeds' on Indian packs is kalonji (nigella), not onion. Asafoetida (hing) is not onion or garlic (Sushil, D-198).",
+      "uncertain_words": [
+        {"aliases": ["spices", "spice", "spice mix", "mixed spices", "condiments", "condiment", "seasoning", "seasonings", "masala", "natural flavour", "natural flavours", "natural flavouring", "natural flavor", "natural flavors", "dehydrated vegetables"],
+         "cleared_by_breakdown": true,
+         "note": "Cleared when the same entry names its parts in brackets: 'Spices (Chilli, Cumin)' is checked part by part."}
+      ]
+    }
+  ]
+}

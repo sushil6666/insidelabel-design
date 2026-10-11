@@ -348,6 +348,7 @@ legend { float: left; width: 100%; padding: 0 0 4px; font: 700 var(--fs-md)/1.3 
 legend + * { clear: both; }
 fieldset .choice + .choice { border-top: 1px solid var(--line); }   /* D-185: long lists scan by row */
 .choice { display: flex; align-items: center; gap: 8px; min-height: var(--tap); font-weight: 400; }
+.choice-group { margin: 14px 0 0; padding-top: 10px; border-top: 1px solid var(--line); font-size: .85rem; letter-spacing: .02em; }   /* D-198: "Diet" after the allergens */
 .choice input { width: 22px; height: 22px; flex: none; accent-color: var(--brand); }
 .consent { align-items: flex-start; }
 .consent input { margin-top: 3px; }
@@ -1629,6 +1630,7 @@ main.wrap { overflow-x: clip; }
 /* D-188: a card's further matches stay in view under its first line, in the card's own colour. */
 .person-line .also { margin: var(--sp-1) 0 0; font-weight: 700; line-height: 1.35; }
 .person-line .also > li + li { margin-top: 2px; }
+.person-line .line-more { margin: var(--sp-1) 0 0; font-weight: 600; line-height: 1.35; }   /* D-198: the fact under a diet line */
 .person-line > .btn { justify-self: start; margin-top: var(--sp-2); }
 /* D-188: "For you" opens with the quiet lines: who, then what isn't listed for them. */
 .for-you-lines { display: grid; gap: var(--sp-3); margin: 0; }

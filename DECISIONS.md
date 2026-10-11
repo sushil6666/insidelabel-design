@@ -4441,6 +4441,81 @@ printed formula, which needs a prompt change). Built by Claude in the advisor se
 
 ---
 
+### D-197 · Reading Ayurvedic labels, later, as their own category `PLANNED` (2026-10-11)
+**Sushil, 2026-10-11,** "yes" to saving it. Not built. After supplements and baby food.
+
+Law first (D-046): the labelling rules for Ayurvedic medicines and the official formulary for classical formulations,
+from primary documents, and a lawyer question on showing information about a medicine. Then a prompt rule to copy the
+printed formula ("Each 10 g contains ...") as printed, a pack kind `ayurvedic`, and a small gold set (5 to 10 packs).
+What could be shown, quoted from the pack and never a verdict: the formula with each name in plain words; for items
+printed as "each 10 g contains", the amount per day at the pack's own printed adult dose, as a range with both
+printed numbers (Sushil: "can we get per day consumption of the list of hurbs in formula like this"); herbs printed
+as "processed in a decoction of" or per batch get no per-day figure (they are boiled and strained, not eaten as
+listed); sugar per day at the printed dose; allergens and avoid lists as today. No "too much" line (FSSAI gives no
+daily limit for herbs; any single-herb dose range needs the primary text and the lawyer's answer first).
+
+---
+
+### D-198 · Two diet choices in the avoid list: "Vegetarian only" and "No onion or garlic" `LOCKED` (2026-10-11)
+**Sushil, 2026-10-11:** "one suggestion i received, to keep one veg only and pure veg (without onion garlic) option
+in avoid list", then "yes" to the advisor's proposal (named "No onion or garlic", not "Jain": Jain rules also leave
+out root vegetables and more; a Jain choice can come later as its own), then "accept" to the plan with three points
+(sources and page numbers checked by the advisor; INS 471 and 322 as below; each additive's line to what its JECFA
+specification says). Built by Claude.
+
+**The law (D-046).** FSSAI, Food Safety and Standards (Labelling and Display) Regulations, 2020, compendium
+Version-I (23.09.2021), https://www.fssai.gov.in/upload/uploadfiles/files/Compendium_Labelling_Display_23_09_2021.pdf
+(PDF pages as checked by the advisor):
+- Reg. 2(1)(o), page 3: "Non-vegetarian food" means an article of food which contains whole or part of any animal
+  including birds, insects, fresh water or marine animals or eggs or products of any animal origin, but does not
+  include milk, milk products, honey or bees wax or carnauba wax or shellac;
+- Reg. 2(1)(v), page 4: "Vegetarian food" means any article of food other than Non-Vegetarian Food as defined in
+  these regulations.
+- Reg. 5(4)(a), page 14: every package of non-vegetarian food "containing ingredients including food additives,
+  processing aids of animal origin" bears the brown mark (a brown filled triangle inside a square with brown
+  outline); a pack whose only non-vegetarian ingredient is egg may say so beside it. 5(4)(b): the green mark (a
+  green filled circle inside a square) for ingredients, additives included, of plant origin.
+- Reg. 5(4)(d), page 15: 5(4)(a) and (b) do not apply to mineral water, packaged drinking water, carbonated water,
+  alcoholic beverages, liquid milk, milk powders and honey, so no mark is expected on them and a missing mark there
+  is not a finding.
+
+**The choices.** Two more ticks after the allergens in each person's avoid list, under "Diet": codes `vegetarian`
+and `no_onion_garlic`, in the same `avoid` list, so profiles stay `{ref, age, avoid}` (D-074). No new screen and no
+extra scan step. Word lists and sources in `data/diet.json`, checks in `lenses/diet.py`, words in `lenses/diet.py`
+and `lenses/screen.py` (D-091). No prompt change: the prompt already reads `product.veg_mark`.
+
+**Vegetarian only.** Red: the brown mark (it counts on a partial read too: it is on the front); an animal word in the
+list from 2(1)(o) (meat, chicken, fish, prawn, egg, gelatin, lard, carmine and others, Hindi names included); INS 441
+gelatin, INS 120 carmine, INS 542 bone phosphate and INS 1105 lysozyme, each line saying only what its JECFA
+specification says ("INS 441 comes from animal collagen (skin and bones)."), each row with its source, `fssai_basis`
+and `verified_on`. A red item with the green mark quotes both facts, no judgement. Amber: INS 471 (JECFA: "edible
+fats and oils") and INS 322 (JECFA: "may also be prepared from animal sources") with no source named, when no mark
+was read; with the green mark read (the maker's declaration, since 5(4)(a) requires the brown mark for any additive
+of animal origin) the same words are a quiet line in "For you" (Sushil's choice on the card, "Quiet line"). A flavour
+named after an animal food ("Chicken flavour") is amber. Not counted: milk and milk products, honey, beeswax,
+carnauba wax, shellac (INS 904). Not checked until a primary document names their source: INS 627, 631, 635, 920,
+vitamin D3, DHA.
+
+**No onion or garlic.** Red: onion, garlic, shallot, leek, chives and their Hindi names (pyaz, lahsun and others),
+powders, pastes and flakes included. Amber: "spices", "masala", "seasoning", "condiments", "natural flavours" or
+"dehydrated vegetables" with no breakdown; "Spices (Chilli, Cumin)" is checked part by part. Asafoetida (hing) is not
+onion or garlic; "onion seeds" on an Indian pack is kalonji, not onion.
+
+**Display (D-188).** Same states as allergens: a red or amber card per person, a short line with the fact under it;
+nothing on a clean list; quiet lines in "For you" ("We didn't see the green or brown mark in the photos, so we
+checked the ingredient list only."; a catalogue version with no stored mark: "We have no record of the veg mark on
+the pack we checked, ..."). Below 0.95 or a partial read: cannot_confirm, one line when both are ticked. Never "pure
+veg", "veg-safe", "Jain-friendly", "free from" or "safe" (added to `tests/test_wording.py`).
+
+**/scan.** `allergens` stays the first key and unchanged (D-060); diet codes never reach it. A `diet` block comes
+next (`avoid`, `veg_mark`, `mark_from`, `min_confidence`, `results`), null when no one ticked a choice. People in
+`screen.people` carry `diet` rows and `more`. A catalogue hit uses the reviewed version's list and the mark read when
+that version was scanned (`raw_extraction`); a version without one (typed by a reviewer) checks the list only. No
+migration. Compare: a red or amber diet line keeps a pack from "Better pick", as an allergen does. Nothing changes
+the verdict, a score or a concern (D-004). App web-69.
+
+---
+
 ## Open and pending
 
 ### D-050 · Numeric score in the consumer UI `SUPERSEDED by D-064` (removed)

@@ -18,6 +18,9 @@ Rules (keeps D-002, D-004, D-005, D-050 intact):
 - Allergens come first (D-060). A pack that contains, or may contain, something
   on the child's avoid list can never be the best pick, and neither can a pack
   whose allergen status we couldn't confirm (allergens.py, D-071/D-072).
+- D-198: the same for the diet choices (diet.py): a pack with something listed for
+  "Vegetarian only" or "No onion or garlic", or one we can't tell, is never the best pick.
+  INS 471 or 322 on a green-marked pack is the one exception (a quiet line, Sushil 2026-10-11).
 - No legal claim appears in parent text unless its citation is verified.
   (v1.1 fix: the old sweetener line claimed an FSSAI warning requirement that
   FSSAI's own labelling FAQ says no longer applies to sucralose.)
@@ -35,6 +38,7 @@ from dataclasses import dataclass, field
 
 from insidelabel.core.tokenize import ins_numbers
 from insidelabel.lenses import allergens as allergen_check
+from insidelabel.lenses import diet as diet_check
 
 DATA_DIR = os.environ.get("INSIDELABEL_DATA", os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "data")))
 
@@ -114,6 +118,7 @@ class Product:
     reliable: bool = True          # from app/reliability.py
     allergen_statement: str = None  # prompt.py field, as printed
     confidence: float = 1.0         # prompt.py confidence["ingredients"]
+    veg_mark: str = None            # prompt.py product.veg_mark (D-198), or None
     facts: list = field(default_factory=list)
     unknown_ins: list = field(default_factory=list)
 
@@ -255,7 +260,7 @@ def _rank_key(p: Product):
 
 def compare(products, age="kid", avoid=(), who=None, strict_may_contain=True):
     """
-    avoid: allergen codes from the child's profile (allergens.json).
+    avoid: allergen codes from the child's profile (allergens.json), and its diet codes (diet.json, D-198).
     who:   the profile nickname, shown to the parent. Stored on the device only.
     strict_may_contain: treat "may contain" as a no (default for allergy families).
     """
@@ -266,11 +271,16 @@ def compare(products, age="kid", avoid=(), who=None, strict_may_contain=True):
 
     who_label = who or AGE_LABEL[age]
     blocked, allergen_unsure, allergen_ok = [], [], {}
+    codes = [c for c in avoid if c in allergen_check.ALLERGENS]
+    diet_codes = [c for c in avoid if c in diet_check.DIETS]
     for p in products:
         extract_facts(p, age)
-        p.allergens = allergen_check.check(p.ingredients, p.allergen_statement, list(avoid),
+        p.allergens = allergen_check.check(p.ingredients, p.allergen_statement, codes,
                                            confidence=p.confidence, reliable=p.reliable)
+        p.diet = diet_check.check(p.ingredients, diet_codes, veg_mark=p.veg_mark, confidence=p.confidence,
+                                  reliable=p.reliable, product_name=p.name)
         states = {r.state for r in p.allergens.values()}
+        states |= {r.state for r in p.diet.values() if not diet_check.green_quiet(r)}
         if "contains" in states or (strict_may_contain and "may_contain" in states):
             blocked.append(p)
         elif states & {"uncertain", "cannot_confirm"} or ("may_contain" in states):
@@ -298,7 +308,7 @@ def compare(products, age="kid", avoid=(), who=None, strict_may_contain=True):
     result["best"] = best
     result["others"] = checked[1:]
     # D-188: a line only when it matters (a match, or one we can't confirm); "not listed" stays out.
-    result["allergen_lines"] = [best.allergens[c].parent_text(who_label) for c in avoid
+    result["allergen_lines"] = [best.allergens[c].parent_text(who_label) for c in codes
                                 if best.allergens[c].state != "not_listed"]
     if not checked[1:]:
         result["why_best"] = [f"The only pack here that passed {who_label}'s avoid list"

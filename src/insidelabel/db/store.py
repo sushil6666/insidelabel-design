@@ -232,14 +232,18 @@ class Store:
                          ORDER BY pp.approved_at DESC, pp.id DESC LIMIT 1) AS pack_picture"""
 
     def find_current(self, barcode):
-        """The published, current version for a barcode, or None (D-024)."""
+        """
+        The published, current version for a barcode, or None (D-024). D-198: `veg_mark` is the
+        mark read when this version was scanned (raw_extraction), None for a reviewer's version.
+        """
         with self._connect() as conn:
             return conn.execute(
                 """SELECT p.id AS product_id, p.barcode, p.name, p.variant, b.name AS brand,
                           p.net_qty_value, p.net_qty_unit,
                           v.id AS product_version_id, v.version_no, v.ingredients,
                           v.allergen_statement, v.front_claims, v.verified_at, v.last_verified_at, v.nutrition,
-                          v.pack_kind, v.pack_kind_evidence, k.code AS category_code, """ + self._FRONT_WANTED + ", " + self._TABLE_WANTED + ", " + self._PACK_PICTURE + """
+                          v.pack_kind, v.pack_kind_evidence, k.code AS category_code,
+                          v.raw_extraction->'product'->>'veg_mark' AS veg_mark, """ + self._FRONT_WANTED + ", " + self._TABLE_WANTED + ", " + self._PACK_PICTURE + """
                      FROM products p
                      JOIN product_versions v ON v.product_id = p.id AND v.is_current
                      LEFT JOIN brands b ON b.id = p.brand_id
@@ -265,7 +269,8 @@ class Store:
                           p.net_qty_value, p.net_qty_unit,
                           v.id AS product_version_id, v.version_no, v.ingredients,
                           v.allergen_statement, v.front_claims, v.verified_at, v.last_verified_at, v.nutrition,
-                          v.pack_kind, v.pack_kind_evidence, k.code AS category_code, """ + self._FRONT_WANTED + ", " + self._TABLE_WANTED + """
+                          v.pack_kind, v.pack_kind_evidence, k.code AS category_code,
+                          v.raw_extraction->'product'->>'veg_mark' AS veg_mark, """ + self._FRONT_WANTED + ", " + self._TABLE_WANTED + """
                      FROM product_versions v
                      JOIN products p ON p.id = v.product_id
                      LEFT JOIN brands b ON b.id = p.brand_id

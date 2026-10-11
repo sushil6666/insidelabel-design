@@ -403,7 +403,8 @@ function avatar(p) {
 // The labels saved the last time the allergen list was loaded (the avoid-list form loads it);
 // before that, the code itself.
 function avoidNames(codes) {
-  const known = new Map((store.get("allergens", null) || []).map(a => [a.code, a.label]));
+  const known = new Map([...(store.get("allergens", null) || []), ...(store.get("diets", null) || [])]
+    .map(a => [a.code, a.label]));
   return codes.map(c => known.get(c) || c.replace(/_/g, " "));
 }
 
@@ -660,7 +661,15 @@ async function person(ref) {
                         p.avoid = e.target.checked ? [...p.avoid, a.code] : p.avoid.filter(c => c !== a.code);
                       } }),
         el("span", {}, a.label,
-          !a.fssai_mandatory && el("span", { class: "muted" }, " (brands don't have to declare it)"))))),
+          !a.fssai_mandatory && el("span", { class: "muted" }, " (brands don't have to declare it)")))),
+      // D-198: two diet choices after the allergens, in the same avoid list (Sushil, 2026-10-11).
+      (store.get("diets", null) || []).length > 0 && el("p", { class: "choice-group muted" }, "Diet"),
+      (store.get("diets", null) || []).map(d => el("label", { class: "choice" },
+        el("input", { type: "checkbox", value: d.code, checked: p.avoid.includes(d.code),
+                      onchange: e => {
+                        p.avoid = e.target.checked ? [...p.avoid, d.code] : p.avoid.filter(c => c !== d.code);
+                      } }),
+        el("span", {}, d.label)))),
     !isMe && el("label", { class: "choice consent" }, consent,
       " I am this child's parent or guardian. I agree to InsideLabel using this age band and " +
       "avoid list to check labels for them."),
@@ -1467,6 +1476,7 @@ function finish(body, { lookedUp = false } = {}) {
       // D-140: the server re-checks the kind on /compare, from these too.
       kind: body.pack_kind?.code || "food",
       pack_statements: body.extracted?.pack_statements || [],
+      veg_mark: body.product?.veg_mark || null,                     // D-198: "Vegetarian only" in Compare
     } : null,
   });
   // D-130: the pack from the shop list has been scanned in the shop; it's done.
@@ -2109,7 +2119,9 @@ const LISTED = ["contains", "may_contain", "uncertain"];
 const CARD = [...LISTED, "cannot_confirm", "worth_knowing"];          // cardPeople()
 function personCard(p, h) {
   const who = profileByRef(p.ref);
-  const also = p.allergens.slice(1).filter(a => LISTED.includes(a.state));
+  // D-198: the diet lines join the allergen lines under the first one; an amber diet line shows too.
+  const also = [...p.allergens.slice(1).filter(a => LISTED.includes(a.state)),
+                ...(p.diet || []).filter(d => d.state !== "not_listed" && !d.quiet && d.line !== p.line)];
   // D-140: a baby line carries its source; the cite is the server's words.
   const detail = p.status === "cannot_confirm" ? [] : p.child_facts;
   const kind = PERSON_KIND[p.status];
@@ -2120,6 +2132,7 @@ function personCard(p, h) {
     who && avatar(who),
     el("span", { class: "who" }, who ? who.nickname : "Someone in your household"),
     el("b", { class: "line" }, kind && kindIcon(kind), fill(p.line, p.ref)),
+    p.more && el("p", { class: "line-more" }, fill(p.more, p.ref)),          // D-198: the fact under a diet line
     also.length > 0 && el("ul", { class: "plain also" }, also.map(a => el("li", {}, fill(a.text, p.ref)))),
     retake && button("Retake the ingredients photo", () => retakeList(h, "partial")),
     detail.length > 0 && el("details", {}, el("summary", {}, "More"),
@@ -2349,7 +2362,7 @@ function compareResult(r, ref) {
         el("strong", {}, p.name),
         p.id === r.best && el("span", { class: "best-tag" }, "Better pick"),
         el("ul", { class: "plain small" },
-          p.allergens.filter(a => a.state !== "not_listed").map(a => el("li", { class: "flag" }, fill(a.text, ref))),
+          [...p.allergens, ...(p.diet || [])].filter(a => a.state !== "not_listed" && !a.quiet).map(a => el("li", { class: "flag" }, fill(a.text, ref))),
           p.facts.filter(f => f.tier !== "info" || f.positive).map(f =>
             el("li", { class: f.tier === "strong" ? "flag" : "" }, f.text)),
           !p.fully_checked && el("li", { class: "muted" }, "Not fully checked, so it can't be the pick."))))));

@@ -62,6 +62,8 @@ class ComparePack(BaseModel):
     kind: Optional[str] = Field(None, description='/scan pack_kind.code, e.g. "food", "infant".')
     pack_statements: List[dict] = Field(default_factory=list,
                                         description="/scan extracted.pack_statements, as printed.")
+    # D-198: for "Vegetarian only". Older clients send none: the list is checked alone.
+    veg_mark: Optional[str] = Field(None, description='/scan product.veg_mark: "veg", "non_veg" or "not_visible".')
 
 
 class CompareRequest(BaseModel):

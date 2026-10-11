@@ -19,10 +19,10 @@ pip install -e . && uvicorn insidelabel.api.main:app --reload
 | `GET /health` | live | table load counts |
 | `POST /analyze` | live | `{raw_ingredients}` → engine verdict, verbatim |
 | `POST /claim-check` | live | text + `front_claims[]` → verdict + contradiction pairs |
-| `POST /scan` | live | images → vision → engine → claim check. Optional `avoid=milk,gluten` puts an `allergens` block first (D-060) |
+| `POST /scan` | live | images → vision → engine → claim check. Optional `avoid=milk,gluten` puts an `allergens` block first (D-060); the diet codes `vegetarian` and `no_onion_garlic` give a `diet` block right after it (D-198) |
 
 > **D-051:** `/scan` stores the claim check but returns `claim_check.reason = "claims_not_released"` to users until `INSIDELABEL_CLAIMS_TO_USERS=on`. `/claim-check` is a developer tool and always returns the full result.
-| `GET /allergens` | live | allergen codes a profile can avoid |
+| `GET /allergens` | live | allergen codes a profile can avoid, and `diets`: the two diet choices (D-198) |
 | `POST /allergen-check` | live | ingredients + statement + `avoid[]` → five-state result (D-071), text-only |
 | `POST /compare` | live | 2-4 scanned packs + age + `avoid[]` → best pick of these, with reasons (D-057) |
 | `GET /regulators`, `GET /regulators/{ins}` | live | India vs EU vs US status per additive, information only (D-086) |

@@ -12,7 +12,7 @@
 //    beyond the headline the user was shown.
 
 // Bump together with VERSION in sw.js: a report then says which shell was cached.
-export const APP_VERSION = "web-68";
+export const APP_VERSION = "web-69";
 
 // ------------------------------------------------------------------ storage
 // localStorage can throw (private mode, blocked site data); the app must still work.
@@ -277,6 +277,7 @@ export async function allergenList() {
   try {
     const { body } = await call("/allergens");
     store.set("allergens", body.allergens);
+    store.set("diets", body.diets || []);                 // D-198: after the allergens, same avoid list
     return body.allergens;
   } catch (e) {
     const cached = store.get("allergens", null);
