@@ -3377,13 +3377,18 @@ the shutter is switched on." Built by Claude.
   the stored scans tell the two apart.
 - **The comparison (to record here):** Sushil switches the shutter on, scans 3 packs (tiny text, a glossy pouch, a
   curved bottle) both ways, about 6 normal paid reads (about Rs 4, accepted), and compares the stored scans
-  (OPERATIONS.md "The label shutter"). Then the shutter goes on for everyone or stays off. **Result: pending.**
+  (OPERATIONS.md "The label shutter"). Then the shutter goes on for everyone or stays off. **Result: off (2026-10-11, below).**
 - Walked in headless Chromium (Playwright, 390 x 844, light and dark, a fake camera stream, `/scan` answered from a
   replayed reading, `/check-photo` the real server): one photo with the table; list then table; no table; a 2-part list
   then the table (3 photos); upload instead of the camera; the switch off; camera permission refused; D-168's table
   photo; the "Too dark" hint; the front link on step 2's answer (live, with "Not now" and the pairing box) and on
   step 3's (switch off). No console errors. Not walked: a real phone's camera.
 web-48. `tests/test_web.py`, `tests/test_photo_source.py`, `tests/test_deploy.py`.
+- **Result (Sushil, 2026-10-11): OFF.** "shutter we will off, as we face more issue here". The comparison of 3 packs
+  both ways was not run; the app's own shutter was on for everyone from 2026-10-08 and testers met more problems with it
+  than with the phone's camera app. `INSIDELABEL_LIVE_SHUTTER` is set to off on the server, so every label step opens
+  the phone's camera app (or an upload), as before D-171. The code stays behind the switch; it comes back only with
+  the comparison done first.
 
 ### D-172 · A label Gemini blocks is retried, then sent to a person; every model failure keeps its text `LOCKED` (2026-10-07)
 Found 2026-10-07, proposed by the advisor. **Accepted by Sushil 2026-10-07: "accepted"**, with his plan answers ("Send
