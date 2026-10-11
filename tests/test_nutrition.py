@@ -369,3 +369,38 @@ def test_information_only_and_the_wording_lint(name):
     a, b = with_["screen"], without["screen"]
     assert a["summary"] == b["summary"] and a["people"] == b["people"] and a["alerts"] == b["alerts"]
     assert_clean(list(strings(a["nutrition"])), f"nutrition {name}")
+
+
+NOT_FOUND = {"status": "not_found", "per_100_basis": None, "rda_column": None, "serving_size": None,
+             "servings_per_pack": None, "rows": []}
+
+
+def scan_with(ingredients, **kw):
+    """/scan with a recorded answer and no table in the photo; kw changes the answer's fields."""
+    v = {**vision(ingredients, NOT_FOUND), **kw}
+    text = "INGREDIENTS: " + ", ".join(ingredients) + "."
+    with cloud_vision.replaying({cloud_vision.digest(PHOTO): text}):
+        r = c.post("/scan", files={"back": ("b.jpg", PHOTO, "image/jpeg")}, data={"replay": json.dumps(v)})
+    assert r.status_code == 200, r.text
+    return r.json()["screen"]
+
+
+def test_d199_the_table_ask_waits_on_a_screen_and_beside_the_list_ask():
+    # D-199: never from a screen (D-130), and one ask per scan while the list asks (D-194).
+    assert screen._nutrition({"status": "missing"})["ask_photo"] is True
+    assert screen._nutrition({"status": "missing"}, from_screen=True)["ask_photo"] is False
+    assert screen._nutrition({"status": "unclear"}, list_ask=True)["ask_photo"] is False
+    assert screen._nutrition({"status": "missing"}, list_ask=True)["ask"] is None
+    ing = ["Wheat flour", "Sugar", "Palm oil", "Salt"]
+    pack = scan_with(ing)
+    assert pack["state"] == "result" and pack["nutrition"]["ask_photo"] is True
+    shot = scan_with(ing, image_content={"back": "screen", "front": "not_provided"})
+    assert shot["from_screen"] and shot["nutrition"]["state"] == "missing" and not shot["nutrition"]["ask_photo"]
+    part = scan_with(ing, ingredients_status="partial")
+    assert part["state"] == "result" and part["retake"] and part["list_choices"]
+    assert part["nutrition"]["state"] == "missing" and not part["nutrition"]["ask_photo"]
+    # The result of the list's next part, read whole, asks for the table: room is still there.
+    assert screen._nutrition({"status": "missing"}, parts_sent=2)["ask_photo"] is True
+    # Nothing else moves (D-004): only the ask itself differs.
+    on, off = screen._nutrition({"status": "missing"}), screen._nutrition({"status": "missing"}, list_ask=True)
+    assert {k for k in on if on[k] != off[k]} == {"ask_photo", "ask"}

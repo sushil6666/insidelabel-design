@@ -1002,9 +1002,13 @@ function shotReview(res = undefined, frontRes = undefined) {
   const ask = !tableIn && n < MAX_PHOTOS && !listOnly && !frontIn;   // the table question, while there's room for its photo
   // D-181: with the front still to take, the answer leads to it; with it in, the check waits
   // for the "same pack" box (D-035), so the front can reach the reviewer.
-  const check = frontNeeded() && !pending.front
-    ? button(ask ? "Yes, now the front of the pack" : "Next: the front of the pack", () => show(frontShot()), "primary")
-    : button(ask ? "Yes, check this pack" : "Check this pack", () => sendPhotos(), "primary");
+  // D-199 (Sushil, 2026-10-11: "sometimes ... it skips step3 nutrition table"): the table
+  // question's two answers look the same (class table-answer), so a hurried tap isn't steered
+  // to Yes. Without the question, the one check keeps its words and the primary style.
+  const yes = frontNeeded() && !pending.front ? () => show(frontShot()) : () => sendPhotos();
+  const check = ask ? button("Yes, it's in this photo", yes, "table-answer")
+    : frontNeeded() && !pending.front ? button("Next: the front of the pack", yes, "primary")
+    : button("Check this pack", yes, "primary");
   if (frontIn && !pending.pairing) check.disabled = true;
   const m = shown.length;
   return el("section", { class: "stack shot-review" },
@@ -1041,7 +1045,7 @@ function shotReview(res = undefined, frontRes = undefined) {
                       } }),
         m === 2 ? " Both photos are of the same pack" : " All these photos are of the same pack"),
       check,
-      ask && button("No, photograph the table", () => show(tableShot()))));
+      ask && button("No, photograph the table", () => show(tableShot()), "table-answer")));
 }
 
 // The front photo (D-100), then back to the same answer screen. D-181: a required step while
@@ -1689,6 +1693,11 @@ function result(id, sub, tileId) {
   const serious = tiles.filter(t => t.kind === "not_permitted");
   const notes = tiles.filter(t => t.kind !== "not_permitted");
   you(forYouLines(s));
+  // D-133's table card. D-199: first in For you, under the per-person lines (D-060, D-188),
+  // so it shows on the first screen; it was last, below the three answers.
+  const askTable = s.nutrition && canAskTable(s.nutrition, h);
+  if (askTable) you(el("div", { class: "card note" }, el("p", {}, s.nutrition.text),
+    button(s.nutrition.ask, () => go("table"))));
   if (serious.length) you(el("ul", { class: "tiles" }, serious.map(t => el("li", {}, tileLink(h, t)))));
   const answers = s.summary?.length
     ? answersView(s.summary)
@@ -1710,9 +1719,6 @@ function result(id, sub, tileId) {
   // whether or not anyone has an avoid list; the allergen card keeps its words and no buttons.
   const cardRetake = !s.list_choices && cardPeople(s).some(p => p.status === "cannot_confirm") && !h.looked_up;
   if (s.retake) you(partialRetake(s, h, ...(cardRetake ? [] : listChoices(s, h))));
-  const askTable = s.nutrition && canAskTable(s.nutrition, h);
-  if (askTable) you(el("div", { class: "card note" }, el("p", {}, s.nutrition.text),
-    button(s.nutrition.ask, () => go("table"))));
   if (s.recheck) you(el("div", { class: "card note" }, el("p", {}, s.recheck),
     button("Photograph the ingredients and nutrition table", () => recheckPhoto(h))));
   // D-175: a pack last checked over 15 days ago; one optional photo of the list, after the answers.

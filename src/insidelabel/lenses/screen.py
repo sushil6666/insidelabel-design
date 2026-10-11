@@ -1054,13 +1054,16 @@ def _nutrition_sources():
     return out
 
 
-def _nutrition(panel, parts_sent=1, catalogue=None):
+def _nutrition(panel, parts_sent=1, catalogue=None, from_screen=False, list_ask=False):
     """The `nutrition` block, or None for a scan whose answer predates D-133."""
     if not panel or panel.get("status") in (None, "not_read"):
         return None
     status = panel["status"]
     # A new photo helps only with a photo we took: not a catalogue pack, not a full set of parts.
-    can_ask = not catalogue and parts_sent < MAX_PARTS
+    # D-199: never from a screen (D-130: there is no pack in hand to photograph), and one ask
+    # per scan: while the list asks for its rest or a retake (D-194), the table waits for the
+    # result of that photo.
+    can_ask = not catalogue and parts_sent < MAX_PARTS and not from_screen and not list_ask
     if status in ("missing", "unclear", "unverified"):
         text = {"missing": NUTRITION_MISSING, "unclear": NUTRITION_UNCLEAR, "unverified": NUTRITION_UNVERIFIED}[status]
         ask = can_ask and status != "unverified"
@@ -1650,7 +1653,8 @@ def _build(*, verdict, display, claim_check, extracted, reliability, profiles,
     notes = _notes(ingredients, profiles, complete)
     if notes:
         out["ingredient_notes"] = notes
-    nut = _nutrition(nutrition, parts_sent, catalogue)
+    nut = _nutrition(nutrition, parts_sent, catalogue, from_screen=from_screen,
+                     list_ask=bool(out.get("retake") or out.get("list_choices")))
     if nut:
         out["nutrition"] = nut
     # D-123 again: "No concerns found" never sits over a "Worth a look" row. The

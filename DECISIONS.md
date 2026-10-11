@@ -4514,6 +4514,56 @@ that version was scanned (`raw_extraction`); a version without one (typed by a r
 migration. Compare: a red or amber diet line keeps a pack from "Better pick", as an allergen does. Nothing changes
 the verdict, a score or a concern (D-004). App web-69.
 
+### D-199 · The table question gets two equal answers; the table card moves up and asks once `LOCKED` (2026-10-11)
+**Sushil, 2026-10-11:** "one thing i observed sometimes during scan of ingredients it skips step3 nutrition table",
+then "yes" to the advisor's fix, then "accept, with A: the table card moves to the top of For you, same words. The
+allergen cards at the top of the result stay above it (D-060, D-188). On a partly read list, show only the list ask on
+that result; the table card can come on the result after the list retake, never both on one result (one ask per
+scan). "Clear photo." and no table ask on a screen result: yes." Built by Claude. Sushil merges; the advisor reviews
+the PR before that.
+
+**The numbers** (server, food photo scans in the 14 days to 2026-10-11, one list photo and no table read, where
+`nutrition.status` in `model_raw` was not "read" or "partial"): 4 of 40 since the step screens (7 Oct; 1 on 8 Oct, 3
+on 10 Oct); about 1 in 4 before 7 Oct.
+
+**Why.** After the first list photo the dock asked "Is the nutrition table in this photo too?" with a big green Yes
+("Yes, now the front of the pack" / "Yes, check this pack") over a plain "No, photograph the table". People in a
+hurry tapped the big button, so step 3 was skipped when the table wasn't in the photo. From the code, D-133's catch
+then did draw for those scans (status `missing` or `unclear` sets `ask_photo` on a one-photo new pack), but its card
+was the last thing in "For you", after "Worth knowing" and "The three answers": below the first screen at 390 x 844
+even with one note. Whether it drew or was tapped isn't recorded on the server.
+
+**The change.**
+- **Equal answers.** When the question shows, its two answers have the same size and style (`table-answer`), neither
+  the highlighted default, Yes first, both in the dock: "Yes, it's in this photo" and "No, photograph the table". Yes
+  does what the big button did (the front step while the front is needed, else send). Without the question (the list
+  took every photo, D-119/D-194; D-175's list-only re-check; the front already in, D-181) the one primary check keeps
+  its words. No new screen, no new tap.
+- **"Clear photo."** The back photo's check line was "Clear photo. We'll read the ingredients and the nutrition table
+  when you tap Check this pack.": it promised a table before the question was answered and named a button not on the
+  screen. It is now "Clear photo." (`api/main.py` `CHECK_MESSAGES["back_ok"]`, also shown under the table photo).
+- **The table card first in "For you"** (Sushil's choice A), same words (`screen.py`, D-091): under the per-person
+  lines, so the allergen cards and lines stay above it (D-060, D-188); nothing is added above the tabs (D-185).
+- **One ask per scan.** On a partly read list (D-194's `retake` / `list_choices`) the table ask waits: `_nutrition()`
+  sets no `ask_photo`, and the table card can come on the result of the list's next part or retake, which still has
+  room for it. Never both on one result.
+- **No table ask on a screen result** (D-130): `_nutrition()` sets no `ask_photo` when `from_screen`; a screenshot
+  had been getting "Add a photo of the nutrition table".
+
+**Every case where a one-photo new-pack scan with no table read ends without the card**, from the code, and kept:
+`not_read` (no `nutrition`; the response schema requires it, so only answers from before D-133); `unverified` (needs
+table rows read, so the table was in the photo and a new photo won't help); a list in 3 parts (no room, D-168 out of
+scope); after the next scan or a reload (the photos are gone; back to the same result from Your scans in the same
+session still shows it); a refusal (no result; the retake returns to step 2, which asks the question again);
+supplement, infant, special medical and not-food kinds (no nutrition block, D-139, D-140). A 2-part list and a front
+already taken do get the card; `pending` is never reset between `finish()` and the result. Not built: no ask for a
+pack that needs no table (water): the code has no such list and one would come from the Labelling and Display
+Regulations 2020 exemptions read from the primary document (D-046); the card's words already say "If the pack has
+one".
+
+Nothing changes the verdict, the allergen lines or any concern level (D-004). No migration. App web-70.
+`tests/test_web.py`, `tests/test_nutrition.py`.
+
 ---
 
 ## Open and pending
