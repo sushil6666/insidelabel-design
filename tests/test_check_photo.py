@@ -105,7 +105,7 @@ def test_a_back_photo_gets_a_tick_and_any_barcode_on_it():
     assert j["ok"] is True and j["barcode"] == code
     j = check("back", label_photo()).json()
     assert j["ok"] is True and j["barcode"] is None
-    assert "Check this pack" in j["message"]
+    assert j["message"] == "Clear photo."                       # D-199: no promise of a table
 
 
 @pytest.mark.parametrize("role, data, problem", [
