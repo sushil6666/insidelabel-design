@@ -148,10 +148,10 @@ def _composition(facts, ptype):
             continue
         row = table[r["nutrient"]]
         lo, hi = row["per_100_g"]
-        v = r["value"]
-        where = "below" if lo is not None and v < lo else "above" if hi is not None and v > hi else "within"
-        out.append({"label": str(r.get("label") or r["nutrient"]), "printed": screen._fmt(v, 4),
-                    "unit": row["unit"], "range": [lo, hi], "range_unit": row["unit"], "where": where})
+        # D-200 (advisor): the number and the table's range only; no below/above/within field,
+        # so those words can't reach a screen later.
+        out.append({"label": str(r.get("label") or r["nutrient"]), "printed": screen._fmt(r["value"], 4),
+                    "unit": row["unit"], "range": [lo, hi], "range_unit": row["unit"]})
     return out
 
 

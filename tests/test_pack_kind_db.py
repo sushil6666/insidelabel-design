@@ -197,9 +197,15 @@ def test_a_published_infant_pack_is_served_with_its_checks_and_no_score_with_the
     s = hit["screen"]
     assert s["headline"]["text"] == 'This pack says "Processed Cereal Based Complementary Food".'
     assert s["kind"]["lines"][0] == screen.INFANT_TEXT and "compare" in s["parts"]
-    # From the catalogue: the name, the words and the list; no photos, so no statements section.
-    assert [t["title"] for t in s["tiles"]] == ["Vanilla flavour"] and "statements" not in {x["id"] for x in s["sections"]}
+    # From the catalogue: the name, the words and the list; no photos, so no statements or composition section.
+    sections = {x["id"] for x in s["sections"]}
+    assert [t["title"] for t in s["tiles"]] == ["Vanilla flavour"]
+    assert "statements" not in sections and "composition" not in sections
     assert hit["compare_input"]["type"]["id"] == "processed_cereal" and hit["compare_input"]["statements"] is None
+    assert not hit["compare_input"].get("composition")
+    # No score: nothing that ranks or grades the pack, here or in the screen.
+    assert hit.get("score") is None and hit["nutrition"] is None
+    assert not {"score", "summary", "band_question", "nutrition"} & set(s)
 
 
 def test_an_infant_foods_own_checks_are_stored_for_reviewers_and_never_sent(env, infant_off):
@@ -247,8 +253,14 @@ def test_an_infant_foods_own_checks_are_stored_and_shown_to_users_with_the_switc
     got = raw["_infant"]
     assert got["type"]["id"] == "processed_cereal" and [w["word"] for w in got["words"]] == ["energy food"]
     assert got["additives"]["not_found"] == [{"entry": "Emulsifier (INS 472e)", "ins": "472e"}]
+    assert {s["id"] for s in got["statements"] if not s["found"]} >= {"boiled_water", "not_sole"}
+    assert got["free_from"] == [{"entry": "Added flavour (vanilla)", "why": ["flavour"]}]
+    assert [h["entry"] for h in got["hydrogenated"]] == ["Hydrogenated vegetable fat"]
+    # Still shown to reviewers, as with the switch off.
     _item, _c, page = item_page(env, vid)
-    assert 'id="infant-checks"' in page and "No picture of an infant or a woman" in page
+    assert 'id="infant-checks"' in page and "processed cereal, from" in page and "Not found</strong>: " in page
+    assert "No picture of an infant or a woman" in page
+    assert "Not found in this type&#39;s additive list: INS 472e" in page or "Not found in this type's additive list: INS 472e" in page
 
 
 def test_a_food_has_no_infant_checks(env):

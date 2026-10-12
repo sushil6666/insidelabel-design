@@ -4619,10 +4619,15 @@ Sushil, 2026-10-12: "enable all options for users BABY_FOOD and SUPPLEMENTS". As
   unchanged; the ICMR-NIN breastfeeding line stays held (7(1)); "safe", "best", "recommended", "healthy" and
   "suitable for your baby" never about an infant pack in our words. Food's result and Compare unchanged (the six gold
   labels against `tests/fixtures/pack_kind_gold_before.json`).
-- **Tests:** D-140's shadow tests (the 10 named in the plan, and 4 more in `test_pack_kind_db.py`) run with the switch
-  off, each with a switch-on twin beside it; two
-  assertions in them changed because D-200 itself moved supplements into Compare (a supplement against a food is
-  now refused as `mixed_kinds`; `COMPARABLE` is food and supplement). App web-71, no migration.
+- **Tests:** D-140's shadow tests (the 10 in `test_pack_kind.py` and 4 in `test_pack_kind_db.py`) run with the
+  switch off, each with a switch-on twin beside it. Advisor's review (2026-10-12) tightened three twins: an infant
+  pack served from the catalogue (name and list checks only, no statements or composition section, no score), an
+  infant pack read from a screen (shop list as D-130 gives food, no table ask), and the infant checks still stored
+  and shown to reviewers with the switch on. `test_special_medical_stays_allergens_and_its_own_statement` runs with
+  the switch off and on. `lenses/side_by_side.py` composition carries the number and the table's range only, no
+  below/above/within field. Two assertions in the shadow tests changed because D-200 itself moved supplements into
+  Compare (a supplement against a food is now refused as `mixed_kinds`; `COMPARABLE` is food and supplement). App
+  web-71, no migration.
 - **Lawyer's answer still pending: revisit D-200 when it comes** (`docs/BABY_FOOD.md` section 9, questions 1a to 1c).
 
 ---

@@ -300,17 +300,19 @@ def test_no_score_grade_or_band_for_an_infant_pack_or_a_supplement(infant_on):
     assert not re.search(r"\b(score|grade|band)\b", json.dumps(j).lower())
 
 
-def test_special_medical_stays_allergens_and_its_own_statement(infant_off):
+@pytest.mark.parametrize("switch", ["off", "on"])
+def test_special_medical_stays_allergens_and_its_own_statement(switch, infant_off):
+    """The same answer on /scan and /compare whichever way the switch is set."""
     off = _strip(scan(reading(*INVENTED["hypoallergenic"][:2]), key="smx"))
-    pack_kind.INFANT_TO_USERS = True
+    pack_kind.INFANT_TO_USERS = switch == "on"
     try:
-        on = _strip(scan(reading(*INVENTED["hypoallergenic"][:2]), key="smx"))
+        got = _strip(scan(reading(*INVENTED["hypoallergenic"][:2]), key="smx"))
+        r = compare([{"id": "a", "name": "A", "ingredients": ["Whey"], "kind": "special_medical"},
+                     {"id": "b", "name": "B", "ingredients": ["Whey"], "kind": "special_medical"}])
     finally:
         pack_kind.INFANT_TO_USERS = False
-    assert on == off and on["screen"]["kind"]["lines"] == [screen.KIND_TEXT["special_medical"]]
-    assert "compare" not in on["screen"]["parts"] and "compare_input" not in on
-    r = compare([{"id": "a", "name": "A", "ingredients": ["Whey"], "kind": "special_medical"},
-                 {"id": "b", "name": "B", "ingredients": ["Whey"], "kind": "special_medical"}])
+    assert got == off and got["screen"]["kind"]["lines"] == [screen.KIND_TEXT["special_medical"]]
+    assert "compare" not in got["screen"]["parts"] and "compare_input" not in got
     assert r.status_code == 422 and r.json()["reason"] == "special_medical"
 
 

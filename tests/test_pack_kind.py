@@ -620,6 +620,12 @@ def test_a_shop_list_for_an_infant_pack_read_from_a_screen_with_the_switch_on(in
     s = run(v)["screen"]
     assert s["kind"]["code"] == "infant" and "from_screen" in s and s["shop_list"] is True
     assert "share" in s["parts"]
+    # D-130 as for food: the same shop list a food read from a screen gets.
+    f = reading(["Atta", "Salt"], front="not_provided")
+    f["image_content"] = {"back": "screen", "front": "not_provided"}
+    assert run(f)["screen"]["shop_list"] is s["shop_list"]
+    # No table ask (D-199: never from a screen, and no nutrition card for an infant pack at all).
+    assert "nutrition" not in s and "ask_photo" not in json.dumps(s) and screen.NUTRITION_ASK not in json.dumps(s)
     # D-111's care: nothing strong from a screen read, so no 5(1), fat or additive tile.
     assert not [t for t in s.get("tiles", []) if t["id"].startswith(("free-", "hydro-", "iadd-"))]
 
