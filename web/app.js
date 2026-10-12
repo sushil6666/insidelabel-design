@@ -1481,6 +1481,7 @@ function finish(body, { lookedUp = false } = {}) {
       kind: body.pack_kind?.code || "food",
       pack_statements: body.extracted?.pack_statements || [],
       veg_mark: body.product?.veg_mark || null,                     // D-198: "Vegetarian only" in Compare
+      facts: body.compare_input || null,         // D-200: what Compare sets side by side (a supplement, an infant food)
     } : null,
   });
   // D-130: the pack from the shop list has been scanned in the shop; it's done.
@@ -1664,7 +1665,10 @@ function result(id, sub, tileId) {
     if (s.retake) put(partialRetake(s, h, ...listChoices(s, h)));
     if (s.recheck) put(el("div", { class: "card note" }, el("p", {}, s.recheck),
       button("Photograph the ingredients list", () => recheckPhoto(h))));
-    put(el("div", { class: "row wrap" }, button("Scan another", () => { resetPending(); go("scan"); }, "primary")),
+    // D-200: a supplement, and an infant food with its results shown, can be compared (with its own
+    // kind only, no pick) and put on the shop list; the server says so in screen.parts.
+    if (h.pack) put(shopListButton(s, h), resultNext(s, h), reportLink(h));
+    else put(el("div", { class: "row wrap" }, button("Scan another", () => { resetPending(); go("scan"); }, "primary")),
       reportLink(h));
     put(el("details", { class: "item more-pack" }, el("summary", {}, s.more_title || "More about this pack"),
       el("div", { class: "stack more-body" }, moreAbout(h, false))));
@@ -1729,36 +1733,7 @@ function result(id, sub, tileId) {
 
   // Actions: compare (D-057), the shop list (D-130), report (D-076, on every result).
   // D-130: a screen result goes on the shop list, to be scanned from the pack in the shop.
-  const onList = () => shopList().some(x => x.id === h.id);
-  if (s.shop_list && h.pack) you(button(onList() ? "On your shop list ✓" : "Add to my shop list", e => {
-    if (!onList()) {
-      store.set("shoplist", [{ id: h.id, product: h.product, barcode: h.barcode, at: h.at, pack: {
-        ingredients: h.pack.ingredients, allergen_statement: h.pack.allergen_statement } },
-        ...shopList()].slice(0, 30));
-    }
-    e.target.textContent = "On your shop list ✓";
-  }, "primary"));
-  // D-123, D-153: the next useful scan is the pack beside this one on the shelf (D-057), so the
-  // result ends on it: this pack joins Compare and the scanner opens for the next one.
-  // "Compare (n)" opens Compare once there are two or more.
-  const others = store.get("compare", []).filter(x => x !== h.id && historyItem(x)).length;
-  const next = () => { resetPending(); go("scan"); };
-  you(el("div", { class: "result-next" },
-    h.pack && !s.shop_list
-      ? el("button", { type: "button", class: "btn-big", onclick: () => {
-          if (!store.get("compare", []).includes(h.id)) toggleCompare(h.id);
-          updateNav();
-          next();
-        } }, "Holding another pack? Scan it to compare")
-      : el("button", { type: "button", class: "btn-big", onclick: next }, "Scan another pack"),
-    el("div", { class: "row wrap" },
-      h.pack && others > 0 && button(`Compare (${others + 1})`, () => {
-        if (!store.get("compare", []).includes(h.id)) toggleCompare(h.id);
-        updateNav();
-        go("compare");
-      }),
-      h.pack && !s.shop_list && button("Scan another", next, "link"))),
-    reportLink(h));
+  you(shopListButton(s, h), resultNext(s, h), reportLink(h));
 
   // D-153: what's promised and not built yet, said plainly (D-058/D-059 alternatives, D-113 Ask).
   // D-185 Phase 2 (D-177): one quiet line at the end, not two dashed boxes.
@@ -1783,6 +1758,42 @@ function result(id, sub, tileId) {
   return view;
 }
 
+// D-130: a screen result goes on the shop list, to be scanned from the pack in the shop.
+function shopListButton(s, h) {
+  const onList = () => shopList().some(x => x.id === h.id);
+  return s.shop_list && h.pack && button(onList() ? "On your shop list ✓" : "Add to my shop list", e => {
+    if (!onList()) {
+      store.set("shoplist", [{ id: h.id, product: h.product, barcode: h.barcode, at: h.at, pack: {
+        ingredients: h.pack.ingredients, allergen_statement: h.pack.allergen_statement } },
+        ...shopList()].slice(0, 30));
+    }
+    e.target.textContent = "On your shop list ✓";
+  }, "primary");
+}
+
+// D-123, D-153: the next useful scan is the pack beside this one on the shelf (D-057), so the
+// result ends on it: this pack joins Compare and the scanner opens for the next one.
+// "Compare (n)" opens Compare once there are two or more.
+function resultNext(s, h) {
+  const others = store.get("compare", []).filter(x => x !== h.id && historyItem(x)).length;
+  const next = () => { resetPending(); go("scan"); };
+  return el("div", { class: "result-next" },
+    h.pack && !s.shop_list
+      ? el("button", { type: "button", class: "btn-big", onclick: () => {
+          if (!store.get("compare", []).includes(h.id)) toggleCompare(h.id);
+          updateNav();
+          next();
+        } }, "Holding another pack? Scan it to compare")
+      : el("button", { type: "button", class: "btn-big", onclick: next }, "Scan another pack"),
+    el("div", { class: "row wrap" },
+      h.pack && others > 0 && button(`Compare (${others + 1})`, () => {
+        if (!store.get("compare", []).includes(h.id)) toggleCompare(h.id);
+        updateNav();
+        go("compare");
+      }),
+      h.pack && !s.shop_list && button("Scan another", next, "link")));
+}
+
 // D-177: the pack card at the top of a result: the user's own photo of the pack (kept on this
 // phone, D-074), its name as the h1 (focus and a screen reader start here, D-153), and Share.
 function packHead(h) {
@@ -1795,8 +1806,14 @@ function packHead(h) {
     el("div", { class: "pack-name" },
       el("h1", { class: "product" }, productName(h.product)),
       h.product?.net_quantity && el("p", { class: "pack-meta" }, h.product.net_quantity)),
-    el("button", { type: "button", class: "share-btn", "aria-label": "Share this result", onclick: () => shareResult(h) },
-      icon("share")));
+    canShare(h.screen) && el("button", { type: "button", class: "share-btn", "aria-label": "Share this result",
+                                         onclick: () => shareResult(h) }, icon("share")));
+}
+
+// D-140, D-200: an infant food's result is shared only when the server lists "share" in its parts
+// (INSIDELABEL_INFANT_TO_USERS on); in shadow it isn't. Every other result keeps Share (D-177).
+function canShare(s) {
+  return s?.kind?.code !== "infant" || (s.parts || []).includes("share");
 }
 
 // D-177: Share sends the result's own words (D-091) as text. A child's nickname stays on this
@@ -2289,7 +2306,10 @@ function toggleCompare(id) {
 function compare() {
   const ids = store.get("compare", []);
   const packs = ids.map(historyItem).filter(h => h && h.pack);
-  const kids = profiles().filter(p => p.age !== "adult");
+  // D-200: supplements and infant foods are set side by side for anyone's avoid list, with no
+  // pick and no age; food keeps D-057's pick for a child. The server checks the kinds again.
+  const sideBySide = packs.length > 0 && packs.every(h => ["supplement", "infant"].includes(h.pack.kind));
+  const kids = sideBySide ? profiles() : profiles().filter(p => p.age !== "adult");
   const others = history().filter(h => h.pack && !ids.includes(h.id)).slice(0, 10);
   let whoRef = kids[0]?.ref || null;
   let age = kids[0]?.age || "kid";
@@ -2303,9 +2323,9 @@ function compare() {
       const { body } = await compareRequest({
         packs: packs.map(h => ({ id: h.id, name: productName(h.product), ...h.pack,
                                  confidence: Math.min(1, Math.max(0, h.pack.confidence)) })),
-        age: who ? who.age : age,
+        age: who && !sideBySide && who.age !== "adult" ? who.age : sideBySide ? "kid" : age,
         avoid: who ? who.avoid : [],
-        who: who ? "{name}" : null,           // D-074: the nickname is filled in here, not sent
+        who: who && who.ref !== "me" ? "{name}" : null,     // D-074: the nickname is filled in here, not sent
       });
       out.replaceChildren(compareResult(body, whoRef));
       // D-178: the answer lands below the fold on a phone; bring it up.
@@ -2317,8 +2337,9 @@ function compare() {
 
   return el("section", { class: "stack" },
     el("h1", {}, "Compare packs"),
-    el("p", { class: "muted" },
-      "Scan 2 to 4 packs from the same shelf. We name the better pick of these for a child."),
+    el("p", { class: "muted" }, sideBySide
+      ? "Scan 2 to 4 packs of the same kind. We set their labels side by side and don't name a pick."
+      : "Scan 2 to 4 packs from the same shelf. We name the better pick of these for a child."),
     // D-178: the chosen packs side by side, with a slot to fill until there are two.
     packs.length
       ? el("ul", { class: "compare-grid" },
@@ -2333,7 +2354,7 @@ function compare() {
       el("summary", {}, "Add from recent scans"),
       el("ul", { class: "list" }, others.map(h => el("li", { class: "row between" },
         el("span", {}, productName(h.product)), button("Add", () => refresh(h.id), "link"))))),
-    kids.length > 0
+    kids.length > 0 || sideBySide
       ? el("fieldset", {}, el("legend", {}, "For"), kids.map(k => el("label", { class: "choice" },
           el("input", { type: "radio", name: "who", checked: k.ref === whoRef,
                         onchange: () => { whoRef = k.ref; } }), " " + k.nickname)))
@@ -2348,6 +2369,7 @@ function compare() {
 // Outcome headings are the only compare wording written here; every reason
 // comes from compare.py (D-057), which the wording lint checks.
 function compareResult(r, ref) {
+  if (r.outcome === "side_by_side") return sideBySideResult(r, ref);
   const name = id => r.packs.find(p => p.id === id)?.name || "";
   const who = fill(r.who, ref);
   const heading = {
@@ -2374,6 +2396,26 @@ function compareResult(r, ref) {
           !p.fully_checked && el("li", { class: "muted" }, "Not fully checked, so it can't be the pick."))))));
 }
 
+// D-200: supplements or infant foods, side by side. Every word is the server's
+// (lenses/side_by_side.py); no pick, no badge, no order but the order the packs were added.
+function sideBySideResult(r, ref) {
+  const flags = p => [...p.allergens, ...p.diet];
+  return el("div", { class: "stack side-by-side" },
+    el("h2", {}, r.heading),
+    el("p", { class: "muted" }, r.note),
+    // One row per fact, the packs in columns, so each fact lines up across them (KEYS in side_by_side.py).
+    el("div", { class: "sbs", style: `--n:${r.packs.length}` },
+      r.packs.map((p, i) => el("div", { class: "card sbs-head", style: `--i:${i}` },
+        packThumb(historyItem(p.id)),
+        el("strong", {}, p.name),
+        flags(p).length > 0 && el("ul", { class: "plain small" },
+          flags(p).map(a => el("li", { class: "flag" }, fill(a.text, ref)))))),
+      (r.packs[0]?.rows || []).map((row, k) => [
+        el("h3", { class: "sbs-title" }, row.title),
+        r.packs.map(p => el("div", { class: "sbs-cell" }, (p.rows[k]?.lines || []).map(t => el("p", {}, t))))])),
+    r.sources?.length > 0 && el("details", { class: "more" }, el("summary", {}, "Sources"), sourceList(r.sources)));
+}
+
 // app-polish: grey lines where content is coming (the words beside them say what).
 function skeleton(lines) {
   return el("div", { class: "skeleton", "aria-hidden": "true" },
@@ -2391,7 +2433,8 @@ function apiMessage(e) {
   // D-095: the server's own text says how long to wait.
   if (e.status === 429) return e.body?.detail || "You've checked a lot of packs in a short time. Please wait a few minutes.";
   // D-103: the server names what's wrong with a barcode or a photo file.
-  const own = ["bad_barcode", "not_an_image", "photo_too_small", "photo_blank", "back_required", "rate_limited"];
+  const own = ["bad_barcode", "not_an_image", "photo_too_small", "photo_blank", "back_required", "rate_limited",
+               "not_comparable"];      // D-200: a pack compares only with its own kind; the server says why
   if (own.includes(e.body?.error) && e.body.detail) return e.body.detail;
   if (e.status === 413) return "That photo is too large. Take it again a little further away.";
   if (e.status === 415) return "That file isn't a photo we can read. Use the camera instead.";

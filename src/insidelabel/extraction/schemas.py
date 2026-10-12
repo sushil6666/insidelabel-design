@@ -64,6 +64,9 @@ class ComparePack(BaseModel):
                                         description="/scan extracted.pack_statements, as printed.")
     # D-198: for "Vegetarian only". Older clients send none: the list is checked alone.
     veg_mark: Optional[str] = Field(None, description='/scan product.veg_mark: "veg", "non_veg" or "not_visible".')
+    # D-200: what /scan read from the photos of a supplement or an infant pack, sent back for
+    # Compare (/scan compare_input); the server works out and words everything else again.
+    facts: Optional[dict] = Field(None, description="/scan compare_input, for a supplement or an infant pack.")
 
 
 class CompareRequest(BaseModel):

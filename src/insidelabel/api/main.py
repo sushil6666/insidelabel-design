@@ -57,6 +57,7 @@ from insidelabel.lenses import allergens as allergen_checker  # noqa: E402
 from insidelabel.lenses import diet as diet_checker  # noqa: E402
 from insidelabel.lenses import compare as shelf  # noqa: E402
 from insidelabel.lenses import infant as infant_lens  # noqa: E402
+from insidelabel.lenses import side_by_side  # noqa: E402
 from insidelabel.lenses import nutrition  # noqa: E402
 from insidelabel.lenses import regulators  # noqa: E402
 from insidelabel.lenses import screen as result_screen  # noqa: E402
@@ -560,6 +561,13 @@ def allergen_check(req: AllergenCheckRequest):
 # ---------------------------------------------------------------------------
 # Shelf comparison (D-057)
 # ---------------------------------------------------------------------------
+# D-200: a pack compares only with packs of its own kind; each refusal has its own sentence.
+MIXED_COMPARE = {
+    "infant": "We compare an infant food only with other infant foods.",
+    "supplement": "We compare a supplement only with other supplements.",
+}
+
+
 def _pack_out(p, who):
     return {
         "id": p.id,
@@ -597,17 +605,18 @@ def compare_packs(req: CompareRequest):
             "error": "bad_age",
             "detail": f"age must be one of {', '.join(shelf.AGE_BANDS)}.",
         })
-    # D-140: the server itself never compares or ranks an infant food (nor, until
-    # phase 2, a supplement), whatever the client sends. Refused if any of: the kind
-    # the client reports, the kind the pack's printed statements give, or the kind
-    # stored for that scan says it can't be compared.
+    # D-140: the server itself decides what can be compared, whatever the client sends.
+    # Refused if any of: the kind the client reports, the kind the pack's printed
+    # statements give, or the kind stored for that scan says it can't be compared.
+    # With INSIDELABEL_INFANT_TO_USERS off, an infant food never is (D-140's shadow).
+    group = []
     for p in req.packs:
         kinds = {p.kind or "food", pack_kind.decide({"pack_statements": [
             s for s in p.pack_statements if isinstance(s, dict) and isinstance(s.get("text"), str)]})["code"]}
         stored = _persist(STORE.kind_of_scan, p.id) if STORE else None
         if stored:
             kinds.add(stored)
-        blocked = sorted(kinds - pack_kind.COMPARABLE)
+        blocked = sorted(kinds - pack_kind.comparable())
         if blocked:
             raise HTTPException(status_code=422, detail={
                 "error": "not_comparable", "reason": "infant_food" if "infant" in blocked else blocked[0],
@@ -615,15 +624,26 @@ def compare_packs(req: CompareRequest):
                 "detail": ("We don't compare or rank foods for infants." if "infant" in blocked
                            else "We compare ordinary foods only for now."),
             })
+        # D-200: any source naming the stricter kind decides it, so a pack can't join another kind's comparison.
+        group.append("infant" if "infant" in kinds else "supplement" if "supplement" in kinds else "food")
+    if len(set(group)) > 1:
+        odd = next(p.id for p, k in zip(req.packs, group) if k != group[0])
+        raise HTTPException(status_code=422, detail={
+            "error": "not_comparable", "reason": "mixed_kinds", "pack": odd,
+            "detail": MIXED_COMPARE["infant" if "infant" in group else "supplement"],
+        })
     codes = parse_avoid(req.avoid)
+    if len({p.id for p in req.packs}) != len(req.packs):
+        raise HTTPException(status_code=422, detail={
+            "error": "duplicate_pack", "detail": "Each pack needs a distinct id.",
+        })
+    if group[0] != "food":
+        # D-200: supplements and infant foods side by side, with no pick (lenses/side_by_side.py).
+        return side_by_side.compare(group[0], [p.model_dump() for p in req.packs], avoid=codes, who=req.who)
     packs = [shelf.Product(p.id, p.name, p.ingredients, reliable=p.reliable,
                            allergen_statement=p.allergen_statement, confidence=p.confidence,
                            veg_mark=p.veg_mark)
              for p in req.packs]
-    if len({p.id for p in packs}) != len(packs):
-        raise HTTPException(status_code=422, detail={
-            "error": "duplicate_pack", "detail": "Each pack needs a distinct id.",
-        })
     r = shelf.compare(packs, age=req.age, avoid=codes, who=req.who,
                       strict_may_contain=req.strict_may_contain)
     who = r["who"]
@@ -954,6 +974,12 @@ def _parse_screen_pack(raw):
     return {"ingredients": ings, "allergen_statement": stmt}
 
 
+def _compare_input(kind, **read):
+    """D-200: {"compare_input": ...} for a pack Compare sets side by side, else {} (the answer unchanged)."""
+    got = result_screen.compare_input(kind["code"], **read)
+    return {} if got is None else {"compare_input": got}
+
+
 def _withhold(kind, result):
     """
     D-140: a kind in shadow (infant foods) gets no result from the server, whatever the
@@ -961,11 +987,11 @@ def _withhold(kind, result):
     result. The allergen lines, the kind and the ingredient list stay (the screen block).
     The scan is still stored whole for reviewers (save_scan ran before this).
     """
-    fields = pack_kind.WITHHOLD.get(kind["code"], ())
+    fields, reason = pack_kind.withhold(kind["code"])          # D-200: the switch picks the reason
     if fields:
         for f in fields:
             result[f] = None
-        result["withheld"] = {"fields": list(fields), "reason": pack_kind.WITHHOLD_REASON[kind["code"]]}
+        result["withheld"] = {"fields": list(fields), "reason": reason}
     # D-139: a supplement has no score, grade, band or NOVA count; its flags stay for reviewers.
     for field, keys in pack_kind.WITHHOLD_KEYS.get(kind["code"], {}).items():
         if isinstance(result.get(field), dict):
@@ -1110,6 +1136,7 @@ def _catalogue_result(hit, avoid_codes, who, compare_regulators, profiles=(), sc
             # D-139: no reading from the catalogue; the published name still says tablet or powder.
             nutra_input={"product": {"name": hit["name"], "variant": hit["variant"]}}) | _pack_picture(hit),
         "pack_kind": {k: kind[k] for k in ("code", "evidence", "review")},
+        **_compare_input(kind, product={"name": hit["name"], "variant": hit["variant"]}),
         "catalogue": catalogue,
         "product": {"brand": hit["brand"], "name": hit["name"], "variant": hit["variant"],
                     "veg_mark": _stored_veg_mark(hit)},                 # D-198: kept for Compare
@@ -2189,6 +2216,7 @@ async def scan(
             unchecked=bool(saved and saved["version_status"] == "pending_review"
                            and not saved.get("checked") and kind["code"] == "food")),
         "pack_kind": {k: kind[k] for k in ("code", "evidence", "review")},
+        **_compare_input(kind, vision=vision, ocr_text=ocr_result.get("ocr_text")),
         "scan_id": saved["scan_id"] if saved else _str(unlisted_id),
         "catalogue": ({"source": "scan", "product_version_id": saved["product_version_id"],
                        "status": saved["version_status"], "queued_for_review": saved["queued"]}
