@@ -8,8 +8,9 @@ data/infant_rules.json, read from the compendium's page images (D-046); the mode
 only copies the printed words (D-004).
 
 In shadow (D-140, Sushil 2026-09-30): /scan computes this and stores it with the
-scan's reading for reviewers (/review); users see the allergen lines, the kind and
-the ingredient list only, until a lawyer has read the IMS Act questions.
+scan's reading for reviewers (/review). D-200 (Sushil 2026-10-12, "Everything"): with
+INSIDELABEL_INFANT_TO_USERS on (the default) users see it too, in lenses/screen.py's words
+and in Compare (lenses/side_by_side.py); off, only the allergen lines, the kind and the list.
 
 What this module does:
 - product_type(): infant formula, follow-up formula, milk cereal or processed cereal

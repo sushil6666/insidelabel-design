@@ -1,5 +1,9 @@
 # Baby food: infant formula and complementary foods (D-140, phase 0)
 
+**D-200 (2026-10-12):** Sushil chose "Everything": the checks below, Compare (infant packs only, side by side, no
+pick), the shop list and Share go to users behind `INSIDELABEL_INFANT_TO_USERS` (on by default). Section 5's
+refusals are the switch-off state. The lawyer's questions (section 9) are still open.
+
 Written 2026-09-30 from primary documents read that day (D-046). **Accepted by Sushil 2026-09-30 (D-140
 LOCKED, with his choices recorded there); built in phase 3, in shadow.** Lines
 marked "User text" are what the app would show; each quotes its source. The kind-of-pack rule and

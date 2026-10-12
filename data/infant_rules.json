@@ -2,7 +2,7 @@
   "_meta": {
     "table": "infant_rules",
     "version": "0.1",
-    "purpose": "D-140 phase 3: an infant food's own checks from FSSAI's rules for foods for infant nutrition (lenses/infant.py). Computed and stored for reviewers only (in shadow, D-140): users see the allergen lines, the kind and the ingredient list.",
+    "purpose": "D-140 phase 3: an infant food's own checks from FSSAI's rules for foods for infant nutrition (lenses/infant.py). Computed and stored for reviewers (D-140); shown to users too with INSIDELABEL_INFANT_TO_USERS on (D-200, the default), else in shadow: users see the allergen lines, the kind and the ingredient list.",
     "source": {
       "title": "FSS (Foods for Infant Nutrition) Regulations, 2020, compendium Version II (04.01.2024)",
       "url": "https://fssai.gov.in/docs/food-law/regulations/Comp_IFR_VERSION-II_04_01_2024.pdf",

@@ -287,6 +287,19 @@ sudo -u insidelabel psql -d insidelabel -c "SELECT created_at, latency_ms, timin
   FROM scans WHERE back_image_key IS NOT NULL ORDER BY created_at DESC LIMIT 10"
 ```
 
+### Infant results switch (D-200), on
+
+Infant foods' results, Compare, shop list and Share go to users unless `INSIDELABEL_INFANT_TO_USERS` is `off`
+(unset = on, Sushil 2026-10-12). If the lawyer says no, turn it off and restart, in one command:
+
+```bash
+echo 'INSIDELABEL_INFANT_TO_USERS=off' | sudo tee -a /etc/insidelabel/settings.env && sudo systemctl restart insidelabel
+```
+
+Off, every route answers as D-140's shadow (allergens, the kind and the list; Compare refuses an infant pack; no
+Share). Check: `sudo grep INFANT /etc/insidelabel/settings.env`. To turn it on again, delete that line and restart.
+Results already shown stay on the phones that got them.
+
 ### Read switches (D-191, D-193), all off
 
 Each is one line in `/etc/insidelabel/settings.env` (`sudoedit`, then

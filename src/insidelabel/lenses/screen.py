@@ -1959,6 +1959,10 @@ INFANT_STATEMENT_NAMES = {"important_notice": "\"IMPORTANT NOTICE\"", "mothers_m
                           "not_sole": "the sole source warning", "preparation": "the hygienic preparation warning",
                           "storage": "the storage statement", "boiled_water": "the boiled water warning",
                           "no_milk": "the no milk statement"}
+# D-200 (Sushil, 2026-10-12): "best" only inside the notice as printed on the pack, never in our
+# words; a notice we didn't find is named, not quoted.
+INFANT_NOT_FOUND = {"mothers_milk": "the notice about mother's milk that regulation 4(1)(a) asks for on the front, "
+                                    "in capital letters"}
 _FREE_FROM_CHIP = {"preservative": "FSSAI's infant rules leave out preservatives",
                    "colour": "FSSAI's infant rules leave out added colours",
                    "flavour": "FSSAI's infant rules leave out added flavours"}
@@ -1978,8 +1982,8 @@ def infant_type_line(ptype):
 def infant_statement_lines(statements, no_milk=None):
     """Regulation 4's statements found or not found, as the result and Compare say them."""
     rows = list(statements or []) + ([no_milk] if no_milk else [])
-    lines = [f"FSSAI's rules for infant foods ask the label for {r['text']}. We didn't find it on the photos of this "
-             "pack." for r in rows if not r["found"]]
+    lines = [f"FSSAI's rules for infant foods ask the label for {INFANT_NOT_FOUND.get(r.get('id'), r['text'])}. We "
+             "didn't find it on the photos of this pack." for r in rows if not r["found"]]
     found = [INFANT_STATEMENT_NAMES[r.get("id", "no_milk")] for r in rows if r["found"]]
     if found:
         lines.append("Found on the pack, as the rules ask: " + ", ".join(found) + ".")
