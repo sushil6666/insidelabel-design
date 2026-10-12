@@ -2241,8 +2241,11 @@ Sushil: "implement supplements and baby food part, part of beta" (2026-09-30), p
   one supplement above another, and a "better choice" between supplements is close to medical advice.
   Revisit after the week-4 result (D-083). `/compare` already refuses them (`data/pack_kinds.json`
   "comparable": food only), with a test.
+- **Compare `CHANGED by D-200` (Sushil, 2026-10-12, "Facts only"):** a supplement compares with supplements
+  only, side by side with no pick, no "better pick" and no child line; a supplement against a food or an infant pack
+  is refused with its own sentence. The rest of D-139 stands.
 
-### D-140 · Baby food: infant formula and complementary foods, released in shadow `LOCKED` (2026-09-30)
+### D-140 · Baby food: infant formula and complementary foods, released in shadow `LOCKED` (2026-09-30), "released in shadow" `CHANGED by D-200` (2026-10-12)
 Same request as D-139. Full proposal: `docs/BABY_FOOD.md`. **Nothing built until Sushil says "accepted".**
 
 - **Legal basis:** FSS (Foods for Infant Nutrition) Regulations 2020 (gazetted 4 December 2020,
@@ -4563,6 +4566,69 @@ one".
 
 Nothing changes the verdict, the allergen lines or any concern level (D-004). No migration. App web-70.
 `tests/test_web.py`, `tests/test_nutrition.py`.
+
+### D-200 · Baby food to users ("Everything") behind a switch; supplements and infant foods in Compare, side by side with no pick `LOCKED` (2026-10-12)
+Sushil, 2026-10-12: "enable all options for users BABY_FOOD and SUPPLEMENTS". Asked by the advisor:
+- **Baby food: "Everything"** (checks plus Compare, shop list and share card for infant packs). **The advisor's advice
+  beside it:** "checks only, no grade, ranking, Compare, shop list or share card" until the lawyer answers, because of
+  the IMS Act 1992 as quoted in D-140: 2(a) ""advertisement" includes any notice, circular, label, wrapper or any other
+  document or visible representation or announcement made by means of any light, sound, smoke or gas or by means of
+  electronic transmission or by audio or visual transmission;" (p. 4); 2(j) ""promotion" means to employ directly or
+  indirectly any method of encouraging any person to purchase or use infant milk substitute, feeding bottle or infant
+  food." (p. 4); 3 "No person shall (a) advertise, or take part in the publication of any advertisement, for the
+  distribution, sale or supply of infant milk substitutes, feeding bottles or infant foods; or (b) give an impression or
+  create a belief in any manner that feeding of infant milk substitutes and infant foods are equivalent to, or better
+  than, mother's milk; or (c) take part in the promotion of infant milk substitutes, feeding bottles or infant foods."
+  (p. 5). Sushil chose "Everything"; the choice is his.
+- **Supplements: "Facts only"** in Compare (the advisor's recommendation).
+- **Plan accepted by Sushil 2026-10-12** ("accept D-200, with all three"): (1) no pick between infant foods: facts
+  side by side, no winner, no badge, no count; (2) "best" allowed by the lint only inside the exact quoted notice
+  "MOTHER'S MILK IS BEST FOR YOUR BABY" shown as printed on the pack, never in our own words, with a test for both;
+  (3) with the switch off, hide Share on infant results, as D-140 meant: **the one change with the switch off**
+  (D-177 had put Share on every result, infant ones included). Plan: `/mnt/project-files/baby-supplements/plan.md`.
+- **The switch:** `INSIDELABEL_INFANT_TO_USERS`, read per request like D-051's claim switch (`core/pack_kind.py`
+  `infant_to_users()`), **on when unset** (Sushil's choice); any value but `on` is off. Off, every route answers as
+  D-140's shadow did, byte for byte (`tests/fixtures/infant_shadow_before.json`, recorded on `main` 636386b), Share
+  aside. **To turn it off:** `echo 'INSIDELABEL_INFANT_TO_USERS=off' | sudo tee -a /etc/insidelabel/settings.env &&
+  sudo systemctl restart insidelabel` (OPERATIONS.md). Results already shown stay in that phone's "Your scans".
+- **Infant result, switch on** (`lenses/screen.py`, D-091; `data/pack_kinds.json` kinds.infant.to_users): allergen
+  cards first (D-060, D-188); the headline in the pack's words; the kind card ("We check an infant food against FSSAI's
+  rules for foods for infant nutrition, not against our checks for foods.") with the product type line, or "The pack's
+  name doesn't say which kind of infant food it is, so the checks that depend on the kind (its additive list,
+  hydrogenated fat, composition) are off."; tiles for 4(2)'s words as printed, 5(1) preservatives, colours and
+  flavours ("leave out", never "free from"), hydrogenated fat by type and 5(2) INS numbers not found in the type's
+  list (the last three only on a complete read, D-111's care); sections: regulation 4's statements found (named) or
+  not found (the rule's words; the 4(1)(a) notice is named, never quoted, when not printed), additives, and
+  composition as facts ("Iron: 8 mg per 100 g on the pack. FSSAI's table: 3 to 7 mg.", no "within", "above" or
+  "fails"). **Composition goes to users**, changing D-140's "reviewer-only in the beta". Still `withheld` (reason
+  `infant_not_scored`): verdict, display, claim check, nutrition, EU/US. From the catalogue: name and list checks only.
+- **Compare** (`lenses/side_by_side.py`): a pack compares only with its own kind; any of the three sources (client
+  kind, printed words, stored kind) naming infant or supplement makes the pack that kind. Infant with infant and
+  supplement with supplement: one row per fact, a pack per column, in the order added; **no `best`, `tie` or
+  `why_best` field at all**, no count. No source we read ranks one infant food (or supplement) above another, so
+  nothing decides a pick. Supplements: a day's usage as printed, amounts beside ICMR-NIN's RDA for men and women
+  ("RDA" never a limit, D-139), above the upper limit for adults, plant notes, additives for the format; no child
+  line (FSSAI 5(10)). The phone sends back what /scan read from the photos (`compare_input`); the server words
+  everything and works out the rest from the list again. Mixed: 422 `not_comparable`, reason `mixed_kinds`, "We
+  compare an infant food only with other infant foods." or "We compare a supplement only with other supplements."
+  (the app now shows the server's sentence for any refusal; before, "Something went wrong on our side").
+- **Shop list and Share:** on for infant packs with the switch on, and the shop list for supplements ("enable all
+  options"). Tallies on "Your scans" stay off for both.
+- **Hard lines that stay** (`tests/test_infant_to_users.py`, `tests/test_wording.py`): nothing sets an infant food
+  beside mother's milk (IMS 3(b)), never a Compare column or reference; no score, grade or band; special_medical
+  unchanged; the ICMR-NIN breastfeeding line stays held (7(1)); "safe", "best", "recommended", "healthy" and
+  "suitable for your baby" never about an infant pack in our words. Food's result and Compare unchanged (the six gold
+  labels against `tests/fixtures/pack_kind_gold_before.json`).
+- **Tests:** D-140's shadow tests (the 10 in `test_pack_kind.py` and 4 in `test_pack_kind_db.py`) run with the
+  switch off, each with a switch-on twin beside it. Advisor's review (2026-10-12) tightened three twins: an infant
+  pack served from the catalogue (name and list checks only, no statements or composition section, no score), an
+  infant pack read from a screen (shop list as D-130 gives food, no table ask), and the infant checks still stored
+  and shown to reviewers with the switch on. `test_special_medical_stays_allergens_and_its_own_statement` runs with
+  the switch off and on. `lenses/side_by_side.py` composition carries the number and the table's range only, no
+  below/above/within field. Two assertions in the shadow tests changed because D-200 itself moved supplements into
+  Compare (a supplement against a food is now refused as `mixed_kinds`; `COMPARABLE` is food and supplement). App
+  web-71, no migration.
+- **Lawyer's answer still pending: revisit D-200 when it comes** (`docs/BABY_FOOD.md` section 9, questions 1a to 1c).
 
 ---
 

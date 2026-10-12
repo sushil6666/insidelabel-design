@@ -1152,6 +1152,16 @@ html:has(body.has-tabbar) { scroll-padding-bottom: calc(88px + env(safe-area-ins
 .compare-col > * + * { margin-top: 0; }
 .compare-col li { font-size: var(--fs-sm); }
 .compare-col.best { border: 2px solid var(--brand); }
+/* D-200: supplements and infant foods side by side: a fact per row, a pack per column, no pick. */
+.sbs { display: grid; grid-template-columns: repeat(var(--n, 2), minmax(150px, 1fr)); gap: 8px 10px;
+       overflow-x: auto; align-items: start; }
+.sbs-head { display: flex; flex-direction: column; gap: 6px; min-width: 0; align-self: stretch; }
+.sbs-head strong { overflow-wrap: break-word; }
+.sbs-head li { font-size: var(--fs-sm); }
+.sbs-title { grid-column: 1 / -1; margin: 10px 0 0; font-size: var(--fs-sm); color: var(--muted);
+             border-top: 1px solid var(--line); padding-top: 10px; }
+.sbs-cell { min-width: 0; font-size: var(--fs-sm); overflow-wrap: break-word; }
+.sbs-cell p { margin: 0 0 6px; }
 .best-tag { align-self: flex-start; font-size: var(--fs-xs); font-weight: 700; color: var(--brand-ink);
             background: var(--brand); border-radius: var(--r-pill); padding: 2px 10px; }
 

@@ -90,3 +90,21 @@ def fresh_db(pg_admin):
     finally:
         with psycopg.connect(admin, autocommit=True) as c:
             c.execute(f'DROP DATABASE IF EXISTS "{name}" WITH (FORCE)')
+
+
+# D-200: infant results go to users unless INSIDELABEL_INFANT_TO_USERS is "off". The
+# shadow's tests (D-140) run with it off, each with a switch-on twin beside it.
+@pytest.fixture
+def infant_off():
+    from insidelabel.core import pack_kind
+    old, pack_kind.INFANT_TO_USERS = pack_kind.INFANT_TO_USERS, False
+    yield
+    pack_kind.INFANT_TO_USERS = old
+
+
+@pytest.fixture
+def infant_on():
+    from insidelabel.core import pack_kind
+    old, pack_kind.INFANT_TO_USERS = pack_kind.INFANT_TO_USERS, True
+    yield
+    pack_kind.INFANT_TO_USERS = old

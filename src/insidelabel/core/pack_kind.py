@@ -50,6 +50,32 @@ WITHHOLD = {k: tuple(v.get("withhold", ())) for k, v in TABLE["kinds"].items()}
 WITHHOLD_KEYS = {k: v.get("withhold_keys", {}) for k, v in TABLE["kinds"].items()}
 WITHHOLD_REASON = {k: v.get("withhold_reason") for k, v in TABLE["kinds"].items()}
 COMPARABLE = frozenset(TABLE["comparable"])
+# D-200: what an infant pack gets when its results go to users (kinds.infant.to_users).
+_TO_USERS = TABLE["kinds"]["infant"]["to_users"]
+
+# D-200 (Sushil, 2026-10-12): infant results go to users, read like D-051's
+# INSIDELABEL_CLAIMS_TO_USERS but on when unset; any value but "on" is off. Off, every route is D-140's
+# shadow exactly (tests/test_infant_to_users.py). Read per request, so turning it
+# off on the server needs only a restart (OPERATIONS.md). Tests set INFANT_TO_USERS.
+INFANT_TO_USERS = None         # None: follow the environment
+
+
+def infant_to_users():
+    if INFANT_TO_USERS is not None:
+        return INFANT_TO_USERS
+    return os.environ.get("INSIDELABEL_INFANT_TO_USERS", "on").strip().lower() == "on"
+
+
+def comparable():
+    """The kinds /compare accepts now; a pack still compares only with its own kind (D-200)."""
+    return COMPARABLE | ({"infant"} if infant_to_users() else frozenset())
+
+
+def withhold(code):
+    """(fields, reason) the server never sends for this kind (D-139, D-140, D-200)."""
+    if code == "infant" and infant_to_users():
+        return tuple(_TO_USERS["withhold"]), _TO_USERS["withhold_reason"]
+    return WITHHOLD.get(code, ()), WITHHOLD_REASON.get(code)
 _LIC = TABLE["licences"]
 _FSSAI_NUMBER = re.compile(r"(?<!\d)\d{%d}(?!\d)" % _LIC["fssai_number_digits"])
 _PROBABLE = _LIC["probable_fssai_number"]
@@ -215,4 +241,6 @@ def decide(vision, category=None):
 
 
 def parts(code):
+    if code == "infant" and infant_to_users():
+        return tuple(_TO_USERS["parts"])                    # D-200
     return PARTS.get(code, PARTS["food"])

@@ -1,0 +1,1950 @@
+{
+ "compare:both_infant": {
+  "body": {
+   "detail": "We don't compare or rank foods for infants.",
+   "error": "not_comparable",
+   "pack": "f",
+   "reason": "infant_food"
+  },
+  "status": 422
+ },
+ "compare:client_kind": {
+  "body": {
+   "detail": "We don't compare or rank foods for infants.",
+   "error": "not_comparable",
+   "pack": "i",
+   "reason": "infant_food"
+  },
+  "status": 422
+ },
+ "compare:printed": {
+  "body": {
+   "detail": "We don't compare or rank foods for infants.",
+   "error": "not_comparable",
+   "pack": "i",
+   "reason": "infant_food"
+  },
+  "status": 422
+ },
+ "scan:None": {
+  "allergens": {
+   "avoid": [
+    "peanut",
+    "milk"
+   ],
+   "min_confidence": 0.95,
+   "results": [
+    {
+     "code": "milk",
+     "evidence": "Milk solids",
+     "state": "contains",
+     "statement_seen": true,
+     "text": "Contains milk. It's on your child's avoid list."
+    },
+    {
+     "code": "peanut",
+     "evidence": null,
+     "state": "not_listed",
+     "statement_seen": true,
+     "text": "Peanut (groundnut) isn't listed in the ingredients or the allergen line."
+    }
+   ]
+  },
+  "catalogue": {
+   "reason": "no_barcode",
+   "source": "scan",
+   "status": "not_saved"
+  },
+  "claim_check": null,
+  "diet": null,
+  "disclosures": [
+   "The label was read once. A second reading can differ.",
+   "Front-of-pack claims were checked on your confirmation that both photos show the same product.",
+   "The headline and findings come from the ingredient list. When we can read the nutrition table, its numbers are shown beside ICMR-NIN's guide, as information.",
+   "Ingredients not yet in the database are not flagged, so an absence of flags is not proof of absence.",
+   "Ingredient facts only. This is not advice about whether a food is right for you."
+  ],
+  "display": null,
+  "engine_version": "0.1",
+  "extracted": {
+   "allergen_statement": "Contains milk.",
+   "front_claim_footnotes": [],
+   "front_claims": [],
+   "ingredients": [
+    "Rice flour",
+    "Milk solids",
+    "Minerals",
+    "Vitamins"
+   ],
+   "ingredients_status": "read",
+   "pack_statements": [
+    {
+     "face": "front",
+     "text": "IMPORTANT NOTICE"
+    },
+    {
+     "face": "front",
+     "text": "MOTHER'S MILK IS BEST FOR YOUR BABY"
+    },
+    {
+     "face": "back",
+     "text": "Infant food shall be introduced only after the age of six months and up to the age of two years"
+    },
+    {
+     "face": "back",
+     "text": "Use only on the advice of a health worker as to the need for its use and the proper method of its use"
+    },
+    {
+     "face": "back",
+     "text": "Infant food is not the sole source of nourishment of an infant"
+    },
+    {
+     "face": "back",
+     "text": "Warning/Caution: Careful and hygienic preparation of infant foods is most essential for health"
+    },
+    {
+     "face": "back",
+     "text": "Store in a cool and dry place in an air tight container"
+    },
+    {
+     "face": "front",
+     "text": "ENERGY FOOD"
+    }
+   ],
+   "raw_text_sent_to_engine": "Rice flour, Milk solids, Minerals, Vitamins"
+  },
+  "nutrition": null,
+  "pack_kind": {
+   "code": "infant",
+   "evidence": [
+    {
+     "face": "front",
+     "rule": "mothers_milk",
+     "text": "MOTHER'S MILK IS BEST FOR YOUR BABY",
+     "where": "statement"
+    },
+    {
+     "face": "back",
+     "rule": "six_months",
+     "text": "Infant food shall be introduced only after the age of six months and up to the age of two years",
+     "where": "statement"
+    }
+   ],
+   "review": []
+  },
+  "product": {
+   "brand": "Testco",
+   "name": "Test pack",
+   "net_quantity": null,
+   "variant": null,
+   "veg_mark": "veg"
+  },
+  "regulators": null,
+  "reliability": {
+   "caveats": [
+    {
+     "code": "single_read",
+     "detail": "Result built from one pass over the label. Repeat reads of the same image have been seen to differ in what they find."
+    },
+    {
+     "code": "pairing_user_attested",
+     "detail": "Nothing on the pack independently confirms these two photos show the same product. Claims were checked on your confirmation that they do."
+    }
+   ],
+   "claims_permitted": true,
+   "client_corrections": [
+    "product_match status had no code-verifiable anchor (model cited: nothing) -> indeterminate"
+   ],
+   "confidence": {
+    "front_claims": 0.9,
+    "ingredients": 0.98,
+    "product_identity": 0.8
+   },
+   "error": null,
+   "extraction_notes": [],
+   "front_status": "read",
+   "ingredients_complete": true,
+   "ocr_cross_check": {
+    "available": true,
+    "extra": [],
+    "missing": [],
+    "model_ins": [],
+    "ms": 0,
+    "ocr_ins": [],
+    "passes": 1,
+    "reader": "cloud_vision",
+    "vote_detail": {
+     "rejected_unknown": [],
+     "voted": []
+    }
+   },
+   "pairing_attested_by_user": true,
+   "product_match": "indeterminate",
+   "verdict_safe_to_display": true
+  },
+  "screen": {
+   "catalogue_note": "This pack has no barcode, so it isn't added to our catalogue. The result above is from your photo, just for you.",
+   "checked": "We checked the ingredients against your avoid lists.",
+   "headline": {
+    "source": {
+     "kind": "pack_kind",
+     "ref": "infant"
+    },
+    "text": "This pack says \"Infant food shall be introduced only after the age of six months and up to the age of two years\"."
+   },
+   "ingredients": [
+    "Rice flour",
+    "Milk solids",
+    "Minerals",
+    "Vitamins"
+   ],
+   "kind": {
+    "code": "infant",
+    "evidence": [
+     {
+      "face": "front",
+      "text": "MOTHER'S MILK IS BEST FOR YOUR BABY"
+     },
+     {
+      "face": "back",
+      "text": "Infant food shall be introduced only after the age of six months and up to the age of two years"
+     }
+    ],
+    "lines": [
+     "Results for infant foods aren't shown yet. We show the allergens on the list and the ingredient list."
+    ],
+    "sources": []
+   },
+   "more_title": "More about this pack",
+   "parts": [
+    "people",
+    "headline",
+    "kind_note",
+    "ingredient_list"
+   ],
+   "people": [
+    {
+     "allergens": [
+      {
+       "code": "milk",
+       "evidence": "Milk solids",
+       "state": "contains",
+       "text": "Milk is listed: \"Milk solids\"."
+      }
+     ],
+     "child_facts": [],
+     "line": "Milk is listed: \"Milk solids\".",
+     "ref": "p1",
+     "share": "For {name}, milk is listed: \"Milk solids\".",
+     "status": "contains"
+    }
+   ],
+   "retake": null,
+   "state": "result"
+  },
+  "verdict": null,
+  "withheld": {
+   "fields": [
+    "verdict",
+    "display",
+    "claim_check",
+    "nutrition",
+    "regulators"
+   ],
+   "reason": "infant_in_shadow"
+  }
+ },
+ "scan:follow_up_formula": {
+  "allergens": {
+   "avoid": [
+    "peanut",
+    "milk"
+   ],
+   "min_confidence": 0.95,
+   "results": [
+    {
+     "code": "milk",
+     "evidence": "Milk solids",
+     "state": "contains",
+     "statement_seen": true,
+     "text": "Contains milk. It's on your child's avoid list."
+    },
+    {
+     "code": "peanut",
+     "evidence": null,
+     "state": "not_listed",
+     "statement_seen": true,
+     "text": "Peanut (groundnut) isn't listed in the ingredients or the allergen line."
+    }
+   ]
+  },
+  "catalogue": {
+   "reason": "no_barcode",
+   "source": "scan",
+   "status": "not_saved"
+  },
+  "claim_check": null,
+  "diet": null,
+  "disclosures": [
+   "The label was read once. A second reading can differ.",
+   "Front-of-pack claims were checked on your confirmation that both photos show the same product.",
+   "The headline and findings come from the ingredient list. When we can read the nutrition table, its numbers are shown beside ICMR-NIN's guide, as information.",
+   "Ingredients not yet in the database are not flagged, so an absence of flags is not proof of absence.",
+   "Ingredient facts only. This is not advice about whether a food is right for you."
+  ],
+  "display": null,
+  "engine_version": "0.1",
+  "extracted": {
+   "allergen_statement": "Contains milk.",
+   "front_claim_footnotes": [],
+   "front_claims": [],
+   "ingredients": [
+    "Rice flour",
+    "Milk solids",
+    "Minerals",
+    "Vitamins"
+   ],
+   "ingredients_status": "read",
+   "pack_statements": [
+    {
+     "face": "front",
+     "text": "IMPORTANT NOTICE"
+    },
+    {
+     "face": "front",
+     "text": "MOTHER'S MILK IS BEST FOR YOUR BABY"
+    },
+    {
+     "face": "back",
+     "text": "Infant food shall be introduced only after the age of six months and up to the age of two years"
+    },
+    {
+     "face": "back",
+     "text": "Use only on the advice of a health worker as to the need for its use and the proper method of its use"
+    },
+    {
+     "face": "back",
+     "text": "Infant food is not the sole source of nourishment of an infant"
+    },
+    {
+     "face": "back",
+     "text": "Warning/Caution: Careful and hygienic preparation of infant foods is most essential for health"
+    },
+    {
+     "face": "back",
+     "text": "Store in a cool and dry place in an air tight container"
+    },
+    {
+     "face": "front",
+     "text": "Follow Up Formula"
+    },
+    {
+     "face": "front",
+     "text": "ENERGY FOOD"
+    }
+   ],
+   "raw_text_sent_to_engine": "Rice flour, Milk solids, Minerals, Vitamins"
+  },
+  "nutrition": null,
+  "pack_kind": {
+   "code": "infant",
+   "evidence": [
+    {
+     "face": "front",
+     "rule": "mothers_milk",
+     "text": "MOTHER'S MILK IS BEST FOR YOUR BABY",
+     "where": "statement"
+    },
+    {
+     "face": "back",
+     "rule": "six_months",
+     "text": "Infant food shall be introduced only after the age of six months and up to the age of two years",
+     "where": "statement"
+    },
+    {
+     "face": "front",
+     "rule": "infant_names",
+     "text": "Follow Up Formula",
+     "where": "statement"
+    }
+   ],
+   "review": []
+  },
+  "product": {
+   "brand": "Testco",
+   "name": "Test pack",
+   "net_quantity": null,
+   "variant": null,
+   "veg_mark": "veg"
+  },
+  "regulators": null,
+  "reliability": {
+   "caveats": [
+    {
+     "code": "single_read",
+     "detail": "Result built from one pass over the label. Repeat reads of the same image have been seen to differ in what they find."
+    },
+    {
+     "code": "pairing_user_attested",
+     "detail": "Nothing on the pack independently confirms these two photos show the same product. Claims were checked on your confirmation that they do."
+    }
+   ],
+   "claims_permitted": true,
+   "client_corrections": [
+    "product_match status had no code-verifiable anchor (model cited: nothing) -> indeterminate"
+   ],
+   "confidence": {
+    "front_claims": 0.9,
+    "ingredients": 0.98,
+    "product_identity": 0.8
+   },
+   "error": null,
+   "extraction_notes": [],
+   "front_status": "read",
+   "ingredients_complete": true,
+   "ocr_cross_check": {
+    "available": true,
+    "extra": [],
+    "missing": [],
+    "model_ins": [],
+    "ms": 0,
+    "ocr_ins": [],
+    "passes": 1,
+    "reader": "cloud_vision",
+    "vote_detail": {
+     "rejected_unknown": [],
+     "voted": []
+    }
+   },
+   "pairing_attested_by_user": true,
+   "product_match": "indeterminate",
+   "verdict_safe_to_display": true
+  },
+  "screen": {
+   "catalogue_note": "This pack has no barcode, so it isn't added to our catalogue. The result above is from your photo, just for you.",
+   "checked": "We checked the ingredients against your avoid lists.",
+   "headline": {
+    "source": {
+     "kind": "pack_kind",
+     "ref": "infant"
+    },
+    "text": "This pack says \"Follow Up Formula\"."
+   },
+   "ingredients": [
+    "Rice flour",
+    "Milk solids",
+    "Minerals",
+    "Vitamins"
+   ],
+   "kind": {
+    "code": "infant",
+    "evidence": [
+     {
+      "face": "front",
+      "text": "MOTHER'S MILK IS BEST FOR YOUR BABY"
+     },
+     {
+      "face": "back",
+      "text": "Infant food shall be introduced only after the age of six months and up to the age of two years"
+     },
+     {
+      "face": "front",
+      "text": "Follow Up Formula"
+     }
+    ],
+    "lines": [
+     "Results for infant foods aren't shown yet. We show the allergens on the list and the ingredient list."
+    ],
+    "sources": []
+   },
+   "more_title": "More about this pack",
+   "parts": [
+    "people",
+    "headline",
+    "kind_note",
+    "ingredient_list"
+   ],
+   "people": [
+    {
+     "allergens": [
+      {
+       "code": "milk",
+       "evidence": "Milk solids",
+       "state": "contains",
+       "text": "Milk is listed: \"Milk solids\"."
+      }
+     ],
+     "child_facts": [],
+     "line": "Milk is listed: \"Milk solids\".",
+     "ref": "p1",
+     "share": "For {name}, milk is listed: \"Milk solids\".",
+     "status": "contains"
+    }
+   ],
+   "retake": null,
+   "state": "result"
+  },
+  "verdict": null,
+  "withheld": {
+   "fields": [
+    "verdict",
+    "display",
+    "claim_check",
+    "nutrition",
+    "regulators"
+   ],
+   "reason": "infant_in_shadow"
+  }
+ },
+ "scan:infant_formula": {
+  "allergens": {
+   "avoid": [
+    "peanut",
+    "milk"
+   ],
+   "min_confidence": 0.95,
+   "results": [
+    {
+     "code": "milk",
+     "evidence": "Milk solids",
+     "state": "contains",
+     "statement_seen": true,
+     "text": "Contains milk. It's on your child's avoid list."
+    },
+    {
+     "code": "peanut",
+     "evidence": null,
+     "state": "not_listed",
+     "statement_seen": true,
+     "text": "Peanut (groundnut) isn't listed in the ingredients or the allergen line."
+    }
+   ]
+  },
+  "catalogue": {
+   "reason": "no_barcode",
+   "source": "scan",
+   "status": "not_saved"
+  },
+  "claim_check": null,
+  "diet": null,
+  "disclosures": [
+   "The label was read once. A second reading can differ.",
+   "Front-of-pack claims were checked on your confirmation that both photos show the same product.",
+   "The headline and findings come from the ingredient list. When we can read the nutrition table, its numbers are shown beside ICMR-NIN's guide, as information.",
+   "Ingredients not yet in the database are not flagged, so an absence of flags is not proof of absence.",
+   "Ingredient facts only. This is not advice about whether a food is right for you."
+  ],
+  "display": null,
+  "engine_version": "0.1",
+  "extracted": {
+   "allergen_statement": "Contains milk.",
+   "front_claim_footnotes": [],
+   "front_claims": [],
+   "ingredients": [
+    "Rice flour",
+    "Milk solids",
+    "Minerals",
+    "Vitamins"
+   ],
+   "ingredients_status": "read",
+   "pack_statements": [
+    {
+     "face": "front",
+     "text": "IMPORTANT NOTICE"
+    },
+    {
+     "face": "front",
+     "text": "MOTHER'S MILK IS BEST FOR YOUR BABY"
+    },
+    {
+     "face": "back",
+     "text": "Infant food shall be introduced only after the age of six months and up to the age of two years"
+    },
+    {
+     "face": "back",
+     "text": "Use only on the advice of a health worker as to the need for its use and the proper method of its use"
+    },
+    {
+     "face": "back",
+     "text": "Infant food is not the sole source of nourishment of an infant"
+    },
+    {
+     "face": "back",
+     "text": "Warning/Caution: Careful and hygienic preparation of infant foods is most essential for health"
+    },
+    {
+     "face": "back",
+     "text": "Store in a cool and dry place in an air tight container"
+    },
+    {
+     "face": "front",
+     "text": "Infant Formula"
+    },
+    {
+     "face": "front",
+     "text": "ENERGY FOOD"
+    }
+   ],
+   "raw_text_sent_to_engine": "Rice flour, Milk solids, Minerals, Vitamins"
+  },
+  "nutrition": null,
+  "pack_kind": {
+   "code": "infant",
+   "evidence": [
+    {
+     "face": "front",
+     "rule": "mothers_milk",
+     "text": "MOTHER'S MILK IS BEST FOR YOUR BABY",
+     "where": "statement"
+    },
+    {
+     "face": "back",
+     "rule": "six_months",
+     "text": "Infant food shall be introduced only after the age of six months and up to the age of two years",
+     "where": "statement"
+    },
+    {
+     "face": "front",
+     "rule": "infant_names",
+     "text": "Infant Formula",
+     "where": "statement"
+    }
+   ],
+   "review": []
+  },
+  "product": {
+   "brand": "Testco",
+   "name": "Test pack",
+   "net_quantity": null,
+   "variant": null,
+   "veg_mark": "veg"
+  },
+  "regulators": null,
+  "reliability": {
+   "caveats": [
+    {
+     "code": "single_read",
+     "detail": "Result built from one pass over the label. Repeat reads of the same image have been seen to differ in what they find."
+    },
+    {
+     "code": "pairing_user_attested",
+     "detail": "Nothing on the pack independently confirms these two photos show the same product. Claims were checked on your confirmation that they do."
+    }
+   ],
+   "claims_permitted": true,
+   "client_corrections": [
+    "product_match status had no code-verifiable anchor (model cited: nothing) -> indeterminate"
+   ],
+   "confidence": {
+    "front_claims": 0.9,
+    "ingredients": 0.98,
+    "product_identity": 0.8
+   },
+   "error": null,
+   "extraction_notes": [],
+   "front_status": "read",
+   "ingredients_complete": true,
+   "ocr_cross_check": {
+    "available": true,
+    "extra": [],
+    "missing": [],
+    "model_ins": [],
+    "ms": 0,
+    "ocr_ins": [],
+    "passes": 1,
+    "reader": "cloud_vision",
+    "vote_detail": {
+     "rejected_unknown": [],
+     "voted": []
+    }
+   },
+   "pairing_attested_by_user": true,
+   "product_match": "indeterminate",
+   "verdict_safe_to_display": true
+  },
+  "screen": {
+   "catalogue_note": "This pack has no barcode, so it isn't added to our catalogue. The result above is from your photo, just for you.",
+   "checked": "We checked the ingredients against your avoid lists.",
+   "headline": {
+    "source": {
+     "kind": "pack_kind",
+     "ref": "infant"
+    },
+    "text": "This pack says \"Infant Formula\"."
+   },
+   "ingredients": [
+    "Rice flour",
+    "Milk solids",
+    "Minerals",
+    "Vitamins"
+   ],
+   "kind": {
+    "code": "infant",
+    "evidence": [
+     {
+      "face": "front",
+      "text": "MOTHER'S MILK IS BEST FOR YOUR BABY"
+     },
+     {
+      "face": "back",
+      "text": "Infant food shall be introduced only after the age of six months and up to the age of two years"
+     },
+     {
+      "face": "front",
+      "text": "Infant Formula"
+     }
+    ],
+    "lines": [
+     "Results for infant foods aren't shown yet. We show the allergens on the list and the ingredient list."
+    ],
+    "sources": []
+   },
+   "more_title": "More about this pack",
+   "parts": [
+    "people",
+    "headline",
+    "kind_note",
+    "ingredient_list"
+   ],
+   "people": [
+    {
+     "allergens": [
+      {
+       "code": "milk",
+       "evidence": "Milk solids",
+       "state": "contains",
+       "text": "Milk is listed: \"Milk solids\"."
+      }
+     ],
+     "child_facts": [],
+     "line": "Milk is listed: \"Milk solids\".",
+     "ref": "p1",
+     "share": "For {name}, milk is listed: \"Milk solids\".",
+     "status": "contains"
+    }
+   ],
+   "retake": null,
+   "state": "result"
+  },
+  "verdict": null,
+  "withheld": {
+   "fields": [
+    "verdict",
+    "display",
+    "claim_check",
+    "nutrition",
+    "regulators"
+   ],
+   "reason": "infant_in_shadow"
+  }
+ },
+ "scan:milk_cereal": {
+  "allergens": {
+   "avoid": [
+    "peanut",
+    "milk"
+   ],
+   "min_confidence": 0.95,
+   "results": [
+    {
+     "code": "milk",
+     "evidence": "Milk solids",
+     "state": "contains",
+     "statement_seen": true,
+     "text": "Contains milk. It's on your child's avoid list."
+    },
+    {
+     "code": "peanut",
+     "evidence": null,
+     "state": "not_listed",
+     "statement_seen": true,
+     "text": "Peanut (groundnut) isn't listed in the ingredients or the allergen line."
+    }
+   ]
+  },
+  "catalogue": {
+   "reason": "no_barcode",
+   "source": "scan",
+   "status": "not_saved"
+  },
+  "claim_check": null,
+  "diet": null,
+  "disclosures": [
+   "The label was read once. A second reading can differ.",
+   "Front-of-pack claims were checked on your confirmation that both photos show the same product.",
+   "The headline and findings come from the ingredient list. When we can read the nutrition table, its numbers are shown beside ICMR-NIN's guide, as information.",
+   "Ingredients not yet in the database are not flagged, so an absence of flags is not proof of absence.",
+   "Ingredient facts only. This is not advice about whether a food is right for you."
+  ],
+  "display": null,
+  "engine_version": "0.1",
+  "extracted": {
+   "allergen_statement": "Contains milk.",
+   "front_claim_footnotes": [],
+   "front_claims": [],
+   "ingredients": [
+    "Rice flour",
+    "Milk solids",
+    "Minerals",
+    "Vitamins"
+   ],
+   "ingredients_status": "read",
+   "pack_statements": [
+    {
+     "face": "front",
+     "text": "IMPORTANT NOTICE"
+    },
+    {
+     "face": "front",
+     "text": "MOTHER'S MILK IS BEST FOR YOUR BABY"
+    },
+    {
+     "face": "back",
+     "text": "Infant food shall be introduced only after the age of six months and up to the age of two years"
+    },
+    {
+     "face": "back",
+     "text": "Use only on the advice of a health worker as to the need for its use and the proper method of its use"
+    },
+    {
+     "face": "back",
+     "text": "Infant food is not the sole source of nourishment of an infant"
+    },
+    {
+     "face": "back",
+     "text": "Warning/Caution: Careful and hygienic preparation of infant foods is most essential for health"
+    },
+    {
+     "face": "back",
+     "text": "Store in a cool and dry place in an air tight container"
+    },
+    {
+     "face": "front",
+     "text": "Milk Cereal Based Complementary Food"
+    },
+    {
+     "face": "front",
+     "text": "ENERGY FOOD"
+    }
+   ],
+   "raw_text_sent_to_engine": "Rice flour, Milk solids, Minerals, Vitamins"
+  },
+  "nutrition": null,
+  "pack_kind": {
+   "code": "infant",
+   "evidence": [
+    {
+     "face": "front",
+     "rule": "mothers_milk",
+     "text": "MOTHER'S MILK IS BEST FOR YOUR BABY",
+     "where": "statement"
+    },
+    {
+     "face": "back",
+     "rule": "six_months",
+     "text": "Infant food shall be introduced only after the age of six months and up to the age of two years",
+     "where": "statement"
+    },
+    {
+     "face": "front",
+     "rule": "infant_names",
+     "text": "Milk Cereal Based Complementary Food",
+     "where": "statement"
+    }
+   ],
+   "review": []
+  },
+  "product": {
+   "brand": "Testco",
+   "name": "Test pack",
+   "net_quantity": null,
+   "variant": null,
+   "veg_mark": "veg"
+  },
+  "regulators": null,
+  "reliability": {
+   "caveats": [
+    {
+     "code": "single_read",
+     "detail": "Result built from one pass over the label. Repeat reads of the same image have been seen to differ in what they find."
+    },
+    {
+     "code": "pairing_user_attested",
+     "detail": "Nothing on the pack independently confirms these two photos show the same product. Claims were checked on your confirmation that they do."
+    }
+   ],
+   "claims_permitted": true,
+   "client_corrections": [
+    "product_match status had no code-verifiable anchor (model cited: nothing) -> indeterminate"
+   ],
+   "confidence": {
+    "front_claims": 0.9,
+    "ingredients": 0.98,
+    "product_identity": 0.8
+   },
+   "error": null,
+   "extraction_notes": [],
+   "front_status": "read",
+   "ingredients_complete": true,
+   "ocr_cross_check": {
+    "available": true,
+    "extra": [],
+    "missing": [],
+    "model_ins": [],
+    "ms": 0,
+    "ocr_ins": [],
+    "passes": 1,
+    "reader": "cloud_vision",
+    "vote_detail": {
+     "rejected_unknown": [],
+     "voted": []
+    }
+   },
+   "pairing_attested_by_user": true,
+   "product_match": "indeterminate",
+   "verdict_safe_to_display": true
+  },
+  "screen": {
+   "catalogue_note": "This pack has no barcode, so it isn't added to our catalogue. The result above is from your photo, just for you.",
+   "checked": "We checked the ingredients against your avoid lists.",
+   "headline": {
+    "source": {
+     "kind": "pack_kind",
+     "ref": "infant"
+    },
+    "text": "This pack says \"Milk Cereal Based Complementary Food\"."
+   },
+   "ingredients": [
+    "Rice flour",
+    "Milk solids",
+    "Minerals",
+    "Vitamins"
+   ],
+   "kind": {
+    "code": "infant",
+    "evidence": [
+     {
+      "face": "front",
+      "text": "MOTHER'S MILK IS BEST FOR YOUR BABY"
+     },
+     {
+      "face": "back",
+      "text": "Infant food shall be introduced only after the age of six months and up to the age of two years"
+     },
+     {
+      "face": "front",
+      "text": "Milk Cereal Based Complementary Food"
+     }
+    ],
+    "lines": [
+     "Results for infant foods aren't shown yet. We show the allergens on the list and the ingredient list."
+    ],
+    "sources": []
+   },
+   "more_title": "More about this pack",
+   "parts": [
+    "people",
+    "headline",
+    "kind_note",
+    "ingredient_list"
+   ],
+   "people": [
+    {
+     "allergens": [
+      {
+       "code": "milk",
+       "evidence": "Milk solids",
+       "state": "contains",
+       "text": "Milk is listed: \"Milk solids\"."
+      }
+     ],
+     "child_facts": [],
+     "line": "Milk is listed: \"Milk solids\".",
+     "ref": "p1",
+     "share": "For {name}, milk is listed: \"Milk solids\".",
+     "status": "contains"
+    }
+   ],
+   "retake": null,
+   "state": "result"
+  },
+  "verdict": null,
+  "withheld": {
+   "fields": [
+    "verdict",
+    "display",
+    "claim_check",
+    "nutrition",
+    "regulators"
+   ],
+   "reason": "infant_in_shadow"
+  }
+ },
+ "scan:processed_cereal": {
+  "allergens": {
+   "avoid": [
+    "peanut",
+    "milk"
+   ],
+   "min_confidence": 0.95,
+   "results": [
+    {
+     "code": "milk",
+     "evidence": "Milk solids",
+     "state": "contains",
+     "statement_seen": true,
+     "text": "Contains milk. It's on your child's avoid list."
+    },
+    {
+     "code": "peanut",
+     "evidence": null,
+     "state": "not_listed",
+     "statement_seen": true,
+     "text": "Peanut (groundnut) isn't listed in the ingredients or the allergen line."
+    }
+   ]
+  },
+  "catalogue": {
+   "reason": "no_barcode",
+   "source": "scan",
+   "status": "not_saved"
+  },
+  "claim_check": null,
+  "diet": null,
+  "disclosures": [
+   "The label was read once. A second reading can differ.",
+   "Front-of-pack claims were checked on your confirmation that both photos show the same product.",
+   "The headline and findings come from the ingredient list. When we can read the nutrition table, its numbers are shown beside ICMR-NIN's guide, as information.",
+   "Ingredients not yet in the database are not flagged, so an absence of flags is not proof of absence.",
+   "Ingredient facts only. This is not advice about whether a food is right for you."
+  ],
+  "display": null,
+  "engine_version": "0.1",
+  "extracted": {
+   "allergen_statement": "Contains milk.",
+   "front_claim_footnotes": [],
+   "front_claims": [],
+   "ingredients": [
+    "Rice flour",
+    "Milk solids",
+    "Minerals",
+    "Vitamins"
+   ],
+   "ingredients_status": "read",
+   "pack_statements": [
+    {
+     "face": "front",
+     "text": "IMPORTANT NOTICE"
+    },
+    {
+     "face": "front",
+     "text": "MOTHER'S MILK IS BEST FOR YOUR BABY"
+    },
+    {
+     "face": "back",
+     "text": "Infant food shall be introduced only after the age of six months and up to the age of two years"
+    },
+    {
+     "face": "back",
+     "text": "Use only on the advice of a health worker as to the need for its use and the proper method of its use"
+    },
+    {
+     "face": "back",
+     "text": "Infant food is not the sole source of nourishment of an infant"
+    },
+    {
+     "face": "back",
+     "text": "Warning/Caution: Careful and hygienic preparation of infant foods is most essential for health"
+    },
+    {
+     "face": "back",
+     "text": "Store in a cool and dry place in an air tight container"
+    },
+    {
+     "face": "front",
+     "text": "Processed Cereal Based Complementary Food"
+    },
+    {
+     "face": "front",
+     "text": "ENERGY FOOD"
+    }
+   ],
+   "raw_text_sent_to_engine": "Rice flour, Milk solids, Minerals, Vitamins"
+  },
+  "nutrition": null,
+  "pack_kind": {
+   "code": "infant",
+   "evidence": [
+    {
+     "face": "front",
+     "rule": "mothers_milk",
+     "text": "MOTHER'S MILK IS BEST FOR YOUR BABY",
+     "where": "statement"
+    },
+    {
+     "face": "back",
+     "rule": "six_months",
+     "text": "Infant food shall be introduced only after the age of six months and up to the age of two years",
+     "where": "statement"
+    },
+    {
+     "face": "front",
+     "rule": "infant_names",
+     "text": "Processed Cereal Based Complementary Food",
+     "where": "statement"
+    }
+   ],
+   "review": []
+  },
+  "product": {
+   "brand": "Testco",
+   "name": "Test pack",
+   "net_quantity": null,
+   "variant": null,
+   "veg_mark": "veg"
+  },
+  "regulators": null,
+  "reliability": {
+   "caveats": [
+    {
+     "code": "single_read",
+     "detail": "Result built from one pass over the label. Repeat reads of the same image have been seen to differ in what they find."
+    },
+    {
+     "code": "pairing_user_attested",
+     "detail": "Nothing on the pack independently confirms these two photos show the same product. Claims were checked on your confirmation that they do."
+    }
+   ],
+   "claims_permitted": true,
+   "client_corrections": [
+    "product_match status had no code-verifiable anchor (model cited: nothing) -> indeterminate"
+   ],
+   "confidence": {
+    "front_claims": 0.9,
+    "ingredients": 0.98,
+    "product_identity": 0.8
+   },
+   "error": null,
+   "extraction_notes": [],
+   "front_status": "read",
+   "ingredients_complete": true,
+   "ocr_cross_check": {
+    "available": true,
+    "extra": [],
+    "missing": [],
+    "model_ins": [],
+    "ms": 0,
+    "ocr_ins": [],
+    "passes": 1,
+    "reader": "cloud_vision",
+    "vote_detail": {
+     "rejected_unknown": [],
+     "voted": []
+    }
+   },
+   "pairing_attested_by_user": true,
+   "product_match": "indeterminate",
+   "verdict_safe_to_display": true
+  },
+  "screen": {
+   "catalogue_note": "This pack has no barcode, so it isn't added to our catalogue. The result above is from your photo, just for you.",
+   "checked": "We checked the ingredients against your avoid lists.",
+   "headline": {
+    "source": {
+     "kind": "pack_kind",
+     "ref": "infant"
+    },
+    "text": "This pack says \"Processed Cereal Based Complementary Food\"."
+   },
+   "ingredients": [
+    "Rice flour",
+    "Milk solids",
+    "Minerals",
+    "Vitamins"
+   ],
+   "kind": {
+    "code": "infant",
+    "evidence": [
+     {
+      "face": "front",
+      "text": "MOTHER'S MILK IS BEST FOR YOUR BABY"
+     },
+     {
+      "face": "back",
+      "text": "Infant food shall be introduced only after the age of six months and up to the age of two years"
+     },
+     {
+      "face": "front",
+      "text": "Processed Cereal Based Complementary Food"
+     }
+    ],
+    "lines": [
+     "Results for infant foods aren't shown yet. We show the allergens on the list and the ingredient list."
+    ],
+    "sources": []
+   },
+   "more_title": "More about this pack",
+   "parts": [
+    "people",
+    "headline",
+    "kind_note",
+    "ingredient_list"
+   ],
+   "people": [
+    {
+     "allergens": [
+      {
+       "code": "milk",
+       "evidence": "Milk solids",
+       "state": "contains",
+       "text": "Milk is listed: \"Milk solids\"."
+      }
+     ],
+     "child_facts": [],
+     "line": "Milk is listed: \"Milk solids\".",
+     "ref": "p1",
+     "share": "For {name}, milk is listed: \"Milk solids\".",
+     "status": "contains"
+    }
+   ],
+   "retake": null,
+   "state": "result"
+  },
+  "verdict": null,
+  "withheld": {
+   "fields": [
+    "verdict",
+    "display",
+    "claim_check",
+    "nutrition",
+    "regulators"
+   ],
+   "reason": "infant_in_shadow"
+  }
+ },
+ "scan:screen": {
+  "allergens": {
+   "avoid": [
+    "peanut",
+    "milk"
+   ],
+   "min_confidence": 0.95,
+   "results": [
+    {
+     "code": "milk",
+     "evidence": "Milk solids",
+     "state": "contains",
+     "statement_seen": true,
+     "text": "Contains milk. It's on your child's avoid list."
+    },
+    {
+     "code": "peanut",
+     "evidence": null,
+     "state": "not_listed",
+     "statement_seen": true,
+     "text": "Peanut (groundnut) isn't listed in the ingredients or the allergen line."
+    }
+   ],
+   "source": "screen"
+  },
+  "catalogue": {
+   "pack_verified_on": null,
+   "reason": "from_screen",
+   "source": "screen",
+   "status": "not_saved"
+  },
+  "claim_check": null,
+  "diet": null,
+  "disclosures": [
+   "The label was read once. A second reading can differ.",
+   "No front of pack, so marketing claims were not checked.",
+   "The headline and findings come from the ingredient list. When we can read the nutrition table, its numbers are shown beside ICMR-NIN's guide, as information.",
+   "Ingredients not yet in the database are not flagged, so an absence of flags is not proof of absence.",
+   "Ingredient facts only. This is not advice about whether a food is right for you."
+  ],
+  "display": null,
+  "engine_version": "0.1",
+  "extracted": {
+   "allergen_statement": "Contains milk.",
+   "front_claim_footnotes": [],
+   "front_claims": [],
+   "ingredients": [
+    "Rice flour",
+    "Milk solids",
+    "Minerals",
+    "Vitamins"
+   ],
+   "ingredients_status": "read",
+   "pack_statements": [
+    {
+     "face": "back",
+     "text": "IMPORTANT NOTICE"
+    },
+    {
+     "face": "back",
+     "text": "MOTHER'S MILK IS BEST FOR YOUR BABY"
+    },
+    {
+     "face": "back",
+     "text": "Infant food shall be introduced only after the age of six months and up to the age of two years"
+    },
+    {
+     "face": "back",
+     "text": "Use only on the advice of a health worker as to the need for its use and the proper method of its use"
+    },
+    {
+     "face": "back",
+     "text": "Infant food is not the sole source of nourishment of an infant"
+    },
+    {
+     "face": "back",
+     "text": "Warning/Caution: Careful and hygienic preparation of infant foods is most essential for health"
+    },
+    {
+     "face": "back",
+     "text": "Store in a cool and dry place in an air tight container"
+    },
+    {
+     "face": "back",
+     "text": "Milk Cereal Based Complementary Food"
+    }
+   ],
+   "raw_text_sent_to_engine": "Rice flour, Milk solids, Minerals, Vitamins"
+  },
+  "nutrition": null,
+  "pack_kind": {
+   "code": "infant",
+   "evidence": [
+    {
+     "face": "back",
+     "rule": "mothers_milk",
+     "text": "MOTHER'S MILK IS BEST FOR YOUR BABY",
+     "where": "statement"
+    },
+    {
+     "face": "back",
+     "rule": "six_months",
+     "text": "Infant food shall be introduced only after the age of six months and up to the age of two years",
+     "where": "statement"
+    },
+    {
+     "face": "back",
+     "rule": "infant_names",
+     "text": "Milk Cereal Based Complementary Food",
+     "where": "statement"
+    }
+   ],
+   "review": []
+  },
+  "product": {
+   "brand": "Testco",
+   "name": "Test pack",
+   "net_quantity": null,
+   "variant": null,
+   "veg_mark": "veg"
+  },
+  "regulators": null,
+  "reliability": {
+   "caveats": [
+    {
+     "code": "single_read",
+     "detail": "Result built from one pass over the label. Repeat reads of the same image have been seen to differ in what they find."
+    },
+    {
+     "code": "front_not_provided",
+     "detail": "Front-of-pack claims were not checked. This is not the same as finding no contradictions."
+    },
+    {
+     "code": "read_from_screen",
+     "detail": "The ingredient list was read from a photo of a screen, not from the pack."
+    }
+   ],
+   "claims_permitted": true,
+   "client_corrections": [
+    "pack_statements face 'front' -> back",
+    "pack_statements face 'front' -> back",
+    "pack_statements face 'front' -> back"
+   ],
+   "confidence": {
+    "front_claims": 0.9,
+    "ingredients": 0.98,
+    "product_identity": 0.8
+   },
+   "error": null,
+   "extraction_notes": [],
+   "from_screen": true,
+   "front_status": "not_provided",
+   "ingredients_complete": true,
+   "ocr_cross_check": {
+    "available": true,
+    "extra": [],
+    "missing": [],
+    "model_ins": [],
+    "ms": 0,
+    "ocr_ins": [],
+    "passes": 1,
+    "reader": "cloud_vision",
+    "vote_detail": {
+     "rejected_unknown": [],
+     "voted": []
+    }
+   },
+   "pairing_attested_by_user": true,
+   "product_match": "single_image",
+   "verdict_safe_to_display": true
+  },
+  "screen": {
+   "catalogue_note": "A screen isn't added to our catalogue: we only add packs read from the pack itself. Add it to your shop list and scan the pack when you're there.",
+   "checked": "We checked the ingredients against your avoid lists.",
+   "from_screen": {
+    "pack": null,
+    "text": "Listings can be out of date or show another size or flavour. Check the pack in the shop before you buy.",
+    "title": "Read from a screen, not the pack."
+   },
+   "headline": {
+    "source": {
+     "kind": "pack_kind",
+     "ref": "infant"
+    },
+    "text": "This pack says \"Milk Cereal Based Complementary Food\"."
+   },
+   "ingredients": [
+    "Rice flour",
+    "Milk solids",
+    "Minerals",
+    "Vitamins"
+   ],
+   "kind": {
+    "code": "infant",
+    "evidence": [
+     {
+      "face": "back",
+      "text": "MOTHER'S MILK IS BEST FOR YOUR BABY"
+     },
+     {
+      "face": "back",
+      "text": "Infant food shall be introduced only after the age of six months and up to the age of two years"
+     },
+     {
+      "face": "back",
+      "text": "Milk Cereal Based Complementary Food"
+     }
+    ],
+    "lines": [
+     "Results for infant foods aren't shown yet. We show the allergens on the list and the ingredient list."
+    ],
+    "sources": []
+   },
+   "more_title": "More about this pack",
+   "parts": [
+    "people",
+    "headline",
+    "kind_note",
+    "ingredient_list"
+   ],
+   "people": [
+    {
+     "allergens": [
+      {
+       "code": "milk",
+       "evidence": "Milk solids",
+       "state": "contains",
+       "text": "Contains milk, as listed on this screen. It's on {name}'s avoid list."
+      }
+     ],
+     "child_facts": [],
+     "line": "Contains milk, as listed on this screen. It's on {name}'s avoid list.",
+     "ref": "p1",
+     "share": "For {name}, contains milk, as listed on this screen. It's on {name}'s avoid list.",
+     "status": "contains"
+    }
+   ],
+   "retake": null,
+   "state": "result"
+  },
+  "verdict": null,
+  "withheld": {
+   "fields": [
+    "verdict",
+    "display",
+    "claim_check",
+    "nutrition",
+    "regulators"
+   ],
+   "reason": "infant_in_shadow"
+  }
+ },
+ "scan:special_medical": {
+  "allergens": {
+   "avoid": [
+    "peanut",
+    "milk"
+   ],
+   "min_confidence": 0.95,
+   "results": [
+    {
+     "code": "milk",
+     "evidence": "Extensively hydrolysed whey protein",
+     "state": "contains",
+     "statement_seen": false,
+     "text": "Contains milk. It's on your child's avoid list."
+    },
+    {
+     "code": "peanut",
+     "evidence": null,
+     "state": "not_listed",
+     "statement_seen": false,
+     "text": "Peanut (groundnut) isn't listed in the ingredients. We didn't see a \"may contain\" line in the photo, so check the pack."
+    }
+   ]
+  },
+  "catalogue": {
+   "reason": "no_barcode",
+   "source": "scan",
+   "status": "not_saved"
+  },
+  "claim_check": {
+   "checked": [],
+   "claims_examined": 0,
+   "reason": "claims_not_released",
+   "status": "not_checked",
+   "unmatched_claims": []
+  },
+  "diet": null,
+  "disclosures": [
+   "The label was read once. A second reading can differ.",
+   "Front-of-pack claims were checked on your confirmation that both photos show the same product.",
+   "The headline and findings come from the ingredient list. When we can read the nutrition table, its numbers are shown beside ICMR-NIN's guide, as information.",
+   "Ingredients not yet in the database are not flagged, so an absence of flags is not proof of absence.",
+   "Ingredient facts only. This is not advice about whether a food is right for you."
+  ],
+  "display": {
+   "display_binary": "ultra-processed",
+   "display_score": 88
+  },
+  "engine_version": "0.1",
+  "extracted": {
+   "allergen_statement": null,
+   "front_claim_footnotes": [],
+   "front_claims": [],
+   "ingredients": [
+    "Extensively hydrolysed whey protein",
+    "Maltodextrin",
+    "Vegetable oils"
+   ],
+   "ingredients_status": "read",
+   "pack_statements": [
+    {
+     "face": "front",
+     "text": "HYPOALLERGENIC FORMULA"
+    },
+    {
+     "face": "front",
+     "text": "RECOMMENDED TO BE TAKEN UNDER MEDICAL ADVICE ONLY"
+    }
+   ],
+   "raw_text_sent_to_engine": "Extensively hydrolysed whey protein, Maltodextrin, Vegetable oils"
+  },
+  "nutrition": null,
+  "pack_kind": {
+   "code": "special_medical",
+   "evidence": [
+    {
+     "face": "front",
+     "rule": "medical_advice",
+     "text": "RECOMMENDED TO BE TAKEN UNDER MEDICAL ADVICE ONLY",
+     "where": "statement"
+    },
+    {
+     "face": "front",
+     "rule": "hypoallergenic",
+     "text": "HYPOALLERGENIC FORMULA",
+     "where": "statement"
+    }
+   ],
+   "review": []
+  },
+  "product": {
+   "brand": "Testco",
+   "name": "Test pack",
+   "net_quantity": null,
+   "variant": null,
+   "veg_mark": "veg"
+  },
+  "regulators": null,
+  "reliability": {
+   "caveats": [
+    {
+     "code": "single_read",
+     "detail": "Result built from one pass over the label. Repeat reads of the same image have been seen to differ in what they find."
+    },
+    {
+     "code": "pairing_user_attested",
+     "detail": "Nothing on the pack independently confirms these two photos show the same product. Claims were checked on your confirmation that they do."
+    }
+   ],
+   "claims_permitted": true,
+   "client_corrections": [
+    "product_match status had no code-verifiable anchor (model cited: nothing) -> indeterminate"
+   ],
+   "confidence": {
+    "front_claims": 0.9,
+    "ingredients": 0.98,
+    "product_identity": 0.8
+   },
+   "error": null,
+   "extraction_notes": [],
+   "front_status": "read",
+   "ingredients_complete": true,
+   "ocr_cross_check": {
+    "available": true,
+    "extra": [],
+    "missing": [],
+    "model_ins": [],
+    "ms": 0,
+    "ocr_ins": [],
+    "passes": 1,
+    "reader": "cloud_vision",
+    "vote_detail": {
+     "rejected_unknown": [],
+     "voted": []
+    }
+   },
+   "pairing_attested_by_user": true,
+   "product_match": "indeterminate",
+   "verdict_safe_to_display": true
+  },
+  "screen": {
+   "catalogue_note": "This pack has no barcode, so it isn't added to our catalogue. The result above is from your photo, just for you.",
+   "checked": "We checked the ingredients against your avoid lists.",
+   "for_you_note": "We didn't see a \"may contain\" line in the photo, so check the pack for one.",
+   "headline": {
+    "source": {
+     "kind": "pack_kind",
+     "ref": "special_medical"
+    },
+    "text": "This pack says \"HYPOALLERGENIC FORMULA\"."
+   },
+   "ingredients": [
+    "Extensively hydrolysed whey protein",
+    "Maltodextrin",
+    "Vegetable oils"
+   ],
+   "kind": {
+    "code": "special_medical",
+    "evidence": [
+     {
+      "face": "front",
+      "text": "RECOMMENDED TO BE TAKEN UNDER MEDICAL ADVICE ONLY"
+     },
+     {
+      "face": "front",
+      "text": "HYPOALLERGENIC FORMULA"
+     }
+    ],
+    "lines": [
+     "We show the allergens on the list and nothing else for a food for special dietary or medical use."
+    ],
+    "sources": []
+   },
+   "more_title": "More about this pack",
+   "parts": [
+    "people",
+    "headline",
+    "kind_note",
+    "ingredient_list"
+   ],
+   "people": [
+    {
+     "allergens": [
+      {
+       "code": "milk",
+       "evidence": "Extensively hydrolysed whey protein",
+       "state": "contains",
+       "text": "Milk is listed: \"Extensively hydrolysed whey protein\"."
+      }
+     ],
+     "child_facts": [],
+     "line": "Milk is listed: \"Extensively hydrolysed whey protein\".",
+     "ref": "p1",
+     "share": "For {name}, milk is listed: \"Extensively hydrolysed whey protein\".",
+     "status": "contains"
+    }
+   ],
+   "retake": null,
+   "state": "result"
+  },
+  "verdict": {
+   "binary": "ultra-processed",
+   "flags": [
+    {
+     "concern": "moderate",
+     "flags": [
+      "nova_group4_marker",
+      "industrial_carb"
+     ],
+     "ingredient": "maltodextrin",
+     "label_term": "maltodextrin",
+     "matched_as": "NOVA marker: Maltodextrin",
+     "nova_group4": true,
+     "sources": [
+      "NOVA"
+     ],
+     "type": "nova_marker",
+     "verify": false,
+     "why": "Ultra-processing marker (industrial carb). Rarely used in home cooking; signals industrial formulation."
+    }
+   ],
+   "grade": "A",
+   "hidden_sugar_names": [
+    "maltodextrin"
+   ],
+   "ingredient_count_parsed": 3,
+   "needs_verification": [],
+   "nova_ultra_processed": true,
+   "score": 88
+  }
+ },
+ "scan:traditional": {
+  "allergens": {
+   "avoid": [
+    "peanut",
+    "milk"
+   ],
+   "min_confidence": 0.95,
+   "results": [
+    {
+     "code": "milk",
+     "evidence": "Milk solids",
+     "state": "contains",
+     "statement_seen": true,
+     "text": "Contains milk. It's on your child's avoid list."
+    },
+    {
+     "code": "peanut",
+     "evidence": null,
+     "state": "not_listed",
+     "statement_seen": true,
+     "text": "Peanut (groundnut) isn't listed in the ingredients or the allergen line."
+    }
+   ]
+  },
+  "catalogue": {
+   "reason": "no_barcode",
+   "source": "scan",
+   "status": "not_saved"
+  },
+  "claim_check": null,
+  "diet": null,
+  "disclosures": [
+   "The label was read once. A second reading can differ.",
+   "Front-of-pack claims were checked on your confirmation that both photos show the same product.",
+   "The headline and findings come from the ingredient list. When we can read the nutrition table, its numbers are shown beside ICMR-NIN's guide, as information.",
+   "Ingredients not yet in the database are not flagged, so an absence of flags is not proof of absence.",
+   "Ingredient facts only. This is not advice about whether a food is right for you."
+  ],
+  "display": null,
+  "engine_version": "0.1",
+  "extracted": {
+   "allergen_statement": "Contains milk.",
+   "front_claim_footnotes": [],
+   "front_claims": [],
+   "ingredients": [
+    "Rice flour",
+    "Milk solids",
+    "Minerals",
+    "Vitamins"
+   ],
+   "ingredients_status": "read",
+   "pack_statements": [
+    {
+     "face": "front",
+     "text": "IMPORTANT NOTICE"
+    },
+    {
+     "face": "front",
+     "text": "MOTHER'S MILK IS BEST FOR YOUR BABY"
+    },
+    {
+     "face": "back",
+     "text": "Infant food shall be introduced only after the age of six months and up to the age of two years"
+    },
+    {
+     "face": "back",
+     "text": "Use only on the advice of a health worker as to the need for its use and the proper method of its use"
+    },
+    {
+     "face": "back",
+     "text": "Infant food is not the sole source of nourishment of an infant"
+    },
+    {
+     "face": "back",
+     "text": "Warning/Caution: Careful and hygienic preparation of infant foods is most essential for health"
+    },
+    {
+     "face": "back",
+     "text": "Store in a cool and dry place in an air tight container"
+    },
+    {
+     "face": "front",
+     "text": "Traditional Food for Infants"
+    },
+    {
+     "face": "front",
+     "text": "ENERGY FOOD"
+    }
+   ],
+   "raw_text_sent_to_engine": "Rice flour, Milk solids, Minerals, Vitamins"
+  },
+  "nutrition": null,
+  "pack_kind": {
+   "code": "infant",
+   "evidence": [
+    {
+     "face": "front",
+     "rule": "mothers_milk",
+     "text": "MOTHER'S MILK IS BEST FOR YOUR BABY",
+     "where": "statement"
+    },
+    {
+     "face": "back",
+     "rule": "six_months",
+     "text": "Infant food shall be introduced only after the age of six months and up to the age of two years",
+     "where": "statement"
+    },
+    {
+     "face": "front",
+     "rule": "traditional",
+     "text": "Traditional Food for Infants",
+     "where": "statement"
+    }
+   ],
+   "review": []
+  },
+  "product": {
+   "brand": "Testco",
+   "name": "Test pack",
+   "net_quantity": null,
+   "variant": null,
+   "veg_mark": "veg"
+  },
+  "regulators": null,
+  "reliability": {
+   "caveats": [
+    {
+     "code": "single_read",
+     "detail": "Result built from one pass over the label. Repeat reads of the same image have been seen to differ in what they find."
+    },
+    {
+     "code": "pairing_user_attested",
+     "detail": "Nothing on the pack independently confirms these two photos show the same product. Claims were checked on your confirmation that they do."
+    }
+   ],
+   "claims_permitted": true,
+   "client_corrections": [
+    "product_match status had no code-verifiable anchor (model cited: nothing) -> indeterminate"
+   ],
+   "confidence": {
+    "front_claims": 0.9,
+    "ingredients": 0.98,
+    "product_identity": 0.8
+   },
+   "error": null,
+   "extraction_notes": [],
+   "front_status": "read",
+   "ingredients_complete": true,
+   "ocr_cross_check": {
+    "available": true,
+    "extra": [],
+    "missing": [],
+    "model_ins": [],
+    "ms": 0,
+    "ocr_ins": [],
+    "passes": 1,
+    "reader": "cloud_vision",
+    "vote_detail": {
+     "rejected_unknown": [],
+     "voted": []
+    }
+   },
+   "pairing_attested_by_user": true,
+   "product_match": "indeterminate",
+   "verdict_safe_to_display": true
+  },
+  "screen": {
+   "catalogue_note": "This pack has no barcode, so it isn't added to our catalogue. The result above is from your photo, just for you.",
+   "checked": "We checked the ingredients against your avoid lists.",
+   "headline": {
+    "source": {
+     "kind": "pack_kind",
+     "ref": "infant"
+    },
+    "text": "This pack says \"Traditional Food for Infants\"."
+   },
+   "ingredients": [
+    "Rice flour",
+    "Milk solids",
+    "Minerals",
+    "Vitamins"
+   ],
+   "kind": {
+    "code": "infant",
+    "evidence": [
+     {
+      "face": "front",
+      "text": "MOTHER'S MILK IS BEST FOR YOUR BABY"
+     },
+     {
+      "face": "back",
+      "text": "Infant food shall be introduced only after the age of six months and up to the age of two years"
+     },
+     {
+      "face": "front",
+      "text": "Traditional Food for Infants"
+     }
+    ],
+    "lines": [
+     "Results for infant foods aren't shown yet. We show the allergens on the list and the ingredient list."
+    ],
+    "sources": []
+   },
+   "more_title": "More about this pack",
+   "parts": [
+    "people",
+    "headline",
+    "kind_note",
+    "ingredient_list"
+   ],
+   "people": [
+    {
+     "allergens": [
+      {
+       "code": "milk",
+       "evidence": "Milk solids",
+       "state": "contains",
+       "text": "Milk is listed: \"Milk solids\"."
+      }
+     ],
+     "child_facts": [],
+     "line": "Milk is listed: \"Milk solids\".",
+     "ref": "p1",
+     "share": "For {name}, milk is listed: \"Milk solids\".",
+     "status": "contains"
+    }
+   ],
+   "retake": null,
+   "state": "result"
+  },
+  "verdict": null,
+  "withheld": {
+   "fields": [
+    "verdict",
+    "display",
+    "claim_check",
+    "nutrition",
+    "regulators"
+   ],
+   "reason": "infant_in_shadow"
+  }
+ }
+}

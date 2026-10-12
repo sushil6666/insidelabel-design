@@ -34,6 +34,7 @@ from insidelabel.core.tokenize import extract_ins, ins_numbers
 from insidelabel.lenses import allergens as allergen_checker
 from insidelabel.lenses import compare as kids
 from insidelabel.lenses import diet as diet_checker
+from insidelabel.lenses import infant as infant_lens
 from insidelabel.lenses import nutra, nutrition
 
 NAME = "{name}"
@@ -1746,6 +1747,10 @@ KIND_TEXT = {
                  "\"drugs and medicinal products\" out of \"food\" (section 3(1)(j)). We show the allergens "
                  "on the list and nothing else."),
 }
+# D-200 (Sushil, 2026-10-12, baby food: "Everything"): with INSIDELABEL_INFANT_TO_USERS on, the
+# kind card says what an infant pack is checked against; KIND_TEXT["infant"] stays the shadow's.
+INFANT_TEXT = ("We check an infant food against FSSAI's rules for foods for infant nutrition, not against our "
+               "checks for foods.")
 NOT_FOOD_HEADLINE = "We didn't find an FSSAI licence number on the photos."
 # D-196 (Sushil, 2026-10-11: "say why we are not considering Ayurvedic"): a pack that prints
 # "Ayurvedic medicine" (D-190) is quoted in the headline and told why in one line; the FSS Act
@@ -1934,6 +1939,175 @@ def _supplement_parts(kind, *, ingredients, vision, ocr_text, profiles, product=
     return tiles, details, sections, summary
 
 
+# D-200: an infant food's own checks (lenses/infant.py, D-140 phase 3), shown to users with
+# INSIDELABEL_INFANT_TO_USERS on. Every sentence is here (D-091). The rules' words are quoted
+# with their clause; nothing ranks the pack, sets it beside mother's milk or feeds advice
+# (IMS Act 3(b), 7(1): D-140). "Not found" is never "not permitted" (D-111's care).
+INFANT_SOURCE = infant_lens.RULES["_meta"]["source"]
+INFANT_TYPE_WORDS = {"infant_formula": "infant formula", "follow_up_formula": "follow-up formula",
+                     "milk_cereal": "milk cereal based complementary food",
+                     "processed_cereal": "processed cereal based complementary food",
+                     "traditional": "food for infants based on traditional food ingredients"}
+INFANT_NO_TYPE = ("The pack's name doesn't say which kind of infant food it is, so the checks that depend on the "
+                  "kind (its additive list, hydrogenated fat, composition) are off.")
+INFANT_TITLES = {"statements": "What FSSAI's rules ask the label to say", "additives": "Additives",
+                 "composition": "Beside FSSAI's composition table"}
+INFANT_PARTIAL = "We need clear photos of the whole front and back to check the statements FSSAI's rules ask for."
+# A found statement is named, not quoted again: the list stays short (the pack's words are on the pack).
+INFANT_STATEMENT_NAMES = {"important_notice": "\"IMPORTANT NOTICE\"", "mothers_milk": "the mother's milk notice on the front",
+                          "six_months": "the six months statement", "health_worker": "the health worker statement",
+                          "not_sole": "the sole source warning", "preparation": "the hygienic preparation warning",
+                          "storage": "the storage statement", "boiled_water": "the boiled water warning",
+                          "no_milk": "the no milk statement"}
+# D-200 (Sushil, 2026-10-12): "best" only inside the notice as printed on the pack, never in our
+# words; a notice we didn't find is named, not quoted.
+INFANT_NOT_FOUND = {"mothers_milk": "the notice about mother's milk that regulation 4(1)(a) asks for on the front, "
+                                    "in capital letters"}
+_FREE_FROM_CHIP = {"preservative": "FSSAI's infant rules leave out preservatives",
+                   "colour": "FSSAI's infant rules leave out added colours",
+                   "flavour": "FSSAI's infant rules leave out added flavours"}
+_FREE_FROM_RULE = ("Regulation 5(1) of FSSAI's rules for foods for infant nutrition leaves out preservatives, added "
+                   "colours and flavours.")
+_UNIT = {"g": "g", "mg": "mg", "mcg": "\u00b5g"}
+
+
+def infant_type_line(ptype):
+    """The one line that says which of the regulation's types the checks used, or that none could be."""
+    if ptype is None:
+        return INFANT_NO_TYPE
+    return (f"The pack's name says \"{ptype['printed']}\", so we use FSSAI's rules for "
+            f"{INFANT_TYPE_WORDS[ptype['id']]}.")
+
+
+def infant_statement_lines(statements, no_milk=None):
+    """Regulation 4's statements found or not found, as the result and Compare say them."""
+    rows = list(statements or []) + ([no_milk] if no_milk else [])
+    lines = [f"FSSAI's rules for infant foods ask the label for {INFANT_NOT_FOUND.get(r.get('id'), r['text'])}. We "
+             "didn't find it on the photos of this pack." for r in rows if not r["found"]]
+    found = [INFANT_STATEMENT_NAMES[r.get("id", "no_milk")] for r in rows if r["found"]]
+    if found:
+        lines.append("Found on the pack, as the rules ask: " + ", ".join(found) + ".")
+    return lines
+
+
+def infant_word_line(w):
+    return (f"The pack says \"{w['word'].title()}\". FSSAI's rules for infant foods say the label \"shall not "
+            "exhibit\" the words \"Full Protein Food\", \"Energy Food\", \"Completer Food\" or \"Health Food\", "
+            "and \"Humanised\" or \"Maternalised\" \"shall not be used\".")
+
+
+def infant_composition_line(r):
+    lo, hi = r["range"]
+    u = _UNIT.get(r["range_unit"], r["range_unit"])
+    span = (f"{_fmt(lo)} to {_fmt(hi)} {u}" if lo is not None and hi is not None else
+            f"at least {_fmt(lo)} {u}" if lo is not None else f"at most {_fmt(hi)} {u}")
+    label = r["label"][0].upper() + r["label"][1:]
+    # Facts side by side, as D-140 part 4 built them: no "fails", no "within" or "above" words.
+    return f"{label}: {r['printed']} {_UNIT.get(r['unit'], r['unit'])} per 100 g on the pack. FSSAI's table: {span}."
+
+
+def infant_additive_lines(adds, ptype):
+    if adds is None:
+        return []
+    where = INFANT_TYPE_WORDS[ptype["id"]]
+    if not adds["not_found"]:
+        return [f"Every INS number on the list is in FSSAI's additive list for {where} or its nutrient carriers."]
+    return [f"\"{x['entry']}\": we didn't find INS {x['ins']} in FSSAI's additive list for {where}. Carry-over "
+            "additives are allowed, and names on packs vary, so a person checks it too." for x in adds["not_found"]]
+
+
+def _infant_parts(*, ingredients, vision, ocr_text, product=None, reliable=True):
+    """(type line, tiles, details, sections) for an infant pack (D-200). vision None: a catalogue
+    result, with its published name (`product`) and list but no photos to read."""
+    vision = vision or {}
+    if vision:
+        got = vision.get("_infant") or infant_lens.check(vision, ingredients, ocr_text)
+    else:
+        v = {"product": product or {}}
+        ptype = infant_lens.product_type(v)
+        got = {"type": ptype, "statements": None, "no_milk": None, "words": infant_lens.words(v),
+               "free_from": infant_lens.free_from(ingredients), "hydrogenated": infant_lens.hydrogenated(ingredients, ptype),
+               "additives": infant_lens.additives(ingredients, ptype), "composition": None}
+    ptype = got["type"]
+    tiles, details, sections = [], {}, []
+    rule_cite = lambda page: _cite(INFANT_SOURCE, page)      # noqa: E731
+
+    def tile(tid, title, chip, found, on_label, page):
+        tiles.append({"id": tid, "kind": "infant", "title": title, "chip": chip, "tone": "worth",
+                      "source": {"kind": "infant", "ref": tid}})
+        details[tid] = {"title": title, "chip": chip, "kind": "infant", "what_it_is": None,
+                        "what_research_found": found, "who_it_concerns": None, "on_the_label": on_label,
+                        "where": None, "note": None, "sources": [rule_cite(page)]}
+
+    for w in got["words"]:
+        tile(_tile_id("word", w["word"]), f"\"{w['word'].title()}\" on the pack",
+             "Words FSSAI's infant rules say a label shall not exhibit", [infant_word_line(w)],
+             w["printed"], "4(2), PDF p. 6")
+    if reliable:                                                     # D-111's care: a confident, complete read
+        for x in got["free_from"]:
+            tile(_tile_id("free", x["entry"])[:48], x["entry"], _FREE_FROM_CHIP[x["why"][0]],
+                 [_FREE_FROM_RULE, f"The list on this pack includes \"{x['entry']}\".",
+                  "We read additive classes from INS numbers and names, so a person checks it too."],
+                 x["entry"], "5(1), PDF p. 6")
+        for x in got["hydrogenated"]:
+            tile(_tile_id("hydro", x["entry"])[:48], x["entry"], "Hydrogenated fat, which this kind's rules leave out",
+                 [f"FSSAI's rules for {INFANT_TYPE_WORDS[ptype['id']]} say: \"{x['text']}\"",
+                  f"The list on this pack includes \"{x['entry']}\"."], x["entry"], x["basis"])
+        if got["additives"]:
+            for x in got["additives"]["not_found"]:
+                tile(_tile_id("iadd", x["ins"]), f"INS {x['ins']}",
+                     "Not found in FSSAI's additive list for this kind of infant food",
+                     infant_additive_lines({"not_found": [x]}, ptype), x["entry"], got["additives"]["basis"])
+
+    if vision:
+        lines = (INFANT_PARTIAL,) if got["statements"] is None else infant_statement_lines(got["statements"],
+                                                                                            got["no_milk"])
+        sections.append({"id": "statements", "title": INFANT_TITLES["statements"], "lines": list(lines),
+                         "sources": [rule_cite("4, PDF pp. 4 to 6")]})
+    if got["additives"] is not None and reliable:
+        sections.append({"id": "additives", "title": INFANT_TITLES["additives"],
+                         "lines": infant_additive_lines(got["additives"], ptype),
+                         "sources": [rule_cite(got["additives"]["basis"].split(", per ")[0] + "; Schedule I(d), PDF p. 52")]})
+    if got["composition"]:
+        sections.append({"id": "composition", "title": INFANT_TITLES["composition"],
+                         "lines": [infant_composition_line(r) for r in got["composition"]],
+                         "sources": [rule_cite(infant_lens.COMPOSITION["types"][ptype["id"]]["basis"])]})
+    return infant_type_line(ptype), tiles, details, sections
+
+
+def compare_input(kind_code, *, vision=None, ocr_text=None, product=None):
+    """
+    D-200: what Compare needs from the photos of a supplement or an infant pack, sent back by
+    the phone (ComparePack.facts). Read facts only (numbers, ids, the label's own words), no
+    sentences: /compare (lenses/side_by_side.py) words them and works out the rest from the
+    ingredient list again. None for any other kind, and for an infant pack with the switch off.
+    """
+    vision = vision or {}
+    if kind_code == "supplement":
+        fmt = nutra.format_of(vision or {"product": product or {}})
+        if not vision:
+            return {"format": fmt, "amounts": {"state": "not_read", "rows": []}, "composition_names": []}
+        a = nutra.amounts(vision, ocr_text)
+        return {"format": fmt,
+                "amounts": {"state": a["state"], "daily": a.get("daily") and {"text": a["daily"]["text"]},
+                            "per": a.get("per") and {"unit": a["per"]["unit"]},
+                            "rows": [{"nutrient": r["nutrient"], "value": r["value"]} for r in a["rows"]]},
+                "composition_names": [r["name"] for r in (vision.get("composition") or {}).get("rows") or []]}
+    if kind_code == "infant" and pack_kind.infant_to_users():
+        if not vision:
+            return {"type": infant_lens.product_type({"product": product or {}}), "statements": None,
+                    "no_milk": None, "words": infant_lens.words({"product": product or {}}), "composition": []}
+        got = vision.get("_infant") or infant_lens.check(vision, vision.get("ingredients"), ocr_text)
+        return {"type": got["type"],
+                "statements": got["statements"] and [{k: r[k] for k in ("id", "found", "printed")}
+                                                      for r in got["statements"]],
+                "no_milk": got["no_milk"] and {k: got["no_milk"][k] for k in ("found", "printed")},
+                "words": got["words"],
+                "composition": [{"nutrient": r["nutrient"], "label": r["label"], "value": r["value"]}
+                                for r in got["composition"] or []]}
+    return None
+
+
 def _kind_screen(kind, *, people, ingredients, reliability, nutra_input=None, profiles=(), parts_sent=1):
     """The result for a supplement, an infant food, a special medical food or a pack that isn't food."""
     code, parts = kind["code"], pack_kind.parts(kind["code"])
@@ -1949,7 +2123,8 @@ def _kind_screen(kind, *, people, ingredients, reliability, nutra_input=None, pr
         headline = f"This pack says \"{shown['text']}\"."        # the kind in the pack's own words
     else:
         headline = CATEGORY_HEADLINE[code]
-    lines = [KIND_TEXT[code]]
+    infant = code == "infant" and pack_kind.infant_to_users()          # D-200
+    lines = [INFANT_TEXT if infant else KIND_TEXT[code]]
     if medicine:
         lines.insert(0, AYURVEDIC_LINE)
     elif code == "not_food":
@@ -1977,4 +2152,11 @@ def _kind_screen(kind, *, people, ingredients, reliability, nutra_input=None, pr
         out["tiles"], out["details"], out["sections"] = tiles, details, sections
         if summary:
             out["summary"] = summary
+    elif infant:
+        type_line, tiles, details, sections = _infant_parts(
+            ingredients=ingredients, vision=(nutra_input or {}).get("vision"),
+            ocr_text=(nutra_input or {}).get("ocr_text"), product=(nutra_input or {}).get("product"),
+            reliable=reliability.get("ingredients_complete", True) and not reliability.get("from_screen"))
+        out["kind"]["lines"].append(type_line)
+        out["tiles"], out["details"], out["sections"] = tiles, details, sections
     return out

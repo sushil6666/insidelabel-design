@@ -99,6 +99,7 @@ pytest -q                                    # 375 pass, 1 skipped; DB tests use
 | `INSIDELABEL_LIVE_SHUTTER` | the app's own shutter for the label photos (D-171) | default `off` (the phone's camera app); **`on` on the server since 2026-10-07** while the comparison runs (§8) |
 | `INSIDELABEL_PUBLIC_URL` | the site's address in `settings.env` (D-114) | read by no tool since D-184 (the join links went with the invite codes) |
 | `INSIDELABEL_TEST_PG` | run DB tests on a real server | must name a `*_test` database |
+| `INSIDELABEL_INFANT_TO_USERS` | infant foods' results, Compare, shop list and Share to users (D-200) | **default `on`** (Sushil); `off` = D-140's shadow exactly, Share hidden |
 | `INSIDELABEL_CLAIMS_TO_USERS` | show the claim check to users (D-051) | default `off`; turn on only after ≥ 5 claim packs with 0 false contradictions |
 | `INSIDELABEL_DATA` | alternate `data/` dir | rarely needed |
 | `GOOGLE_VISION_KEY` | Cloud Vision as the OCR cross-check (D-093) | API key restricted to the Vision API; project billing must be on. Unset → Tesseract. Never commit it. |
@@ -661,6 +662,8 @@ food categories, PWA built, D-092 reproduction, D-093 Cloud Vision, scan speed,
 setup alarms.
 
 **NEXT SESSION STARTS HERE (2026-10-11).** The redesign (D-185) is complete: Phase 1 (#141), Phase 2 (#142), the evidence folder (#143) and Phase 3, the website (#144), are merged; D-186 to D-188 merged as #145 to #148, D-189 as #149, D-190 as #150, D-191 to D-193 as #151 (deployed 2026-10-10, migration 027 in). Where things stand, newest first:
+
+- **`claude/project-thread-sirjc9` (2026-10-12, app web-71, no migration), from `main` 636386b (#159).** D-200 (Sushil: "enable all options for users BABY_FOOD and SUPPLEMENTS"; baby food "Everything", supplements "Facts only"): infant results go to users behind `INSIDELABEL_INFANT_TO_USERS` (on when unset; off = D-140's shadow, Share hidden), with D-140's checks, Compare between infant packs only, the shop list and Share; supplements compare with supplements only. Compare for both is side by side with no pick (`lenses/side_by_side.py`). Full suite 1370 passed (cloud: 1369, 9 skipped). Lawyer's answer still pending: revisit D-200 when it comes. **Waiting on Sushil:** the advisor's second look; merge; `update.sh`. To undo on the server: OPERATIONS.md "Infant results switch (D-200)".
 
 - **`claude/project-thread-98u1ux` (2026-10-11, app web-70 and two screen.py conditions, no migration), from `main` a6313a7 (#158).** D-199 (Sushil: "sometimes during scan of ingredients it skips step3 nutrition table"): the table question's answers are equal plain buttons, "Yes, it's in this photo" and "No, photograph the table"; the back photo's check line is "Clear photo."; D-133's table card is first in For you (under the per-person lines); no table ask on a screen result or beside a partly read list's ask (one ask per scan). Full suite 1325 passed (cloud: 1324, 9 skipped). **Waiting on Sushil:** the advisor's review; merge; `update.sh`.
 

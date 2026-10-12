@@ -17,13 +17,17 @@
   },
   "kinds": {
     "food": {"parts": ["people", "headline", "tiles", "summary", "additives", "ingredient_notes", "nutrition", "glance", "glossary", "claims", "compare", "shop_list", "tallies", "score"]},
-    "supplement": {"parts": ["people", "headline", "kind_note", "tiles", "sections", "sugar_if_food_format", "ingredient_list"],
+    "supplement": {"parts": ["people", "headline", "kind_note", "tiles", "sections", "sugar_if_food_format", "ingredient_list", "compare", "shop_list"],
                    "withhold": ["display"], "withhold_reason": "supplement_not_scored",
                    "withhold_keys": {"verdict": ["score", "grade", "binary", "nova_ultra_processed"]},
                    "why": "D-139 phase 2: FSSAI's supplement rules and ICMR-NIN's requirements (lenses/nutra.py); no score, grade, band or NOVA count, which weigh the ingredients of a food."},
     "infant": {"parts": ["people", "headline", "kind_note", "ingredient_list"],
                "withhold": ["verdict", "display", "claim_check", "nutrition", "regulators"], "withhold_reason": "infant_in_shadow",
-               "why": "D-140 (Sushil, 2026-09-30): infant foods ship in shadow. The server itself withholds every result field (no score, grade or band, no claim or nutrition result) and refuses /compare; the breastfeeding line waits for the lawyer."},
+               "why": "D-140 (Sushil, 2026-09-30): infant foods ship in shadow. The server itself withholds every result field (no score, grade or band, no claim or nutrition result) and refuses /compare; the breastfeeding line waits for the lawyer.",
+               "to_users": {"parts": ["people", "headline", "kind_note", "tiles", "sections", "ingredient_list", "compare", "shop_list", "share"],
+                            "withhold": ["verdict", "display", "claim_check", "nutrition", "regulators"], "withhold_reason": "infant_not_scored",
+                            "comparable": true,
+                            "why": "D-200 (Sushil, 2026-10-12, baby food: \"Everything\"): with INSIDELABEL_INFANT_TO_USERS on, an infant pack shows D-140's checks, Compare (with infant packs only, no pick), the shop list and Share; still no score, grade, band, claim, nutrition or EU/US result. Off: `parts`, `withhold` and the refusal above, exactly D-140's shadow."}},
     "special_medical": {"parts": ["people", "headline", "kind_note", "ingredient_list"]},
     "not_food": {"parts": ["people", "headline", "kind_note", "ingredient_list"]}
   },
@@ -61,6 +65,7 @@
   },
   "food_signals": {"nutrition_status": ["read", "partial"],
     "why": "D-187: not_food on the licence rule also needs no ordinary food signal. A pack in an ordinary food category, or one printing a nutrition table, goes to a reviewer instead (the review agent's clash check, made a rule)."},
-  "comparable": ["food"],
+  "comparable": ["food", "supplement"],
+  "comparable_why": "D-200: a pack compares only with packs of its own kind. Food is ranked (D-057); supplements, and infant packs with INSIDELABEL_INFANT_TO_USERS on (kinds.infant.to_users), are set side by side with no pick.",
   "catalogue_categories": {"13.1.3": "special_medical", "13.1": "infant", "13.2": "infant", "13.3": "special_medical", "13.4": "special_medical", "13.5": "special_medical", "13.6": "supplement"}
 }

@@ -20,6 +20,7 @@ from test_pack_kind import ITEM_85, TABLE_READ, item_85, reading, st  # noqa: E4
 
 from insidelabel.api import main  # noqa: E402
 from insidelabel.db.store import Store  # noqa: E402
+from insidelabel.lenses import screen  # noqa: E402
 from insidelabel.media import LocalMedia  # noqa: E402
 from insidelabel.review import routes  # noqa: E402
 from insidelabel.review.service import ReviewService  # noqa: E402
@@ -135,7 +136,7 @@ def test_a_version_from_before_d139_reads_as_its_categorys_kind(env):
     assert stored["code"] == "infant" and stored["evidence"][0]["text"] == "Traditional Food for Infants"
 
 
-def test_compare_refuses_a_stored_infant_scan_even_when_the_client_sends_nothing_about_it(env):
+def test_compare_refuses_a_stored_infant_scan_even_when_the_client_sends_nothing_about_it(env, infant_off):
     words = [st("MOTHER'S MILK IS BEST FOR YOUR BABY", "front"), st("Infant Formula", "front")]
     j = post(gtin(), reading(["Milk solids", "Lactose", "Vegetable oils"], words))
     assert j["pack_kind"]["code"] == "infant" and j["verdict"] is None
@@ -146,7 +147,20 @@ def test_compare_refuses_a_stored_infant_scan_even_when_the_client_sends_nothing
     assert r.json()["pack"] == j["scan_id"]
 
 
-def test_a_published_infant_pack_is_served_without_any_result(env):
+def test_compare_refuses_a_stored_infant_scan_against_a_food_with_the_switch_on(env, infant_on):
+    # D-200: an infant food compares only with infant foods; the stored kind still decides.
+    words = [st("MOTHER'S MILK IS BEST FOR YOUR BABY", "front"), st("Infant Formula", "front")]
+    j = post(gtin(), reading(["Milk solids", "Lactose", "Vegetable oils"], words))
+    assert j["pack_kind"]["code"] == "infant" and j["verdict"] is None
+    r = TestClient(main.app).post("/compare", json={"age": "kid", "packs": [
+        {"id": j["scan_id"], "name": "Formula", "ingredients": ["Milk solids", "Lactose"]},
+        {"id": "other", "name": "Rusk", "ingredients": ["Wheat flour", "Sugar"]}]})
+    assert r.status_code == 422 and r.json()["reason"] == "mixed_kinds"
+    assert r.json()["detail"] == "We compare an infant food only with other infant foods."
+    assert r.json()["pack"] == "other"
+
+
+def test_a_published_infant_pack_is_served_without_any_result(env, infant_off):
     bc = gtin()
     j = post(bc, reading(["Rice flour", "Milk solids"], [st("Processed Cereal Based Complementary Food", "front")]))
     vid = j["catalogue"]["product_version_id"]
@@ -164,7 +178,37 @@ def test_a_published_infant_pack_is_served_without_any_result(env):
     assert hit["screen"]["headline"]["text"] == 'This pack says "Processed Cereal Based Complementary Food".'
 
 
-def test_an_infant_foods_own_checks_are_stored_for_reviewers_and_never_sent(env):
+def test_a_published_infant_pack_is_served_with_its_checks_and_no_score_with_the_switch_on(env, infant_on):
+    bc = gtin()
+    j = post(bc, reading(["Rice flour", "Milk solids", "Vanilla flavour"],
+                         [st("Processed Cereal Based Complementary Food", "front")]))
+    vid = j["catalogue"]["product_version_id"]
+    item_id, c, page = item_page(env, vid)
+    token = re.search(r'name="csrf" value="([0-9a-f]+)"', page).group(1)
+    c.post(f"/review/item/{item_id}/claim", data={"csrf": token})
+    r = c.post(f"/review/item/{item_id}/approve", follow_redirects=False, data={
+        "csrf": token, "name": "Rice Cereal", "brand": "Testco", "variant": "Processed Cereal Based Complementary Food",
+        "barcode": "", "ingredients": "Rice flour\nMilk solids\nVanilla flavour", "allergen_statement": "",
+        "front_claims": "", "note": "", "category": "13.2"})
+    assert r.status_code == 303 and "error=" not in r.headers["location"], r.headers["location"]
+    hit = TestClient(main.app).post("/scan", data={"barcode": bc}).json()
+    assert hit["catalogue"]["source"] == "catalogue" and hit["pack_kind"]["code"] == "infant"
+    assert hit["verdict"] is None and hit["display"] is None and hit["withheld"]["reason"] == "infant_not_scored"
+    s = hit["screen"]
+    assert s["headline"]["text"] == 'This pack says "Processed Cereal Based Complementary Food".'
+    assert s["kind"]["lines"][0] == screen.INFANT_TEXT and "compare" in s["parts"]
+    # From the catalogue: the name, the words and the list; no photos, so no statements or composition section.
+    sections = {x["id"] for x in s["sections"]}
+    assert [t["title"] for t in s["tiles"]] == ["Vanilla flavour"]
+    assert "statements" not in sections and "composition" not in sections
+    assert hit["compare_input"]["type"]["id"] == "processed_cereal" and hit["compare_input"]["statements"] is None
+    assert not hit["compare_input"].get("composition")
+    # No score: nothing that ranks or grades the pack, here or in the screen.
+    assert hit.get("score") is None and hit["nutrition"] is None
+    assert not {"score", "summary", "band_question", "nutrition"} & set(s)
+
+
+def test_an_infant_foods_own_checks_are_stored_for_reviewers_and_never_sent(env, infant_off):
     """D-140 phase 3, in shadow: computed at /scan, kept with the reading, shown on /review only."""
     v = reading(["Rice flour", "Milk solids", "Added flavour (vanilla)", "Hydrogenated vegetable fat",
                  "Emulsifier (INS 472e)"],
@@ -189,6 +233,36 @@ def test_an_infant_foods_own_checks_are_stored_for_reviewers_and_never_sent(env)
     assert "Not found in this type&#39;s additive list: INS 472e" in page or "Not found in this type's additive list: INS 472e" in page
 
 
+def test_an_infant_foods_own_checks_are_stored_and_shown_to_users_with_the_switch_on(env, infant_on):
+    """D-200: the same checks, still stored for reviewers, now in the user's result too."""
+    v = reading(["Rice flour", "Milk solids", "Added flavour (vanilla)", "Hydrogenated vegetable fat",
+                 "Emulsifier (INS 472e)"],
+                [st("Processed Cereal Based Complementary Food", "front"),
+                 st("MOTHER'S MILK IS BEST FOR YOUR BABY", "front"), st("The complete Energy Food", "front")])
+    j = post(gtin(), v)
+    assert "_infant" not in json.dumps(j)
+    assert j["verdict"] is None and j["withheld"]["reason"] == "infant_not_scored"
+    s = j["screen"]
+    assert [t["title"] for t in s["tiles"]] == ['"Energy Food" on the pack', "Added flavour (vanilla)",
+                                                "Hydrogenated vegetable fat", "INS 472e"]
+    statements = next(x for x in s["sections"] if x["id"] == "statements")["lines"]
+    assert any("Boiled and cooled water" in t and "We didn't find it" in t for t in statements)
+    assert statements[-1] == "Found on the pack, as the rules ask: the mother's milk notice on the front."
+    vid = j["catalogue"]["product_version_id"]
+    [(raw,)] = q(env, "SELECT raw_extraction FROM product_versions WHERE id = %s", vid)
+    got = raw["_infant"]
+    assert got["type"]["id"] == "processed_cereal" and [w["word"] for w in got["words"]] == ["energy food"]
+    assert got["additives"]["not_found"] == [{"entry": "Emulsifier (INS 472e)", "ins": "472e"}]
+    assert {s["id"] for s in got["statements"] if not s["found"]} >= {"boiled_water", "not_sole"}
+    assert got["free_from"] == [{"entry": "Added flavour (vanilla)", "why": ["flavour"]}]
+    assert [h["entry"] for h in got["hydrogenated"]] == ["Hydrogenated vegetable fat"]
+    # Still shown to reviewers, as with the switch off.
+    _item, _c, page = item_page(env, vid)
+    assert 'id="infant-checks"' in page and "processed cereal, from" in page and "Not found</strong>: " in page
+    assert "No picture of an infant or a woman" in page
+    assert "Not found in this type&#39;s additive list: INS 472e" in page or "Not found in this type's additive list: INS 472e" in page
+
+
 def test_a_food_has_no_infant_checks(env):
     j = post(gtin(), reading(["Wheat flour", "Sugar"], [st("Glucose biscuits", "front")]))
     [(raw,)] = q(env, "SELECT raw_extraction FROM product_versions WHERE id = %s", j["catalogue"]["product_version_id"])
@@ -207,7 +281,7 @@ def test_a_milk_free_infant_cereal_without_the_4_3_statement_shows_on_review(env
     assert "Contains no milk or milk products or milk derivatives" in page and "(4(3), PDF p. 6;" in page
 
 
-def test_composition_is_shown_to_reviewers_beside_the_types_range(env):
+def test_composition_is_shown_to_reviewers_beside_the_types_range(env, infant_off):
     """D-140 phase 3, part 4: reviewers only; nothing reaches the user."""
     v = reading(["Wheat flour", "Milk solids"], [st("Milk Cereal Based Complementary Food", "front")])
     v["nutrition"] = {"status": "read", "per_100_basis": "Per 100 g",
@@ -227,6 +301,28 @@ def test_composition_is_shown_to_reviewers_beside_the_types_range(env):
     assert raw["_infant"]["composition"][0]["where"] == "above"
     _item, _c, page = item_page(env, vid)
     assert "The pack prints 8 mg" in page and "set 3.0 to 7.0 mg" in page and "(above that)" in page
+
+
+def test_composition_is_shown_to_users_beside_the_types_range_with_the_switch_on(env, infant_on):
+    """D-200: composition reaches the user as facts side by side, no "above" or "fails"."""
+    v = reading(["Wheat flour", "Milk solids"], [st("Milk Cereal Based Complementary Food", "front")])
+    v["nutrition"] = {"status": "read", "per_100_basis": "Per 100 g",
+                      "rows": [{"nutrient": "Iron", "per_100": "8 mg", "unit": None}]}
+    import insidelabel.api.main as m
+    mp = pytest.MonkeyPatch()
+    mp.setattr(m.ocr_check, "result_of",
+               lambda read, ings: {"available": True, "reader": "tesseract", "ocr_text": "IRON 8 mg",
+                                   "missing": [], "passes": 6})
+    try:
+        j = post(gtin(), v)
+    finally:
+        mp.undo()
+    [comp] = [x for x in j["screen"]["sections"] if x["id"] == "composition"]
+    assert comp["lines"] == ["Iron: 8 mg per 100 g on the pack. FSSAI's table: 3 to 7 mg."]
+    assert comp["sources"][0]["page"].startswith("8(1)(d), PDF pp. 13 to 14")
+    assert j["compare_input"]["composition"] == [{"nutrient": "iron", "label": "Iron", "value": 8.0}]
+    for word in ("above", "below", "fail"):
+        assert word not in json.dumps(comp)
 
 
 def test_the_replay_tool_writes_only_with_apply_and_only_the_kind(env):

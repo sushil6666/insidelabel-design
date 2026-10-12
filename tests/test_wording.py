@@ -48,6 +48,28 @@ CONSUMER_FIELDS = {
 }
 
 
+# D-200 (Sushil, 2026-10-12): never about an infant pack, in our words. "best" is allowed only
+# inside regulation 4(1)(a)'s notice, exactly as the pack printed it.
+INFANT_FORBIDDEN = ["safe", "best", "recommended", "healthy", "suitable for your baby"]
+INFANT_NOTICE = "MOTHER'S MILK IS BEST FOR YOUR BABY"
+_INFANT = re.compile(r"(?<![a-z0-9-])(" + "|".join(re.escape(w) for w in INFANT_FORBIDDEN) + r")(?![a-z0-9-])",
+                     re.IGNORECASE)
+
+
+def infant_hits(obj, printed=()):
+    """The infant words in every string of obj, after taking out the notice where the pack printed it
+    word for word (a string that is the printed notice, or the notice inside quotes)."""
+    notices = [p for p in printed if p == INFANT_NOTICE]
+    out = []
+    for text in strings(obj) if not isinstance(obj, str) else [obj]:
+        if text in notices:
+            continue
+        for n in notices:
+            text = text.replace(f'"{n}"', "").replace(f"\u201c{n}\u201d", "")
+        out += [m.group(0) for m in _INFANT.finditer(text)]
+    return out
+
+
 def hits(text):
     return [m.group(0) for m in _PATTERN.finditer(text or "")]
 
@@ -250,3 +272,42 @@ def test_photo_limit_words():
     from insidelabel.lenses import screen
     for seconds in (30, 3600, 86_400):
         assert_clean(list(screen.photo_limit(seconds, 15).values()), "photo limit screen")
+
+
+# ---------------------------------------------------------------- D-200: infant packs
+
+def test_the_infant_lint_allows_best_only_inside_the_notice_as_printed():
+    printed = [INFANT_NOTICE]
+    assert infant_hits(f'This pack says "{INFANT_NOTICE}".', printed) == []           # quoted as printed
+    assert infant_hits(INFANT_NOTICE, printed) == []                                  # the pack's own words
+    assert infant_hits(f'This pack says "{INFANT_NOTICE}".') == ["BEST"]              # not printed on this pack
+    assert infant_hits("the best pick of these", printed) == ["best"]                 # our own words
+    assert infant_hits(f'"{INFANT_NOTICE}" and the best one', printed) == ["best"]
+    assert infant_hits('"MOTHER\'S MILK IS BEST"', printed) == ["BEST"]                # not the exact notice
+    assert infant_hits("Suitable for your baby, safe, healthy and recommended", printed) == [
+        "Suitable for your baby", "safe", "healthy", "recommended"]
+
+
+def test_our_own_infant_words_never_use_them():
+    from insidelabel.lenses import screen, side_by_side
+    ours = [screen.INFANT_TEXT, screen.INFANT_NO_TYPE, screen.INFANT_PARTIAL, screen._FREE_FROM_RULE,
+            *screen.INFANT_TITLES.values(), *screen.INFANT_TYPE_WORDS.values(), *screen.INFANT_STATEMENT_NAMES.values(),
+            *screen.INFANT_NOT_FOUND.values(), *screen._FREE_FROM_CHIP.values(), *side_by_side.HEADING.values(),
+            *side_by_side.NOTE.values(), *side_by_side.TITLES.values(), side_by_side.NOT_READ, side_by_side.NOTHING,
+            side_by_side.NO_TYPE, side_by_side.NO_NUMBERS, side_by_side.TYPE_SHORT, side_by_side.NO_TYPE_SHORT,
+            *side_by_side.FREE_FROM_WORD.values()]
+    assert infant_hits(ours) == []
+    assert_clean(ours, "D-200 infant and side-by-side words")
+
+
+def test_an_infant_result_and_compare_use_none_of_them(infant_on):
+    from test_infant_to_users import BOILED, NOTICE, STATEMENTS, _packs, compare, infant, scan
+    from test_pack_kind import st
+    a = scan(infant("processed_cereal", ingredients=["Wheat flour", "Milk solids", "Vanilla flavour"],
+                    extra=[st("ENERGY FOOD", "front")]), key="lint-a")
+    b = scan(infant(None, statements=[x for x in STATEMENTS if x["text"] != NOTICE] + [BOILED]), key="lint-b")
+    assert infant_hits(a["screen"], printed=[NOTICE]) == []
+    assert infant_hits(b["screen"]) == []                     # no notice printed: "best" nowhere at all
+    j = compare(_packs(a, b)).json()
+    assert infant_hits(j) == []
+    assert_clean(list(strings(a["screen"])) + list(strings(j)), "infant result and compare")
