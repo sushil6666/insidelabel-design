@@ -390,7 +390,7 @@ MAY_CONTAIN_NOTE = {
 
 
 def _person(profile, ingredients, statement, confidence, reliable, screen=False, pack=None, baby=(),
-            complete=True, where="photo", veg_mark=None, product_name=None):
+            complete=True, where="photo", veg_mark=None, product_name=None, infant=False):
     """
     D-064: the glanceable signal for one person, allergens first. baby: baby_lines().
     D-188: `line` is the card at the top of the result; build() keeps a card only for a match
@@ -415,10 +415,10 @@ def _person(profile, ingredients, statement, confidence, reliable, screen=False,
     if screen and rows:
         status, line, allergens = _screen_person(profile, rows, pack)
         out = {"ref": profile["ref"], "status": status, "line": line, "allergens": allergens,
-               "child_facts": [f for f in _child_facts(profile, ingredients, reliable, baby)]}
+               "child_facts": [f for f in _child_facts(profile, ingredients, reliable, baby, infant)]}
         return out                       # D-130: the from_screen card says where it was read
 
-    child_facts = _child_facts(profile, ingredients, reliable, baby)
+    child_facts = _child_facts(profile, ingredients, reliable, baby, infant)
     quiet = None
     texts = {}
     if rows and rows[0].state == "cannot_confirm":
@@ -503,12 +503,14 @@ def split_people(people):
     return cards, quiet, note
 
 
-def _child_facts(profile, ingredients, reliable, baby=()):
+def _child_facts(profile, ingredients, reliable, baby=(), infant=False):
     out = []
     if profile["age"] in kids.AGE_BANDS and reliable and ingredients:
         p = kids.extract_facts(kids.Product("x", "x", ingredients), profile["age"])
+        # D-201: on an infant pack (switch on) the sugar line is said once, for everyone, in the
+        # result's "Worth knowing"; the child card keeps every other age line.
         out = [{"tier": f.tier, "text": f.parent_text, "technical": f.technical}
-               for f in p.facts if f.tier == "strong"]
+               for f in p.facts if f.tier == "strong" and not (infant and f.key.startswith("sugar_pos:"))]
     return out + (list(baby) if profile["age"] == "baby" else [])
 
 
@@ -545,16 +547,26 @@ def _hfss(panel):
     return any(r["over"] and r["key"] in ("salt", "added_sugars") for r in rows)
 
 
-def baby_lines(kind_code, ingredients, reliable, panel=None):
+# D-201 (Sushil, accepting: "Keep any age line that applies to an infant"): with the infant switch
+# on, an infant pack's child card keeps these lines. Held: the added sugar line (the pack's own
+# "Worth knowing" says the sugar once), HFSS (a judgement of the food), and the honey line, whose
+# ICMR-NIN guideline 3 is the breastfeeding guideline D-140 holds (Sushil, 2026-10-13: "Hold it").
+INFANT_BABY_LINES = ("non_sugar_sweetener", "salt")
+
+
+def baby_lines(kind_code, ingredients, reliable, panel=None, infant_on=False):
     """The `child_facts` items a baby profile gets on this pack (D-140), in the table's order."""
-    if kind_code not in ("food", "supplement"):
+    infant = kind_code == "infant" and infant_on
+    if kind_code not in ("food", "supplement") and not infant:
         return []
     on = set()
     for row in BABY["lines"]:
         t = row["trigger"]
-        if t == "supplement":
+        if infant and row["id"] not in INFANT_BABY_LINES:
+            hit = False
+        elif t == "supplement":
             hit = kind_code == "supplement"
-        elif kind_code != "food":
+        elif kind_code not in ("food", "infant"):
             hit = False
         elif t == "hfss":
             hit = _hfss(panel)
@@ -1510,13 +1522,15 @@ def _build(*, verdict, display, claim_check, extracted, reliability, profiles,
     ingredients = (extracted or {}).get("ingredients") or []
     statement = (extracted or {}).get("allergen_statement")
     from_screen = bool(reliability.get("from_screen"))
-    baby = (baby_lines(kind["code"] if kind else "food", ingredients, allergen_reliable, nutrition)
+    infant_on = bool(kind and kind["code"] == "infant" and pack_kind.infant_to_users())     # D-201
+    baby = (baby_lines(kind["code"] if kind else "food", ingredients, allergen_reliable, nutrition,
+                       infant_on=infant_on)
             if verdict is not None else [])
     where = "pack" if (catalogue or {}).get("source") == "catalogue" else "photo"     # D-188
     people = [p for p in (_person(pr, ingredients, statement, allergen_confidence, allergen_reliable,
                                   screen=from_screen and verdict is not None, pack=pack, baby=baby,
                                   complete=reliability.get("ingredients_complete", True), where=where,
-                                  veg_mark=veg_mark, product_name=product_name)
+                                  veg_mark=veg_mark, product_name=product_name, infant=infant_on)
                           for pr in profiles) if p]
 
     if verdict is None and from_screen and reliability.get("error") not in ("product_mismatch", "not_a_food_pack"):
@@ -1747,10 +1761,6 @@ KIND_TEXT = {
                  "\"drugs and medicinal products\" out of \"food\" (section 3(1)(j)). We show the allergens "
                  "on the list and nothing else."),
 }
-# D-200 (Sushil, 2026-10-12, baby food: "Everything"): with INSIDELABEL_INFANT_TO_USERS on, the
-# kind card says what an infant pack is checked against; KIND_TEXT["infant"] stays the shadow's.
-INFANT_TEXT = ("We check an infant food against FSSAI's rules for foods for infant nutrition, not against our "
-               "checks for foods.")
 NOT_FOOD_HEADLINE = "We didn't find an FSSAI licence number on the photos."
 # D-196 (Sushil, 2026-10-11: "say why we are not considering Ayurvedic"): a pack that prints
 # "Ayurvedic medicine" (D-190) is quoted in the headline and told why in one line; the FSS Act
@@ -1950,8 +1960,6 @@ INFANT_TYPE_WORDS = {"infant_formula": "infant formula", "follow_up_formula": "f
                      "traditional": "food for infants based on traditional food ingredients"}
 INFANT_NO_TYPE = ("The pack's name doesn't say which kind of infant food it is, so the checks that depend on the "
                   "kind (its additive list, hydrogenated fat, composition) are off.")
-INFANT_TITLES = {"statements": "What FSSAI's rules ask the label to say", "additives": "Additives",
-                 "composition": "Beside FSSAI's composition table"}
 INFANT_PARTIAL = "We need clear photos of the whole front and back to check the statements FSSAI's rules ask for."
 # A found statement is named, not quoted again: the list stays short (the pack's words are on the pack).
 INFANT_STATEMENT_NAMES = {"important_notice": "\"IMPORTANT NOTICE\"", "mothers_milk": "the mother's milk notice on the front",
@@ -1961,8 +1969,8 @@ INFANT_STATEMENT_NAMES = {"important_notice": "\"IMPORTANT NOTICE\"", "mothers_m
                           "no_milk": "the no milk statement"}
 # D-200 (Sushil, 2026-10-12): "best" only inside the notice as printed on the pack, never in our
 # words; a notice we didn't find is named, not quoted.
-INFANT_NOT_FOUND = {"mothers_milk": "the notice about mother's milk that regulation 4(1)(a) asks for on the front, "
-                                    "in capital letters"}
+INFANT_NOT_FOUND = {"mothers_milk": "In capital letters, the notice about mother's milk that regulation 4(1)(a) asks "
+                                    "for on the front"}
 _FREE_FROM_CHIP = {"preservative": "FSSAI's infant rules leave out preservatives",
                    "colour": "FSSAI's infant rules leave out added colours",
                    "flavour": "FSSAI's infant rules leave out added flavours"}
@@ -1971,39 +1979,10 @@ _FREE_FROM_RULE = ("Regulation 5(1) of FSSAI's rules for foods for infant nutrit
 _UNIT = {"g": "g", "mg": "mg", "mcg": "\u00b5g"}
 
 
-def infant_type_line(ptype):
-    """The one line that says which of the regulation's types the checks used, or that none could be."""
-    if ptype is None:
-        return INFANT_NO_TYPE
-    return (f"The pack's name says \"{ptype['printed']}\", so we use FSSAI's rules for "
-            f"{INFANT_TYPE_WORDS[ptype['id']]}.")
-
-
-def infant_statement_lines(statements, no_milk=None):
-    """Regulation 4's statements found or not found, as the result and Compare say them."""
-    rows = list(statements or []) + ([no_milk] if no_milk else [])
-    lines = [f"FSSAI's rules for infant foods ask the label for {INFANT_NOT_FOUND.get(r.get('id'), r['text'])}. We "
-             "didn't find it on the photos of this pack." for r in rows if not r["found"]]
-    found = [INFANT_STATEMENT_NAMES[r.get("id", "no_milk")] for r in rows if r["found"]]
-    if found:
-        lines.append("Found on the pack, as the rules ask: " + ", ".join(found) + ".")
-    return lines
-
-
 def infant_word_line(w):
     return (f"The pack says \"{w['word'].title()}\". FSSAI's rules for infant foods say the label \"shall not "
             "exhibit\" the words \"Full Protein Food\", \"Energy Food\", \"Completer Food\" or \"Health Food\", "
             "and \"Humanised\" or \"Maternalised\" \"shall not be used\".")
-
-
-def infant_composition_line(r):
-    lo, hi = r["range"]
-    u = _UNIT.get(r["range_unit"], r["range_unit"])
-    span = (f"{_fmt(lo)} to {_fmt(hi)} {u}" if lo is not None and hi is not None else
-            f"at least {_fmt(lo)} {u}" if lo is not None else f"at most {_fmt(hi)} {u}")
-    label = r["label"][0].upper() + r["label"][1:]
-    # Facts side by side, as D-140 part 4 built them: no "fails", no "within" or "above" words.
-    return f"{label}: {r['printed']} {_UNIT.get(r['unit'], r['unit'])} per 100 g on the pack. FSSAI's table: {span}."
 
 
 def infant_additive_lines(adds, ptype):
@@ -2016,9 +1995,196 @@ def infant_additive_lines(adds, ptype):
             "additives are allowed, and names on packs vary, so a person checks it too." for x in adds["not_found"]]
 
 
-def _infant_parts(*, ingredients, vision, ocr_text, product=None, reliable=True):
-    """(type line, tiles, details, sections) for an infant pack (D-200). vision None: a catalogue
-    result, with its published name (`product`) and list but no photos to read."""
+# ---------------------------------------------------------------- D-201: an infant result a parent can use
+# Sushil, 2026-10-13, after scanning Amulspray: "As a user what I will do with this output, what
+# message I am giving, tell me." With INSIDELABEL_INFANT_TO_USERS on, an infant result reads, top
+# to bottom: the allergen cards (D-060, D-188), the pack's kind name once, "Worth knowing" (an
+# added sugar where the list has one, each nutrient outside FSSAI's range), and "Good to know"
+# (how many nutrients are inside FSSAI's ranges, additives, the notices regulation 4 asks for).
+# FSSAI's own table is the only yardstick: never an adult daily intake, % RDA or a "daily" figure.
+# "inside" and "outside FSSAI's range" are facts (D-201 changes D-140 part 4's and D-200's
+# wording); "within", "above", "below" and "fails" stay out. The range bar is two numbers FSSAI
+# printed and one the pack printed, in one neutral tone: a fact, not a band (D-201 on D-200).
+INFANT_KIND_LINE = "We check it against FSSAI's rules for {type}."
+INFANT_WHY_TITLE = "Why {type}"
+INFANT_WHY = "FSSAI's rules make \"{name}\" a name for one kind of {type} (regulation {basis}), so we use the {type} table."
+INFANT_WORTH_TITLE = "Worth knowing"
+INFANT_GOOD_TITLE = "Good to know"
+INFANT_BLOCK_TITLES = {"nutrients": "Nutrients", "additives": "Additives", "notices": "Notices"}
+INFANT_RULES_TITLE = "From FSSAI's rules"
+INFANT_IN_FORCE = "FSSAI's rules for infant foods apply to packs made from 1 October 2022."
+INFANT_NO_INS = "The list prints no INS numbers."
+INFANT_WHICH_TITLE = "Which ones"
+INFANT_SIDE = {"first": "Photograph the side", "again": "Photograph another side", "title": "The side of the pack",
+               "line": "Photograph the side that prints the warnings and how to make the feed.",
+               "none_new": "We didn't find more of them on that photo.",
+               "unread": "We couldn't read that photo. Try again in good light."}
+INFANT_SIDE_MAX = 2                                   # one side photo at a time, at most two
+INFANT_COMPARE_BUTTON = {"formula": "Compare with another formula", "other": "Compare with another baby food"}
+_FORMULA_TYPES = ("infant_formula", "follow_up_formula")
+
+
+def _infant_found_name(r):
+    return INFANT_STATEMENT_NAMES[r.get("id", "no_milk")]
+
+
+def _infant_rule_text(r):
+    """A regulation 4 row as a sentence: its own words, capitalised; the 4(1)(a) notice named, never quoted."""
+    t = INFANT_NOT_FOUND.get(r.get("id"), r["text"])
+    t = t[0].upper() + t[1:]
+    return t if t.endswith((".", ".\"")) else t + "."
+
+
+def _photos_words(n):
+    return "this photo" if n == 1 else f"these {n} photos"
+
+
+def infant_notices(statements, no_milk=None, *, photos=2, sides=0, last_found=None):
+    """
+    D-201: the notices block. Found ones named in one line; the ones we didn't see in one line,
+    listed with the regulation's words a tap away; "Photograph the side" while a side can still
+    show one (never the front's 4(1)(a) notice) and fewer than two side photos were added.
+    last_found: after a side photo, the ids it found ([] for none).
+    """
+    out = {"id": "notices", "title": INFANT_BLOCK_TITLES["notices"], "lines": [],
+           "sources": [_cite(INFANT_SOURCE, "4, PDF pp. 4 to 6")]}
+    if statements is None:
+        out["lines"] = [INFANT_PARTIAL]
+        return out
+    rows = list(statements) + ([no_milk] if no_milk else [])
+    found = [r for r in rows if r["found"]]
+    missing = [r for r in rows if not r["found"]]
+    if found:
+        out["lines"].append("Found on the pack: " + ", ".join(_infant_found_name(r) for r in found) + ".")
+    if missing:
+        k = len(missing)
+        side = sides < INFANT_SIDE_MAX and any(r.get("id", "no_milk") in infant_lens.SIDE_IDS for r in missing)
+        line = (f"We didn't see {k}{' more' if found else ''} notice{'s' if k > 1 else ''} FSSAI's rules ask for "
+                f"on {_photos_words(photos)}.")
+        if side:
+            line += f" Tins and boxes often print {'them' if k > 1 else 'it'} on a side."
+        out["lines"].append(line)
+        if last_found == []:
+            out["lines"].append(INFANT_SIDE["none_new"])
+        out["which"] = {"title": INFANT_WHICH_TITLE,
+                        "items": [{"text": _infant_rule_text(r), "basis": r["basis"]} for r in missing]}
+        if side:
+            out["side"] = {"button": INFANT_SIDE["again" if sides else "first"], "title": INFANT_SIDE["title"],
+                           "line": INFANT_SIDE["line"], "photos": photos, "sides": sides,
+                           "found": [infant_lens.public_id(r.get("id", "no_milk")) for r in found],
+                           "missing": [infant_lens.public_id(r.get("id", "no_milk")) for r in missing]}
+    return out
+
+
+def _span(lo, hi, u, places=2):
+    if lo is not None and hi is not None:
+        return f"{_fmt(lo, places)} to {_fmt(hi, places)} {u}"
+    return f"at least {_fmt(lo, places)} {u}" if lo is not None else f"at most {_fmt(hi, places)} {u}"
+
+
+def infant_bar(value, lo, hi, u):
+    """
+    D-201: the numbers the app draws a range bar from (D-091: the app only places them).
+    `scale` is the axis, wide enough that FSSAI's range sits inside it and a number outside sits
+    past the range's end. One neutral tone in the app: no zones, no colours, no score.
+    """
+    if lo is not None and hi is not None:
+        span = (hi - lo) or abs(hi) or 1.0
+        a, b = min(lo, value), max(hi, value)
+        pad = span * 0.35
+        scale = [max(0.0, a - pad) if a >= 0 else a - pad, b + pad]
+    elif lo is not None:                               # "at least": the track runs on to the right
+        top = max(value, lo) * 1.6 or 1.0
+        scale = [max(0.0, min(value, lo) - lo * 0.35), top]
+    else:                                              # "at most"
+        scale = [0.0, (max(value, hi) * 1.3) or 1.0]
+    return {"value": value, "low": lo, "high": hi, "scale": [round(scale[0], 4), round(scale[1], 4)],
+            "value_text": f"{_fmt(value)} {u}",
+            "low_text": (None if lo is None else _fmt(lo) if hi is not None else f"at least {_fmt(lo)} {u}"),
+            "high_text": (None if hi is None else f"{_fmt(hi)} {u}" if lo is not None else f"at most {_fmt(hi)} {u}")}
+
+
+def infant_nutrient(r, ptype, kcal=None):
+    """One nutrient beside FSSAI's range: its sentence, its bar and, outside, its fold."""
+    row = next(x for x in infant_lens.COMPOSITION["types"][ptype["id"]]["rows"] if x["nutrient"] == r["nutrient"])
+    lo, hi = r["range"]
+    u = _UNIT.get(r["range_unit"], r["range_unit"])
+    label = r["label"][0].upper() + r["label"][1:]
+    printed = f"{r['printed']} {_UNIT.get(r['unit'], r['unit'])}"
+    out = {"id": r["nutrient"], "label": label, "value_text": printed,
+           "text": f"{label}: {printed} per 100 g. FSSAI's range: {_span(lo, hi, u)}.",
+           "outside": r["where"] != "within", "bar": infant_bar(r["value"], lo, hi, u)}
+    if out["outside"]:
+        lines = []
+        klo, khi = row.get("per_100_kcal") or (None, None)
+        if kcal and (klo is not None or khi is not None):
+            per = r["value"] / kcal * 100
+            lines.append(f"Per 100 kcal: {per:.2f} {u}. FSSAI's range: "
+                         + (f"{klo:.2f} to {khi:.2f} {u}" if klo is not None and khi is not None else
+                            f"at least {klo:.2f} {u}" if klo is not None else f"at most {khi:.2f} {u}") + ".")
+        lines.append(INFANT_IN_FORCE)
+        out["more"] = {"title": INFANT_RULES_TITLE, "lines": lines, "sources": [_cite(INFANT_SOURCE, row["fssai_basis"])]}
+    return out
+
+
+def infant_sugar_line(s):
+    """
+    D-201: where an added sugar sits in the list and the sugars the pack prints per 100 g,
+    quoted, never characterised; None when the list names no added sugar and the pack prints no
+    added sugars above 0. Nothing is said about lactose or "the milk's own" sugar.
+    """
+    pos, n = s["positions"], s["count"]
+    added, total = s.get("added"), s.get("total")
+    if not pos and not (added and added["value"] > 0):
+        return None
+    parts = []
+    if pos:
+        at, first = pos[0]
+        parts.append(f"Sugar is the {_ordinal(at)} of {n} ingredients." if first == "sugar" else
+                     f"Added sugar comes {_ordinal(at)} of {n} ingredients, as {first}.")
+        more = list(dict.fromkeys(name for _at, name in pos[1:] if name != first))
+        if more:
+            parts.append(f"The list also names {_join(more)}.")
+    if added and total:
+        parts.append(f"Added sugars: {added['printed']} g per 100 g; total sugars: {total['printed']} g, as printed.")
+    elif added:
+        parts.append(f"Added sugars: {added['printed']} g per 100 g, as printed.")
+    elif total:
+        parts.append(f"Total sugars: {total['printed']} g per 100 g, as printed.")
+    return " ".join(parts)
+
+
+def _not_compared_line(nc):
+    parts = []
+    if nc["no_row"]:
+        parts.append(f"{_join(nc['no_row'])} (FSSAI's table has no per 100 g row for "
+                     f"{'them' if len(nc['no_row']) > 1 else 'it'})")
+    if nc["folate"]:
+        parts.append(f"{_join(nc['folate'])} (FSSAI's table gives folate as dietary folate equivalents)")
+    return ("Not compared: " + " and ".join(parts) + ".") if parts else None
+
+
+def infant_nutrients_line(n, inside):
+    if inside == n:
+        return (f"The 1 nutrient we compared is inside FSSAI's range." if n == 1 else
+                f"All {n} nutrients we compared are inside FSSAI's ranges.")
+    if n == 1:
+        return "The 1 nutrient we compared is outside FSSAI's range."
+    return (f"{inside} of {n} nutrient{'s' if n > 1 else ''} we compared "
+            f"{'is' if inside == 1 else 'are'} inside FSSAI's ranges.")
+
+
+def infant_photos(nutra_input):
+    """How many photos the scan sent (the list's parts and the front), for "on these 2 photos"."""
+    return max(1, int((nutra_input or {}).get("photos") or 2))
+
+
+def _infant_parts(*, ingredients, vision, ocr_text, product=None, reliable=True, photos=2):
+    """
+    The infant result's parts (D-200, laid out by D-201): {type, kind_lines, why, tiles,
+    details, infant, compare_button}. vision None: a catalogue result, with its published name
+    (`product`) and list but no photos to read: name and list checks only.
+    """
     vision = vision or {}
     if vision:
         got = vision.get("_infant") or infant_lens.check(vision, ingredients, ocr_text)
@@ -2029,7 +2195,7 @@ def _infant_parts(*, ingredients, vision, ocr_text, product=None, reliable=True)
                "free_from": infant_lens.free_from(ingredients), "hydrogenated": infant_lens.hydrogenated(ingredients, ptype),
                "additives": infant_lens.additives(ingredients, ptype), "composition": None}
     ptype = got["type"]
-    tiles, details, sections = [], {}, []
+    tiles, details = [], {}
     rule_cite = lambda page: _cite(INFANT_SOURCE, page)      # noqa: E731
 
     def tile(tid, title, chip, found, on_label, page):
@@ -2059,28 +2225,67 @@ def _infant_parts(*, ingredients, vision, ocr_text, product=None, reliable=True)
                      "Not found in FSSAI's additive list for this kind of infant food",
                      infant_additive_lines({"not_found": [x]}, ptype), x["entry"], got["additives"]["basis"])
 
-    if vision:
-        lines = (INFANT_PARTIAL,) if got["statements"] is None else infant_statement_lines(got["statements"],
-                                                                                            got["no_milk"])
-        sections.append({"id": "statements", "title": INFANT_TITLES["statements"], "lines": list(lines),
-                         "sources": [rule_cite("4, PDF pp. 4 to 6")]})
+    # The kind, once: the words the type came from go in the headline; the card says the rules.
+    why = None
+    if ptype is None:
+        kind_lines = [INFANT_NO_TYPE]
+    else:
+        words = INFANT_TYPE_WORDS[ptype["id"]]
+        kind_lines = [INFANT_KIND_LINE.format(type=words)]
+        row = next(r for r in infant_lens.RULES["types"] if r["id"] == ptype["id"])
+        other = next((o for o in row.get("other_names") or []
+                      if infant_lens._has(infant_lens.norm(ptype["printed"]), o["phrase"])), None)
+        if other:
+            why = {"title": INFANT_WHY_TITLE.format(type=words),
+                   "text": INFANT_WHY.format(name=other["name"], type=words, basis=other["fssai_basis"]),
+                   "sources": [rule_cite(other["fssai_basis"])]}
+
+    worth, blocks = [], []
+    # Worth knowing: an added sugar, then each nutrient outside FSSAI's range.
+    sug = infant_lens.sugar(vision, ingredients, ocr_text) if vision else {
+        "positions": kids.sugar_positions(ingredients), "count": len(ingredients or []), "added": None, "total": None}
+    sline = infant_sugar_line(sug) if reliable or not vision else None
+    if sline:
+        worth.append({"id": "sugar", "text": sline})
+    comp = got["composition"] or []
+    nutrients = [infant_nutrient(r, ptype, infant_lens.energy_kcal(vision, ocr_text) if vision else None)
+                 for r in comp] if ptype else []
+    worth += [{"id": n["id"], "text": n["text"], "bar": n["bar"], "more": n["more"]}
+              for n in nutrients if n["outside"]]
+    if nutrients:
+        inside = sum(1 for n in nutrients if not n["outside"])
+        block = {"id": "nutrients", "title": INFANT_BLOCK_TITLES["nutrients"],
+                 "lines": [infant_nutrients_line(len(nutrients), inside)],
+                 "all": {"button": f"See all {len(nutrients)}",
+                         "rows": [{k: n[k] for k in ("id", "label", "value_text", "text", "bar")} for n in nutrients]},
+                 "sources": [rule_cite(infant_lens.COMPOSITION["types"][ptype["id"]]["basis"])]}
+        after = _not_compared_line(infant_lens.not_compared(vision, ptype))
+        if after:
+            block["all"]["after"] = after
+        blocks.append(block)
     if got["additives"] is not None and reliable:
-        sections.append({"id": "additives", "title": INFANT_TITLES["additives"],
-                         "lines": infant_additive_lines(got["additives"], ptype),
-                         "sources": [rule_cite(got["additives"]["basis"].split(", per ")[0] + "; Schedule I(d), PDF p. 52")]})
-    if got["composition"]:
-        sections.append({"id": "composition", "title": INFANT_TITLES["composition"],
-                         "lines": [infant_composition_line(r) for r in got["composition"]],
-                         "sources": [rule_cite(infant_lens.COMPOSITION["types"][ptype["id"]]["basis"])]})
-    return infant_type_line(ptype), tiles, details, sections
+        any_ins = any(ins_numbers(e) for e in ingredients or [])
+        blocks.append({"id": "additives", "title": INFANT_BLOCK_TITLES["additives"],
+                       "lines": infant_additive_lines(got["additives"], ptype) if any_ins else [INFANT_NO_INS],
+                       "sources": [rule_cite(got["additives"]["basis"].split(", per ")[0] + "; Schedule I(d), PDF p. 52")]})
+    if vision:
+        blocks.append(infant_notices(got["statements"], got["no_milk"], photos=photos))
+    infant = {"good": {"title": INFANT_GOOD_TITLE, "blocks": blocks}}
+    if worth:
+        infant["worth"] = {"title": INFANT_WORTH_TITLE, "items": worth}
+    return {"type": ptype, "kind_lines": kind_lines, "why": why, "tiles": tiles, "details": details,
+            "infant": infant,
+            "compare_button": INFANT_COMPARE_BUTTON["formula" if ptype and ptype["id"] in _FORMULA_TYPES else "other"]}
 
 
-def compare_input(kind_code, *, vision=None, ocr_text=None, product=None):
+def compare_input(kind_code, *, vision=None, ocr_text=None, product=None, photos=None):
     """
     D-200: what Compare needs from the photos of a supplement or an infant pack, sent back by
     the phone (ComparePack.facts). Read facts only (numbers, ids, the label's own words), no
     sentences: /compare (lenses/side_by_side.py) words them and works out the rest from the
     ingredient list again. None for any other kind, and for an infant pack with the switch off.
+    D-201: an infant pack's printed sugars, the age or stage it prints and how many photos
+    were read (side photos add to it on the phone).
     """
     vision = vision or {}
     if kind_code == "supplement":
@@ -2095,16 +2300,22 @@ def compare_input(kind_code, *, vision=None, ocr_text=None, product=None):
                 "composition_names": [r["name"] for r in (vision.get("composition") or {}).get("rows") or []]}
     if kind_code == "infant" and pack_kind.infant_to_users():
         if not vision:
-            return {"type": infant_lens.product_type({"product": product or {}}), "statements": None,
-                    "no_milk": None, "words": infant_lens.words({"product": product or {}}), "composition": []}
+            v = {"product": product or {}}
+            return {"type": infant_lens.product_type(v), "statements": None,
+                    "no_milk": None, "words": infant_lens.words(v), "composition": [],
+                    "sugars": None, "age": infant_lens.age(v), "photos": 0}
         got = vision.get("_infant") or infant_lens.check(vision, vision.get("ingredients"), ocr_text)
+        sug = infant_lens.sugar(vision, vision.get("ingredients"), ocr_text)
         return {"type": got["type"],
                 "statements": got["statements"] and [{k: r[k] for k in ("id", "found", "printed")}
                                                       for r in got["statements"]],
                 "no_milk": got["no_milk"] and {k: got["no_milk"][k] for k in ("found", "printed")},
                 "words": got["words"],
                 "composition": [{"nutrient": r["nutrient"], "label": r["label"], "value": r["value"]}
-                                for r in got["composition"] or []]}
+                                for r in got["composition"] or []],
+                "sugars": {"added": sug["added"] and sug["added"]["printed"],
+                           "total": sug["total"] and sug["total"]["printed"]},
+                "age": infant_lens.age(vision, ocr_text), "photos": photos or 2}
     return None
 
 
@@ -2114,17 +2325,26 @@ def _kind_screen(kind, *, people, ingredients, reliability, nutra_input=None, pr
     printed = [e for e in kind["evidence"] if not e.get("supporting") and e.get("rule") != "catalogue_category"]
     shown = min(printed, key=lambda e: (_HEADLINE_RULES.index(e["rule"]) if e.get("rule") in _HEADLINE_RULES
                                         else len(_HEADLINE_RULES)), default=None)
+    infant = code == "infant" and pack_kind.infant_to_users()          # D-200
+    ip = None
+    if infant:
+        ip = _infant_parts(
+            ingredients=ingredients, vision=(nutra_input or {}).get("vision"),
+            ocr_text=(nutra_input or {}).get("ocr_text"), product=(nutra_input or {}).get("product"),
+            reliable=reliability.get("ingredients_complete", True) and not reliability.get("from_screen"),
+            photos=infant_photos(nutra_input))
     medicine = code == "not_food" and bool(shown) and shown.get("rule") == "medicine_printed"
     if medicine:
         headline = f"This pack says \"{shown['text']}\"."     # D-196: the pack's own words, first
     elif code == "not_food":
         headline = NOT_FOOD_HEADLINE
+    elif ip and ip["type"]:
+        headline = f"This pack says \"{ip['type']['printed']}\"."   # D-201: the words the type came from
     elif shown:
         headline = f"This pack says \"{shown['text']}\"."        # the kind in the pack's own words
     else:
         headline = CATEGORY_HEADLINE[code]
-    infant = code == "infant" and pack_kind.infant_to_users()          # D-200
-    lines = [INFANT_TEXT if infant else KIND_TEXT[code]]
+    lines = list(ip["kind_lines"]) if ip else [KIND_TEXT[code]]
     if medicine:
         lines.insert(0, AYURVEDIC_LINE)
     elif code == "not_food":
@@ -2134,7 +2354,8 @@ def _kind_screen(kind, *, people, ingredients, reliability, nutra_input=None, pr
         "people": people,                                     # D-060: first, for every kind
         "headline": {"text": headline, "source": {"kind": "pack_kind", "ref": code}},
         "kind": {"code": code, "lines": lines,
-                 "evidence": [{"text": e["text"], "face": e.get("face")} for e in kind["evidence"]],
+                 # D-201: an infant result names its notices in Good to know, not here.
+                 "evidence": [] if ip else [{"text": e["text"], "face": e.get("face")} for e in kind["evidence"]],
                  "sources": [FSS_ACT_SOURCE] if code == "not_food" else []},
         "parts": list(parts),
         "ingredients": ingredients,
@@ -2152,11 +2373,13 @@ def _kind_screen(kind, *, people, ingredients, reliability, nutra_input=None, pr
         out["tiles"], out["details"], out["sections"] = tiles, details, sections
         if summary:
             out["summary"] = summary
-    elif infant:
-        type_line, tiles, details, sections = _infant_parts(
-            ingredients=ingredients, vision=(nutra_input or {}).get("vision"),
-            ocr_text=(nutra_input or {}).get("ocr_text"), product=(nutra_input or {}).get("product"),
-            reliable=reliability.get("ingredients_complete", True) and not reliability.get("from_screen"))
-        out["kind"]["lines"].append(type_line)
-        out["tiles"], out["details"], out["sections"] = tiles, details, sections
+    elif ip:
+        if ip["why"]:
+            out["kind"]["why"] = ip["why"]
+        out["tiles"], out["details"], out["sections"] = ip["tiles"], ip["details"], []
+        out["infant"] = ip["infant"]
+        out["compare_button"] = ip["compare_button"]
+        if out["retake"]:                       # D-168: one ask per scan; the list's retake is it
+            for b in ip["infant"]["good"]["blocks"]:
+                b.pop("side", None)
     return out

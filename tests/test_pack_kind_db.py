@@ -196,11 +196,11 @@ def test_a_published_infant_pack_is_served_with_its_checks_and_no_score_with_the
     assert hit["verdict"] is None and hit["display"] is None and hit["withheld"]["reason"] == "infant_not_scored"
     s = hit["screen"]
     assert s["headline"]["text"] == 'This pack says "Processed Cereal Based Complementary Food".'
-    assert s["kind"]["lines"][0] == screen.INFANT_TEXT and "compare" in s["parts"]
-    # From the catalogue: the name, the words and the list; no photos, so no statements or composition section.
-    sections = {x["id"] for x in s["sections"]}
+    assert s["kind"]["lines"] == [screen.INFANT_KIND_LINE.format(type="processed cereal based complementary food")]
+    assert "compare" in s["parts"] and s["sections"] == []
+    # From the catalogue: the name, the words and the list; no photos, so no notices or nutrients block (D-201).
     assert [t["title"] for t in s["tiles"]] == ["Vanilla flavour"]
-    assert "statements" not in sections and "composition" not in sections
+    assert [b["id"] for b in s["infant"]["good"]["blocks"]] == ["additives"] and "worth" not in s["infant"]
     assert hit["compare_input"]["type"]["id"] == "processed_cereal" and hit["compare_input"]["statements"] is None
     assert not hit["compare_input"].get("composition")
     # No score: nothing that ranks or grades the pack, here or in the screen.
@@ -245,9 +245,10 @@ def test_an_infant_foods_own_checks_are_stored_and_shown_to_users_with_the_switc
     s = j["screen"]
     assert [t["title"] for t in s["tiles"]] == ['"Energy Food" on the pack', "Added flavour (vanilla)",
                                                 "Hydrogenated vegetable fat", "INS 472e"]
-    statements = next(x for x in s["sections"] if x["id"] == "statements")["lines"]
-    assert any("Boiled and cooled water" in t and "We didn't find it" in t for t in statements)
-    assert statements[-1] == "Found on the pack, as the rules ask: the mother's milk notice on the front."
+    notices = next(b for b in s["infant"]["good"]["blocks"] if b["id"] == "notices")      # D-201
+    assert notices["lines"][0] == "Found on the pack: the mother's milk notice on the front."
+    assert notices["lines"][1].startswith("We didn't see 7 more notices FSSAI's rules ask for on ")
+    assert any("Boiled and cooled water" in x["text"] for x in notices["which"]["items"])
     vid = j["catalogue"]["product_version_id"]
     [(raw,)] = q(env, "SELECT raw_extraction FROM product_versions WHERE id = %s", vid)
     got = raw["_infant"]
@@ -317,12 +318,20 @@ def test_composition_is_shown_to_users_beside_the_types_range_with_the_switch_on
         j = post(gtin(), v)
     finally:
         mp.undo()
-    [comp] = [x for x in j["screen"]["sections"] if x["id"] == "composition"]
-    assert comp["lines"] == ["Iron: 8 mg per 100 g on the pack. FSSAI's table: 3 to 7 mg."]
+    # D-201: outside FSSAI's range is a fact under "Worth knowing", with its bar; the count in Good to know.
+    inf = j["screen"]["infant"]
+    [iron] = inf["worth"]["items"]
+    assert iron["text"] == "Iron: 8 mg per 100 g. FSSAI's range: 3 to 7 mg."
+    assert (iron["bar"]["value"], iron["bar"]["low"], iron["bar"]["high"]) == (8.0, 3.0, 7.0)
+    comp = next(b for b in inf["good"]["blocks"] if b["id"] == "nutrients")
+    assert comp["lines"] == ["The 1 nutrient we compared is outside FSSAI's range."]
+    assert comp["all"]["button"] == "See all 1"
     assert comp["sources"][0]["page"].startswith("8(1)(d), PDF pp. 13 to 14")
     assert j["compare_input"]["composition"] == [{"nutrient": "iron", "label": "Iron", "value": 8.0}]
-    for word in ("above", "below", "fail"):
-        assert word not in json.dumps(comp)
+    from test_wording import strings
+    text = " ".join(strings(inf)).lower()                  # the words, not the bar's field names
+    for word in ("above", "below", "fail", "too much", "high"):
+        assert word not in text
 
 
 def test_the_replay_tool_writes_only_with_apply_and_only_the_kind(env):

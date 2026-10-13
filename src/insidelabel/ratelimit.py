@@ -65,6 +65,9 @@ RULES = {
     "agree": {"device": [(20, 3_600)], "ip": [(200, 3_600)]},
     # Checking a photo as it's picked (D-104): no model call, a few per scan.
     "check_photo": {"device": [(60, 600)], "ip": [(300, 600)]},
+    # D-201: a side photo of an infant pack, one Cloud Vision read (about 13 paise) and no model
+    # call; at most two per result, so this only stops a loop. Not one of the day's photo scans.
+    "side_photo": {"device": [(20, 600), (60, 86_400)], "ip": [(200, 600)]},
     # "Send it to us" (D-070): each is a reviewer's time.
     "send_to_us": {"device": [(10, 86_400)], "ip": [(50, 86_400)]},
     # "Delete my data" (D-129): once is enough; a few more for a flaky network.

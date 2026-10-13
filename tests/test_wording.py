@@ -50,7 +50,9 @@ CONSUMER_FIELDS = {
 
 # D-200 (Sushil, 2026-10-12): never about an infant pack, in our words. "best" is allowed only
 # inside regulation 4(1)(a)'s notice, exactly as the pack printed it.
-INFANT_FORBIDDEN = ["safe", "best", "recommended", "healthy", "suitable for your baby"]
+# D-201 (Sushil, 2026-10-13): "inside/outside FSSAI's range" are facts; these never are.
+INFANT_FORBIDDEN = ["safe", "best", "recommended", "healthy", "suitable for your baby",
+                    "high", "too much", "fails", "not allowed", "violation"]
 INFANT_NOTICE = "MOTHER'S MILK IS BEST FOR YOUR BABY"
 _INFANT = re.compile(r"(?<![a-z0-9-])(" + "|".join(re.escape(w) for w in INFANT_FORBIDDEN) + r")(?![a-z0-9-])",
                      re.IGNORECASE)
@@ -286,12 +288,21 @@ def test_the_infant_lint_allows_best_only_inside_the_notice_as_printed():
     assert infant_hits('"MOTHER\'S MILK IS BEST"', printed) == ["BEST"]                # not the exact notice
     assert infant_hits("Suitable for your baby, safe, healthy and recommended", printed) == [
         "Suitable for your baby", "safe", "healthy", "recommended"]
+    # D-201's five
+    assert infant_hits("High protein, too much sugar; it fails, is not allowed, a violation") == [
+        "High", "too much", "fails", "not allowed", "violation"]
+    assert infant_hits("Protein: 4.89 g per 100 kcal. FSSAI's range: 2.10 to 3.40 g.") == []
 
 
 def test_our_own_infant_words_never_use_them():
     from insidelabel.lenses import screen, side_by_side
-    ours = [screen.INFANT_TEXT, screen.INFANT_NO_TYPE, screen.INFANT_PARTIAL, screen._FREE_FROM_RULE,
-            *screen.INFANT_TITLES.values(), *screen.INFANT_TYPE_WORDS.values(), *screen.INFANT_STATEMENT_NAMES.values(),
+    ours = [screen.INFANT_NO_TYPE, screen.INFANT_PARTIAL, screen._FREE_FROM_RULE,
+            *screen.INFANT_TYPE_WORDS.values(), *screen.INFANT_STATEMENT_NAMES.values(),
+            # D-201's words, in place of D-200's INFANT_TEXT and INFANT_TITLES
+            screen.INFANT_KIND_LINE, screen.INFANT_WHY_TITLE, screen.INFANT_WHY, screen.INFANT_WORTH_TITLE,
+            screen.INFANT_GOOD_TITLE, *screen.INFANT_BLOCK_TITLES.values(), screen.INFANT_RULES_TITLE,
+            screen.INFANT_IN_FORCE, screen.INFANT_NO_INS, screen.INFANT_WHICH_TITLE, *screen.INFANT_SIDE.values(),
+            *screen.INFANT_COMPARE_BUTTON.values(), side_by_side.NO_AGE, side_by_side.NO_SUGAR, side_by_side.NO_ADDED,
             *screen.INFANT_NOT_FOUND.values(), *screen._FREE_FROM_CHIP.values(), *side_by_side.HEADING.values(),
             *side_by_side.NOTE.values(), *side_by_side.TITLES.values(), side_by_side.NOT_READ, side_by_side.NOTHING,
             side_by_side.NO_TYPE, side_by_side.NO_NUMBERS, side_by_side.TYPE_SHORT, side_by_side.NO_TYPE_SHORT,
