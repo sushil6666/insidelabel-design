@@ -1972,7 +1972,7 @@ function infantView(s, h) {
       el("p", {}, it.text),
       it.bar && rangeBar(it.bar, true),
       it.more && fold(it.more.title, it.more.lines.map(t => el("p", {}, t)), sourceList(it.more.sources))))));
-  const good = el("div", { class: "card infant-good" },
+  const good = inf.good && el("div", { class: "card infant-good" },        // 2026-10-14: absent when empty
     el("h2", { class: "h-serif" }, inf.good.title),
     inf.good.blocks.map(b => el("div", { class: "infant-block" },
       el("h3", {}, b.title),
