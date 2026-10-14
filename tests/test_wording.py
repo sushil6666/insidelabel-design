@@ -295,6 +295,7 @@ def test_the_infant_lint_allows_best_only_inside_the_notice_as_printed():
 
 
 def test_our_own_infant_words_never_use_them():
+    from insidelabel.api import main
     from insidelabel.lenses import screen, side_by_side
     ours = [screen.INFANT_NO_TYPE, screen.INFANT_PARTIAL, screen._FREE_FROM_RULE,
             *screen.INFANT_TYPE_WORDS.values(), *screen.INFANT_STATEMENT_NAMES.values(),
@@ -302,7 +303,7 @@ def test_our_own_infant_words_never_use_them():
             screen.INFANT_KIND_LINE, screen.INFANT_WHY_TITLE, screen.INFANT_WHY, screen.INFANT_WORTH_TITLE,
             screen.INFANT_GOOD_TITLE, *screen.INFANT_BLOCK_TITLES.values(), screen.INFANT_RULES_TITLE,
             screen.INFANT_IN_FORCE, screen.INFANT_NO_INS, screen.INFANT_WHICH_TITLE, *screen.INFANT_SIDE.values(),
-            *screen.INFANT_COMPARE_BUTTON.values(), side_by_side.NO_AGE, side_by_side.NO_SUGAR, side_by_side.NO_ADDED,
+            main.INFANT_ONE_AT_A_TIME, side_by_side.NO_AGE, side_by_side.NO_SUGAR, side_by_side.NO_ADDED,
             *screen.INFANT_NOT_FOUND.values(), *screen._FREE_FROM_CHIP.values(), *side_by_side.HEADING.values(),
             *side_by_side.NOTE.values(), *side_by_side.TITLES.values(), side_by_side.NOT_READ, side_by_side.NOTHING,
             side_by_side.NO_TYPE, side_by_side.NO_NUMBERS, side_by_side.TYPE_SHORT, side_by_side.NO_TYPE_SHORT,

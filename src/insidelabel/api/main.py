@@ -562,6 +562,9 @@ def allergen_check(req: AllergenCheckRequest):
 # Shelf comparison (D-057)
 # ---------------------------------------------------------------------------
 # D-200: a pack compares only with packs of its own kind; each refusal has its own sentence.
+# D-202 (Sushil, 2026-10-14): an infant pack is checked one pack at a time; with the infant switch
+# off, D-140's refusal stays word for word.
+INFANT_ONE_AT_A_TIME = "We check foods for infants one pack at a time."
 MIXED_COMPARE = {
     "infant": "We compare an infant food only with other infant foods.",
     "supplement": "We compare a supplement only with other supplements.",
@@ -621,7 +624,8 @@ def compare_packs(req: CompareRequest):
             raise HTTPException(status_code=422, detail={
                 "error": "not_comparable", "reason": "infant_food" if "infant" in blocked else blocked[0],
                 "pack": p.id,
-                "detail": ("We don't compare or rank foods for infants." if "infant" in blocked
+                "detail": ((INFANT_ONE_AT_A_TIME if pack_kind.infant_to_users() else
+                            "We don't compare or rank foods for infants.") if "infant" in blocked
                            else "We compare ordinary foods only for now."),
             })
         # D-200: any source naming the stricter kind decides it, so a pack can't join another kind's comparison.

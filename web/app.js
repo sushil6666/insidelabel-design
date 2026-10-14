@@ -182,7 +182,7 @@ function revealAfterPeople(view) {
 }
 
 function updateNav() {
-  const n = store.get("compare", []).length;
+  const n = store.get("compare", []).filter(x => comparable(historyItem(x))).length;   // D-202: never an infant pack
   // D-176: the bottom bar's Compare count; D-185: the header's too.
   for (const badge of document.querySelectorAll("[data-compare-count]")) {
     badge.textContent = n ? String(n) : "";
@@ -1510,8 +1510,10 @@ function finish(body, { lookedUp = false } = {}) {
     catalogue: body.catalogue || null,
     disclosures: body.disclosures || [],
     // What /compare needs later, kept so a comparison costs no new scan (D-057).
-    // D-139, D-140: only a kind that can be compared keeps what /compare needs.
-    pack: body.screen?.state === "result" && (!body.screen.parts || body.screen.parts.includes("compare")) ? {
+    // D-139, D-140: only a kind that can be compared keeps what /compare needs; D-202: or one with
+    // a shop list (an infant pack: the shop list stays, Compare doesn't).
+    pack: body.screen?.state === "result" && (!body.screen.parts || body.screen.parts.includes("compare")
+                                              || body.screen.parts.includes("shop_list")) ? {
       ingredients: body.extracted?.ingredients || [],
       allergen_statement: body.extracted?.allergen_statement || null,
       confidence: rel.confidence?.ingredients ?? 1.0,
@@ -1813,12 +1815,19 @@ function shopListButton(s, h) {
 
 // D-123, D-153: the next useful scan is the pack beside this one on the shelf (D-057), so the
 // result ends on it: this pack joins Compare and the scanner opens for the next one.
-// "Compare (n)" opens Compare once there are two or more.
+// "Compare with n saved packs" opens Compare once there are two or more.
+// 2026-10-14 (Sushil: "Compare (3)"): it counted this pack too and every saved pack whatever its
+// kind, so it said 3 beside the bar's 2, and an infant pack offered foods the server refuses
+// (D-200). Now it counts only saved packs of this pack's kind, and opening it keeps only those.
 function resultNext(s, h) {
-  const others = store.get("compare", []).filter(x => x !== h.id && historyItem(x)).length;
+  const kindOf = x => historyItem(x)?.pack?.kind || "food";
+  // D-202 (Sushil, 2026-10-14): an infant pack is checked one pack at a time: no Compare.
+  const canCompare = comparable(h) && (!s.parts || s.parts.includes("compare"));
+  const same = canCompare ? store.get("compare", []).filter(x => x !== h.id && comparable(historyItem(x))
+                                                               && kindOf(x) === kindOf(h.id)) : [];
   const next = () => { resetPending(); go("scan"); };
   return el("div", { class: "result-next" },
-    h.pack && !s.shop_list
+    canCompare && !s.shop_list
       ? el("button", { type: "button", class: "btn-big", onclick: () => {
           if (!store.get("compare", []).includes(h.id)) toggleCompare(h.id);
           updateNav();
@@ -1826,12 +1835,12 @@ function resultNext(s, h) {
         } }, s.compare_button || "Holding another pack? Scan it to compare")     // D-201: the server's words
       : el("button", { type: "button", class: "btn-big", onclick: next }, "Scan another pack"),
     el("div", { class: "row wrap" },
-      h.pack && others > 0 && button(`Compare (${others + 1})`, () => {
-        if (!store.get("compare", []).includes(h.id)) toggleCompare(h.id);
+      same.length > 0 && button(`Compare with ${same.length} saved pack${same.length > 1 ? "s" : ""}`, () => {
+        store.set("compare", [...same, h.id].slice(-4));
         updateNav();
         go("compare");
       }),
-      h.pack && !s.shop_list && button("Scan another", next, "link")));
+      canCompare && !s.shop_list && button("Scan another", next, "link")));
 }
 
 // D-177: the pack card at the top of a result: the user's own photo of the pack (kept on this
@@ -2392,6 +2401,11 @@ function report(id) {
 }
 
 // ------------------------------------------------------------------ compare (D-057)
+// D-202: an infant pack never joins Compare, even one saved before D-202.
+function comparable(h) {
+  return !!h?.pack && h.pack.kind !== "infant";
+}
+
 function toggleCompare(id) {
   const list = store.get("compare", []);
   store.set("compare", list.includes(id) ? list.filter(x => x !== id) : [...list, id].slice(-4));
@@ -2399,12 +2413,12 @@ function toggleCompare(id) {
 
 function compare() {
   const ids = store.get("compare", []);
-  const packs = ids.map(historyItem).filter(h => h && h.pack);
+  const packs = ids.map(historyItem).filter(comparable);
   // D-200: supplements and infant foods are set side by side for anyone's avoid list, with no
   // pick and no age; food keeps D-057's pick for a child. The server checks the kinds again.
   const sideBySide = packs.length > 0 && packs.every(h => ["supplement", "infant"].includes(h.pack.kind));
   const kids = sideBySide ? profiles() : profiles().filter(p => p.age !== "adult");
-  const others = history().filter(h => h.pack && !ids.includes(h.id)).slice(0, 10);
+  const others = history().filter(h => comparable(h) && !ids.includes(h.id)).slice(0, 10);
   let whoRef = kids[0]?.ref || null;
   let age = kids[0]?.age || "kid";
   const out = el("div", { class: "stack", "aria-live": "polite" });

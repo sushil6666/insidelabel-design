@@ -694,3 +694,12 @@ def test_the_table_card_is_first_in_for_you():                              # D-
     assert you < card < body.index("if (serious.length) you(")
     assert card < body.index("if (s.retake) you(partialRetake(")
     assert body.count("if (askTable) you(") == 1
+
+
+def test_result_compare_button_counts_saved_packs_of_its_own_kind():      # 2026-10-14, D-201 follow-up
+    # Sushil, 2026-10-14: "Compare (3)" beside the bar's 2, on an infant pack with foods saved.
+    body = _fn(JS["app.js"], "resultNext")
+    assert "Compare (${" not in body and "others + 1" not in body
+    assert "kindOf(x) === kindOf(h.id)" in body
+    assert 'button(`Compare with ${same.length} saved pack${same.length > 1 ? "s" : ""}`' in body
+    assert 'store.set("compare", [...same, h.id].slice(-4));' in body

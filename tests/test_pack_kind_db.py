@@ -148,16 +148,16 @@ def test_compare_refuses_a_stored_infant_scan_even_when_the_client_sends_nothing
 
 
 def test_compare_refuses_a_stored_infant_scan_against_a_food_with_the_switch_on(env, infant_on):
-    # D-200: an infant food compares only with infant foods; the stored kind still decides.
+    # D-202: an infant food is never compared; the stored kind still decides.
     words = [st("MOTHER'S MILK IS BEST FOR YOUR BABY", "front"), st("Infant Formula", "front")]
     j = post(gtin(), reading(["Milk solids", "Lactose", "Vegetable oils"], words))
     assert j["pack_kind"]["code"] == "infant" and j["verdict"] is None
     r = TestClient(main.app).post("/compare", json={"age": "kid", "packs": [
         {"id": j["scan_id"], "name": "Formula", "ingredients": ["Milk solids", "Lactose"]},
         {"id": "other", "name": "Rusk", "ingredients": ["Wheat flour", "Sugar"]}]})
-    assert r.status_code == 422 and r.json()["reason"] == "mixed_kinds"
-    assert r.json()["detail"] == "We compare an infant food only with other infant foods."
-    assert r.json()["pack"] == "other"
+    assert r.status_code == 422 and r.json()["reason"] == "infant_food"
+    assert r.json()["detail"] == "We check foods for infants one pack at a time."
+    assert r.json()["pack"] == j["scan_id"]
 
 
 def test_a_published_infant_pack_is_served_without_any_result(env, infant_off):
@@ -197,12 +197,11 @@ def test_a_published_infant_pack_is_served_with_its_checks_and_no_score_with_the
     s = hit["screen"]
     assert s["headline"]["text"] == 'This pack says "Processed Cereal Based Complementary Food".'
     assert s["kind"]["lines"] == [screen.INFANT_KIND_LINE.format(type="processed cereal based complementary food")]
-    assert "compare" in s["parts"] and s["sections"] == []
+    assert "compare" not in s["parts"] and s["sections"] == []                            # D-202
     # From the catalogue: the name, the words and the list; no photos, so no notices or nutrients block (D-201).
     assert [t["title"] for t in s["tiles"]] == ["Vanilla flavour"]
     assert [b["id"] for b in s["infant"]["good"]["blocks"]] == ["additives"] and "worth" not in s["infant"]
-    assert hit["compare_input"]["type"]["id"] == "processed_cereal" and hit["compare_input"]["statements"] is None
-    assert not hit["compare_input"].get("composition")
+    assert "compare_input" not in hit                                                       # D-202
     # No score: nothing that ranks or grades the pack, here or in the screen.
     assert hit.get("score") is None and hit["nutrition"] is None
     assert not {"score", "summary", "band_question", "nutrition"} & set(s)
@@ -327,7 +326,7 @@ def test_composition_is_shown_to_users_beside_the_types_range_with_the_switch_on
     assert comp["lines"] == ["The 1 nutrient we compared is outside FSSAI's range."]
     assert comp["all"]["button"] == "See all 1"
     assert comp["sources"][0]["page"].startswith("8(1)(d), PDF pp. 13 to 14")
-    assert j["compare_input"]["composition"] == [{"nutrient": "iron", "label": "Iron", "value": 8.0}]
+    assert "compare_input" not in j                                                         # D-202
     from test_wording import strings
     text = " ".join(strings(inf)).lower()                  # the words, not the bar's field names
     for word in ("above", "below", "fail", "too much", "high"):
