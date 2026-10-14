@@ -140,15 +140,14 @@ def test_an_infant_result_for_each_product_type_and_with_none(type_id, infant_on
     blocks = _blocks(s)
     if type_id is None:
         assert s["kind"]["lines"] == [screen.INFANT_NO_TYPE]
-        assert list(blocks) == ["notices"] and j["compare_input"]["type"] is None
-        assert s["compare_button"] == "Compare with another baby food"
+        assert list(blocks) == ["notices"]
     else:
         assert s["headline"]["text"] == f'This pack says "{TYPES[type_id]}".'
         assert s["kind"]["lines"] == [f"We check it against FSSAI's rules for {screen.INFANT_TYPE_WORDS[type_id]}."]
-        assert list(blocks) == ["additives", "notices"] and j["compare_input"]["type"]["id"] == type_id
+        assert list(blocks) == ["additives", "notices"]
         assert blocks["additives"]["lines"] == ["The list prints no INS numbers."]
-        assert s["compare_button"] == ("Compare with another formula" if type_id.endswith("formula")
-                                       else "Compare with another baby food")
+    # D-202: one pack at a time: no Compare part, button or facts.
+    assert "compare" not in s["parts"] and "compare_button" not in s and "compare_input" not in j
     assert_clean(list(strings(s)), f"infant {type_id}")
     assert not infant_hits(s, printed=[NOTICE])
 
@@ -214,24 +213,14 @@ def _packs(*bodies):
             for i, b in enumerate(bodies)]
 
 
-def test_infant_against_infant_is_side_by_side_with_no_pick(infant_on):
+def test_infant_against_infant_is_refused_one_pack_at_a_time(infant_on):
+    # D-202 (Sushil, 2026-10-14): "for infants we will not keep any compare only scan for 1 product each".
     a = scan(infant("processed_cereal", ingredients=["Wheat flour", "Milk solids", "Vanilla flavour"]), key="ca")
     b = scan(infant("milk_cereal", statements=STATEMENTS + [BOILED]), key="cb")
     r = compare(_packs(a, b), avoid=["milk"], who="{name}")
-    assert r.status_code == 200
     j = r.json()
-    assert j["outcome"] == "side_by_side" and j["kind"] == "infant"
-    for key in ("best", "tie", "why_best", "others", "blocked", "summary"):
-        assert key not in j, key
-    assert [p["id"] for p in j["packs"]] == ["p0", "p1"]                       # the order sent, nothing else
-    for p in j["packs"]:
-        assert [row["key"] for row in p["rows"]] == list(_keys("infant"))
-        assert p["allergens"][0]["state"] == "contains"
-    text = json.dumps({k: j[k] for k in ("heading", "note", "packs")})
-    assert not WINNER_WORDS.search(text.replace("We don't name a pick", ""))
-    assert "We don't name a pick between infant foods" in j["note"]
-    assert_clean(list(strings(j)), "infant compare")
-    assert not infant_hits(j)
+    assert r.status_code == 422 and j["error"] == "not_comparable" and j["reason"] == "infant_food"
+    assert j["pack"] == "p0" and j["detail"] == "We check foods for infants one pack at a time."
 
 
 def test_supplement_against_supplement_is_side_by_side_with_no_winner_and_no_child_line(infant_off):
@@ -258,15 +247,16 @@ def test_supplement_against_supplement_is_side_by_side_with_no_winner_and_no_chi
     assert_clean(list(strings(j)), "supplement compare")
 
 
-@pytest.mark.parametrize("kinds,detail", [
-    (("supplement", "food"), "We compare a supplement only with other supplements."),
-    (("infant", "food"), "We compare an infant food only with other infant foods."),
-    (("supplement", "infant"), "We compare an infant food only with other infant foods."),
+@pytest.mark.parametrize("kinds,reason,detail", [
+    (("supplement", "food"), "mixed_kinds", "We compare a supplement only with other supplements."),
+    # D-202: an infant pack is refused on its own, before any mix is looked at.
+    (("infant", "food"), "infant_food", "We check foods for infants one pack at a time."),
+    (("supplement", "infant"), "infant_food", "We check foods for infants one pack at a time."),
 ])
-def test_a_mixed_compare_is_refused_with_its_own_sentence(kinds, detail, infant_on):
+def test_a_mixed_compare_is_refused_with_its_own_sentence(kinds, reason, detail, infant_on):
     packs = [{"id": k, "name": k, "ingredients": ["Rice flour"], "kind": k} for k in kinds]
     r = compare(packs)
-    assert r.status_code == 422 and r.json()["reason"] == "mixed_kinds" and r.json()["detail"] == detail
+    assert r.status_code == 422 and r.json()["reason"] == reason and r.json()["detail"] == detail
 
 
 def test_food_compare_is_unchanged_by_d200(infant_on):
@@ -280,7 +270,7 @@ def test_shop_list_and_share_for_an_infant_pack(infant_on):
     v = infant("milk_cereal", front="not_provided")
     v["image_content"] = {"back": "screen", "front": "not_provided"}
     s = scan(v, key="shop")["screen"]
-    assert s["shop_list"] is True and {"compare", "shop_list", "share"} <= set(s["parts"])
+    assert s["shop_list"] is True and {"shop_list", "share"} <= set(s["parts"]) and "compare" not in s["parts"]
     src = open(os.path.join(HERE, "..", "web", "app.js"), encoding="utf-8").read()
     assert "if (h.pack) put(shopListButton(s, h), resultNext(s, h), reportLink(h));" in src
     assert "facts: body.compare_input || null" in src
@@ -298,11 +288,10 @@ def test_nothing_sets_an_infant_food_beside_mothers_milk(infant_on):
     # reference or a Compare column.
     a = scan(infant("infant_formula"), key="m1")
     b = scan(infant("follow_up_formula", statements=[s for s in STATEMENTS if s["text"] != NOTICE]), key="m2")
-    j = compare(_packs(a, b)).json()
+    j = compare(_packs(a, b)).json()                     # D-202: refused, one pack at a time
     for out in (a["screen"], b["screen"], j):
         text = _without_the_notice(json.dumps(out)).lower()
         assert "mother" not in text and "breast" not in text
-    assert len(j["packs"]) == 2 and all(p["id"] in ("p0", "p1") for p in j["packs"])
 
 
 def test_no_score_grade_or_band_for_an_infant_pack_or_a_supplement(infant_on):

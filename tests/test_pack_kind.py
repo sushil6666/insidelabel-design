@@ -422,7 +422,7 @@ def test_each_kind_shows_allergens_first_and_nothing_that_judges_it_as_food_with
                    "nutrition", "band", "shop_list", "alerts", "additive_alert", "worth_knowing"} - own:
         assert absent not in s, (name, absent)
     if code == "infant":
-        assert {"compare", "shop_list", "share"} <= set(s["parts"]) and "sections" in s
+        assert {"shop_list", "share"} <= set(s["parts"]) and "compare" not in s["parts"] and "sections" in s
     assert s["ingredients"] == ingredients
     assert "breastfeeding" not in json.dumps(s).lower()
     assert_clean(list(strings(s)), f"screen {name}")
@@ -498,7 +498,8 @@ def test_the_review_checker_sends_every_kind_but_food_to_a_person():
 def test_the_app_renders_the_kind_and_keeps_it_out_of_compare():
     src = open(os.path.join(os.path.dirname(HERE), "web", "app.js"), encoding="utf-8").read()
     assert "if (s.kind) {" in src and "function kindView(s)" in src
-    assert '(!body.screen.parts || body.screen.parts.includes("compare"))' in src
+    assert '(!body.screen.parts || body.screen.parts.includes("compare")' in src
+    assert 'function comparable(h) {\n  return !!h?.pack && h.pack.kind !== "infant";' in src      # D-202
 
 
 # ---------------------------------------------------------------- D-140: the server refuses, not only the app
@@ -540,7 +541,7 @@ def test_scan_withholds_every_result_field_for_an_infant_pack_with_the_switch_on
                              "reason": "infant_not_scored"}
     assert list(j)[0] == "allergens" and j["allergens"] and j["screen"]["people"]
     assert "score" not in json.dumps(j["screen"]) and "grade" not in json.dumps(j["screen"])
-    assert "_infant" not in json.dumps(j) and j["compare_input"]["type"]["id"] == "processed_cereal"
+    assert "_infant" not in json.dumps(j) and "compare_input" not in j                       # D-202
 
 
 def _compare(packs):
@@ -564,8 +565,8 @@ def test_compare_refuses_an_infant_pack_the_client_reports_against_a_food_with_t
     r = _compare([FOOD_A, {**FOOD_B, "kind": "infant"}])
     assert r.status_code == 422
     body = {k: v for k, v in r.json().items() if k != "request_id"}
-    assert body == {"error": "not_comparable", "reason": "mixed_kinds", "pack": "b",
-                    "detail": "We compare an infant food only with other infant foods."}
+    assert body == {"error": "not_comparable", "reason": "infant_food", "pack": "b",           # D-202
+                    "detail": "We check foods for infants one pack at a time."}
 
 
 def test_compare_refuses_an_infant_pack_from_its_printed_words_whatever_kind_the_client_says(infant_off):
@@ -577,10 +578,10 @@ def test_compare_refuses_an_infant_pack_from_its_printed_words_whatever_kind_the
 def test_compare_refuses_an_infant_pack_from_its_printed_words_with_the_switch_on(infant_on):
     words = [{"text": "MOTHER'S MILK IS BEST FOR YOUR BABY", "face": "front"}]
     r = _compare([FOOD_A, {**FOOD_B, "kind": "food", "pack_statements": words}])
-    assert r.status_code == 422 and r.json()["reason"] == "mixed_kinds" and r.json()["pack"] == "b"
-    # Two "food" packs, one printing the notice: still an infant pack, never ranked with food.
+    assert r.status_code == 422 and r.json()["reason"] == "infant_food" and r.json()["pack"] == "b"
+    # Two "food" packs, both printing the notice: infant packs, never compared (D-202).
     r = _compare([{**FOOD_A, "pack_statements": words}, {**FOOD_B, "pack_statements": words}])
-    assert r.status_code == 200 and r.json()["outcome"] == "side_by_side" and r.json()["kind"] == "infant"
+    assert r.status_code == 422 and r.json()["reason"] == "infant_food" and r.json()["pack"] == "a"
 
 
 def test_compare_refuses_a_supplement_until_phase_2_and_still_ranks_food(infant_off):
@@ -640,14 +641,13 @@ def test_no_ranking_part_for_an_infant_pack(infant_off):
 
 
 def test_no_ranking_part_for_an_infant_pack_with_the_switch_on(infant_on):
-    # D-200: Compare, the shop list and Share, but never a score, summary chips or tallies;
-    # Compare for infant packs names no pick (lenses/side_by_side.py).
+    # D-200: the shop list and Share, but never a score, summary chips or tallies; D-202: no Compare.
     parts = pack_kind.parts("infant")
-    for part in ("compare", "shop_list", "share"):
+    for part in ("shop_list", "share"):
         assert part in parts
-    for part in ("tallies", "score", "summary"):
+    for part in ("compare", "tallies", "score", "summary"):
         assert part not in parts
-    assert pack_kind.comparable() == {"food", "supplement", "infant"}
+    assert pack_kind.comparable() == {"food", "supplement"}
 
 
 def test_the_replay_tool_lists_item_82_as_changed():

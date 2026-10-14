@@ -4568,7 +4568,7 @@ one".
 Nothing changes the verdict, the allergen lines or any concern level (D-004). No migration. App web-70.
 `tests/test_web.py`, `tests/test_nutrition.py`.
 
-### D-200 · Baby food to users ("Everything") behind a switch; supplements and infant foods in Compare, side by side with no pick `LOCKED` (2026-10-12)
+### D-200 · Baby food to users ("Everything") behind a switch; supplements and infant foods in Compare, side by side with no pick `LOCKED` (2026-10-12), infant Compare `CHANGED by D-202` (2026-10-14)
 Sushil, 2026-10-12: "enable all options for users BABY_FOOD and SUPPLEMENTS". Asked by the advisor:
 - **Baby food: "Everything"** (checks plus Compare, shop list and share card for infant packs). **The advisor's advice
   beside it:** "checks only, no grade, ranking, Compare, shop list or share card" until the lawyer answers, because of
@@ -4631,7 +4631,7 @@ Sushil, 2026-10-12: "enable all options for users BABY_FOOD and SUPPLEMENTS". As
   web-71, no migration.
 - **Lawyer's answer still pending: revisit D-200 when it comes** (`docs/BABY_FOOD.md` section 9, questions 1a to 1c).
 
-### D-201 · An infant result a parent can use `LOCKED` (2026-10-13)
+### D-201 · An infant result a parent can use `LOCKED` (2026-10-13), "Compare with another formula" and infant Compare rows `CHANGED by D-202` (2026-10-14)
 Sushil, 2026-10-13, after scanning Amulspray (8901262080033, scan 398526ab): "As a user what I will do with this
 output, what message I am giving, tell me." D-200's infant result listed rules and statements; it gave a parent
 nothing to decide from. Plan with mockups: `/mnt/project-files/infant-result/plan.md`. **Accepted by Sushil
@@ -4699,6 +4699,33 @@ nothing to decide from. Plan with mockups: `/mnt/project-files/infant-result/pla
   Compare, child card, productName) and `tests/test_side_photo_db.py` (migration 028, the row, /review). D-200's
   switch-on assertions are replaced by equally exact D-201 ones; none deleted or loosened. App web-72, migration 028.
   Evidence: `docs/design/d201/`. Sushil merges after the advisor's review.
+- **Follow-up, 2026-10-14 (Sushil, on the live Amulspray result: "Compare (3)"):** the result's second Compare
+  button counted this pack plus every saved pack of any kind, so it read "Compare (3)" beside the bar's 2, and an
+  infant result offered foods that /compare refuses (D-200). It now reads "Compare with {n} saved pack(s)", counts
+  only saved packs of the same kind (`food` when unknown), and opening it keeps only those and this pack in Compare
+  (the others stay in Your scans). Built by the advisor; app web-73; `tests/test_web.py`. Also seen: the storage
+  notice wasn't found because the photo cut "place" ("Store in cool and dry pac"); the rule stays as it is.
+  Same day, Sushil went further: D-202, no Compare at all for an infant pack.
+
+### D-202 · Infant packs: no Compare, one pack at a time `LOCKED` (2026-10-14)
+**Sushil, 2026-10-14**, after seeing D-201 live on the Amulspray scan: "for infants we will not keep any compare only
+scan for 1 product each". Built by the advisor in the same branch as D-201's "Compare (3)" follow-up.
+
+- **What changes:** an infant pack (infant formula, follow-up formula, infant cereals, traditional infant foods) is never
+  compared, with `INSIDELABEL_INFANT_TO_USERS` on or off. `data/pack_kinds.json` `kinds.infant.to_users`: "compare"
+  leaves `parts` and `comparable` is false, so `pack_kind.comparable()` is `{"food", "supplement"}`. `/compare`
+  refuses any pack that the client, its printed words or its stored scan call infant, with reason `infant_food` and
+  "We check foods for infants one pack at a time." (switch off: D-140's "We don't compare or rank foods for infants.",
+  word for word). The result has no Compare button and no `compare_input`; the big button reads "Scan another pack".
+- **What stays:** D-201's result (Worth knowing, Good to know, the range bar, "Photograph the side"), the shop list and
+  Share. The app keeps a history item's `pack` when the result has a shop list, so the shop list still works.
+- **Packs saved before D-202:** an infant pack already in a phone's Compare list is left out of Compare, its pick list
+  and the bar's count (`comparable(h)` in `web/app.js`); nothing is deleted.
+- **Why it's safer too:** the advisor's D-200 advice (IMS Act 1992, 2(j) "promotion", 3) was to keep infant Compare
+  off until the lawyer answers; this does that. `lenses/side_by_side.py`'s infant rows stay in the code, unused,
+  so a later decision can turn Compare back on in data.
+- **Tests:** D-200's and D-201's infant Compare tests now assert the refusal; the switch-off shadow tests are
+  unchanged. App web-73.
 
 ---
 

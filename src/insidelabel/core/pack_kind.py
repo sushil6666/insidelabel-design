@@ -67,8 +67,10 @@ def infant_to_users():
 
 
 def comparable():
-    """The kinds /compare accepts now; a pack still compares only with its own kind (D-200)."""
-    return COMPARABLE | ({"infant"} if infant_to_users() else frozenset())
+    """The kinds /compare accepts now; a pack still compares only with its own kind (D-200).
+    D-202 (Sushil, 2026-10-14): an infant pack is checked one at a time, so it never joins, switch
+    on or off, while kinds.infant.to_users.comparable is false."""
+    return COMPARABLE | ({"infant"} if infant_to_users() and _TO_USERS.get("comparable") else frozenset())
 
 
 def withhold(code):

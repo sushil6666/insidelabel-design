@@ -289,7 +289,7 @@ sudo -u insidelabel psql -d insidelabel -c "SELECT created_at, latency_ms, timin
 
 ### Infant results switch (D-200), on
 
-Infant foods' results, Compare, shop list and Share go to users unless `INSIDELABEL_INFANT_TO_USERS` is `off`
+Infant foods' results, shop list and Share go to users (never Compare, D-202) unless `INSIDELABEL_INFANT_TO_USERS` is `off`
 (unset = on, Sushil 2026-10-12). If the lawyer says no, turn it off and restart, in one command:
 
 ```bash
