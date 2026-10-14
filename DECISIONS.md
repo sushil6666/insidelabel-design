@@ -4344,12 +4344,57 @@ time to take a new pic". The server, 2026-10-03 to 10-10: 86 photo scans, 39 ref
 
 ---
 
-### D-192 · A second reader: Claude Haiku 5.5 behind a switch `PLANNED` (2026-10-10)
+### D-192 · A second reader: Claude Haiku 5.5 behind a switch `LOCKED` (2026-10-14), was `PLANNED` (2026-10-10)
 **Sushil, 2026-10-10,** "keep it in plan only d-192 not now". Not built.
 
 The plan: `claude-haiku-5-5` ($0.10 input and $0.50 output per million tokens, for prompts up to 100,000 tokens)
 as a second label reader behind `INSIDELABEL_READER=gemini|claude`, default `gemini`. The gold set first: it is
 built only after a gold-set run shows it reads as well as Gemini. AI reads, rules judge (D-004) either way.
+
+**Sushil, 2026-10-14,** "Claude Haiku 5.5 i am planning can we try ?", then "accept" to the plan
+(`claude-reader/plan.md` in the project files) with six answers. Built by Claude; the advisor reviews before merge.
+And: "till prepaid money spent will use gemni then will switch". **The switch stays off until the prepaid Google
+credit is used up**, as well as until the gold set passes and Sushil says yes.
+
+**Why:** Gemini 3.6 Flash costs $0.75 / $3.75 per million tokens through 31 Dec 2026 and $1.50 / $7.50 from 1 Jan
+2027; Haiku 5.5 $0.10 / $0.50. At about 6,000 input and 1,100 output tokens a scan (D-193 records) that is about
+Rs 0.75 a read on Gemini now, Rs 1.5 from January, and an estimated Rs 0.12 to 0.15 on Haiku (its photo tokens
+are counted differently; `batch_scan --reader claude` measures it). No RECITATION guard (D-172).
+
+1. **The reader** (`extraction/providers/claude.py`, the `anthropic` SDK): the same prompt (PROMPT_VERSION unchanged)
+   and photos in the same order, thinking off, the answer in the same shape. One switch,
+   `INSIDELABEL_READER=claude` in settings.env (unset or anything else: Gemini); `ANTHROPIC_API_KEY` in secrets.env;
+   `INSIDELABEL_CLAUDE_MODEL` for a later model. Every scan records its reader in `timings.read`.
+2. **The shape** (`answer_shape.py`): Claude's structured output allows at most 16 fields with a union type and 24
+   optional ones; the schema has 23 nullable strings, so a nullable field becomes "leave it out" and the fill-back
+   gives it exactly Gemini's empty value (null, [] or "", whichever the schema says; Sushil). It runs on every
+   answer and leaves a Gemini answer unchanged, so a replay needs no reader. A test fails before a scan would if a
+   new field takes the schema past Claude's limits.
+3. **Errors** map onto Gemini's: busy, rate limited, 5xx or timeout = unavailable (the same retries); key, credit
+   or bad request = setup alarm; a refusal = D-172's refusal (`vision_blocked:refusal`); a cut-off answer fails to
+   parse with its text kept.
+4. **Fallback:** a Claude read still busy after its retries is read once by Gemini when `GEMINI_API_KEY` is set;
+   so is a HEIC photo (Claude doesn't take it; the server can't convert it). `timings.read` says
+   `"fallback": "gemini"` and why (`unavailable` or `heic`). Such a scan is still one read: counted once in the
+   day's limit, with one usage record (Sushil). A setup problem or a refusal never falls back.
+   `GEMINI_API_KEY` stays set with Claude on.
+5. **Stays the same:** harden(), the D-093 cross-check, D-191, the rules, the day's limit; the review agent and the
+   table read stay on Gemini. INSIDELABEL_READ_SPLIT_FRONT and the thinking and image-detail switches are Gemini's
+   and ignored on Claude (one call). A D-191 stored read is reused whichever reader made it, and the repeat
+   records that reader.
+6. **Usage:** a Claude read's tokens in `scans.timings->'claude'`; Gemini's stay in `->'gemini'` (also on a
+   fallback). OPERATIONS.md has the per-reader per-day query.
+7. **Privacy** (Sushil approved the words, 2026-10-14): "An AI service reads the label for us: Google's Gemini or
+   Anthropic's Claude reads the ingredient list, ..." True with either reader. The Your data screen names no
+   reader, so the app version is unchanged. The advisor updates the lawyer's brief and checks the Anthropic half
+   against Anthropic's commercial terms.
+8. **Tools:** `batch_scan.py --reader claude|gemini` (seconds and tokens per photo, cost at the reader's rate);
+   `repro.py show` prints the reader and any fallback.
+
+**After merge (the advisor, not this build):** the 6 gold labels through `batch_scan --reader claude`, scored with
+`eval_vision.py` against Gemini's last run. Pass = ingredient set F1 >= 0.95, INS F1 1.000, 0 verdict flips,
+0 allergen misses. Fail = nothing changes. On a pass, with Sushil's yes and the Google credit used up: the key and
+`INSIDELABEL_READER=claude` on the server, restart, watch a week; going back is `INSIDELABEL_READER=gemini`.
 
 ---
 

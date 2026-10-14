@@ -25,6 +25,15 @@ Each prints seconds per read and tokens, and each prediction keeps its settings
 (_read_settings) and tokens (_usage). Predictions go to a scratch folder: --out
 inside reports/ is refused (CLAUDE.md).
 
+D-192: --reader claude reads with Claude (claude-haiku-5-5, or INSIDELABEL_CLAUDE_MODEL)
+instead of Gemini, for the advisor's gold-set comparison; it needs ANTHROPIC_API_KEY:
+
+    python3 tools/batch_scan.py --photos photos/ --out <scratch>/pred-claude --reader claude
+    python3 tools/eval_vision.py --gold gold/ --pred <scratch>/pred-claude
+
+Unset, the environment's INSIDELABEL_READER decides (gemini unless it says claude). The
+three D-193 switches are Gemini's, so they are refused with --reader claude.
+
 DESIGN NOTE
     Skips ids that already have a prediction unless --force. Vision calls cost
     money and time, and re-running thirty labels to add one is the kind of
@@ -46,7 +55,9 @@ from insidelabel.core import engine  # noqa: E402
 from insidelabel.reliability import gates as rel  # noqa: E402
 from insidelabel.extraction.providers import gemini, ocr_check  # noqa: E402
 
-RATE_IN, RATE_OUT = 0.75, 3.75   # USD per 1M tokens; see scan_label.py note
+# USD per 1M tokens (input, output), by the reader that answered (D-192). Gemini 3.6 Flash
+# until 31 Dec 2026 (see scan_label.py note); claude-haiku-5-5 for prompts up to 100,000 tokens.
+RATES = {"gemini": (0.75, 3.75), "claude": (0.10, 0.50)}
 
 EXTS = ("jpg", "jpeg", "png", "webp", "heic")
 
@@ -115,7 +126,7 @@ def scan_one(paths, note=None):
     return vision, corrections, reliability, verdict, proceed
 
 
-def main():
+def parse_args(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--photos", default="photos")
     ap.add_argument("--out", default="predictions")
@@ -125,15 +136,31 @@ def main():
     ap.add_argument("--split-front", action="store_true", help="Read the back and the front in two calls at once.")
     ap.add_argument("--thinking-level", choices=gemini.THINKING_LEVELS, help="Default: low, as the server.")
     ap.add_argument("--media-resolution", choices=gemini.MEDIA_RESOLUTIONS, help="Default: the API's own.")
-    args = ap.parse_args()
+    # D-192: which model reads. Unset: the environment's INSIDELABEL_READER (gemini by default).
+    ap.add_argument("--reader", choices=gemini.READERS, help="Default: INSIDELABEL_READER, else gemini.")
+    args = ap.parse_args(argv)
+    if args.reader == "claude" and (args.split_front or args.thinking_level or args.media_resolution):
+        ap.error("--split-front, --thinking-level and --media-resolution are Gemini's; they do nothing "
+                 "with --reader claude")
+    return args
+
+
+def apply_args(args):
+    """The run's settings, as the switches the server reads."""
+    for flag, env, value in ((args.split_front, "INSIDELABEL_READ_SPLIT_FRONT", "on"),
+                             (args.thinking_level, "INSIDELABEL_THINKING_LEVEL", args.thinking_level),
+                             (args.media_resolution, "INSIDELABEL_MEDIA_RESOLUTION", args.media_resolution),
+                             (args.reader, "INSIDELABEL_READER", args.reader)):
+        if flag:
+            os.environ[env] = value
+
+
+def main():
+    args = parse_args()
     if os.path.realpath(args.out).startswith(os.path.realpath(os.path.join(ROOT, "reports")) + os.sep) or \
             os.path.realpath(args.out) == os.path.realpath(os.path.join(ROOT, "reports")):
         sys.exit("--out is inside reports/: write predictions to a scratch folder (CLAUDE.md).")
-    for flag, env, value in ((args.split_front, "INSIDELABEL_READ_SPLIT_FRONT", "on"),
-                             (args.thinking_level, "INSIDELABEL_THINKING_LEVEL", args.thinking_level),
-                             (args.media_resolution, "INSIDELABEL_MEDIA_RESOLUTION", args.media_resolution)):
-        if flag:
-            os.environ[env] = value
+    apply_args(args)
     print(f"read settings: {gemini.read_settings()}", file=sys.stderr)
 
     pairs = discover(args.photos)
@@ -164,7 +191,12 @@ def main():
 
         try:
             vision, corr, reliability, verdict, ok = scan_one(paths, _note)
-            print(f" {time.time() - t0:.1f}s", file=sys.stderr, flush=True)
+            u = vision.get("_usage") or {}
+            read = vision.get("_read") or {}
+            print(f" {time.time() - t0:.1f}s, {read.get('reader', '?')}"
+                  + (f" ({read['fallback_why']}: Gemini read it)" if read.get("fallback") else "")
+                  + f", tokens in {u.get('input_tokens')} out {u.get('output_tokens')}",
+                  file=sys.stderr, flush=True)
         except Exception as e:                                    # noqa: BLE001
             print(f" FAILED after {time.time() - t0:.1f}s\n    {type(e).__name__}: {e}",
                   file=sys.stderr)
@@ -175,12 +207,13 @@ def main():
             json.dump(vision, f, ensure_ascii=False, indent=2)
         done += 1
         u = vision.get("_usage") or {}                         # D-193: this read's own tokens
+        rate_in, rate_out = RATES.get((vision.get("_read") or {}).get("reader"), RATES["gemini"])
         summary.append({
             "seconds": vision.get("_seconds"),
             "input": u.get("input_tokens"), "output": u.get("output_tokens"), "thinking": u.get("thinking_tokens"),
             "tokens": u.get("total_tokens"),
-            "cost": ((u.get("input_tokens") or 0) * RATE_IN
-                     + (u.get("output_tokens") or 0) * RATE_OUT) / 1_000_000,
+            "cost": ((u.get("input_tokens") or 0) * rate_in
+                     + (u.get("output_tokens") or 0) * rate_out) / 1_000_000,
             "id": pid,
             "gold_exists": os.path.exists(os.path.join("gold", f"{pid}.json")),
             "verdict": verdict["binary"] if verdict else None,

@@ -170,13 +170,22 @@ def replay_scan(scan, media=None, hit=None):
 
 
 def read_lines(timings, request=None):
-    """D-193: the read's settings and each Gemini call's tokens, as `repro.py show` prints them."""
+    """
+    D-193: the read's settings and each call's tokens, as `repro.py show` prints them.
+    D-192: and the reader (a scan before D-192 was read by Gemini), with Gemini's
+    fallback when Claude was switched on and Gemini read instead.
+    """
     t, out = timings or {}, []
     if t.get("read"):
         r = t["read"]
-        out.append(f"read {r.get('model')} · thinking {r.get('thinking_level')} · "
-                   f"media {r.get('media_resolution') or 'default'} · split {'on' if r.get('split_front') else 'off'}")
-    for key, name in (("gemini", "label"), ("gemini_front", "front")):
+        line = f"read {r.get('model')}" + (f" · reader {r['reader']}" if r.get("reader") else "")
+        if r.get("fallback"):
+            line += f" · {r['fallback']} read it instead ({r.get('fallback_why')})"
+        if r.get("reader", "gemini") == "gemini":
+            line += (f" · thinking {r.get('thinking_level')} · media {r.get('media_resolution') or 'default'}"
+                     f" · split {'on' if r.get('split_front') else 'off'}")
+        out.append(line)
+    for key, name in (("gemini", "label"), ("gemini_front", "front"), ("claude", "label (claude)")):
         u = t.get(key)
         if u:
             out.append(f"tokens {name}: in {u.get('input_tokens')} · out {u.get('output_tokens')} · "

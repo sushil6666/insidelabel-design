@@ -120,7 +120,8 @@ def scan(**form):
 # ---------------------------------------------------------------- the switches
 
 def test_every_switch_is_off_by_default():
-    assert gemini.read_settings() == {"model": "gemini-3.6-flash", "thinking_level": "low",
+    # D-192 added the reader to the settings; Gemini is the default.
+    assert gemini.read_settings() == {"reader": "gemini", "model": "gemini-3.6-flash", "thinking_level": "low",
                                       "media_resolution": None, "split_front": False}
     # The prompt is unchanged (D-193 point 6), so earlier scans and gold files still compare.
     assert main.PROMPT_VERSION == "01696584efa3"
@@ -130,7 +131,7 @@ def test_switch_values(monkeypatch):
     monkeypatch.setenv("INSIDELABEL_THINKING_LEVEL", "minimal")
     monkeypatch.setenv("INSIDELABEL_MEDIA_RESOLUTION", "LOW")
     monkeypatch.setenv("INSIDELABEL_READ_SPLIT_FRONT", "on")
-    assert gemini.read_settings() == {"model": "gemini-3.6-flash", "thinking_level": "minimal",
+    assert gemini.read_settings() == {"reader": "gemini", "model": "gemini-3.6-flash", "thinking_level": "minimal",
                                       "media_resolution": "low", "split_front": True}
     # A value the API doesn't take reads as today: a typo in settings.env changes nothing.
     monkeypatch.setenv("INSIDELABEL_THINKING_LEVEL", "none")

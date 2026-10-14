@@ -12,6 +12,7 @@ dependencies = [
     "uvicorn",
     "python-multipart",
     "google-genai",
+    "anthropic>=1.13",   # D-192: the second label reader (off by default)
     "Pillow",
     "psycopg[binary]>=3.2",
     "jinja2>=3.1",

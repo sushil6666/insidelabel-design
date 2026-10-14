@@ -267,7 +267,7 @@ blocked in this session.)
 
 Data safety covers what the app collects, and for a TWA that is what the site collects, since the app
 is the site. "Collected" means it leaves the phone. Data that stays on the phone is not collected.
-Sending data to a service provider that processes it for us (Google Cloud, Gemini, Cloud Vision) is
+Sending data to a service provider that processes it for us (Google Cloud, Gemini, Cloud Vision, and Anthropic's Claude with D-192 on) is
 not "sharing" (Google's own rule, https://developer.android.com/privacy-and-security/declare-data-use,
 read 2026-10-01). Labels below are the form's own names; match them in the form.
 
