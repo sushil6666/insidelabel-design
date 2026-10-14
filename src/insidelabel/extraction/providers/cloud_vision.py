@@ -146,13 +146,22 @@ def remember(image_bytes, text):
             _CACHE.popitem(last=False)
 
 
-def _shrink(image_bytes):
-    if len(image_bytes) <= MAX_SEND_BYTES:
-        return image_bytes
+def shrink(image_bytes, max_bytes=MAX_SEND_BYTES, long_edge=MAX_LONG_EDGE, max_side=None):
+    """
+    The photo as it is when it is within max_bytes (and, given max_side, no side longer),
+    else a JPEG copy with its long edge at most long_edge px. The Claude reader (D-192)
+    uses it with Claude's own limits; a photo that can't be decoded goes as it is.
+    """
     try:
         from PIL import Image
+        if len(image_bytes) <= max_bytes:
+            if max_side is None:
+                return image_bytes
+            with Image.open(io.BytesIO(image_bytes)) as im:
+                if max(im.size) <= max_side:
+                    return image_bytes
         im = Image.open(io.BytesIO(image_bytes))
-        im.thumbnail((MAX_LONG_EDGE, MAX_LONG_EDGE))
+        im.thumbnail((long_edge, long_edge))
         out = io.BytesIO()
         im.convert("RGB").save(out, "JPEG", quality=90)
         return out.getvalue()
@@ -182,7 +191,7 @@ def read_text(image_bytes):
         return None
 
     body = json.dumps({"requests": [{
-        "image": {"content": base64.b64encode(_shrink(image_bytes)).decode()},
+        "image": {"content": base64.b64encode(shrink(image_bytes)).decode()},
         "features": [{"type": "DOCUMENT_TEXT_DETECTION"}],
         # English first; Hindi because many Indian packs print a Devanagari block.
         "imageContext": {"languageHints": ["en", "hi"]},

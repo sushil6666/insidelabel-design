@@ -73,7 +73,7 @@ Pick the project in the top bar ("Insidelabel") before looking for anything.
 | The code (a git checkout of `main`) | `/opt/insidelabel/app` |
 | Python and its packages | `/opt/insidelabel/venv` |
 | Settings, no secrets | `/etc/insidelabel/settings.env` |
-| The two API keys | `/etc/insidelabel/secrets.env` (only root can read it) |
+| The API keys (Gemini, Cloud Vision; Anthropic once D-192 goes on) | `/etc/insidelabel/secrets.env` (only root can read it) |
 | Which commit is running | `/etc/insidelabel/build.env`, and `https://insidelabel.ai/health` ("build") |
 | Photos | `/var/lib/insidelabel/media` |
 | Database backups | `/var/lib/insidelabel/backups` |
@@ -287,6 +287,36 @@ sudo -u insidelabel psql -d insidelabel -c "SELECT created_at, latency_ms, timin
   FROM scans WHERE back_image_key IS NOT NULL ORDER BY created_at DESC LIMIT 10"
 ```
 
+**Tokens per reader per day** (D-192). A Claude read keeps its tokens in `scans.timings->'claude'`
+(input, output, total, model, ms; thinking is off); a Gemini read keeps them in `->'gemini'` as above,
+also when Gemini read for Claude (`timings->'read'->>'fallback' = 'gemini'`, with `fallback_why`
+`unavailable` or `heic`). India time, last 7 days:
+
+```bash
+sudo -u insidelabel psql -d insidelabel -c "SELECT date(s.created_at AT TIME ZONE 'Asia/Kolkata') AS day, u.reader,
+  count(*) AS calls, sum((u.usage->>'input_tokens')::bigint) AS input_tokens,
+  sum((u.usage->>'output_tokens')::bigint) AS output_tokens,
+  count(*) FILTER (WHERE s.timings->'read'->>'fallback' = 'gemini') AS fallbacks
+  FROM scans s CROSS JOIN LATERAL (VALUES ('gemini', s.timings->'gemini'), ('gemini', s.timings->'gemini_front'),
+                                          ('claude', s.timings->'claude')) AS u(reader, usage)
+  WHERE u.usage IS NOT NULL AND s.created_at > now() - interval '7 days' GROUP BY 1, 2 ORDER BY 1, 2"
+```
+
+### The label reader (D-192): Gemini, Claude switched off
+
+`INSIDELABEL_READER=claude` in `/etc/insidelabel/settings.env` has Claude (`claude-haiku-5-5`, or
+`INSIDELABEL_CLAUDE_MODEL`) read the label instead of Gemini; unset or anything else is Gemini. It stays
+off until the advisor's gold-set run passes, Sushil says yes, and the prepaid Google credit is used up
+(Sushil: "till prepaid money spent will use gemni then will switch"). To switch it on:
+`ANTHROPIC_API_KEY` in `/etc/insidelabel/secrets.env` (beside `GEMINI_API_KEY`), the line in
+`settings.env`, restart. Going back is `INSIDELABEL_READER=gemini` (or deleting the line) and a restart.
+
+`GEMINI_API_KEY` stays set with Claude on: a HEIC photo (Claude doesn't take it) and a Claude read still
+busy after its retries are read by Gemini once, and the review agent and the table read are always
+Gemini. A missing `ANTHROPIC_API_KEY`, a rejected key or no credit with Claude on is the same setup
+alarm as Gemini's (`vision_config:<status>`); a Claude refusal is D-172's refusal screen
+(`vision_blocked:refusal`). The three D-193 switches below are Gemini's and do nothing with Claude on.
+
 ### Infant results switch (D-200), on
 
 Infant foods' results, shop list and Share go to users (never Compare, D-202) unless `INSIDELABEL_INFANT_TO_USERS` is `off`
@@ -328,8 +358,9 @@ A value the API doesn't take is ignored. Measure first, both read-only, on store
 ```bash
 il tools/table_hint_measure.py              # the hint: false alarms, catches, misses, ms per photo (D-191)
 il tools/cross_check_replay.py              # each clearer-photo ask since 2026-10-05: asked then, asks now (D-191)
-il tools/batch_scan.py --help               # --split-front, --thinking-level, --media-resolution: seconds and
-                                            # tokens per photo; paid calls, --out to a scratch folder, never reports/
+il tools/batch_scan.py --help               # --split-front, --thinking-level, --media-resolution, --reader
+                                            # claude|gemini (D-192): seconds and tokens per photo; paid calls,
+                                            # --out to a scratch folder, never reports/
 ```
 
 D-172: a scan whose `error_code` starts `vision_blocked:` is one Gemini's guard refused to answer

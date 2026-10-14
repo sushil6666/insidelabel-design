@@ -164,6 +164,16 @@ def _model_error(tr, e):
     log.warning("model failed, request %s: %s", tr.get("request_id"), tr["model_error"])
 
 
+def _record_read(tr, read):
+    """
+    D-192: when Claude was the reader switched on and Gemini read instead (Claude busy after
+    its retries, or a HEIC photo), timings.read says so: "fallback": "gemini" and why.
+    """
+    if read and read.get("fallback"):
+        tr["timings"]["read"]["fallback"] = read["fallback"]
+        tr["timings"]["read"]["fallback_why"] = read.get("fallback_why")
+
+
 def _blocked_refusal(e, tr, *, back_read, back_bytes, t_vision, t0, keys, images, barcode, device_id,
                      avoid_codes, who, people):
     """
@@ -1853,6 +1863,10 @@ async def scan(
         if earlier:
             repeat_of = str(earlier["id"])
             replay = earlier["model_raw"]
+            # D-192: the answer used is the earlier scan's, so its reader is this one's too.
+            then_read = (earlier.get("timings") or {}).get("read")
+            tr["timings"]["read"] = dict(then_read) if then_read else gemini.gemini_settings()
+            tr["timings"]["read"].setdefault("reader", "gemini")
             joined = (earlier.get("timings") or {}).get("front_joined")
             if joined is not None:
                 replay_front = earlier.get("model_raw_front") if joined else None
@@ -1917,12 +1931,16 @@ async def scan(
             await run_in_threadpool(front_read.done.wait)
     t_vision = time.monotonic()
     try:
-        if split:
-            vision, corrections = await run_in_threadpool(gemini.analyze_split, images, front_read,
-                                                          raw_response=replay, on_attempt=on_retry)
-        else:
-            vision, corrections = await run_in_threadpool(gemini.analyze_images, images, raw_response=replay,
-                                                          on_attempt=on_retry)
+        try:
+            if split:
+                vision, corrections = await run_in_threadpool(gemini.analyze_split, images, front_read,
+                                                              raw_response=replay, on_attempt=on_retry)
+            else:
+                vision, corrections = await run_in_threadpool(gemini.analyze_images, images, raw_response=replay,
+                                                              on_attempt=on_retry)
+        except gemini.VisionError as e:
+            _record_read(tr, getattr(e, "read", None))
+            raise
     except gemini.VisionBlocked as e:
         # D-172: a guard stopped the answer (report #7: RECITATION on a Britannia pack), after
         # D-172's retries. Not the photo and not a 502: a refusal a person can read instead.
@@ -1973,10 +1991,14 @@ async def scan(
 
     tr["timings"]["vision_ms"] = _ms(t_vision)
     tr["model_raw"] = vision.pop("_raw_text", None)
-    # D-193: this scan's own token counts (never a shared global), stored in scans.timings.
+    # D-193: this scan's own token counts (never a shared global), stored in scans.timings:
+    # under "gemini" for a Gemini read, as always, and under "claude" for a Claude read
+    # (D-192), so each key holds only its own reader's tokens.
     usage = vision.pop("_usage", None)
+    read = vision.pop("_read", None)
+    _record_read(tr, read)
     if usage:
-        tr["timings"]["gemini"] = usage
+        tr["timings"]["claude" if (read or {}).get("reader") == "claude" else "gemini"] = usage
     joined = vision.pop("_front_joined", None)
     if split:
         tr["timings"]["front_joined"] = bool(joined)

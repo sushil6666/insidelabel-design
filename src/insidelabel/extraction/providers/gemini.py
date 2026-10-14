@@ -14,6 +14,7 @@ model contradicted itself.
 
 import base64
 import json
+import logging
 import os
 import random
 import re
@@ -22,6 +23,7 @@ import time
 import urllib.error
 import urllib.request
 
+from insidelabel.extraction.providers import answer_shape
 from insidelabel.extraction.providers.prompt import (
     GENERATION_CONFIG,
     MODEL,
@@ -36,6 +38,8 @@ from insidelabel.extraction.providers.prompt import (
 # (LAST_USAGE), which two scans on the threadpool overwrote, and was never stored.
 USAGE_KEYS = ("input_tokens", "output_tokens", "thinking_tokens", "total_tokens")
 
+log = logging.getLogger("insidelabel.reader")
+
 # D-193 (Sushil, 2026-10-10): the read's settings, each a switch in
 # /etc/insidelabel/settings.env and all off by default, until the advisor's gold-set
 # run shows a setting faster with no loss in reading.
@@ -47,21 +51,44 @@ THINKING_LEVELS = ("minimal", "low", "medium", "high")
 MEDIA_RESOLUTIONS = ("low", "medium", "high")
 
 
+# D-192 (Sushil, 2026-10-14): which model reads the label. One switch in
+# /etc/insidelabel/settings.env, INSIDELABEL_READER=claude; unset or anything else is
+# Gemini. Off until the gold set says Claude reads as well and Sushil says yes.
+READERS = ("gemini", "claude")
+
+
+def reader():
+    """D-192: "claude" only for INSIDELABEL_READER=claude (any case, spaces trimmed), else "gemini"."""
+    return "claude" if os.environ.get("INSIDELABEL_READER", "").strip().lower() == "claude" else "gemini"
+
+
+def gemini_settings():
+    """D-193: Gemini's read settings from the environment, whichever reader is switched on."""
+    level = os.environ.get("INSIDELABEL_THINKING_LEVEL", "").strip().lower()
+    media = os.environ.get("INSIDELABEL_MEDIA_RESOLUTION", "").strip().lower()
+    return {"reader": "gemini", "model": MODEL,
+            "thinking_level": level if level in THINKING_LEVELS else THINKING_LEVEL,
+            "media_resolution": media if media in MEDIA_RESOLUTIONS else None,
+            "split_front": os.environ.get("INSIDELABEL_READ_SPLIT_FRONT", "").strip().lower() == "on"}
+
+
 def read_settings():
     """
-    D-193: how this read is made, from the environment at call time: the model,
-    INSIDELABEL_THINKING_LEVEL (unset: prompt.THINKING_LEVEL, "low"),
+    D-193: how this read is made, from the environment at call time: the reader (D-192),
+    the model, INSIDELABEL_THINKING_LEVEL (unset: prompt.THINKING_LEVEL, "low"),
     INSIDELABEL_MEDIA_RESOLUTION (unset: None, the API's default) and
     INSIDELABEL_READ_SPLIT_FRONT=on (back and front in two calls at once). A value
     the API doesn't take is ignored, so a typo in settings.env reads as today.
     Stored with every scan (D-092) and every batch prediction.
+    D-192: with the Claude reader the three D-193 switches are Gemini's only: thinking
+    level and image detail are null and the split is off (one call, back and front
+    together), so nobody reads them as applied.
     """
-    level = os.environ.get("INSIDELABEL_THINKING_LEVEL", "").strip().lower()
-    media = os.environ.get("INSIDELABEL_MEDIA_RESOLUTION", "").strip().lower()
-    return {"model": MODEL,
-            "thinking_level": level if level in THINKING_LEVELS else THINKING_LEVEL,
-            "media_resolution": media if media in MEDIA_RESOLUTIONS else None,
-            "split_front": os.environ.get("INSIDELABEL_READ_SPLIT_FRONT", "").strip().lower() == "on"}
+    if reader() == "claude":
+        from insidelabel.extraction.providers import claude
+        return {"reader": "claude", "model": claude.model(), "thinking_level": None,
+                "media_resolution": None, "split_front": False}
+    return gemini_settings()
 
 
 def _fill_usage(usage, counts, settings, t0):
@@ -433,6 +460,10 @@ def parse_vision_json(text):
         raise VisionError(f"Model did not return parseable JSON: {e}") from e
     if not isinstance(obj, dict):
         raise VisionError("Model returned JSON that is not an object.")
+    # D-192: a Claude answer leaves out the fields it has nothing for (answer_shape.py);
+    # they come back as Gemini's empty value. A Gemini answer comes out unchanged, so
+    # this runs on every answer and a replay needs no reader.
+    answer_shape.fill_back(obj)
     missing = REQUIRED_KEYS - set(obj)
     if missing:
         raise VisionError(f"Model omitted required keys: {sorted(missing)}")
@@ -913,30 +944,77 @@ def analyze_images(images, api_key=None, raw_response=None, on_attempt=None):
     if any(r == "unknown" for _, _, r in images):
         sent_front = sent_back = True
 
-    usage = {}
-    text = _read_text(images, api_key, raw_response, on_attempt, usage)
+    usage, read = {}, {}
+    try:
+        text = _read_text(images, api_key, raw_response, on_attempt, usage, read)
+    except VisionError as e:
+        e.read = read                  # D-192: who tried, for the failed scan's timings
+        raise
     # D-092: the raw answer is what makes a scan replayable, so it travels with
     # the result, and with the error when the answer can't be parsed.
     try:
         vision = parse_vision_json(text)
     except VisionError as e:
         e.raw_text = text
+        e.read = read
         raise
-    vision["_model"] = MODEL
+    vision["_model"] = (usage or {}).get("model") or MODEL
     vision["_raw_text"] = text
     vision["_usage"] = dict(usage) if usage else None              # D-193; none on a replay
+    vision["_read"] = read                                          # D-192: who read it
     return harden(vision, sent_front, sent_back)
 
 
-def _read_text(images, api_key, raw_response, on_attempt, usage):
-    """One answer's text: the recorded one on a replay, else a call with D-172's retries."""
+def _read_text(images, api_key, raw_response, on_attempt, usage, read=None):
+    """
+    One answer's text: the recorded one on a replay, else a call with D-172's retries.
+    read: the caller's dict, filled with who read it (D-192): {"reader": "claude"|"gemini"},
+    plus {"fallback": "gemini", "fallback_why": "unavailable"|"heic"} when Claude was the
+    reader switched on and Gemini read instead. Nothing on a replay.
+    """
     if raw_response is not None:
         # D-172: a stored blocked answer replays to the same refusal; it is never parsed.
         reason = blocked_reason(raw_response)
         if reason:
             raise VisionBlocked(reason)
         return raw_response
-    settings = read_settings()
+    read = {} if read is None else read
+    if reader() == "claude":
+        return _read_with_claude(images, api_key, on_attempt, usage, read)
+    read["reader"] = "gemini"
+    return _read_with_gemini(images, api_key, on_attempt, usage)
+
+
+def _read_with_claude(images, api_key, on_attempt, usage, read):
+    """
+    D-192: Claude reads, with the same retry helper as Gemini. A Claude read that is still
+    busy after its retries is read once by Gemini when a Gemini key is set; so is a HEIC
+    photo, which Claude doesn't take. A setup problem or a refusal never falls back: those
+    are answers, not a busy moment. The scan is one read either way, counted once (the
+    limiter counts the request, not the calls) and with one usage record: a failed Claude
+    call records none.
+    """
+    from insidelabel.extraction.providers import claude
+    read["reader"] = "claude"
+    # api_key is a Gemini key (every caller's); Claude's comes from ANTHROPIC_API_KEY.
+    gemini_key = api_key or os.environ.get("GEMINI_API_KEY")
+    if not claude.readable(images) and gemini_key:
+        read.update({"reader": "gemini", "fallback": "gemini", "fallback_why": "heic"})
+        return _read_with_gemini(images, api_key, on_attempt, usage)
+    try:
+        return _with_retries(lambda: claude.call_claude(images, usage=usage), on_attempt=on_attempt)
+    except VisionUnavailable:
+        if not gemini_key:
+            raise
+        log.warning("Claude unavailable after its retries: reading with Gemini")
+        read.update({"reader": "gemini", "fallback": "gemini", "fallback_why": "unavailable"})
+        if usage is not None:
+            usage.clear()
+        return _read_with_gemini(images, api_key, on_attempt, usage)
+
+
+def _read_with_gemini(images, api_key, on_attempt, usage):
+    settings = gemini_settings()
     caller = (lambda: call_gemini_sdk(images, api_key, usage=usage, settings=settings)) if _HAVE_SDK else \
              (lambda: call_gemini_rest(images, api_key, usage=usage, settings=settings))
     for tries in range(1, RECITATION_RETRIES + 2):
@@ -1029,18 +1107,24 @@ def analyze_split(images, front_read, api_key=None, raw_response=None, on_attemp
     corrections) as analyze_images() does, with vision["_front_joined"].
     """
     back_images = [x for x in images if x[2] != "front"]
-    usage = {}
-    text = _read_text(back_images, api_key, raw_response, on_attempt, usage)
+    usage, read = {}, {}
+    try:
+        text = _read_text(back_images, api_key, raw_response, on_attempt, usage, read)
+    except VisionError as e:
+        e.read = read                  # D-192: who tried, for the failed scan's timings
+        raise
     try:
         back = parse_vision_json(text)
     except VisionError as e:
         e.raw_text = text
+        e.read = read
         raise
     joined = front_read is not None and front_read.done.is_set() and front_read.parsed is not None
     vision = join_answers(back, front_read.parsed) if joined else back
-    vision["_model"] = MODEL
+    vision["_model"] = (usage or {}).get("model") or MODEL
     vision["_raw_text"] = text
     vision["_usage"] = dict(usage) if usage else None
+    vision["_read"] = read
     vision["_front_joined"] = joined
     return harden(vision, sent_front=joined, sent_back=True)
 
