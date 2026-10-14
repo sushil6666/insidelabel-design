@@ -694,3 +694,26 @@ def test_the_table_card_is_first_in_for_you():                              # D-
     assert you < card < body.index("if (serious.length) you(")
     assert card < body.index("if (s.retake) you(partialRetake(")
     assert body.count("if (askTable) you(") == 1
+
+
+def test_the_scanner_takes_a_read_with_a_right_check_digit_at_once(tmp_path):    # 2026-10-14
+    # Sushil, comparing another app's scanner: "its really fast". One read is enough when its GS1 check
+    # digit is right (the same rule as barcode.check_digit_ok); a failing read still needs a second one.
+    import shutil
+    import subprocess
+    import pytest
+    from insidelabel.barcode import check_digit_ok
+    cam = JS["camera.js"]
+    assert "if (checkDigitOk(code) || seen.has(raw)) return found(code);" in cam
+    assert "video.requestVideoFrameCallback(tick)" in cam and "setTimeout(tick, TICK_MS)" in cam
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node isn't installed")
+    codes = ["8901262080033", "8901030980046", "8904335601951", "036000291452", "96385074",
+             "8901262080034", "890126208003", "036000291453", "96385075", "123", ""]
+    (tmp_path / "camera.mjs").write_text(cam, encoding="utf-8")
+    run = (f"import('{(tmp_path / 'camera.mjs').as_uri()}').then(m => "
+           f"console.log(JSON.stringify({codes!r}.map(m.checkDigitOk))))")
+    r = subprocess.run([node, "-e", run], capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr[-400:]
+    assert json.loads(r.stdout) == [len(c) in (8, 12, 13) and check_digit_ok(c) for c in codes]

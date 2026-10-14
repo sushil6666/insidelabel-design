@@ -53,22 +53,47 @@ async function torch(track, on) {
 // D-124: testers found it slow. It used to need two reads in a row, so one
 // blurred frame between two good ones started over; it never asked for
 // continuous focus, so a phone held close to a small barcode stayed blurred.
+//
+// 2026-10-14 (Sushil, comparing another app's scanner: "its really fast"): a read whose GS1
+// check digit is right is taken at once; only a read that fails it still needs a second,
+// matching read within AGREE_MS (the server checks every barcode again, D-103). And the
+// detector looks at each new camera frame (requestVideoFrameCallback, Chrome 83 and later)
+// instead of every TICK_MS, which stays the fallback.
 const AGREE_MS = 1500;
 const TICK_MS = 150;
+
+// GS1 mod-10 (General Specifications 7.9.1), as barcode.check_digit_ok on the server: weights
+// 3, 1, 3 ... from the right, the check digit left out. EAN-8, UPC-A and EAN-13 only.
+export function checkDigitOk(code) {
+  if (!/^(\d{8}|\d{12}|\d{13})$/.test(code)) return false;
+  let total = 0;
+  for (let i = code.length - 2, w = 3; i >= 0; i--, w = 4 - w) total += Number(code[i]) * w;
+  return (10 - total % 10) % 10 === Number(code[code.length - 1]);
+}
 
 export async function startScanner(video, onCode) {
   const { track, caps, stop: stopStream } = await openCamera(video, 1280, true);
   const detector = new window.BarcodeDetector({ formats: FORMATS });
-  let stopped = false, timer = null;
+  const perFrame = typeof video.requestVideoFrameCallback === "function";
+  let stopped = false, timer = null, frame = null;
   const seen = new Map();                 // code -> time first read
 
   const stop = () => {
     stopped = true;
     clearTimeout(timer);
+    if (frame !== null) video.cancelVideoFrameCallback(frame);
     stopStream();
   };
   stop.hasTorch = !!caps.torch;
   stop.torch = on => torch(track, on);
+
+  const found = code => {
+    stop();
+    // app-polish: a 15 ms tap that the code was caught; none under reduced motion.
+    // Chrome allows it after the person's first tap in the app (Chrome 60 and later).
+    if (!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) navigator.vibrate?.(15);
+    onCode(code);
+  };
 
   const tick = async () => {
     if (stopped) return;
@@ -79,18 +104,14 @@ export async function startScanner(video, onCode) {
       const hit = codes.find(c => c.rawValue);
       const raw = hit?.rawValue?.replace(/\D/g, "");
       if (raw) {
-        if (seen.has(raw)) {
-          stop();
-          // app-polish: a 15 ms tap that the code was caught; none under reduced motion.
-          // Chrome allows it after the person's first tap in the app (Chrome 60 and later).
-          if (!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) navigator.vibrate?.(15);
-          onCode(hit.format === "upc_e" ? upcEtoA(raw) : raw);
-          return;
-        }
+        const code = hit.format === "upc_e" ? upcEtoA(raw) : raw;
+        if (checkDigitOk(code) || seen.has(raw)) return found(code);
         seen.set(raw, now);
       }
     } catch { /* a frame that fails to decode is normal */ }
-    timer = setTimeout(tick, TICK_MS);
+    if (stopped) return;
+    if (perFrame) frame = video.requestVideoFrameCallback(tick);
+    else timer = setTimeout(tick, TICK_MS);
   };
   tick();
   return stop;
