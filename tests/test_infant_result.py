@@ -365,3 +365,18 @@ def test_the_brand_shows_once_and_no_food_loses_it():
     # Every place a pack is named goes through it: the result, Your scans, Compare and Share.
     assert src.count("productName(h.product)") >= 10 and "productName(x.product)" in src
     assert not re.search(r"\.brand\b(?!\s*&&\s*!)", src.replace("p.brand", ""))
+
+
+def test_a_catalogue_result_takes_its_type_from_the_fronts_stored_words(infant_on):
+    # Sushil, 2026-10-14: a catalogue Amulspray result showed an empty "Good to know": its published name is
+    # "Amulspray", so no type, so no type checks. The kind's evidence keeps the front's printed words.
+    evidence = [{"face": "front", "rule": "mothers_milk", "text": NOTICE, "where": "statement"},
+                {"face": "front", "rule": "infant_names", "text": "INFANT MILK SUBSTITUTE", "where": "statement"}]
+    ip = screen._infant_parts(ingredients=["Partly skimmed milk", "sugar", "minerals", "vitamins"], vision=None,
+                              ocr_text=None, product={"name": "Amulspray", "brand": "Amulspray"}, evidence=evidence)
+    assert ip["type"]["id"] == "infant_formula" and ip["type"]["printed"] == "INFANT MILK SUBSTITUTE"
+    assert [b["id"] for b in ip["infant"]["good"]["blocks"]] == ["additives"]
+    # No type and no photos: nothing to put in "Good to know", so no card at all.
+    bare = screen._infant_parts(ingredients=["Rice flour"], vision=None, ocr_text=None, product={"name": "Cerelac"})
+    assert bare["type"] is None and "good" not in bare["infant"]
+    assert "inf.good && el(" in open(os.path.join(HERE, "..", "web", "app.js"), encoding="utf-8").read()

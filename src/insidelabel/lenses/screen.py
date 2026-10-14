@@ -2177,17 +2177,21 @@ def infant_photos(nutra_input):
     return max(1, int((nutra_input or {}).get("photos") or 2))
 
 
-def _infant_parts(*, ingredients, vision, ocr_text, product=None, reliable=True, photos=2):
+def _infant_parts(*, ingredients, vision, ocr_text, product=None, reliable=True, photos=2, evidence=()):
     """
     The infant result's parts (D-200, laid out by D-201): {type, kind_lines, why, tiles,
     details, infant}; no Compare button since D-202. vision None: a catalogue result, with its published name
-    (`product`) and list but no photos to read: name and list checks only.
+    (`product`) and list but no photos to read: name and list checks only. 2026-10-14: its type also
+    comes from the kind's stored evidence (the front's printed words, as pack_kind kept them), so a
+    pack published as "Amulspray" is still the "INFANT MILK SUBSTITUTE" its front says.
     """
     vision = vision or {}
     if vision:
         got = vision.get("_infant") or infant_lens.check(vision, ingredients, ocr_text)
     else:
-        v = {"product": product or {}}
+        v = {"product": product or {},
+             "pack_statements": [{"text": e["text"], "face": e.get("face")} for e in evidence or ()
+                                 if isinstance(e, dict) and isinstance(e.get("text"), str)]}
         ptype = infant_lens.product_type(v)
         got = {"type": ptype, "statements": None, "no_milk": None, "words": infant_lens.words(v),
                "free_from": infant_lens.free_from(ingredients), "hydrogenated": infant_lens.hydrogenated(ingredients, ptype),
@@ -2268,7 +2272,8 @@ def _infant_parts(*, ingredients, vision, ocr_text, product=None, reliable=True,
                        "sources": [rule_cite(got["additives"]["basis"].split(", per ")[0] + "; Schedule I(d), PDF p. 52")]})
     if vision:
         blocks.append(infant_notices(got["statements"], got["no_milk"], photos=photos))
-    infant = {"good": {"title": INFANT_GOOD_TITLE, "blocks": blocks}}
+    # 2026-10-14: no card with a title and nothing under it (Sushil's screenshot of a catalogue result).
+    infant = {"good": {"title": INFANT_GOOD_TITLE, "blocks": blocks}} if blocks else {}
     if worth:
         infant["worth"] = {"title": INFANT_WORTH_TITLE, "items": worth}
     return {"type": ptype, "kind_lines": kind_lines, "why": why, "tiles": tiles, "details": details,
@@ -2330,7 +2335,7 @@ def _kind_screen(kind, *, people, ingredients, reliability, nutra_input=None, pr
             ingredients=ingredients, vision=(nutra_input or {}).get("vision"),
             ocr_text=(nutra_input or {}).get("ocr_text"), product=(nutra_input or {}).get("product"),
             reliable=reliability.get("ingredients_complete", True) and not reliability.get("from_screen"),
-            photos=infant_photos(nutra_input))
+            photos=infant_photos(nutra_input), evidence=kind["evidence"])
     medicine = code == "not_food" and bool(shown) and shown.get("rule") == "medicine_printed"
     if medicine:
         headline = f"This pack says \"{shown['text']}\"."     # D-196: the pack's own words, first
@@ -2377,6 +2382,6 @@ def _kind_screen(kind, *, people, ingredients, reliability, nutra_input=None, pr
         out["tiles"], out["details"], out["sections"] = ip["tiles"], ip["details"], []
         out["infant"] = ip["infant"]
         if out["retake"]:                       # D-168: one ask per scan; the list's retake is it
-            for b in ip["infant"]["good"]["blocks"]:
+            for b in ip["infant"].get("good", {}).get("blocks", []):
                 b.pop("side", None)
     return out

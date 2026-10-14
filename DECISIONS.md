@@ -4746,6 +4746,10 @@ scan for 1 product each". Built by the advisor in the same branch as D-201's "Co
   so a later decision can turn Compare back on in data.
 - **Tests:** D-200's and D-201's infant Compare tests now assert the refusal; the switch-off shadow tests are
   unchanged. App web-73.
+- **Follow-up, 2026-10-14 (Sushil's screenshot of a catalogue Amulspray result: an empty "Good to know"):** a
+  catalogue result has only the published name ("Amulspray"), so no type and no type checks. It now also takes
+  the type from the kind's stored evidence (the front's printed words, regulation 4's notices left out, as
+  `product_type` already does), and a "Good to know" with nothing in it isn't sent or shown. App web-78.
 
 ---
 
