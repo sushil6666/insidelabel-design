@@ -1719,6 +1719,11 @@ Recommended by Claude. **Accepted by Sushil 2026-09-28** ("accepted and merged")
   3x, 4x and round again every 1.2 s, as far as the camera offers (camera zoom crops the full sensor, so a small
   barcode gets real detail while the phone stays back where it focuses); a small "3x" label shows the level. The
   8 s hint: "Keep the barcode inside the box and hold still: the camera zooms in by itself." App web-76.
+- **Fourth follow-up, 2026-10-14 (Sushil: on his phone no zoom label appeared and the picture stayed soft; the barcode
+  photo and upload "both ... works"):** Chrome on that phone gives a page no zoom or close focus. With no read after
+  3 s, the scanner takes a full-resolution still every 2 s (`ImageCapture.takePhoto`, focused, whole sensor, flash
+  off), reads it on the phone, and sends every other one to `/check-photo` as a barcode photo (zxing-cpp, no model
+  call, nothing stored), at most 8 per camera session. App web-77. Built by the advisor.
 
 ### D-125 · "Worth a look" rows for additives worth knowing; research lines only from sources read first-hand `LOCKED` (2026-09-28)
 Why: testers said the result didn't show what to look at first, and asked for "this is here and a

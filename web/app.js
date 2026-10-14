@@ -771,7 +771,11 @@ async function scan() {
 
   const seq = navSeq;
   if (await barcodeSupported()) {
-    startScanner(video, code => lookUp(code, "camera")).then(stop => {
+    // 2026-10-14: a still the phone can't read goes to the server's barcode reader, as a barcode photo.
+    const onStill = async blob => {
+      try { return (await checkPhotoRequest("barcode", blob)).body?.barcode || null; } catch { return null; }
+    };
+    startScanner(video, code => lookUp(code, "camera"), onStill).then(stop => {
       if (seq !== navSeq) return stop();          // the user left before the camera opened
       record("camera", { started: true });
       stopCamera = stop;
