@@ -12,7 +12,7 @@ import {
   deviceId, el, fill, history, historyItem, lastIncident, prepareImage, problemRequest, profileByRef,
   profiles, record, reportRequest, saveProfiles, scanRequest, sendToUsRequest, store, trailSnapshot,
   accessRequest, agreeRequest, checkPhotoRequest, feedbackRequest, termsRequest,
-  updatesRequest, forgetRequest, clearTrail, packPhoto, savePackPhoto,
+  updatesRequest, forgetRequest, clearTrail, packPhoto, savePackPhoto, sidePhotoRequest, saveSidePhoto,
 } from "./lib.js";
 import { barcodeSupported, labelCameraSupported, startLabelCamera, startScanner } from "./camera.js";
 import { icon, kindIcon, spot } from "./icons.js";
@@ -37,7 +37,7 @@ let pending = { barcode: null, barcodeSource: null, back: null, front: null, bac
 // ------------------------------------------------------------------ navigation
 const routes = {
   "": home, welcome, who, household, person, scan, photo, front, result, report, compare, problem, send,
-  agree, feedback, data, table, tablephoto, scans, listpart,
+  agree, feedback, data, table, tablephoto, scans, listpart, side,
 };
 
 // D-176: the app's frame around each screen. Home and the first-run screens show the wordmark
@@ -45,13 +45,13 @@ const routes = {
 // on every screen but the first-run ones and the camera and photo steps, where it would cover
 // the shutter or pull a hand away from the pack.
 const TITLES = {
-  household: "Household", person: "Household", scan: "Scan", photo: "Photo", front: "Photo", listpart: "Photo",
+  household: "Household", person: "Household", scan: "Scan", photo: "Photo", front: "Photo", listpart: "Photo", side: "Photo",
   table: "Nutrition table", tablephoto: "Nutrition table", result: "Result", report: "Report a mistake",
   compare: "Compare", problem: "Report a problem", send: "Send it to us", feedback: "Send feedback",
   data: "Your data", scans: "Your scans",
 };
 const FIRST_RUN = ["welcome", "who", "agree"];
-const NO_TABBAR = [...FIRST_RUN, "scan", "photo", "front", "table", "tablephoto", "listpart"];
+const NO_TABBAR = [...FIRST_RUN, "scan", "photo", "front", "table", "tablephoto", "listpart", "side"];
 let screenName = "home";      // the screen being shown, set by route() before its view is built
 let routed = 0;               // screens shown since the app opened: Back goes home from the first
 
@@ -190,9 +190,14 @@ function updateNav() {
   }
 }
 
+// D-201 (Sushil, accepting): the brand shows only when the name doesn't already contain it, case
+// and spacing ignored: "Amulspray" + "Amulspray" is "Amulspray", "Amul" + "Amul Butter" is "Amul
+// Butter", "Britannia" + "Good Day" stays "Britannia Good Day". Every screen names a pack with it.
 function productName(product) {
   const p = product || {};
-  return [p.brand, p.name, p.variant].filter(Boolean).join(" ") || "Unnamed pack";
+  const flat = s => String(s || "").toLowerCase().replace(/\s+/g, "");
+  const brand = p.brand && !(p.name && flat(p.name).includes(flat(p.brand))) ? p.brand : null;
+  return [brand, p.name, p.variant].filter(Boolean).join(" ") || "Unnamed pack";
 }
 
 function button(label, onclick, cls = "") {
@@ -1336,6 +1341,40 @@ function front(id) {
     send);                                                 // the header's arrow goes back to the result
 }
 
+// D-201: "Photograph the side" on an infant result: one photo of the pack's side, read for
+// regulation 4's notices only (Cloud Vision, no model call, not one of the day's photo scans).
+// The result's notices block comes back in the server's words and replaces the one shown.
+function side(id) {
+  const h = historyItem(id);
+  const w = h?.screen?.infant?.good?.blocks?.find(b => b.id === "notices")?.side;
+  if (!h || !w) return errorView("We couldn't find that pack on this phone.");
+  const preview = el("div", { class: "thumb" });
+  let blob = null, blobSource = null, picker = null;
+  const send = el("button", { type: "button", class: "btn primary", disabled: true, onclick: async () => {
+    show(working("Reading the side of the pack…", false));
+    try {
+      const { body } = await sidePhotoRequest({ blob, source: blobSource, side: w, scanId: h.scan_id });
+      saveSidePhoto(id, body);
+      record("side_photo", { read: !!body.read, found: (body.found || []).length });
+      go("result/" + encodeURIComponent(id));
+    } catch (e) {
+      show(apiErrorView(e, () => go("side/" + encodeURIComponent(id))));
+    }
+  } }, "Send the side photo");
+  return el("section", { class: "stack" },
+    el("h1", {}, w.title),
+    el("p", { class: "product" }, productName(h.product)),
+    el("p", { class: "lead" }, w.line),
+    (picker = photoPicker("side", "Take the side photo", preview, (b, res, source) => {
+      blob = res && !res.ok ? null : b;
+      blobSource = source;
+      send.disabled = !blob;
+      leadWith(picker, !blob);
+    }, "back"), leadWith(picker, true), picker),
+    preview,
+    send);                                                 // the header's arrow goes back to the result
+}
+
 // D-073, D-175: a photo of a published pack's list, compared with the published list for free
 // first (recheck=true). listOnly: D-175's card asks for the list alone ("list"), no table question.
 function recheckPhoto(h, listOnly = false) {
@@ -1658,6 +1697,7 @@ function result(id, sub, tileId) {
     // D-139: a supplement's own tiles, each opening its page, its sugar chip for a food
     // format, and its sections (amounts, statements, additives), all in the server's words.
     if (s.tiles?.length) put(el("ul", { class: "tiles" }, s.tiles.map(t => el("li", {}, tileLink(h, t)))));
+    if (s.infant) put(...infantView(s, h));                             // D-201
     if (s.summary?.length) put(answersView(s.summary));
     (s.sections || []).forEach(x => put(el("div", { class: "card section" },
       el("h2", {}, x.title), x.lines.map(t => el("p", {}, t)),
@@ -1783,7 +1823,7 @@ function resultNext(s, h) {
           if (!store.get("compare", []).includes(h.id)) toggleCompare(h.id);
           updateNav();
           next();
-        } }, "Holding another pack? Scan it to compare")
+        } }, s.compare_button || "Holding another pack? Scan it to compare")     // D-201: the server's words
       : el("button", { type: "button", class: "btn-big", onclick: next }, "Scan another pack"),
     el("div", { class: "row wrap" },
       h.pack && others > 0 && button(`Compare (${others + 1})`, () => {
@@ -1892,9 +1932,63 @@ function kindView(s) {
   const k = s.kind;
   return kinded("div", "info", { class: "card kind", role: "note" },
     k.lines.map(t => el("p", {}, t)),
+    // D-201: why an infant pack's printed name is checked as the kind it is (e.g. 7(3)'s "Infant Milk Food").
+    k.why && el("details", { class: "more" }, el("summary", {}, k.why.title), el("p", {}, k.why.text),
+      sourceList(k.why.sources)),
     k.evidence.length > 0 && el("p", { class: "muted small" }, "On the pack: ",
       k.evidence.map((e, i) => [i ? ", " : "", el("q", {}, e.text)])),
     k.sources?.length > 0 && sourceList(k.sources));
+}
+
+// D-201: an infant result's "Worth knowing" and "Good to know". Every word is the server's
+// (lenses/screen.py, D-091); the app lays them out and draws the range bars from its numbers.
+function infantView(s, h) {
+  const inf = s.infant;
+  const fold = (title, ...kids) => el("details", { class: "more" }, el("summary", {}, title), ...kids);
+  const worth = inf.worth && el("div", { class: "worth card infant-worth" },
+    el("h2", { class: "h-serif" }, `${inf.worth.title} (${inf.worth.items.length})`),
+    el("ol", { class: "notes infant-notes" }, inf.worth.items.map(it => el("li", {},
+      el("p", {}, it.text),
+      it.bar && rangeBar(it.bar, true),
+      it.more && fold(it.more.title, it.more.lines.map(t => el("p", {}, t)), sourceList(it.more.sources))))));
+  const good = el("div", { class: "card infant-good" },
+    el("h2", { class: "h-serif" }, inf.good.title),
+    inf.good.blocks.map(b => el("div", { class: "infant-block" },
+      el("h3", {}, b.title),
+      b.lines.map(t => el("p", {}, t)),
+      b.all && fold(b.all.button,
+        el("ul", { class: "plain infant-rows" }, b.all.rows.map(r => el("li", { "aria-label": r.text },
+          el("div", { class: "infant-row-head", "aria-hidden": "true" }, el("span", {}, r.label), el("span", {}, r.value_text)),
+          rangeBar(r.bar, false)))),
+        b.all.after && el("p", { class: "muted small" }, b.all.after)),
+      b.which && fold(b.which.title, el("ol", { class: "infant-which" }, b.which.items.map(x =>
+        el("li", {}, x.text, el("span", { class: "muted small" }, " " + x.basis))))),
+      b.side && button(b.side.button, () => go("side/" + encodeURIComponent(h.id))))),
+    // One "Sources" for the card, each source once.
+    (() => {
+      const seen = new Set();
+      const all = inf.good.blocks.flatMap(b => b.sources || []).filter(x => !seen.has(x.cite) && seen.add(x.cite));
+      return all.length > 0 && fold("Sources", sourceList(all));
+    })());
+  return [worth, good];
+}
+
+// D-201: FSSAI's range as a track with its limits printed, the pack's number as a marker. The
+// numbers and their words are the server's (D-091); one neutral tone, no zones, no colours, no
+// score: a fact beside FSSAI's own table, not a band.
+function rangeBar(b, showValue) {
+  const [a, z] = b.scale;
+  const at = v => Math.max(0, Math.min(100, ((v - a) / (z - a)) * 100));
+  const lo = at(b.low ?? a), hi = at(b.high ?? z), mark = at(b.value);
+  const label = (text, x, cls = "") => el("span", { class: "rb-lim " + cls, style: `left:${Math.max(6, Math.min(94, x))}%` }, text);
+  return el("div", { class: "range-bar" + (showValue ? " with-value" : ""), "aria-hidden": "true" },
+    el("span", { class: "rb-axis" }),
+    el("span", { class: "rb-track" + (b.high == null ? " open-end" : "") + (b.low == null ? " open-start" : ""),
+                 style: `left:${lo}%;width:${hi - lo}%` }),
+    b.low_text && label(b.low_text, lo, b.high == null ? "start" : ""),
+    b.high_text && label(b.high_text, hi, b.low == null ? "end" : ""),
+    el("span", { class: "rb-mark", style: `left:${mark}%` }),
+    showValue && el("span", { class: "rb-val", style: `left:${Math.max(6, Math.min(94, mark))}%` }, b.value_text));
 }
 
 // D-134: a tile. Its words (title, chip) are the server's; the icon is decoration.
@@ -2412,7 +2506,8 @@ function sideBySideResult(r, ref) {
           flags(p).map(a => el("li", { class: "flag" }, fill(a.text, ref)))))),
       (r.packs[0]?.rows || []).map((row, k) => [
         el("h3", { class: "sbs-title" }, row.title),
-        r.packs.map(p => el("div", { class: "sbs-cell" }, (p.rows[k]?.lines || []).map(t => el("p", {}, t))))])),
+        r.packs.map(p => el("div", { class: "sbs-cell" }, (p.rows[k]?.lines || []).map(t => el("p", {}, t)),
+          p.rows[k]?.bar && rangeBar(p.rows[k].bar, false)))])),             // D-201: protein beside FSSAI's range
     r.sources?.length > 0 && el("details", { class: "more" }, el("summary", {}, "Sources"), sourceList(r.sources)));
 }
 

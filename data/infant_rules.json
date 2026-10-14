@@ -20,7 +20,8 @@
     {"id": "milk_cereal", "phrases": ["milk cereal based complementary food"], "chapter": "infant_food", "basis": "2(1)(i), PDF p. 2; 8, PDF p. 12 (Chapter 3 'Infant Food')", "verified_on": "2026-09-30"},
     {"id": "processed_cereal", "phrases": ["processed cereal based complementary food"], "chapter": "infant_food", "basis": "2(1)(j), PDF p. 2; 9, PDF p. 18 (Chapter 3 'Infant Food')", "verified_on": "2026-09-30"},
     {"id": "traditional", "phrases": ["traditional food for infants", "food for infants based on traditional food ingredients"], "chapter": "infant_food", "basis": "2(1)(c), PDF p. 1; 11(3), PDF p. 30 (Chapter 3 'Infant Food')", "verified_on": "2026-09-30"},
-    {"id": "infant_formula", "phrases": ["infant formula", "infant milk substitute", "infant milk food"], "chapter": "infant_milk_substitute", "basis": "2(1)(h), PDF p. 2; 7, PDF p. 7 (Chapter 2 'Infant Milk Substitute'); 7(3), PDF p. 12 ('Infant Milk Food')", "verified_on": "2026-09-30"}
+    {"id": "infant_formula", "phrases": ["infant formula", "infant milk substitute", "infant milk food"], "chapter": "infant_milk_substitute", "basis": "2(1)(h), PDF p. 2; 7, PDF p. 7 (Chapter 2 'Infant Milk Substitute'); 7(3), PDF p. 12 ('Infant Milk Food')", "verified_on": "2026-09-30",
+     "other_names": [{"phrase": "infant milk food", "name": "Infant Milk Food", "fssai_basis": "7(3), PDF p. 12", "note": "D-201: 'Infant Milk Food' is a name for a powder infant formula made without vegetable oil and the other ingredients 7(3) lists; it uses 7(1)(g)'s table (advisor, 2026-10-13, compendium Version II PDF p. 12).", "verified_on": "2026-10-13"}]}
   ],
   "statements": [
     {"id": "important_notice", "text": "the words \"IMPORTANT NOTICE\" in capital letters", "match": ["important notice"], "face": "any", "chapters": ["infant_milk_substitute", "infant_food"], "fssai_basis": "4(1), PDF p. 4", "verified_on": "2026-09-30"},
@@ -64,6 +65,10 @@
       {"type": "follow_up_formula", "text": "Partially hydrogenated oils and fats shall not be used in follow-up formula.", "partial_only": true, "fssai_basis": "10(1)(d), PDF p. 25", "verified_on": "2026-09-30"}
     ],
     "note": "Traditional foods (11) have no such sentence: nothing is said for them."
+  },
+  "age_words": {
+    "patterns": ["\\bstage\\s*[1-4]\\b", "\\b\\d{1,2}\\s*(?:to|-|\\u2013)\\s*\\d{1,2}\\s*months?\\b", "\\b(?:from|above|up\\s*to|upto)\\s*\\d{1,2}\\s*months?\\b", "\\b\\d{1,2}\\s*\\+\\s*months?\\b", "\\b\\d{1,2}\\s*months?\\s*(?:\\+|onwards|and above)"],
+    "note": "D-201: the age or stage the pack prints, quoted as printed in Compare (lenses/infant.py age()). Matched, case ignored, on the name, the variant, the front's words, the pack's statements and the back's text. Not a legal fact: nothing is judged from it. Regulation 4(1)(a)'s six months statement never matches (it spells 'six', or has 'the age of' before the number)."
   },
   "reviewer_checks": [
     {"id": "no_pictures", "text": "No picture of an infant or a woman or both, and no picture or other graphic material or phrase designed to increase the saleability", "fssai_basis": "4(2), PDF p. 6", "verified_on": "2026-09-30"}

@@ -1659,3 +1659,44 @@ main.wrap { overflow-x: clip; }
    review screen's "add the next part" is a visible button under the photos, the whole row wide. */
 .cam-line.cam-more { font-weight: 400; color: var(--muted); }
 .retakes > .btn.more-part { flex: 1 1 100%; margin-bottom: var(--sp-1); }
+
+/* D-201: an infant result's "Worth knowing" and "Good to know", and the range bar. The bar is one
+   neutral tone (the ink): FSSAI's range as a track with its limits printed, the pack's number as a
+   marker. No red, amber or green, no zones, no score: a fact beside FSSAI's own table, not a band. */
+.infant-notes { list-style: none; padding: 0; margin: var(--sp-2) 0 0; }
+.worth.card .infant-notes > li, .infant-notes > li { padding: var(--sp-3) var(--sp-4); }
+.worth.card .infant-notes > li:last-child { padding-bottom: var(--sp-4); }
+.infant-notes p, .infant-block p { margin: var(--sp-1) 0; }
+.infant-good > h2 { margin: 0 0 var(--sp-1); }
+.infant-block { padding: var(--sp-3) 0; border-top: 1px solid var(--line); }
+.infant-block:first-of-type { border-top: 0; padding-top: var(--sp-1); }
+.infant-block h3 { font-size: 1rem; margin: 0 0 var(--sp-1); }
+.infant-block > .btn { margin-top: var(--sp-2); }
+.infant-rows { margin: var(--sp-2) 0 0; }
+.infant-rows > li { padding: var(--sp-2) 0; border-top: 1px solid var(--line); }
+.infant-rows > li:first-child { border-top: 0; }
+.infant-row-head { display: flex; justify-content: space-between; gap: var(--sp-2); }
+.infant-row-head > span:last-child { color: var(--ink-2); white-space: nowrap; }
+.infant-which { margin: var(--sp-2) 0 0 1.2em; padding: 0; }
+.infant-which > li { margin: var(--sp-2) 0; }
+.range-bar { position: relative; height: 30px; margin: var(--sp-1) 2px 0; }
+.range-bar.with-value { height: 44px; }
+.range-bar .rb-axis { position: absolute; left: 0; right: 0; top: 9px; height: 2px; background: var(--line); }
+.range-bar.with-value .rb-axis { top: 23px; }
+.range-bar .rb-track { position: absolute; top: 5px; height: 10px; border-radius: var(--r-pill);
+  border: 1.5px solid var(--ink-2); background: color-mix(in srgb, var(--ink-2) 22%, transparent); }
+.range-bar.with-value .rb-track { top: 19px; }
+.range-bar .rb-track.open-end { border-right: 0; border-radius: var(--r-pill) 0 0 var(--r-pill);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--ink-2) 22%, transparent) 60%, transparent); }
+.range-bar .rb-track.open-start { border-left: 0; border-radius: 0 var(--r-pill) var(--r-pill) 0;
+  background: linear-gradient(270deg, color-mix(in srgb, var(--ink-2) 22%, transparent) 60%, transparent); }
+.range-bar .rb-mark { position: absolute; top: 0; width: 4px; height: 20px; margin-left: -2px; border-radius: 2px; background: var(--ink); }
+.range-bar.with-value .rb-mark { top: 14px; }
+.range-bar .rb-lim { position: absolute; top: 18px; transform: translateX(-50%); font-size: var(--fs-xs); line-height: 1;
+  color: var(--ink-2); white-space: nowrap; }
+.range-bar.with-value .rb-lim { top: 32px; }
+.range-bar .rb-lim.start { transform: none; }
+.range-bar .rb-lim.end { transform: translateX(-100%); }
+.range-bar .rb-val { position: absolute; top: 0; transform: translateX(-50%); font-size: var(--fs-xs); font-weight: 700;
+  line-height: 1; color: var(--ink); white-space: nowrap; }
+.sbs-cell .range-bar { margin-top: var(--sp-2); }

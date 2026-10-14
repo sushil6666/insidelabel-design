@@ -90,6 +90,11 @@ class ReviewService:
                 """SELECT id, back_image_key, front_image_key, created_at, error_code, request FROM scans
                     WHERE id = ANY(%s) ORDER BY created_at""",
                 (q.get("attempt_scan_ids") or [],)).fetchall()
+            # D-201: side photos a shopper added to this scan's infant result, oldest first.
+            sides = c.execute(
+                """SELECT id, back_image_key, created_at, ocr FROM scans
+                    WHERE parent_scan_id = %s AND resolved_via = 'side' ORDER BY created_at""",
+                (q["scan_id"],)).fetchall() if q["scan_id"] else []
             if q["correction_id"]:
                 corr = c.execute("SELECT * FROM corrections WHERE id = %s", (q["correction_id"],)).fetchone()
             leads = []
@@ -116,7 +121,7 @@ class ReviewService:
         }
         return {"item": q, "version": v, "product": p, "current": current, "scan": scan,
                 "correction": corr, "findings": findings, "images": images, "leads": leads,
-                "attempts": attempts}
+                "attempts": attempts, "side_photos": sides}
 
     # ---------------------------------------------------------------- claiming
 

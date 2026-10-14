@@ -31,6 +31,15 @@ What this module does:
                   Schedule I(d)'s carriers, data/infant_additives.json) doesn't name,
                   "not found in the list", never "not permitted".
 Pictures (4(2)) are a reviewer's check (reviewer_checks), never the app's.
+
+D-201 (Sushil, 2026-10-13: "As a user what I will do with this output"): what a parent can
+decide from, read the same way (the model copies, these rules read):
+- sugar():         where an added sugar sits in the list (compare.sugar_positions, the existing
+                   sugar names) and the Added Sugars and Total Sugars per 100 g the pack prints.
+- energy_kcal():   the printed energy per 100 g in kcal, for a range per 100 kcal.
+- not_compared():  the printed rows composition() can't set beside the table, and why.
+- age():           the age or stage the pack prints, quoted (Compare).
+- side_found():    regulation 4's statements found in the text of a photo of the pack's side.
 """
 
 import json
@@ -39,6 +48,7 @@ import re
 
 from insidelabel.core.pack_kind import _has, norm
 from insidelabel.lenses import allergens, nutrition
+from insidelabel.lenses.compare import sugar_positions
 from insidelabel.core.tokenize import ins_numbers
 from insidelabel.lenses.nutra import complete_read
 from insidelabel.trace import DATA_DIR
@@ -308,3 +318,110 @@ def check(vision, ingredients=None, ocr_text=None):
         "composition": composition(vision, ocr_text, ptype),
         "reviewer_checks": RULES["reviewer_checks"],
     }
+
+
+# ---------------------------------------------------------------- D-201: what a parent can decide from
+
+_AGE = [re.compile(p, re.I) for p in RULES["age_words"]["patterns"]]
+# Rows composition() never compares: the table has no per 100 g row for them (D-201's list
+# names them as printed), or gives folate in dietary folate equivalents (rule 3 of
+# data/infant_composition.json; 1 microgram DFE = 0.6 microgram folic acid, PDF p. 9 note 3).
+_FOLATE = ("folic", "folate")
+
+
+def printed_per_100(vision, ocr_text, key):
+    """{value, printed} for a per 100 g row (nutrition.py's key: added_sugars, total_sugars,
+    energy) that the pack prints and the second reading also shows (D-133), or None."""
+    raw = vision.get("nutrition")
+    if not isinstance(raw, dict) or not (ocr_text or "").strip():
+        return None
+    if nutrition.form_of(raw.get("per_100_basis")) != "solid":
+        return None
+    seen = nutrition.ocr_numbers(ocr_text)
+    for r in raw.get("rows") or []:
+        if not isinstance(r, dict) or nutrition.nutrient_key(r.get("nutrient")) != key:
+            continue
+        cell = nutrition.read_cell(r.get("per_100"), key, r.get("nutrient"), r.get("unit"))
+        if cell is None or cell.get("bound") or nutrition._f(cell["printed"]) not in seen:
+            return None
+        return {"value": cell["value"], "printed": cell["printed"]}
+    return None
+
+
+def sugar(vision, ingredients, ocr_text):
+    """{positions: [(position, name)], count, added, total}: the list's added sugars by
+    position, and the printed Added Sugars and Total Sugars per 100 g (or None each)."""
+    ingredients = vision.get("ingredients") if ingredients is None else ingredients
+    return {"positions": sugar_positions(ingredients or []), "count": len(ingredients or []),
+            "added": printed_per_100(vision, ocr_text, "added_sugars"),
+            "total": printed_per_100(vision, ocr_text, "total_sugars")}
+
+
+def energy_kcal(vision, ocr_text):
+    """The pack's printed energy per 100 g in kcal, seen twice, or None."""
+    got = printed_per_100(vision, ocr_text, "energy")
+    return got and got["value"]
+
+
+def not_compared(vision, ptype):
+    """{"no_row": [labels], "folate": [labels]}: printed per 100 g rows composition() can't set
+    beside the type's table, as printed, in the pack's order. Rows the table has but that
+    weren't read twice are not named (they weren't compared, but not for the table's sake)."""
+    out = {"no_row": [], "folate": []}
+    table = COMPOSITION["types"].get(ptype["id"]) if ptype else None
+    raw = vision.get("nutrition")
+    if table is None or not isinstance(raw, dict):
+        return out
+    rows = {r["nutrient"] for r in table["rows"]}
+    for r in raw.get("rows") or []:
+        label = (r or {}).get("nutrient") if isinstance(r, dict) else None
+        if not label or _nutrient_of(label) in rows:
+            continue
+        n = norm(label)
+        if any(_has(n, w) for w in _FOLATE):
+            out["folate"].append(label)
+        elif _has(n, "ratio"):
+            continue
+        else:
+            out["no_row"].append(label)
+    return out
+
+
+def age(vision, ocr_text=None):
+    """The age or stage the pack prints, as printed (dashes as "-"), or None."""
+    product = vision.get("product") or {}
+    texts = [product.get("name"), product.get("variant"), (vision.get("front_identity") or {}).get("name")]
+    texts += list(vision.get("front_claims") or []) + [s.get("text") for s in vision.get("pack_statements") or []]
+    texts += [ocr_text]
+    for text in filter(None, texts):
+        for pat in _AGE:
+            m = pat.search(text)
+            if m:
+                return re.sub("[\u2013\u2014]", "-", m.group(0)).strip()
+    return None
+
+
+SIDE_IDS = tuple(r["id"] for r in RULES["statements"] if r["face"] != "front") + ("no_milk",)
+# The ids the app holds and sends back to /side-photo. 4(1)(a)'s front notice goes out under a
+# neutral name: nothing we send sets an infant food beside mother's milk (IMS Act 3(b)), ids
+# included.
+_PUBLIC = {"mothers_milk": "front_notice"}
+_PRIVATE = {v: k for k, v in _PUBLIC.items()}
+
+
+def public_id(i):
+    return _PUBLIC.get(i, i)
+
+
+def private_id(i):
+    return _PRIVATE.get(i, i)
+
+
+def side_found(text, missing):
+    """D-201: which of `missing` (regulation 4's statement ids, and "no_milk") the text of a
+    photo of the pack's side shows, by the same phrases statements() uses. Front-only ones
+    (4(1)(a)'s notice) can't be found on a side."""
+    n = norm(text or "")
+    rows = {r["id"]: r for r in RULES["statements"]}
+    rows["no_milk"] = RULES["no_milk"]
+    return [i for i in missing if i in SIDE_IDS and any(_has(n, m) for m in rows[i]["match"])]

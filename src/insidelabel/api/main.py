@@ -1336,6 +1336,100 @@ async def check_photo(
     return out
 
 
+SIDE_WAIT_S = 20
+
+
+@app.post("/side-photo")
+async def side_photo(
+    request: Request,
+    photo: Optional[UploadFile] = File(None, description="A photo of the pack's side."),
+    found: str = Form("[]", description="Regulation 4's statement ids the result already found, as JSON."),
+    missing: str = Form("[]", description="The ids it didn't see, as JSON (the result's notices.side.missing)."),
+    photos: int = Form(2, description="How many photos the result was read from so far."),
+    sides: int = Form(0, description="How many side photos were added before this one."),
+    scan_id: Optional[str] = Form(None, examples=[""], description="The scan whose result this adds to."),
+    device_id: Optional[str] = Form(None, examples=[""]),
+    photo_source: Optional[str] = Form(None, examples=[""], description='"camera" or "upload" (D-106).'),
+):
+    """
+    D-201: "Photograph the side" on an infant result. Tins and boxes often print regulation 4's
+    notices on a side, so a result that didn't see them can add one photo (at most two). Its
+    text is read by Cloud Vision only (about 13 paise; Tesseract on the server, Rs 0, when
+    Vision is off, D-093): no model call, not one of the day's photo scans, and only the missing
+    statements are looked for (lenses/infant.side_found). The answer is the result's new notices
+    block, in the server's words (D-091), and the statements found, for Compare. Stateless: the
+    phone sends what its result found and missed. The photo is its own scan row ('side'),
+    linked to the scan, for replay (D-092) and for /review beside the scan; it never changes a
+    catalogue version or creates a review item (Sushil, accepting D-201).
+    """
+    _rate_limit(request, "side_photo", device_id, ratelimit.SCAN_TEXT)
+    if not pack_kind.infant_to_users():
+        raise HTTPException(status_code=404, detail={"error": "not_available", "detail": "Not available."})
+    try:
+        found_ids, missing_ids = json.loads(found or "[]"), json.loads(missing or "[]")
+    except ValueError:
+        found_ids = missing_ids = None
+    if isinstance(found_ids, list) and isinstance(missing_ids, list):
+        found_ids = [infant_lens.private_id(i) if isinstance(i, str) else i for i in found_ids]
+        missing_ids = [infant_lens.private_id(i) if isinstance(i, str) else i for i in missing_ids]
+    known = set(infant_lens.SIDE_IDS) | {r["id"] for r in infant_lens.RULES["statements"]}
+    if (not isinstance(found_ids, list) or not isinstance(missing_ids, list) or not missing_ids
+            or not all(isinstance(i, str) and i in known for i in found_ids + missing_ids)
+            or set(found_ids) & set(missing_ids) or not 1 <= photos <= 9 or not 0 <= sides):
+        raise HTTPException(status_code=422, detail={"error": "bad_notices",
+                                                     "detail": "found and missing are lists of statement ids."})
+    if sides >= result_screen.INFANT_SIDE_MAX:
+        raise HTTPException(status_code=422, detail={"error": "side_limit",
+                                                     "detail": "Two side photos have been added to this result."})
+    if photo_source and photo_source.strip() not in ("camera", "upload"):
+        raise HTTPException(status_code=422, detail={"error": "bad_photo_source",
+                                                     "detail": 'photo_source is "camera" or "upload".'})
+    img = await _read_image(photo, "side")
+    if img is None:
+        raise HTTPException(status_code=422, detail={"error": "no_photo", "detail": "Send a photo."})
+    data, mime, _role = img
+    bad = photo_check.check(data, mime, "back")
+    if bad:
+        raise HTTPException(status_code=415 if bad[0] == "not_an_image" else 422, detail={
+            "error": bad[0], "role": "side", "detail": bad[1], "label": result_screen.PROBLEM_LABEL[bad[0]]})
+    t0 = time.monotonic()
+    read = ocr_check.start_back_read(data)
+    try:
+        await run_in_threadpool(read.done.wait, SIDE_WAIT_S)
+        got = ocr_check.result_of(read, [])
+    except Exception:                                                      # noqa: BLE001
+        log.exception("side photo read failed")
+        got = {"available": False, "reason": "error"}
+    text = got.get("ocr_text") if got.get("available") else None
+    new = infant_lens.side_found(text, missing_ids) if text else []
+    rows = {r["id"]: r for r in infant_lens.RULES["statements"]}
+    statements = [{"id": i, "text": rows[i]["text"], "found": i in found_ids or i in new,
+                   "basis": rows[i]["fssai_basis"]} for i in rows if i in found_ids or i in missing_ids]
+    no_milk = None
+    if "no_milk" in found_ids or "no_milk" in missing_ids:
+        no_milk = {"text": infant_lens.RULES["no_milk"]["text"], "basis": infant_lens.RULES["no_milk"]["fssai_basis"],
+                   "found": "no_milk" in found_ids or "no_milk" in new}
+    block = result_screen.infant_notices(statements, no_milk, photos=photos + (1 if text else 0),
+                                         sides=sides + (1 if text else 0), last_found=new if text else None)
+    if not text:
+        block["lines"].append(result_screen.INFANT_SIDE["unread"])
+    keys = _save_images([(data, mime, "back")])
+    tr = {"request_id": trace.current_request_id(), "build": trace.BUILD, "data_version": trace.DATA_VERSION,
+          "request": {"route": "side-photo", "parent_scan_id": scan_id, "found": found_ids, "missing": missing_ids,
+                      "photos": photos, "sides": sides,
+                      "photo_sources": {"side": photo_source.strip()} if photo_source else {}},
+          "timings": {"total_ms": _ms(t0)},
+          "ocr": {"side": {"reader": got.get("reader"), "text": text, "reason": got.get("reason"), "found": new}}}
+    side_id = _persist(STORE.record_side_photo, parent_scan_id=scan_id, device_id=device_id,
+                       latency_ms=_ms(t0), back_key=keys.get("back"), trace=tr) if STORE else None
+    log.info("side photo: reader=%s found=%s of %s", got.get("reader"), new, missing_ids)
+    return {"read": bool(text), "found": [{"id": i, "printed": next(m for m in (rows.get(i) or infant_lens.RULES["no_milk"])["match"]
+                                                                    if infant_lens._has(infant_lens.norm(text), m))}
+                                          for i in new],
+            "notices": block, "photos": photos + (1 if text else 0), "sides": sides + (1 if text else 0),
+            "scan_id": _str(side_id), "request_id": tr["request_id"]}
+
+
 # ---------------------------------------------------------------------------
 # Access, terms and feedback (D-105, D-102; no invite codes since D-184)
 # ---------------------------------------------------------------------------
@@ -1666,6 +1760,8 @@ async def scan(
     # D-119: a long list in parts becomes one back photo here; from now on
     # the scan is ordinary (one image for Gemini, Cloud Vision, storage, replay).
     parts = [(d, m) for d, m, r in images if r in ("back", "back2", "back3")]
+    # D-201: how many photos this scan read, for an infant result's "on these 2 photos".
+    n_photos = len(parts) + sum(1 for _d, _m, r in images if r == "front")
     if len(parts) > 1:
         try:
             joined = photo_join.join(parts)
@@ -2209,14 +2305,14 @@ async def scan(
             allergen_reliable=allergen_reliable, has_barcode=barcode is not None, pack=pack,
             screen_pack=None if from_screen else screen_pack, nutrition=panel,
             parts_sent=max(1, len(parts)), kind=kind,
-            nutra_input={"vision": vision, "ocr_text": ocr_result.get("ocr_text")},
+            nutra_input={"vision": vision, "ocr_text": ocr_result.get("ocr_text"), "photos": n_photos},
             barcode_answer=barcode_answer, veg_mark=(vision.get("product") or {}).get("veg_mark"),
             product_name=(vision.get("product") or {}).get("name"),
             # D-167: a food pack with a barcode and no checked version yet, before its review.
             unchecked=bool(saved and saved["version_status"] == "pending_review"
                            and not saved.get("checked") and kind["code"] == "food")),
         "pack_kind": {k: kind[k] for k in ("code", "evidence", "review")},
-        **_compare_input(kind, vision=vision, ocr_text=ocr_result.get("ocr_text")),
+        **_compare_input(kind, vision=vision, ocr_text=ocr_result.get("ocr_text"), photos=n_photos),
         "scan_id": saved["scan_id"] if saved else _str(unlisted_id),
         "catalogue": ({"source": "scan", "product_version_id": saved["product_version_id"],
                        "status": saved["version_status"], "queued_for_review": saved["queued"]}

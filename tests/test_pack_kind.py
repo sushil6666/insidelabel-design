@@ -448,14 +448,13 @@ def test_the_words_of_each_kind(infant_off):
 def test_the_words_of_each_kind_with_the_switch_on(infant_on):
     s = run(reading(*INVENTED["infant_formula"][:2]))["screen"]
     assert s["headline"]["text"] == 'This pack says "Infant Formula".'
-    assert s["kind"]["lines"] == [
-        "We check an infant food against FSSAI's rules for foods for infant nutrition, not against our checks for foods.",
-        "The pack's name says \"Infant Formula\", so we use FSSAI's rules for infant formula."]
+    # D-201: the kind once, in a line; the words it came from are the headline's.
+    assert s["kind"]["lines"] == ["We check it against FSSAI's rules for infant formula."]
     assert "breastfeeding" not in s
     k = pack_kind.decide({}, category="13.2")
     s = screen._kind_screen(k, people=[], ingredients=["Rice"], reliability={})
     assert s["headline"]["text"] == "Filed in our catalogue as a food for infants."
-    assert s["kind"]["lines"][1] == screen.INFANT_NO_TYPE
+    assert s["kind"]["lines"] == [screen.INFANT_NO_TYPE]
 
 
 def test_a_pack_that_isnt_food_quotes_its_licence_and_the_act():

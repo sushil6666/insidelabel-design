@@ -12,7 +12,7 @@
 //    beyond the headline the user was shown.
 
 // Bump together with VERSION in sw.js: a report then says which shell was cached.
-export const APP_VERSION = "web-71";
+export const APP_VERSION = "web-72";
 
 // ------------------------------------------------------------------ storage
 // localStorage can throw (private mode, blocked site data); the app must still work.
@@ -124,6 +124,25 @@ export async function packPhoto(blob, maxEdge = 360) {
     return canvas.toDataURL("image/jpeg", 0.6);
   } catch { return null; }
 }
+// D-201: a side photo's answer, kept on the result it added to: the notices block (the server's
+// words, D-091) and, for Compare, the statements it found and the photo count.
+export function saveSidePhoto(id, body) {
+  const list = history().map(h => {
+    if (h.id !== id || !h.screen?.infant) return h;
+    const blocks = h.screen.infant.good.blocks.map(b => b.id === "notices" ? body.notices : b);
+    const facts = h.pack?.facts;
+    const found = new Map((body.found || []).map(f => [f.id, f.printed]));
+    const next = facts && {
+      ...facts, photos: body.photos,
+      statements: facts.statements && facts.statements.map(r => found.has(r.id) ? { ...r, found: true, printed: found.get(r.id) } : r),
+      no_milk: facts.no_milk && found.has("no_milk") ? { found: true, printed: found.get("no_milk") } : facts.no_milk,
+    };
+    return { ...h, screen: { ...h.screen, infant: { ...h.screen.infant, good: { ...h.screen.infant.good, blocks } } },
+             pack: h.pack && { ...h.pack, facts: next } };
+  });
+  store.set("history", list);
+}
+
 export function savePackPhoto(id, url) {
   const list = history().map((h, i) => h.id === id ? { ...h, photo: url } : i >= PHOTO_KEEP ? { ...h, photo: undefined } : h);
   store.set("history", list);
@@ -313,6 +332,20 @@ export async function checkPhotoRequest(role, blob, firstList = false) {
   if (firstList) fd.append("first_list", "true");          // D-191: the table hint's one look
   fd.append("photo", blob, role + ".jpg");
   return call("/check-photo", { method: "POST", body: fd });
+}
+
+// D-201: "Photograph the side" on an infant result: one photo, read for regulation 4's notices.
+export function sidePhotoRequest({ blob, source, side, scanId }) {
+  const fd = new FormData();
+  fd.append("device_id", deviceId());
+  fd.append("found", JSON.stringify(side.found || []));
+  fd.append("missing", JSON.stringify(side.missing || []));
+  fd.append("photos", String(side.photos || 2));
+  fd.append("sides", String(side.sides || 0));
+  if (scanId) fd.append("scan_id", scanId);
+  if (source) fd.append("photo_source", source === "live" ? "camera" : source);
+  fd.append("photo", blob, "side.jpg");
+  return call("/side-photo", { method: "POST", body: fd });
 }
 
 // D-105: whether this phone agreed to the current rules, and the app's switches (D-171).

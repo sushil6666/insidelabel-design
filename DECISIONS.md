@@ -2391,7 +2391,8 @@ Same request as D-139. Full proposal: `docs/BABY_FOOD.md`. **Nothing built until
   is also in the second reading of the photo (as D-133) is set beside the type's range, "within", "below" or
   "above" (facts, never "fails"); IU, kJ and unit-less cells aren't compared, nor per 100 kcal columns. The
   D-133 reader is unchanged (it still ignores vitamins and minerals for foods): the infant lens reads those rows
-  itself. On /review only.
+  itself. On /review only. Wording to users `CHANGED by D-201` (2026-10-13): "inside" and "outside FSSAI's range"
+  are facts; "within", "below", "above" and "fails" stay internal.
 - **Phase 3, part 5 (branch `baby-food-under-2`, 2026-10-01): the `baby` band and the one-time toddler question,
   the last part of phase 3.** Bands (a value, not a field, D-074): `baby` "Under 2 years", `toddler` "2 to 3 years",
   `kid`, `young`; the toddler lens's stricter tiers (sugar in the first 3, caffeine, additives flagged for infants)
@@ -4600,7 +4601,7 @@ Sushil, 2026-10-12: "enable all options for users BABY_FOOD and SUPPLEMENTS". As
   list (the last three only on a complete read, D-111's care); sections: regulation 4's statements found (named) or
   not found (the rule's words; the 4(1)(a) notice is named, never quoted, when not printed), additives, and
   composition as facts ("Iron: 8 mg per 100 g on the pack. FSSAI's table: 3 to 7 mg.", no "within", "above" or
-  "fails"). **Composition goes to users**, changing D-140's "reviewer-only in the beta". Still `withheld` (reason
+  "fails"; `CHANGED by D-201`: the layout and "inside/outside FSSAI's range"). **Composition goes to users**, changing D-140's "reviewer-only in the beta". Still `withheld` (reason
   `infant_not_scored`): verdict, display, claim check, nutrition, EU/US. From the catalogue: name and list checks only.
 - **Compare** (`lenses/side_by_side.py`): a pack compares only with its own kind; any of the three sources (client
   kind, printed words, stored kind) naming infant or supplement makes the pack that kind. Infant with infant and
@@ -4629,6 +4630,75 @@ Sushil, 2026-10-12: "enable all options for users BABY_FOOD and SUPPLEMENTS". As
   Compare (a supplement against a food is now refused as `mixed_kinds`; `COMPARABLE` is food and supplement). App
   web-71, no migration.
 - **Lawyer's answer still pending: revisit D-200 when it comes** (`docs/BABY_FOOD.md` section 9, questions 1a to 1c).
+
+### D-201 · An infant result a parent can use `LOCKED` (2026-10-13)
+Sushil, 2026-10-13, after scanning Amulspray (8901262080033, scan 398526ab): "As a user what I will do with this
+output, what message I am giving, tell me." D-200's infant result listed rules and statements; it gave a parent
+nothing to decide from. Plan with mockups: `/mnt/project-files/infant-result/plan.md`. **Accepted by Sushil
+2026-10-13 10:01 with five changes** (relayed by the coordinator), then "Hold it" on the honey question:
+1. "Child card on an infant pack: drop only the duplicate sugar line, not everything but allergens. Keep any age
+   line that applies to an infant (for example honey under 1 year, or any line the child lens has for the baby's
+   age)." Built: on an infant pack (switch on) the person card drops only the `sugar_pos` fact; the baby lines
+   kept are `INFANT_BABY_LINES` (non-sugar sweetener, salt). **Honey: held** (Sushil's "Hold it", 2026-10-13):
+   ICMR-NIN's honey line comes from breastfeeding guideline 3, and that guideline stays held on infant packs
+   (D-140 7(1), D-200). The test is an infant cereal with honey and salt and a baby profile: the salt line shows,
+   no sugar line on the card, nothing says breastfeeding.
+2. "Name fix in web/app.js productName: show the brand only when the name doesn't already contain it (case and
+   spacing ignored)." Built for every screen that names a pack (result header, Your scans, Compare, Share card);
+   a node test covers food ("Britannia" + "Good Day" stays "Britannia Good Day").
+3. "Summary line words: "26 of 27 nutrients we compared are inside FSSAI's ranges." Button "See all 27"."
+4. "Side photos: they never change the catalogue version or create a review item; a reviewer sees them on /review
+   beside the scan. The made up second formula in the Compare mockups stays out of the repo's data and tests, or is
+   labelled "illustration" in the evidence folder." Built: `docs/design/d201/illustration-compare-*`.
+5. "Folic acid: leave it out of the count as you planned (FSSAI's table is in DFE, 1 ug DFE = 0.6 ug folic acid,
+   PDF p. 9 note 3); say that in D-201." So: folate rows in FSSAI's tables are in dietary folate equivalents
+   (compendium PDF p. 9, note 3: 1 µg DFE = 0.6 µg folic acid); a pack prints folic acid, so we don't set it
+   beside the range. The "See all" fold says so: "Folic acid (FSSAI's table gives folate as dietary folate
+   equivalents)". Printed rows with no per 100 g row in FSSAI's table (saturated fat, trans fat, total and added
+   sugars, energy) are named there too, not compared.
+- **The 7(3) finding.** Amulspray prints "INFANT MILK FOOD". Regulation 7(3) (compendium PDF p. 12) makes "Infant
+  Milk Food" a name of infant milk substitute, so the pack is checked as infant formula (`data/infant_rules.json`
+  `other_names`, verified 2026-10-13). The result says it once ("We check it against FSSAI's rules for infant
+  formula.") with the reason a tap away ("Why infant formula", citing 7(3), PDF p. 12).
+- **The layout (switch on, `lenses/screen.py`, D-091):** allergen cards (D-060, D-188); the headline in the pack's
+  words; one kind line; **"Worth knowing"**: the added sugar line first ("Sugar is the 2nd of 4 ingredients. Added
+  sugars: 18 g per 100 g; total sugars: 50 g, as printed."), then each nutrient outside FSSAI's range with its
+  range bar and a "From FSSAI's rules" fold (per 100 kcal where the table gives it; "FSSAI's rules for infant foods
+  apply to packs made from 1 October 2022."); **"Good to know"**: the count ("26 of 27 nutrients we compared are
+  inside FSSAI's ranges.", "See all 27"), additives ("The list prints no INS numbers." or the D-200 lines), one
+  notices line ("Found on the pack: ...", "We didn't see 4 more notices FSSAI's rules ask for on these 2 photos.
+  Tins and boxes often print them on a side.", "Which ones" a tap away, "Photograph the side"); the bottom button
+  "Compare with another formula" (infant and follow-up formula) or "Compare with another baby food". No worth card
+  when nothing applies. D-200's kind lines and statements, additives and composition sections are replaced by this.
+- **"Inside/outside FSSAI's range" are facts.** They change D-140 part 4's and D-200's wording ("within", "above",
+  "below", "fails" stay internal). The infant lint (`tests/test_wording.py`) adds "high", "too much", "fails", "not
+  allowed" and "violation" to D-200's "safe", "best", "recommended", "healthy", "suitable for your baby".
+- **The range bar is not a band.** Two numbers FSSAI printed and one the pack printed on one axis, in one neutral
+  tone: no zones, no colours, no score (D-200's "no score, grade or band" stands). A min-only row ("at least 250 mg")
+  runs open to the right.
+- **No adult daily intake for infant packs.** FSSAI's infant tables are the only yardstick: never % RDA, "daily
+  value" or an adult figure (D-046, D-086); a test checks the result and our infant words.
+- **Infant Compare** (`lenses/side_by_side.py`): rows are the kind, the age or stage as printed, added sugar and its
+  position, protein beside the range (with its bar), the count outside FSSAI's range ("1 of 27: Protein 22 g (range
+  10 to 16 g)." or "None of 27."), notices seen ("Seen: 3 of 7, on 2 photos."), then D-200's rows. Facts per pack,
+  never a tally across packs; still no winner, badge or count.
+- **"Photograph the side" and its cost.** `POST /side-photo`: one photo, at most two per result, read by Cloud Vision
+  only (about 13 paise a read, so at most about 26 paise a result; Tesseract on the server at Rs 0 when Vision is
+  off, D-093), never by the model, and not one of the day's photo scans. Only the missing regulation 4 statements
+  are looked for (`lenses/infant.side_found`); the front's 4(1)(a) notice can't be found on a side. Its own rate
+  bucket (20 per 10 minutes, 60 a day per phone). Stateless: the phone sends what its result found and missed; the
+  4(1)(a) notice goes out under the neutral id `front_notice` (IMS 3(b): nothing we send sets a food beside mother's
+  milk, ids included). Each side photo is a scan row (`resolved_via 'side'`, outcome `side_photo`, migration 028)
+  linked by `parent_scan_id`, replayable (D-092), shown on /review beside the scan; never a product, version or
+  review item. Hidden when the result already asks for a retake (D-168, one ask per scan).
+- **Unchanged:** switch off is D-140's shadow byte for byte (`tests/fixtures/infant_shadow_before.json`); every
+  D-200 hard line (IMS 3(b), no score, grade or band, special_medical, breastfeeding held, "best" only inside the
+  printed notice); food's result.
+- **Tests:** `tests/test_infant_result.py` (Amulspray end to end from `tests/fixtures/amulspray_8901262080033.json`,
+  nothing outside, no added sugar, a min-only row, side photo 2 of 4 then all 4, unreadable, Tesseract, limits,
+  Compare, child card, productName) and `tests/test_side_photo_db.py` (migration 028, the row, /review). D-200's
+  switch-on assertions are replaced by equally exact D-201 ones; none deleted or loosened. App web-72, migration 028.
+  Evidence: `docs/design/d201/`. Sushil merges after the advisor's review.
 
 ---
 

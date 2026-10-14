@@ -443,6 +443,32 @@ class Store:
             self._set_trace(conn, sid, trace)
             return sid
 
+    def record_side_photo(self, *, parent_scan_id=None, device_id=None, latency_ms=None, back_key=None,
+                          trace=None):
+        """
+        D-201: a photo of an infant pack's side, read for regulation 4's notices only. Its own
+        scan row (resolved_via 'side', outcome 'side_photo') for replay (D-092), linked to the
+        scan whose result it added to, so /review shows it beside that scan. Never a product,
+        a version or a review item (Sushil, accepting D-201). An unknown parent id is dropped.
+        """
+        with self._connect() as conn:
+            uid = self._user(conn, device_id)
+            parent = None
+            if parent_scan_id:
+                try:
+                    pid = str(uuid.UUID(str(parent_scan_id)))
+                except ValueError:
+                    pid = None
+                if pid and conn.execute("SELECT 1 FROM scans WHERE id = %s", (pid,)).fetchone():
+                    parent = pid
+            sid = conn.execute(
+                """INSERT INTO scans (user_id, resolved_via, cache_hit, outcome, latency_ms, ai_cost_paise,
+                                      back_image_key, parent_scan_id)
+                   VALUES (%s, 'side', false, 'side_photo', %s, 0, %s, %s) RETURNING id""",
+                (uid, latency_ms, back_key, parent)).fetchone()["id"]
+            self._set_trace(conn, sid, trace)
+            return sid
+
     def record_screen_scan(self, *, device_id=None, latency_ms=None, front_key=None, back_key=None,
                            trace=None):
         """

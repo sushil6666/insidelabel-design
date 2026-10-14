@@ -300,6 +300,16 @@ Off, every route answers as D-140's shadow (allergens, the kind and the list; Co
 Share). Check: `sudo grep INFANT /etc/insidelabel/settings.env`. To turn it on again, delete that line and restart.
 Results already shown stay on the phones that got them.
 
+**Side photos (D-201).** With the switch on, an infant result can add up to two photos of the pack's side
+("Photograph the side", `POST /side-photo`), read by Cloud Vision (about 13 paise each) or Tesseract. Each is a
+`scans` row (`resolved_via = 'side'`, migration 028, run by `update.sh`) linked to its scan by `parent_scan_id`;
+/review shows them beside that scan. Off, the route answers 404. Count them:
+
+```bash
+sudo -u insidelabel psql -d insidelabel -c "SELECT count(*), sum((ocr->'side'->>'reader' = 'cloud_vision')::int) AS vision
+  FROM scans WHERE resolved_via = 'side' AND created_at > now() - interval '7 days'"
+```
+
 ### Read switches (D-191, D-193), all off
 
 Each is one line in `/etc/insidelabel/settings.env` (`sudoedit`, then

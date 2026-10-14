@@ -6,6 +6,10 @@ Those tiers are for food over 2 years, and no source we read ranks one supplemen
 another, or one infant food above another. So for these two kinds /compare sets each pack's
 facts beside the others' and names no winner: no "better pick", no tie, no order but the
 order the packs were added, no count of findings (a count would be a score, D-004).
+D-201 (Sushil, 2026-10-13) adds, for infant foods, one pack's own facts as numbers: how many
+of the nutrients we compared sit outside FSSAI's range ("1 of 27: Protein ...") and how many
+of regulation 4's notices were seen. Each is that pack's fact against FSSAI's table, never a
+total across rows, a tally across packs or an order.
 
 - A pack compares only with packs of its own kind (api/main.py refuses a mixed request).
 - Allergens come first for each pack (D-060), shown only on a match or a line we can't
@@ -14,17 +18,22 @@ order the packs were added, no count of findings (a count would be a score, D-00
   called a limit, D-139), the upper-limit lines, the plant notes and the additives against
   the list for the format. No child line: FSSAI's 5(10) says supplements for children of
   2 to 5 "shall only be given under medical advice".
-- Infant foods: D-140's checks (lenses/infant.py) in lenses/screen.py's own sentences.
+- Infant foods: D-140's checks (lenses/infant.py) in lenses/screen.py's own sentences;
+  D-201: the age or stage printed, the added sugar, protein beside FSSAI's range (with the
+  range bar's numbers), the nutrients outside FSSAI's range and the notices seen.
   Never mother's milk as a column or a reference (IMS Act 3(b)); no feeding advice (7(1)).
 
 The phone sends back what /scan read from the photos (`facts`, see screen.compare_input);
 everything worked out from the ingredient list, and every word, is done here again.
 """
 
+import re
+
 from insidelabel.lenses import allergens as allergen_check
 from insidelabel.lenses import diet as diet_check
 from insidelabel.lenses import infant as infant_lens
-from insidelabel.lenses import nutra
+from insidelabel.lenses import nutra, nutrition
+from insidelabel.lenses.compare import sugar_positions
 from insidelabel.lenses import screen
 
 HEADING = {
@@ -41,18 +50,25 @@ TITLES = {
     "usage": "A day's usage, as printed", "amounts": "A day's amounts beside ICMR-NIN's RDA",
     "upper": "Above ICMR-NIN's upper limit for adults",
     "plants": "Plant notes", "additives": "Additives", "type": "Kind of infant food (sets the checks)",
-    "statements": "What FSSAI's rules ask the label to say", "words": "Words the rules say not to use",
+    "words": "Words the rules say not to use",
     "free_from": "Preservatives, colours and flavours (5(1) leaves them out)",
     "hydrogenated": "Hydrogenated fat",
-    "composition": "Per 100 g, beside FSSAI's table",
+    # D-201
+    "age": "Age or stage, as printed", "sugar": "Added sugar",
+    "protein": "Protein per 100 g, beside FSSAI's range", "outside": "Nutrients outside FSSAI's range",
+    "notices": "Notices FSSAI's rules ask for",
 }
 NOT_READ = "Not read from the photos of this pack."
 NOTHING = "Nothing found."
 NO_TYPE = "Off: the pack's name doesn't say which kind of infant food it is."
 NO_NUMBERS = "No number from the pack's table per 100 g to set beside it."
+NO_AGE = "Not seen on the photos."
+NO_SUGAR = "Nothing found on the list."
+NO_ADDED = "Added sugars: not printed."
 # Every pack gets every row, in this order, so the app lines them up across the packs.
 KEYS = {"supplement": ("usage", "amounts", "upper", "plants", "additives"),
-        "infant": ("type", "statements", "words", "free_from", "hydrogenated", "additives", "composition")}
+        "infant": ("type", "age", "sugar", "protein", "outside", "notices", "words", "free_from", "hydrogenated",
+                   "additives")}
 _RDA = {r["nutrient"]: r for r in nutra.RULES["rda"]}
 SOURCES = {
     "supplement": [screen._cite(screen.NUTRA_SOURCE), screen._cite(screen.ICMR_SOURCE, "pp. 30 to 32")],
@@ -60,8 +76,11 @@ SOURCES = {
 }
 
 
-def _row(key, lines):
-    return {"key": key, "title": TITLES[key], "lines": lines or [NOTHING]}
+def _row(key, lines, bar=None):
+    out = {"key": key, "title": TITLES[key], "lines": lines or [NOTHING]}
+    if bar:
+        out["bar"] = bar                            # D-201: the range bar's numbers (the app draws them)
+    return out
 
 
 def _number(x):
@@ -139,6 +158,7 @@ def _statements(facts):
 
 
 def _composition(facts, ptype):
+    """The nutrients the phone read, beside the type's table: [{nutrient, label, value, unit, range}]."""
     if ptype is None or ptype["id"] not in infant_lens.COMPOSITION["types"]:
         return []
     table = {r["nutrient"]: r for r in infant_lens.COMPOSITION["types"][ptype["id"]]["rows"]}
@@ -147,12 +167,16 @@ def _composition(facts, ptype):
         if not isinstance(r, dict) or r.get("nutrient") not in table or not _number(r.get("value")):
             continue
         row = table[r["nutrient"]]
-        lo, hi = row["per_100_g"]
         # D-200 (advisor): the number and the table's range only; no below/above/within field,
-        # so those words can't reach a screen later.
-        out.append({"label": str(r.get("label") or r["nutrient"]), "printed": screen._fmt(r["value"], 4),
-                    "unit": row["unit"], "range": [lo, hi], "range_unit": row["unit"]})
+        # so those words can't reach a screen later. D-201's "outside" is worked out here.
+        out.append({"nutrient": r["nutrient"], "label": str(r.get("label") or r["nutrient"]),
+                    "value": float(r["value"]), "unit": row["unit"], "range": row["per_100_g"]})
     return out
+
+
+def _outside(r):
+    lo, hi = r["range"]
+    return (lo is not None and r["value"] < lo) or (hi is not None and r["value"] > hi)
 
 
 INFANT_TYPE = {k: v[0].upper() + v[1:] for k, v in screen.INFANT_TYPE_WORDS.items()}
@@ -161,18 +185,63 @@ NO_TYPE_SHORT = "Not known from the pack's name."
 FREE_FROM_WORD = {"preservative": "a preservative", "colour": "a colour", "flavour": "a flavour"}
 
 
-def _composition_short(r):
+def _printed_number(x):
+    """A printed number the phone sent back ("18", "0.5"), or None."""
+    return x if isinstance(x, str) and re.fullmatch(nutrition._NUM, x.strip()) else None
+
+
+def _sugar_lines(ingredients, facts):
+    pos = sugar_positions(ingredients or [])
+    n = len(ingredients or [])
+    if pos:
+        at, first = pos[0]
+        lead = (f"Sugar is the {screen._ordinal(at)} of {n} ingredients." if first == "sugar" else
+                f"Added sugar comes {screen._ordinal(at)} of {n} ingredients, as {first}.")
+    else:
+        lead = NO_SUGAR
+    sugars = facts.get("sugars") if isinstance(facts.get("sugars"), dict) else None
+    if sugars is None:
+        return [lead]
+    added = _printed_number(sugars.get("added"))
+    return [lead, f"Added sugars: {added} g per 100 g, as printed." if added else NO_ADDED]
+
+
+def _span(r):
     lo, hi = r["range"]
     u = screen._UNIT.get(r["unit"], r["unit"])
-    span = (f"{screen._fmt(lo)} to {screen._fmt(hi)}" if lo is not None and hi is not None else
-            f"at least {screen._fmt(lo)}" if lo is not None else f"at most {screen._fmt(hi)}")
-    return f"{r['label'][0].upper() + r['label'][1:]}: {r['printed']} {u} (table: {span} {u})."
+    return screen._span(lo, hi, u)
 
 
 def infant_rows(ingredients, facts):
     facts = facts or {}
     ptype = _type_of(facts)
     rows = [_row("type", [TYPE_SHORT.format(INFANT_TYPE[ptype["id"]]) if ptype else NO_TYPE_SHORT])]
+    age = facts.get("age") if isinstance(facts.get("age"), str) and facts.get("age").strip() else None
+    rows.append(_row("age", [f"\"{age.strip()[:40]}\"" if age else NO_AGE]))
+    rows.append(_row("sugar", _sugar_lines(ingredients, facts)))
+    comp = _composition(facts, ptype)
+    if ptype is None:
+        rows += [_row("protein", [NO_TYPE]), _row("outside", [NO_TYPE])]
+    else:
+        protein = next((r for r in comp if r["nutrient"] == "protein"), None)
+        if protein:
+            u = screen._UNIT.get(protein["unit"], protein["unit"])
+            lo, hi = protein["range"]
+            rows.append(_row("protein", [f"{screen._fmt(protein['value'])} {u}. FSSAI's range: {_span(protein)}."],
+                             bar=screen.infant_bar(protein["value"], lo, hi, u)))
+        else:
+            rows.append(_row("protein", [NO_NUMBERS if ptype["id"] != "traditional" else
+                                         "FSSAI's rules for this kind have no composition table."]))
+        out = [r for r in comp if _outside(r)]
+        if not comp:
+            rows.append(_row("outside", [NO_NUMBERS if ptype["id"] != "traditional" else
+                                         "FSSAI's rules for this kind have no composition table."]))
+        elif out:
+            rows.append(_row("outside", [f"{len(out)} of {len(comp)}: " + "; ".join(
+                f"{r['label'][0].upper() + r['label'][1:]} {screen._fmt(r['value'])} "
+                f"{screen._UNIT.get(r['unit'], r['unit'])} (range {_span(r)})" for r in out) + "."]))
+        else:
+            rows.append(_row("outside", [f"None of {len(comp)}."]))
     statements = _statements(facts)
     no_milk = facts.get("no_milk") if isinstance(facts.get("no_milk"), dict) else None
     if no_milk is not None:
@@ -180,29 +249,26 @@ def infant_rows(ingredients, facts):
                    "printed": no_milk.get("printed") if isinstance(no_milk.get("printed"), str) else None}
         no_milk["found"] = no_milk["found"] and bool(no_milk["printed"])
     if statements is None:
-        rows.append(_row("statements", [NOT_READ]))
+        rows.append(_row("notices", [NOT_READ]))
     else:
-        missing = [screen.INFANT_STATEMENT_NAMES[r.get("id", "no_milk")]
-                   for r in statements + ([no_milk] if no_milk else []) if not r["found"]]
-        rows.append(_row("statements", ["Not found on the photos: " + ", ".join(missing) + "." if missing
-                                        else "All found on the photos."]))
+        every = statements + ([no_milk] if no_milk else [])
+        seen = sum(1 for r in every if r["found"])
+        photos = facts.get("photos") if isinstance(facts.get("photos"), int) and 0 < facts["photos"] <= 9 else None
+        rows.append(_row("notices", [f"Seen: {seen} of {len(every)}" +
+                                     (f", on {photos} photo{'s' if photos > 1 else ''}." if photos else ".")]))
     words = [w for w in facts.get("words") or [] if isinstance(w, dict)
              and w.get("word") in infant_lens.RULES["words_not_to_use"]["words"]]
     rows.append(_row("words", [f"\"{w['word'].title()}\"" for w in words]))
     rows.append(_row("free_from", [f"\"{x['entry']}\" ({FREE_FROM_WORD[x['why'][0]]})"
                                    for x in infant_lens.free_from(ingredients)]))
     if ptype is None:
-        return rows + [_row(k, [NO_TYPE]) for k in ("hydrogenated", "additives", "composition")]
+        return rows + [_row(k, [NO_TYPE]) for k in ("hydrogenated", "additives")]
     rows.append(_row("hydrogenated", [f"\"{x['entry']}\"" for x in infant_lens.hydrogenated(ingredients, ptype)]
                      or ([NOTHING] if ptype["id"] != "traditional" else
                          ["FSSAI's rules for this kind say nothing about it."])))
     adds = infant_lens.additives(ingredients, ptype)
     rows.append(_row("additives", [f"\"{x['entry']}\": INS {x['ins']} not found in this kind's list."
                                    for x in adds["not_found"]] or ["All in this kind's list."]))
-    comp = _composition(facts, ptype)
-    rows.append(_row("composition", [_composition_short(r) for r in comp] or
-                     ["FSSAI's rules for this kind have no composition table." if ptype["id"] == "traditional"
-                      else NO_NUMBERS]))
     return rows
 
 

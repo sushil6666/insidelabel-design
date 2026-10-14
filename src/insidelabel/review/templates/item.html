@@ -83,6 +83,12 @@
         </figure>
       {% endif %}
     {% endfor %}{% endfor %}
+    {% for s in d.side_photos or [] %}{% if s.back_image_key %}{% set side = ((s.ocr or {}).get("side") or {}) %}
+      <figure>
+        <figcaption>Side photo (D-201) · {{ s.created_at.strftime("%d %b %H:%M") }} · read for regulation 4's notices only{% if side.found %} · found: {{ side.found|join(", ") }}{% else %} · none found{% endif %} · <a href="/review/media/{{ s.back_image_key }}" target="_blank">open full size</a></figcaption>
+        <a href="/review/media/{{ s.back_image_key }}" target="_blank"><img src="/review/media/{{ s.back_image_key }}" alt="side photo"></a>
+      </figure>
+    {% endif %}{% endfor %}
     {% if not d.images.back and not d.images.front %}
       <div class="notice">No photo stored for this item. Don't publish anything you can't check against a photo.</div>
     {% endif %}

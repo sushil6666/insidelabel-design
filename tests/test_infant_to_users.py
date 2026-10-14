@@ -124,40 +124,57 @@ def test_switch_off_hides_share_on_an_infant_result_only():
 
 # ---------------------------------------------------------------- the infant result
 
+def _blocks(s):
+    """D-201: the "Good to know" blocks by id."""
+    return {b["id"]: b for b in s["infant"]["good"]["blocks"]}
+
+
 @pytest.mark.parametrize("type_id", [*TYPES, None])
 def test_an_infant_result_for_each_product_type_and_with_none(type_id, infant_on):
+    # D-201 replaces D-200's kind lines and sections: the kind once, then Worth knowing and Good to know.
     j = scan(infant(type_id), key=f"t-{type_id}")
     s = j["screen"]
     assert j["pack_kind"]["code"] == "infant" and j["verdict"] is None and list(j)[0] == "allergens"
-    assert s["kind"]["lines"][0] == screen.INFANT_TEXT
-    sections = {x["id"] for x in s["sections"]}
+    assert s["sections"] == [] and s["kind"]["evidence"] == [] and "worth" not in s["infant"]
+    assert s["infant"]["good"]["title"] == "Good to know"
+    blocks = _blocks(s)
     if type_id is None:
-        assert s["kind"]["lines"][1] == screen.INFANT_NO_TYPE
-        assert sections == {"statements"} and j["compare_input"]["type"] is None
+        assert s["kind"]["lines"] == [screen.INFANT_NO_TYPE]
+        assert list(blocks) == ["notices"] and j["compare_input"]["type"] is None
+        assert s["compare_button"] == "Compare with another baby food"
     else:
-        assert s["kind"]["lines"][1] == (f"The pack's name says \"{TYPES[type_id]}\", so we use FSSAI's rules for "
-                                         f"{screen.INFANT_TYPE_WORDS[type_id]}.")
-        assert {"statements", "additives"} <= sections and j["compare_input"]["type"]["id"] == type_id
+        assert s["headline"]["text"] == f'This pack says "{TYPES[type_id]}".'
+        assert s["kind"]["lines"] == [f"We check it against FSSAI's rules for {screen.INFANT_TYPE_WORDS[type_id]}."]
+        assert list(blocks) == ["additives", "notices"] and j["compare_input"]["type"]["id"] == type_id
+        assert blocks["additives"]["lines"] == ["The list prints no INS numbers."]
+        assert s["compare_button"] == ("Compare with another formula" if type_id.endswith("formula")
+                                       else "Compare with another baby food")
     assert_clean(list(strings(s)), f"infant {type_id}")
     assert not infant_hits(s, printed=[NOTICE])
 
 
 def test_regulation_4s_statements_found_and_not_found(infant_on):
-    [sec] = [x for x in scan(infant("processed_cereal"), key="r4")["screen"]["sections"] if x["id"] == "statements"]
-    assert sec["lines"][0].startswith("FSSAI's rules for infant foods ask the label for \"Warning: Boiled and cooled")
-    assert sec["lines"][-1] == ("Found on the pack, as the rules ask: \"IMPORTANT NOTICE\", the mother's milk notice on "
-                                "the front, the six months statement, the health worker statement, the sole source "
-                                "warning, the hygienic preparation warning, the storage statement.")
-    sec = scan(infant("processed_cereal", statements=STATEMENTS + [BOILED]), key="r4b")["screen"]["sections"][0]
+    sec = _blocks(scan(infant("processed_cereal"), key="r4")["screen"])["notices"]
+    assert sec["title"] == "Notices" and sec["lines"] == [
+        "Found on the pack: \"IMPORTANT NOTICE\", the mother's milk notice on the front, the six months statement, "
+        "the health worker statement, the sole source warning, the hygienic preparation warning, the storage statement.",
+        "We didn't see 1 more notice FSSAI's rules ask for on these 2 photos. Tins and boxes often print it on a side."]
+    assert sec["which"]["items"] == [{"text": BOILED["text"].replace("Warning: ", "\"Warning: ") + "\".",
+                                      "basis": "4(6), PDF p. 6"}]
+    assert sec["side"]["button"] == "Photograph the side" and sec["side"]["missing"] == ["boiled_water"]
+    sec = _blocks(scan(infant("processed_cereal", statements=STATEMENTS + [BOILED]), key="r4b")["screen"])["notices"]
     assert len(sec["lines"]) == 1 and sec["lines"][0].endswith("the boiled water warning.")
+    assert "which" not in sec and "side" not in sec
     # The front notice not printed: named, never quoted ("best" only as printed on the pack).
-    sec = scan(infant("processed_cereal", statements=[s for s in STATEMENTS if s["text"] != NOTICE]),
-               key="r4c")["screen"]["sections"][0]
-    assert any("the notice about mother's milk that regulation 4(1)(a) asks for on the front" in t for t in sec["lines"])
+    sec = _blocks(scan(infant("processed_cereal", statements=[s for s in STATEMENTS if s["text"] != NOTICE]),
+                       key="r4c")["screen"])["notices"]
+    assert sec["which"]["items"][0]["text"] == ("In capital letters, the notice about mother's milk that regulation "
+                                                "4(1)(a) asks for on the front.")
+    assert sec["side"]["missing"] == ["front_notice", "boiled_water"]
     assert "BEST" not in json.dumps(sec).upper()
     # Only one face read: nothing is "not found".
-    sec = scan(infant("processed_cereal", front="not_provided"), key="r4d")["screen"]["sections"][0]
-    assert sec["lines"] == [screen.INFANT_PARTIAL]
+    sec = _blocks(scan(infant("processed_cereal", front="not_provided"), key="r4d")["screen"])["notices"]
+    assert sec["lines"] == [screen.INFANT_PARTIAL] and "side" not in sec
 
 
 def test_a_forbidden_word_as_printed(infant_on):
@@ -319,4 +336,5 @@ def test_special_medical_stays_allergens_and_its_own_statement(switch, infant_of
 def test_the_breastfeeding_line_stays_held(infant_on):
     s = scan(infant("processed_cereal"), key="bf")["screen"]
     assert "breastfeeding" not in s and "breastfeed" not in json.dumps(s).lower()
-    assert "exclusive breastfeeding" not in json.dumps(screen.__dict__.get("INFANT_TEXT"))
+    ours = {k: v for k, v in vars(screen).items() if k.startswith("INFANT_")}
+    assert "breastfeed" not in json.dumps(ours, default=str).lower()
