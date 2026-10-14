@@ -760,3 +760,17 @@ def test_the_scanner_falls_back_to_full_resolution_stills():                   #
     assert "clearTimeout(stills);" in cam                                             # stops with the camera
     assert 'checkPhotoRequest("barcode", blob)' in app
     assert 'startScanner(video, code => lookUp(code, "camera"), onStill)' in app
+
+
+def test_one_something_wrong_button_asks_mistake_or_problem():                   # D-203
+    # Sushil, 2026-10-14: "report a mistake and problem, do we need both ?"; "we need kind of buttom".
+    app = JS["app.js"]
+    link = _fn(app, "reportLink")
+    assert 'button("Something wrong?", () => go("wrong/" + encodeURIComponent(h.id)))' in link and "<a" not in link
+    page = _fn(app, "wrong")
+    assert 'button("Something about this pack is wrong", () => go("report/" + encodeURIComponent(h.id)), "choice")' in page
+    assert 'button("The app didn\'t work", () => go("problem"), "choice")' in page
+    assert 'button("Report a problem", () => go("problem"))' in _fn(app, "problemLink")
+    assert 'button("Not reading? Report a problem", () => go("problem"))' in app
+    assert 'href: "#/problem"' not in app and 'class: "report"' not in app
+    assert ".something-wrong > .btn { width: 100%; }" in CSS and ".btn.choice {" in CSS
