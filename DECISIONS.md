@@ -1715,6 +1715,10 @@ Recommended by Claude. **Accepted by Sushil 2026-09-28** ("accepted and merged")
   1920 px, and every other look reads only the box inside the corners (a little wider), cut from the full frame;
   the 8 s hint says "Bring the barcode closer until it fills the box" instead of "a hand's width away". "Your data"
   shows the app version. App web-75. Built by the advisor.
+- **Third follow-up, 2026-10-14 (Sushil: the other app "auto zooms"):** with no read, the scanner's zoom steps 2x,
+  3x, 4x and round again every 1.2 s, as far as the camera offers (camera zoom crops the full sensor, so a small
+  barcode gets real detail while the phone stays back where it focuses); a small "3x" label shows the level. The
+  8 s hint: "Keep the barcode inside the box and hold still: the camera zooms in by itself." App web-76.
 
 ### D-125 · "Worth a look" rows for additives worth knowing; research lines only from sources read first-hand `LOCKED` (2026-09-28)
 Why: testers said the result didn't show what to look at first, and asked for "this is here and a

@@ -736,5 +736,15 @@ def test_the_scanner_reads_the_box_inside_the_corners_at_full_resolution():    #
     assert "const crop = looks++ % 2 ? guideCrop(video, canvas) : null;" in cam
     assert "await detector.detect(crop || video)" in cam
     assert ".frame { position: absolute; inset: 30% 12%;" in CSS      # GUIDE is a little wider than this
-    assert "Bring the barcode closer until it fills the box" in app and "hand's width" not in app
+    assert "the camera zooms in by itself" in app and "hand's width" not in app
     assert "`App version: ${APP_VERSION}`" in app
+
+
+def test_the_scanner_zooms_by_itself_until_a_read():                          # 2026-10-14
+    # Sushil, on the other app: "then it auto zooms". 2x, 3x, 4x and round, as far as the camera offers.
+    cam, app = JS["camera.js"], JS["app.js"]
+    assert "const ZOOM_STEPS = [2, 3, 4];" in cam and "const ZOOM_EVERY_MS = 1200;" in cam
+    assert "[...new Set(ZOOM_STEPS.map(z => Math.min(z, max)))].filter(z => z >= 1.5)" in cam
+    assert "clearInterval(zoomer);" in cam                     # stops with the camera
+    assert 'el("span", { class: "cam-zoom", "aria-hidden": "true" }, `${stop.zoom}x`)' in app
+    assert ".cam-zoom {" in CSS

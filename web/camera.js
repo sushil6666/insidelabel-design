@@ -71,6 +71,11 @@ const SCAN_WIDTH = 1920;
 // The corners' box as a share of the camera box (app.css .frame: inset 30% 12%), widened so a
 // barcode a little outside the corners is still read.
 const GUIDE = { top: 0.22, left: 0.06, bottom: 0.22, right: 0.06 };
+// 2026-10-14 (Sushil: the other app "auto zooms"): with no read, the zoom steps 2x, 3x, 4x and
+// round again, as far as the camera offers. Camera zoom crops the full sensor, so a small barcode
+// gets real detail while the phone stays far enough back to focus.
+const ZOOM_STEPS = [2, 3, 4];
+const ZOOM_EVERY_MS = 1200;
 
 // GS1 mod-10 (General Specifications 7.9.1), as barcode.check_digit_ok on the server: weights
 // 3, 1, 3 ... from the right, the check digit left out. EAN-8, UPC-A and EAN-13 only.
@@ -104,15 +109,30 @@ export async function startScanner(video, onCode) {
   const canvas = document.createElement("canvas");
   let stopped = false, timer = null, frame = null, looks = 0;
   const seen = new Map();                 // code -> time first read
+  const max = caps.zoom?.max || 1;
+  const levels = [...new Set(ZOOM_STEPS.map(z => Math.min(z, max)))].filter(z => z >= 1.5);
+  let level = 0, zoomer = null;
 
   const stop = () => {
     stopped = true;
     clearTimeout(timer);
+    clearInterval(zoomer);
     if (frame !== null) video.cancelVideoFrameCallback(frame);
     stopStream();
   };
   stop.hasTorch = !!caps.torch;
   stop.torch = on => torch(track, on);
+  stop.zoom = levels.length > 1 ? levels[0] : null;     // the level now; stop.onZoom(z) as it steps
+  if (levels.length > 1) {
+    zoomer = setInterval(async () => {
+      level = (level + 1) % levels.length;
+      try {
+        await track.applyConstraints({ advanced: [{ zoom: levels[level] }] });
+        stop.zoom = levels[level];
+        stop.onZoom?.(levels[level]);
+      } catch { /* not all phones accept it */ }
+    }, ZOOM_EVERY_MS);
+  }
 
   const found = code => {
     stop();
