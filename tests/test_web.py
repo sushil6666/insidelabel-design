@@ -759,7 +759,7 @@ def test_the_scanner_falls_back_to_full_resolution_stills():                   #
     assert "sent < STILL_SERVER_MAX" in cam and "const STILL_SERVER_MAX = 8;" in cam      # the /check-photo limit
     assert "clearTimeout(stills);" in cam                                             # stops with the camera
     assert 'checkPhotoRequest("barcode", blob)' in app
-    assert 'startScanner(video, code => lookUp(code, "camera"), onStill)' in app
+    assert 'startScanner(video, code => lookUp(code, "camera"), onStill, e => record("still", e))' in app
 
 
 def test_one_something_wrong_button_asks_mistake_or_problem():                   # D-203
@@ -774,3 +774,14 @@ def test_one_something_wrong_button_asks_mistake_or_problem():                  
     assert 'button("Not reading? Report a problem", () => go("problem"))' in app
     assert 'href: "#/problem"' not in app and 'class: "report"' not in app
     assert ".something-wrong > .btn { width: 100%; }" in CSS and ".btn.choice {" in CSS
+
+
+def test_a_still_the_phone_cannot_read_still_goes_to_the_server_and_leaves_a_trail():   # 2026-10-14
+    # Report #14 (Samsung, web-79): the camera ran about 12 s and no still reached /check-photo, with no reason.
+    cam = JS["camera.js"]
+    shoot = cam[cam.index("const shoot = async () => {"):cam.index("return stop;", cam.index("const shoot = async"))]
+    local = shoot.index("await detector.detect(await createImageBitmap(blob))")
+    server = shoot.index("const got = await onStill(blob);")
+    assert shoot.index('note?.({ still: "unread"', local) < server        # a local error is caught before the send
+    for step in ('still: "taken"', 'still: "failed"', 'still: "server"', 'still: "unsupported"'):
+        assert step in cam, step

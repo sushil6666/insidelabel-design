@@ -121,7 +121,9 @@ function guideCrop(video, canvas) {
   return canvas;
 }
 
-export async function startScanner(video, onCode, onStill = null) {
+// `note(fields)`: each still's outcome for the app's trail (D-092), so a "Report a problem" shows
+// what the stills did on that phone (2026-10-14: report #14 from a Samsung had none, and no reason).
+export async function startScanner(video, onCode, onStill = null, note = null) {
   const { track, caps, stop: stopStream } = await openCamera(video, SCAN_WIDTH, true);
   const detector = new window.BarcodeDetector({ formats: FORMATS });
   const perFrame = typeof video.requestVideoFrameCallback === "function";
@@ -187,23 +189,37 @@ export async function startScanner(video, onCode, onStill = null) {
   const capture = "ImageCapture" in window ? new window.ImageCapture(track) : null;
   const shoot = async () => {
     if (stopped) return;
+    const t0 = performance.now();
+    let blob = null;
     try {
-      const blob = await still(capture);
-      if (stopped) return;
-      const codes = await detector.detect(await createImageBitmap(blob));
-      const hit = codes.find(c => c.rawValue);
-      const raw = hit?.rawValue?.replace(/\D/g, "");
-      const code = raw && (hit.format === "upc_e" ? upcEtoA(raw) : raw);
-      if (code && checkDigitOk(code)) return found(code);
-      if (onStill && shots++ % 2 === 0 && sent < STILL_SERVER_MAX) {
+      blob = await still(capture);
+      note?.({ still: "taken", ms: Math.round(performance.now() - t0), kb: Math.round(blob.size / 1024) });
+    } catch (e) {
+      note?.({ still: "failed", error: String(e?.name || "error") });
+    }
+    if (blob && !stopped) {
+      // The phone's own read first. An error here (a detector that refuses a 12 MP image) no longer
+      // keeps the still from the server (2026-10-14).
+      try {
+        const codes = await detector.detect(await createImageBitmap(blob));
+        const hit = codes.find(c => c.rawValue);
+        const raw = hit?.rawValue?.replace(/\D/g, "");
+        const code = raw && (hit.format === "upc_e" ? upcEtoA(raw) : raw);
+        if (code && checkDigitOk(code)) return found(code);
+      } catch (e) {
+        note?.({ still: "unread", error: String(e?.name || "error") });
+      }
+      if (onStill && shots++ % 2 === 0 && sent < STILL_SERVER_MAX && !stopped) {
         sent++;
         const got = await onStill(blob);            // the server checks the code itself (D-103)
+        note?.({ still: "server", found: !!got });
         if (got && !stopped) return found(got);
       }
-    } catch { /* a still that fails is normal; the next one may read */ }
+    }
     if (!stopped) stills = setTimeout(shoot, STILL_EVERY_MS);
   };
   if (capture && typeof capture.takePhoto === "function") stills = setTimeout(shoot, STILL_AFTER_MS);
+  else note?.({ still: "unsupported" });
   return stop;
 }
 

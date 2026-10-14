@@ -1724,6 +1724,11 @@ Recommended by Claude. **Accepted by Sushil 2026-09-28** ("accepted and merged")
   3 s, the scanner takes a full-resolution still every 2 s (`ImageCapture.takePhoto`, focused, whole sensor, flash
   off), reads it on the phone, and sends every other one to `/check-photo` as a barcode photo (zxing-cpp, no model
   call, nothing stored), at most 8 per camera session. App web-77. Built by the advisor.
+- **Fifth follow-up, 2026-10-14 (report #14 from Sushil's Samsung, web-79: the camera ran about 12 s and no still
+  reached /check-photo; Sushil "yes" to the fix):** a still the phone's own read fails on with an error is still
+  sent to the server, and each still leaves a line in the app's trail (`still`: taken with ms and kb, failed or
+  unread with the error name, the server's answer, or unsupported), so the next report says what happened.
+  App web-80. Built by the advisor.
 
 ### D-125 · "Worth a look" rows for additives worth knowing; research lines only from sources read first-hand `LOCKED` (2026-09-28)
 Why: testers said the result didn't show what to look at first, and asked for "this is here and a
