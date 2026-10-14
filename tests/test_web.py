@@ -748,3 +748,15 @@ def test_the_scanner_zooms_by_itself_until_a_read():                          # 
     assert "clearInterval(zoomer);" in cam                     # stops with the camera
     assert 'el("span", { class: "cam-zoom", "aria-hidden": "true" }, `${stop.zoom}x`)' in app
     assert ".cam-zoom {" in CSS
+
+
+def test_the_scanner_falls_back_to_full_resolution_stills():                   # 2026-10-14
+    # Sushil: Chrome on his phone offers no zoom and a soft live picture, while "both upload and photo works".
+    cam, app = JS["camera.js"], JS["app.js"]
+    assert "const STILL_AFTER_MS = 3000;" in cam and "const STILL_EVERY_MS = 2000;" in cam
+    assert 'if (pc?.fillLightMode?.includes("off")) settings.fillLightMode = "off";' in cam   # never the flash
+    assert "await detector.detect(await createImageBitmap(blob))" in cam
+    assert "sent < STILL_SERVER_MAX" in cam and "const STILL_SERVER_MAX = 8;" in cam      # the /check-photo limit
+    assert "clearTimeout(stills);" in cam                                             # stops with the camera
+    assert 'checkPhotoRequest("barcode", blob)' in app
+    assert 'startScanner(video, code => lookUp(code, "camera"), onStill)' in app

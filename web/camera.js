@@ -76,6 +76,25 @@ const GUIDE = { top: 0.22, left: 0.06, bottom: 0.22, right: 0.06 };
 // gets real detail while the phone stays far enough back to focus.
 const ZOOM_STEPS = [2, 3, 4];
 const ZOOM_EVERY_MS = 1200;
+// 2026-10-14 (Sushil: on his phone Chrome offers no zoom and the live picture stays soft, while "both
+// upload and photo works"): with no read after STILL_AFTER_MS, the camera takes a full-resolution still
+// every STILL_EVERY_MS (a still is focused and uses the whole sensor), with no flash. The phone reads
+// each still; every other one also goes to the server (`onStill`: zxing-cpp, as a barcode photo, no
+// model call), at most STILL_SERVER_MAX times while the camera is open (the /check-photo limit).
+const STILL_AFTER_MS = 3000;
+const STILL_EVERY_MS = 2000;
+const STILL_SERVER_MAX = 8;
+
+// The largest still the camera offers, with the flash off where the camera says it can be.
+async function still(capture) {
+  let settings = {};
+  try {
+    const pc = await capture.getPhotoCapabilities();
+    if (pc?.imageWidth?.max) settings.imageWidth = pc.imageWidth.max;
+    if (pc?.fillLightMode?.includes("off")) settings.fillLightMode = "off";
+  } catch { /* not all phones report it */ }
+  try { return await capture.takePhoto(settings); } catch { return await capture.takePhoto(); }
+}
 
 // GS1 mod-10 (General Specifications 7.9.1), as barcode.check_digit_ok on the server: weights
 // 3, 1, 3 ... from the right, the check digit left out. EAN-8, UPC-A and EAN-13 only.
@@ -102,7 +121,7 @@ function guideCrop(video, canvas) {
   return canvas;
 }
 
-export async function startScanner(video, onCode) {
+export async function startScanner(video, onCode, onStill = null) {
   const { track, caps, stop: stopStream } = await openCamera(video, SCAN_WIDTH, true);
   const detector = new window.BarcodeDetector({ formats: FORMATS });
   const perFrame = typeof video.requestVideoFrameCallback === "function";
@@ -111,12 +130,13 @@ export async function startScanner(video, onCode) {
   const seen = new Map();                 // code -> time first read
   const max = caps.zoom?.max || 1;
   const levels = [...new Set(ZOOM_STEPS.map(z => Math.min(z, max)))].filter(z => z >= 1.5);
-  let level = 0, zoomer = null;
+  let level = 0, zoomer = null, stills = null, shots = 0, sent = 0;
 
   const stop = () => {
     stopped = true;
     clearTimeout(timer);
     clearInterval(zoomer);
+    clearTimeout(stills);
     if (frame !== null) video.cancelVideoFrameCallback(frame);
     stopStream();
   };
@@ -163,6 +183,27 @@ export async function startScanner(video, onCode) {
     else timer = setTimeout(tick, TICK_MS);
   };
   tick();
+
+  const capture = "ImageCapture" in window ? new window.ImageCapture(track) : null;
+  const shoot = async () => {
+    if (stopped) return;
+    try {
+      const blob = await still(capture);
+      if (stopped) return;
+      const codes = await detector.detect(await createImageBitmap(blob));
+      const hit = codes.find(c => c.rawValue);
+      const raw = hit?.rawValue?.replace(/\D/g, "");
+      const code = raw && (hit.format === "upc_e" ? upcEtoA(raw) : raw);
+      if (code && checkDigitOk(code)) return found(code);
+      if (onStill && shots++ % 2 === 0 && sent < STILL_SERVER_MAX) {
+        sent++;
+        const got = await onStill(blob);            // the server checks the code itself (D-103)
+        if (got && !stopped) return found(got);
+      }
+    } catch { /* a still that fails is normal; the next one may read */ }
+    if (!stopped) stills = setTimeout(shoot, STILL_EVERY_MS);
+  };
+  if (capture && typeof capture.takePhoto === "function") stills = setTimeout(shoot, STILL_AFTER_MS);
   return stop;
 }
 
