@@ -599,6 +599,7 @@ function data() {
       ". Quote it if you write to us at ", el("a", { href: "mailto:connect@insidelabel.ai" }, "connect@insidelabel.ai"),
       "."),
     el("p", {}, el("a", { href: "/privacy" }, "Privacy")),
+    el("p", { class: "muted" }, `App version: ${APP_VERSION}`),        // 2026-10-14: one tap to check an update
     ask, confirmBox,
     button("Done", () => go(""), "link end"));
 }
@@ -791,7 +792,8 @@ async function scan() {
       }
       setTimeout(() => {
         if (seq === navSeq && stopCamera === stop) {
-          status.textContent = "Hold the phone about a hand's width away, with the barcode flat and in good light. "
+          // 2026-10-14: closer, not further; a small barcode on a tin needs to fill the box.
+          status.textContent = "Bring the barcode closer until it fills the box, flat and in good light. "
             + "Or take a photo of the barcode below.";
         }
       }, 8000);
