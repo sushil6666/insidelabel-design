@@ -717,3 +717,12 @@ def test_the_scanner_takes_a_read_with_a_right_check_digit_at_once(tmp_path):   
     r = subprocess.run([node, "-e", run], capture_output=True, text=True)
     assert r.returncode == 0, r.stderr[-400:]
     assert json.loads(r.stdout) == [len(c) in (8, 12, 13) and check_digit_ok(c) for c in codes]
+
+
+def test_result_compare_button_counts_saved_packs_of_its_own_kind():      # 2026-10-14, D-201 follow-up
+    # Sushil, 2026-10-14: "Compare (3)" beside the bar's 2, on an infant pack with foods saved.
+    body = _fn(JS["app.js"], "resultNext")
+    assert "Compare (${" not in body and "others + 1" not in body
+    assert "kindOf(x) === kindOf(h.id)" in body
+    assert 'button(`Compare with ${same.length} saved pack${same.length > 1 ? "s" : ""}`' in body
+    assert 'store.set("compare", [...same, h.id].slice(-4));' in body

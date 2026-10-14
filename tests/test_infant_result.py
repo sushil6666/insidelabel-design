@@ -108,13 +108,11 @@ def test_amulspray_end_to_end(infant_on):
                                                           "4(1)(d), PDF p. 5", "4(6), PDF p. 6"]
     assert no["side"]["button"] == "Photograph the side" and no["side"]["photos"] == 2 and no["side"]["sides"] == 0
     assert no["side"]["missing"] == ["health_worker", "not_sole", "preparation", "boiled_water"]
-    assert s["compare_button"] == "Compare with another formula"
+    assert "compare_button" not in s and "compare" not in s["parts"]               # D-202: one pack at a time
     # The baby's card: no duplicate sugar line (Sushil's change 1); nothing else applies here.
     assert s["people"] == [] or all(not any("Sugar is" in f["text"] for f in p.get("child_facts") or [])
                                     for p in s["people"])
-    # Compare's facts: the printed sugars, the age it prints (none here) and the photos read.
-    ci = j["compare_input"]
-    assert ci["sugars"] == {"added": "18", "total": "50"} and ci["photos"] == 2 and ci["type"]["id"] == "infant_formula"
+    assert "compare_input" not in j                                                # D-202: nothing for Compare
     assert_clean(list(strings(s)), "amulspray")
     assert infant_hits(s, printed=[NOTICE]) == []
 
@@ -301,34 +299,16 @@ def test_side_found_looks_only_for_what_is_missing():
 
 # ---------------------------------------------------------------- Compare
 
-def test_infant_compare_rows_are_facts_with_no_winner(infant_on):
+def test_infant_packs_are_never_compared(infant_on):
+    # D-202 (Sushil, 2026-10-14): "for infants we will not keep any compare only scan for 1 product each".
     a = amulspray(key="amul-cmp")
     rows = ALL_INSIDE + [("Total Sugars", "52 g"), ("Added Sugars", "0 g")]
     b = scan(with_table(infant("infant_formula", ingredients=["Skimmed milk", "Lactose", "Vegetable oil"],
                                statements=STATEMENTS + [BOILED]), rows), key="cmp-b", ocr=table_text(rows))
     r = compare(_packs(a, b))
-    assert r.status_code == 200
-    j = r.json()
-    assert j["outcome"] == "side_by_side" and j["kind"] == "infant"
-    for key in ("best", "tie", "why_best", "others", "blocked", "summary"):
-        assert key not in j, key
-    assert side_by_side.KEYS["infant"][:6] == ("type", "age", "sugar", "protein", "outside", "notices")
-    p0, p1 = ({row["key"]: row for row in p["rows"]} for p in j["packs"])
-    assert p0["sugar"]["lines"][0].startswith("Sugar is the 2nd of 4 ingredients")
-    assert p1["sugar"]["lines"] == [side_by_side.NO_SUGAR, "Added sugars: 0 g per 100 g, as printed."] or \
-        p1["sugar"]["lines"][0] == side_by_side.NO_SUGAR
-    assert p0["outside"]["lines"] == ["1 of 27: Protein 22 g (range 10 to 16 g)."]
-    assert p1["outside"]["lines"] == ["None of 4."]
-    assert p0["protein"]["bar"]["value"] == 22.0 and p1["protein"]["bar"]["value"] == 12.0
-    assert p0["notices"]["lines"] == ["Seen: 3 of 7, on 2 photos."]
-    assert p0["age"]["lines"] == [side_by_side.NO_AGE]
-    text = json.dumps({k: j[k] for k in ("heading", "note", "packs")})
-    assert not WINNER_WORDS.search(text.replace("We don't name a pick", ""))
-    assert not re.search(r"\b(more|fewer|less|higher|lower|most|least)\b", " ".join(
-        " ".join(row["lines"]) for p in j["packs"] for row in p["rows"]))
-    assert_clean(list(strings(j)), "infant compare D-201")
-    assert infant_hits(j) == []
-    text = _without_the_notice(json.dumps(j)).lower()
+    assert r.status_code == 422 and r.json()["reason"] == "infant_food"
+    assert r.json()["detail"] == "We check foods for infants one pack at a time."
+    text = _without_the_notice(json.dumps(r.json())).lower()
     assert "mother" not in text and "breast" not in text
 
 

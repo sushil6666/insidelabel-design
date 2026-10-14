@@ -6,8 +6,8 @@ PostgreSQL 19. Solo founder: Sushil.
 ## Start here
 
 1. Read `STATE.md` (status, setup, open items, lessons) and skim `DECISIONS.md`.
-2. `source .venv/bin/activate && pytest -q` - expect 1394 passing (8 skipped, 1 xfailed) before you change anything
-   (a cloud session: 1393 and 9 skipped, no gold photos; Tesseract and pytesseract must be installed).
+2. `source .venv/bin/activate && pytest -q` - expect 1395 passing (8 skipped, 1 xfailed) before you change anything
+   (a cloud session: 1394 and 9 skipped, no gold photos; Tesseract and pytesseract must be installed).
    `python tools/release_check.py` shows how far the beta is from release.
 3. The "Next" list in `STATE.md` §8 is the default work queue.
 4. The live site (https://insidelabel.ai, Google Cloud, D-114): `OPERATIONS.md` to run it,
@@ -38,7 +38,8 @@ PostgreSQL 19. Solo founder: Sushil.
   `reason: "claims_not_released"` unless `INSIDELABEL_CLAIMS_TO_USERS=on`. Don't route
   around `_user_claim_check()` in `api/main.py`.
 - **Infant results (D-200)** go to users unless `INSIDELABEL_INFANT_TO_USERS=off` (then D-140's shadow,
-  byte for byte). Never a pick, score or band for an infant pack or a supplement; Compare is side by side
+  byte for byte). Never a pick, score or band for an infant pack or a supplement; an infant pack is never
+  compared (D-202); supplements' Compare is side by side
   (`lenses/side_by_side.py`), one kind at a time; nothing beside mother's milk (IMS Act 3(b)).
 - **Allergens are the first key** of every `/scan` response (D-060); never output
   "free from"/"safe"; below confidence 0.95 or on a partial read → `cannot_confirm`.

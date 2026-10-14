@@ -2020,8 +2020,6 @@ INFANT_SIDE = {"first": "Photograph the side", "again": "Photograph another side
                "none_new": "We didn't find more of them on that photo.",
                "unread": "We couldn't read that photo. Try again in good light."}
 INFANT_SIDE_MAX = 2                                   # one side photo at a time, at most two
-INFANT_COMPARE_BUTTON = {"formula": "Compare with another formula", "other": "Compare with another baby food"}
-_FORMULA_TYPES = ("infant_formula", "follow_up_formula")
 
 
 def _infant_found_name(r):
@@ -2182,7 +2180,7 @@ def infant_photos(nutra_input):
 def _infant_parts(*, ingredients, vision, ocr_text, product=None, reliable=True, photos=2):
     """
     The infant result's parts (D-200, laid out by D-201): {type, kind_lines, why, tiles,
-    details, infant, compare_button}. vision None: a catalogue result, with its published name
+    details, infant}; no Compare button since D-202. vision None: a catalogue result, with its published name
     (`product`) and list but no photos to read: name and list checks only.
     """
     vision = vision or {}
@@ -2274,8 +2272,7 @@ def _infant_parts(*, ingredients, vision, ocr_text, product=None, reliable=True,
     if worth:
         infant["worth"] = {"title": INFANT_WORTH_TITLE, "items": worth}
     return {"type": ptype, "kind_lines": kind_lines, "why": why, "tiles": tiles, "details": details,
-            "infant": infant,
-            "compare_button": INFANT_COMPARE_BUTTON["formula" if ptype and ptype["id"] in _FORMULA_TYPES else "other"]}
+            "infant": infant}
 
 
 def compare_input(kind_code, *, vision=None, ocr_text=None, product=None, photos=None):
@@ -2298,7 +2295,8 @@ def compare_input(kind_code, *, vision=None, ocr_text=None, product=None, photos
                             "per": a.get("per") and {"unit": a["per"]["unit"]},
                             "rows": [{"nutrient": r["nutrient"], "value": r["value"]} for r in a["rows"]]},
                 "composition_names": [r["name"] for r in (vision.get("composition") or {}).get("rows") or []]}
-    if kind_code == "infant" and pack_kind.infant_to_users():
+    # D-202: nothing for an infant pack while infant packs aren't compared (pack_kinds.json).
+    if kind_code == "infant" and "infant" in pack_kind.comparable():
         if not vision:
             v = {"product": product or {}}
             return {"type": infant_lens.product_type(v), "statements": None,
@@ -2378,7 +2376,6 @@ def _kind_screen(kind, *, people, ingredients, reliability, nutra_input=None, pr
             out["kind"]["why"] = ip["why"]
         out["tiles"], out["details"], out["sections"] = ip["tiles"], ip["details"], []
         out["infant"] = ip["infant"]
-        out["compare_button"] = ip["compare_button"]
         if out["retake"]:                       # D-168: one ask per scan; the list's retake is it
             for b in ip["infant"]["good"]["blocks"]:
                 b.pop("side", None)
