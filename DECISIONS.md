@@ -1704,6 +1704,12 @@ Recommended by Claude. **Accepted by Sushil 2026-09-28** ("accepted and merged")
 - **Where the time goes, known so far:** Gemini takes 5 to 18 s for a new pack (laptop records);
   the 30 s seen on the laptop was the Tesseract fallback, which runs only without Cloud Vision.
   The server's own timings decide the next step (OPERATIONS.md query in STATE.md).
+- **Follow-up, 2026-10-14 (Sushil, after trying another app's scanner: "its really fast"; "yes" to the advisor's
+  two changes):** a read whose GS1 check digit is right (`checkDigitOk` in `web/camera.js`, the same rule as
+  `barcode.check_digit_ok`) is taken at once; a read that fails it still needs a second, matching read within 1.5 s.
+  The detector now looks at every new camera frame (`requestVideoFrameCallback`), with the 150 ms timer as the
+  fallback. Same engine (Chrome's BarcodeDetector), no library, the server still checks every code (D-103). App
+  web-74. Built by the advisor; Sushil compares it with the other app on the same Amulspray tin.
 
 ### D-125 · "Worth a look" rows for additives worth knowing; research lines only from sources read first-hand `LOCKED` (2026-09-28)
 Why: testers said the result didn't show what to look at first, and asked for "this is here and a
