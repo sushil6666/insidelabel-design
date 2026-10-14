@@ -776,6 +776,12 @@ async function scan() {
       record("camera", { started: true });
       stopCamera = stop;
       status.textContent = "Point the camera at the barcode on the pack.";
+      // 2026-10-14: the zoom steps by itself until a read (camera.js); this says where it is.
+      if (stop.zoom) {
+        const z = el("span", { class: "cam-zoom", "aria-hidden": "true" }, `${stop.zoom}x`);
+        stop.onZoom = level => { z.textContent = `${level}x`; };
+        cam.append(z);
+      }
       // D-124: a light for dim shelves, and help if nothing reads after a while.
       if (stop.hasTorch) {
         let on = false;
@@ -792,8 +798,8 @@ async function scan() {
       }
       setTimeout(() => {
         if (seq === navSeq && stopCamera === stop) {
-          // 2026-10-14: closer, not further; a small barcode on a tin needs to fill the box.
-          status.textContent = "Bring the barcode closer until it fills the box, flat and in good light. "
+          // 2026-10-14: the camera zooms by itself, so the person only holds still.
+          status.textContent = "Keep the barcode inside the box and hold still: the camera zooms in by itself. "
             + "Or take a photo of the barcode below.";
         }
       }, 8000);
