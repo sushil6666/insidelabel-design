@@ -435,7 +435,6 @@ details summary { cursor: pointer; min-height: var(--tap); display: flex; align-
 .flag { font-weight: 600; }
 ol { margin: 0; padding-left: 22px; }
 q { quotes: "“" "”"; }
-.report { color: var(--muted); }
 
 /* Report a problem (D-092) */
 .preview { white-space: pre-wrap; word-break: break-all; max-height: 260px; overflow: auto; }
@@ -611,7 +610,6 @@ ol.rules > li::before { content: counter(rule); position: absolute; left: 0; top
 .result .glance .muted.small { font-size: .82rem; }
 .result > .row.wrap .btn { min-height: 48px; font-size: 1rem; }
 .result > .row.wrap + p { margin-top: 4px; }
-p > .report { display: inline-flex; align-items: center; min-height: var(--tap); }
 /* Source and citation links in lists: one 48 px row each. */
 ul.plain > li > a, .look-part a { display: inline-flex; align-items: center; min-height: var(--tap); }
 /* A short title and its chip share a line; a long one wraps the chip under it. */
@@ -1311,6 +1309,10 @@ main > .stack:has(> .spot:first-child) > :is(.btn.link, p:has(> a)) { margin-inl
               font-size: var(--fs-sm); line-height: 1.4; text-align: center; }
 .cam-light { display: inline-flex; align-items: center; gap: 6px; }
 .cam-light .icon { width: 18px; height: 18px; }
+/* D-203: "Something wrong?" and "Report a problem" are buttons, full width and quiet (outlined), under the
+   screen's main action; "What went wrong?" offers its two answers the same way, a little taller. */
+.something-wrong > .btn { width: 100%; }
+.btn.choice { width: 100%; min-height: var(--tap-big); font-size: var(--fs-lg); }
 .scan-alt { display: grid; gap: var(--sp-2); }
 .scan-alt > .btn { width: 100%; }
 .scan-alt .row { display: grid; justify-items: center; gap: 0; }

@@ -4751,6 +4751,23 @@ scan for 1 product each". Built by the advisor in the same branch as D-201's "Co
   the type from the kind's stored evidence (the front's printed words, regulation 4's notices left out, as
   `product_type` already does), and a "Good to know" with nothing in it isn't sent or shown. App web-78.
 
+
+### D-203 · One "Something wrong?" button for a mistake or a problem `LOCKED` (2026-10-14)
+**Sushil, 2026-10-14:** "Report a problem place seems not correct that is inside profile", "report a mistake and
+problem, do we need both ?", "and now it's a hyperlink only, we need kind of buttom. lookwise that works". The advisor
+recommended one entry point with the two forms kept behind it; built by the advisor.
+
+- **The two forms stay:** "Report a mistake" (D-076) goes to the review queue, a person fixes the pack's record;
+  "Report a problem" (D-092) sends the app's recent trail, so we see what the app did. A shopper no longer has to tell
+  them apart.
+- **A result ends on a "Something wrong?" button** (outlined, full width) in place of the "Report a mistake" link. It
+  opens "What went wrong?": "Something about this pack is wrong" (to the mistake form) and "The app didn't work" (to
+  the problem form), each with one line under it.
+- **The scanner** shows "Not reading? Report a problem" as a button with the 8 s hint. **Error and refusal screens**
+  show "Report a problem" as a button (nothing was read, so there is no pack to correct). The profile menu keeps
+  "Report a problem".
+- App only, web-79; `tests/test_web.py`.
+
 ---
 
 ## Open and pending

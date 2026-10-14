@@ -37,7 +37,7 @@ let pending = { barcode: null, barcodeSource: null, back: null, front: null, bac
 // ------------------------------------------------------------------ navigation
 const routes = {
   "": home, welcome, who, household, person, scan, photo, front, result, report, compare, problem, send,
-  agree, feedback, data, table, tablephoto, scans, listpart, side,
+  agree, feedback, data, table, tablephoto, scans, listpart, side, wrong,
 };
 
 // D-176: the app's frame around each screen. Home and the first-run screens show the wordmark
@@ -48,7 +48,7 @@ const TITLES = {
   household: "Household", person: "Household", scan: "Scan", photo: "Photo", front: "Photo", listpart: "Photo", side: "Photo",
   table: "Nutrition table", tablephoto: "Nutrition table", result: "Result", report: "Report a mistake",
   compare: "Compare", problem: "Report a problem", send: "Send it to us", feedback: "Send feedback",
-  data: "Your data", scans: "Your scans",
+  data: "Your data", scans: "Your scans", wrong: "Something wrong?",
 };
 const FIRST_RUN = ["welcome", "who", "agree"];
 const NO_TABBAR = [...FIRST_RUN, "scan", "photo", "front", "table", "tablephoto", "listpart", "side"];
@@ -739,6 +739,7 @@ async function scan() {
   // else's product.
   const preview = el("div", { class: "thumb" });
   const next = el("div", {});
+  const stuck = el("div", {});            // D-203: "Not reading? Report a problem" after 8 s
   // app-polish: corner guides say where the barcode goes; a slow gold line says the camera is looking.
   const cam = el("div", { class: "viewfinder-wrap scan-cam" }, video,
     el("div", { class: "frame", "aria-hidden": "true" }, el("i", {}), el("i", {}), el("i", {}), el("i", {}),
@@ -760,7 +761,8 @@ async function scan() {
         }
       })),
     preview,
-    next);
+    next,
+    stuck);
   // No live scanner here: a drawing of a barcode takes the camera's place, so the line under it
   // still has something to point at; the gold line stays still (nothing is being read).
   const drawn = text => {
@@ -805,6 +807,8 @@ async function scan() {
           // 2026-10-14: the camera zooms by itself, so the person only holds still.
           status.textContent = "Keep the barcode inside the box and hold still: the camera zooms in by itself. "
             + "Or take a photo of the barcode below.";
+          stuck.replaceChildren(el("div", { class: "something-wrong" },                                      // D-203
+            button("Not reading? Report a problem", () => go("problem"))));
         }
       }, 8000);
     }).catch(e => {
@@ -2352,9 +2356,24 @@ function additiveCard(a) {
     a.badge?.note && el("p", { class: "small add-note" }, a.badge.note));
 }
 
+// D-203 (Sushil, 2026-10-14: "report a mistake and problem, do we need both ?"; "we need kind of buttom"):
+// one button at the end of a result; the next screen asks which of the two it is, so nobody has to tell a
+// "mistake" from a "problem". The two forms stay: a mistake goes to the review queue (D-076), a problem
+// sends the app's trail to us (D-092).
 function reportLink(h) {
-  return el("p", {}, el("a", { href: `#/report/${encodeURIComponent(h.id)}`, class: "report" },
-    "Report a mistake"));
+  return el("div", { class: "something-wrong" },
+    button("Something wrong?", () => go("wrong/" + encodeURIComponent(h.id))));
+}
+
+function wrong(id) {
+  const h = id && historyItem(id);
+  return el("section", { class: "stack" },
+    el("h1", {}, "What went wrong?"),
+    h && button("Something about this pack is wrong", () => go("report/" + encodeURIComponent(h.id)), "choice"),
+    h && el("p", { class: "muted small" }, "An ingredient, an allergen or the name. Our team checks the pack."),
+    button("The app didn't work", () => go("problem"), "choice"),
+    el("p", { class: "muted small" }, "The camera, a photo, a screen or an error. We see what the app did."),
+    button("Cancel", () => window.history.back(), "link end"));
 }
 
 // ------------------------------------------------------------------ report a mistake (D-076)
@@ -2664,7 +2683,8 @@ function errorView(text) {
 // "Report a mistake" is about the answer (reviewers fix the data). This is about
 // the app misbehaving: it sends the trail so the developer can replay it.
 function problemLink() {
-  return el("p", {}, el("a", { href: "#/problem", class: "report" }, "Something not working? Report a problem"));
+  // D-203: a button, not a link (Sushil: "we need kind of buttom").
+  return el("div", { class: "something-wrong" }, button("Report a problem", () => go("problem")));
 }
 
 function problem() {
