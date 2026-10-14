@@ -726,3 +726,15 @@ def test_result_compare_button_counts_saved_packs_of_its_own_kind():      # 2026
     assert "kindOf(x) === kindOf(h.id)" in body
     assert 'button(`Compare with ${same.length} saved pack${same.length > 1 ? "s" : ""}`' in body
     assert 'store.set("compare", [...same, h.id].slice(-4));' in body
+
+
+def test_the_scanner_reads_the_box_inside_the_corners_at_full_resolution():    # 2026-10-14
+    # Sushil, on an Amulspray tin it didn't read: "check how poor our scan is". The barcode was about one
+    # pixel per bar in a 1280 px frame of the whole room.
+    cam, app = JS["camera.js"], JS["app.js"]
+    assert "const SCAN_WIDTH = 1920;" in cam and "openCamera(video, SCAN_WIDTH, true)" in cam
+    assert "const crop = looks++ % 2 ? guideCrop(video, canvas) : null;" in cam
+    assert "await detector.detect(crop || video)" in cam
+    assert ".frame { position: absolute; inset: 30% 12%;" in CSS      # GUIDE is a little wider than this
+    assert "Bring the barcode closer until it fills the box" in app and "hand's width" not in app
+    assert "`App version: ${APP_VERSION}`" in app

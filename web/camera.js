@@ -59,8 +59,18 @@ async function torch(track, on) {
 // matching read within AGREE_MS (the server checks every barcode again, D-103). And the
 // detector looks at each new camera frame (requestVideoFrameCallback, Chrome 83 and later)
 // instead of every TICK_MS, which stays the fallback.
+//
+// 2026-10-14, later (Sushil, on an Amulspray tin it didn't read: "check how poor our scan is"): the
+// barcode covered about a tenth of a 1280 px frame, about one pixel per bar, too few for any reader.
+// The camera now asks for 1920 px, and every other look reads only the box inside the corners
+// (GUIDE, a little wider than the corners), cut from the full frame, so the reader spends its
+// pixels on the barcode, not the room. The other looks still read the whole frame.
 const AGREE_MS = 1500;
 const TICK_MS = 150;
+const SCAN_WIDTH = 1920;
+// The corners' box as a share of the camera box (app.css .frame: inset 30% 12%), widened so a
+// barcode a little outside the corners is still read.
+const GUIDE = { top: 0.22, left: 0.06, bottom: 0.22, right: 0.06 };
 
 // GS1 mod-10 (General Specifications 7.9.1), as barcode.check_digit_ok on the server: weights
 // 3, 1, 3 ... from the right, the check digit left out. EAN-8, UPC-A and EAN-13 only.
@@ -71,11 +81,28 @@ export function checkDigitOk(code) {
   return (10 - total % 10) % 10 === Number(code[code.length - 1]);
 }
 
+// The part of the camera frame inside the guide, at the camera's own resolution, on `canvas`; null
+// before the first frame. The video fills its box with object-fit: cover, so the box shows the
+// frame's middle; the guide is a share of that box.
+function guideCrop(video, canvas) {
+  const vw = video.videoWidth, vh = video.videoHeight, cw = video.clientWidth, ch = video.clientHeight;
+  if (!vw || !vh || !cw || !ch) return null;
+  const scale = Math.max(cw / vw, ch / vh);
+  const shownW = cw / scale, shownH = ch / scale;
+  const x = (vw - shownW) / 2 + shownW * GUIDE.left, y = (vh - shownH) / 2 + shownH * GUIDE.top;
+  const w = shownW * (1 - GUIDE.left - GUIDE.right), h = shownH * (1 - GUIDE.top - GUIDE.bottom);
+  canvas.width = Math.round(w);
+  canvas.height = Math.round(h);
+  canvas.getContext("2d").drawImage(video, x, y, w, h, 0, 0, canvas.width, canvas.height);
+  return canvas;
+}
+
 export async function startScanner(video, onCode) {
-  const { track, caps, stop: stopStream } = await openCamera(video, 1280, true);
+  const { track, caps, stop: stopStream } = await openCamera(video, SCAN_WIDTH, true);
   const detector = new window.BarcodeDetector({ formats: FORMATS });
   const perFrame = typeof video.requestVideoFrameCallback === "function";
-  let stopped = false, timer = null, frame = null;
+  const canvas = document.createElement("canvas");
+  let stopped = false, timer = null, frame = null, looks = 0;
   const seen = new Map();                 // code -> time first read
 
   const stop = () => {
@@ -98,7 +125,9 @@ export async function startScanner(video, onCode) {
   const tick = async () => {
     if (stopped) return;
     try {
-      const codes = await detector.detect(video);
+      // Every other look: only the guide's box, at full resolution.
+      const crop = looks++ % 2 ? guideCrop(video, canvas) : null;
+      const codes = await detector.detect(crop || video);
       const now = Date.now();
       for (const [code, t] of seen) if (now - t > AGREE_MS) seen.delete(code);
       const hit = codes.find(c => c.rawValue);

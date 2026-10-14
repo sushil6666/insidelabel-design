@@ -1710,6 +1710,11 @@ Recommended by Claude. **Accepted by Sushil 2026-09-28** ("accepted and merged")
   The detector now looks at every new camera frame (`requestVideoFrameCallback`), with the 150 ms timer as the
   fallback. Same engine (Chrome's BarcodeDetector), no library, the server still checks every code (D-103). App
   web-74. Built by the advisor; Sushil compares it with the other app on the same Amulspray tin.
+- **Second follow-up, 2026-10-14 (Sushil, on the Amulspray tin web-74 still didn't read: "check how poor our scan
+  is"):** the barcode covered about a tenth of a 1280 px frame, about one pixel per bar. The camera now asks for
+  1920 px, and every other look reads only the box inside the corners (a little wider), cut from the full frame;
+  the 8 s hint says "Bring the barcode closer until it fills the box" instead of "a hand's width away". "Your data"
+  shows the app version. App web-75. Built by the advisor.
 
 ### D-125 · "Worth a look" rows for additives worth knowing; research lines only from sources read first-hand `LOCKED` (2026-09-28)
 Why: testers said the result didn't show what to look at first, and asked for "this is here and a
