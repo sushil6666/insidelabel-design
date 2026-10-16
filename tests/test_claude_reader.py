@@ -414,9 +414,10 @@ def test_usage_is_recorded_with_the_same_keys(fake_claude):
 def test_no_key_with_the_switch_on_is_a_setup_problem(monkeypatch):
     monkeypatch.setenv("INSIDELABEL_READER", "claude")
     monkeypatch.delenv("ANTHROPIC_API_KEY")
+    monkeypatch.delenv("GEMINI_API_KEY")
     with pytest.raises(gemini.VisionConfigError, match="ANTHROPIC_API_KEY"):
         claude.call_claude([(BACK, "image/jpeg", "back")])
-    r = scan()
+    r = scan()                                       # no Gemini key either: nothing to fall back to
     assert r.status_code == 503 and r.json()["error"] == "vision_not_configured"
 
 
@@ -442,18 +443,49 @@ def test_no_fallback_without_a_gemini_key(monkeypatch, fake_claude, fake_gemini)
     assert g.calls == 0 and got.value.read == {"reader": "claude"}
 
 
-@pytest.mark.parametrize("item, cls", [
-    (status_error(anthropic.AuthenticationError, 401), gemini.VisionConfigError),
-    (status_error(anthropic.BadRequestError, 400), gemini.VisionConfigError),
-    (Msg(None, stop="refusal"), gemini.VisionBlocked),
-])
-def test_setup_problems_and_refusals_never_fall_back(monkeypatch, fake_claude, fake_gemini, item, cls):
+def test_a_refusal_never_falls_back(monkeypatch, fake_claude, fake_gemini):
     monkeypatch.setenv("INSIDELABEL_READER", "claude")
-    fake = fake_claude(item)
+    fake = fake_claude(Msg(None, stop="refusal"))
     g = fake_gemini(json.dumps(gemini_answer()))
-    with pytest.raises(cls):
+    with pytest.raises(gemini.VisionBlocked):
         gemini.analyze_images([(BACK, "image/jpeg", "back")])
     assert g.calls == 0 and len(fake.requests) == 1                          # not retried either
+
+
+@pytest.mark.parametrize("error", [
+    status_error(anthropic.BadRequestError, 400),                            # credit balance too low
+    status_error(anthropic.AuthenticationError, 401),
+    status_error(anthropic.PermissionDeniedError, 403),
+    status_error(anthropic.NotFoundError, 404),
+])
+def test_a_setup_problem_falls_back_to_one_gemini_read(monkeypatch, fake_claude, fake_gemini, error):
+    # The Anthropic credit is prepaid: when it runs out, shoppers still get a result.
+    monkeypatch.setenv("INSIDELABEL_READER", "claude")
+    fake = fake_claude(error)
+    g = fake_gemini(json.dumps(gemini_answer()))
+    v, _c = gemini.analyze_images([(BACK, "image/jpeg", "back")])
+    assert len(fake.requests) == 1 and g.calls == 1                          # never retried, read once
+    assert v["_read"]["reader"] == "gemini" and v["_read"]["fallback_why"] == "setup"
+    assert v["_read"]["setup_status"] == error.status_code
+    assert v["_usage"]["model"] == gemini.MODEL
+
+
+def test_no_claude_key_falls_back_too(monkeypatch, fake_gemini):
+    monkeypatch.setenv("INSIDELABEL_READER", "claude")
+    monkeypatch.delenv("ANTHROPIC_API_KEY")
+    g = fake_gemini(json.dumps(gemini_answer()))
+    v, _c = gemini.analyze_images([(BACK, "image/jpeg", "back")])
+    assert g.calls == 1 and v["_read"]["fallback_why"] == "setup" and v["_read"]["setup_status"] == "no_key"
+
+
+def test_a_setup_problem_without_a_gemini_key_still_fails(monkeypatch, fake_claude, fake_gemini):
+    monkeypatch.setenv("INSIDELABEL_READER", "claude")
+    monkeypatch.delenv("GEMINI_API_KEY")
+    fake_claude(status_error(anthropic.BadRequestError, 400))
+    g = fake_gemini(json.dumps(gemini_answer()))
+    with pytest.raises(gemini.VisionConfigError) as got:
+        gemini.analyze_images([(BACK, "image/jpeg", "back")])
+    assert g.calls == 0 and got.value.status == 400
 
 
 def test_a_heic_photo_is_read_by_gemini(monkeypatch, fake_claude, fake_gemini):
@@ -566,6 +598,29 @@ def test_a_fallback_is_one_read_counted_once(env, monkeypatch, fake_claude, fake
                                       "gemini read it instead (unavailable)")
 
 
+def test_out_of_claude_credit_is_a_result_counted_once_with_an_alarm(env, monkeypatch, fake_claude, fake_gemini):
+    monkeypatch.setenv("INSIDELABEL_READER", "claude")
+    req = httpx2.Request("POST", "https://api.anthropic.com/v1/messages")
+    fake_claude(anthropic.BadRequestError("Your credit balance is too low to access the Anthropic API.",
+                                          response=httpx2.Response(400, request=req), body=None))
+    fake_gemini(json.dumps(gemini_answer()))
+    with psycopg.connect(env) as c:
+        c.execute("DELETE FROM problem_reports WHERE signature = 'claude_config:400'")
+    device = str(uuid.uuid4())
+    r = scan(device_id=device)
+    assert r.status_code == 200 and list(r.json())[0] == "allergens"
+    t = row(env, r.json()["scan_id"])["timings"]
+    assert t["read"]["reader"] == "claude"                                   # what was switched on
+    assert t["read"]["fallback"] == "gemini" and t["read"]["fallback_why"] == "setup"
+    assert t["read"]["setup_status"] == 400
+    assert "claude" not in t and t["gemini"]["model"] == gemini.MODEL
+    assert len(ratelimit.LIMITER._hits[("scan", "device", device)]) == 1
+    with psycopg.connect(env) as c:
+        rep = c.execute("SELECT kind, server_error FROM problem_reports "
+                        "WHERE signature = 'claude_config:400'").fetchall()
+    assert len(rep) == 1 and rep[0][0] == "server" and "credit balance is too low" in rep[0][1]
+
+
 def test_a_heic_scan_records_why(env, monkeypatch, fake_claude, fake_gemini):
     monkeypatch.setenv("INSIDELABEL_READER", "claude")
     fake_claude(json.dumps(gemini_answer()))
@@ -657,6 +712,9 @@ def test_repro_prints_the_reader():
     lines = repro.read_lines({"read": {"reader": "gemini", "model": "gemini-3.6-flash", "thinking_level": "low",
                                        "media_resolution": None, "split_front": False}})
     assert lines == ["read gemini-3.6-flash · reader gemini · thinking low · media default · split off"]
+    lines = repro.read_lines({"read": {"reader": "claude", "model": "claude-haiku-5-5", "fallback": "gemini",
+                                       "fallback_why": "setup", "setup_status": 400}})
+    assert lines == ["read claude-haiku-5-5 · reader claude · gemini read it instead (setup 400)"]
 
 
 def test_the_review_agent_and_table_read_stay_on_gemini():
