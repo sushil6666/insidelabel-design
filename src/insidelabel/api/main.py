@@ -167,11 +167,17 @@ def _model_error(tr, e):
 def _record_read(tr, read):
     """
     D-192: when Claude was the reader switched on and Gemini read instead (Claude busy after
-    its retries, or a HEIC photo), timings.read says so: "fallback": "gemini" and why.
+    its retries, a HEIC photo, or a Claude setup problem), timings.read says so: "fallback":
+    "gemini" and why. A setup problem also keeps its status and raises the setup alarm, as
+    a Gemini one does, so a spent Anthropic credit is noticed while shoppers get results.
     """
     if read and read.get("fallback"):
         tr["timings"]["read"]["fallback"] = read["fallback"]
         tr["timings"]["read"]["fallback_why"] = read.get("fallback_why")
+        if read.get("fallback_why") == "setup":
+            status = read.get("setup_status")
+            tr["timings"]["read"]["setup_status"] = status
+            _setup_alarm(f"claude_config:{status}", read.get("setup_error") or "")
 
 
 def _blocked_refusal(e, tr, *, back_read, back_bytes, t_vision, t0, keys, images, barcode, device_id,

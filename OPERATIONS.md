@@ -290,7 +290,9 @@ sudo -u insidelabel psql -d insidelabel -c "SELECT created_at, latency_ms, timin
 **Tokens per reader per day** (D-192). A Claude read keeps its tokens in `scans.timings->'claude'`
 (input, output, total, model, ms; thinking is off); a Gemini read keeps them in `->'gemini'` as above,
 also when Gemini read for Claude (`timings->'read'->>'fallback' = 'gemini'`, with `fallback_why`
-`unavailable` or `heic`). India time, last 7 days:
+`unavailable`, `heic` or `setup`). A `setup` fallback (Claude's key, credit or model: `setup_status` says which)
+also raises a `claude_config:<status>` setup alarm in `il tools/repro.py list`: top up or fix the key, or set
+`INSIDELABEL_READER=gemini`. India time, last 7 days:
 
 ```bash
 sudo -u insidelabel psql -d insidelabel -c "SELECT date(s.created_at AT TIME ZONE 'Asia/Kolkata') AS day, u.reader,

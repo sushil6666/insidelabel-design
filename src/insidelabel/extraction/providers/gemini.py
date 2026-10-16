@@ -969,8 +969,9 @@ def _read_text(images, api_key, raw_response, on_attempt, usage, read=None):
     """
     One answer's text: the recorded one on a replay, else a call with D-172's retries.
     read: the caller's dict, filled with who read it (D-192): {"reader": "claude"|"gemini"},
-    plus {"fallback": "gemini", "fallback_why": "unavailable"|"heic"} when Claude was the
-    reader switched on and Gemini read instead. Nothing on a replay.
+    plus {"fallback": "gemini", "fallback_why": "unavailable"|"heic"|"setup"} when Claude was
+    the reader switched on and Gemini read instead; a "setup" one also carries "setup_status"
+    and "setup_error" for the API's alarm. Nothing on a replay.
     """
     if raw_response is not None:
         # D-172: a stored blocked answer replays to the same refusal; it is never parsed.
@@ -989,10 +990,12 @@ def _read_with_claude(images, api_key, on_attempt, usage, read):
     """
     D-192: Claude reads, with the same retry helper as Gemini. A Claude read that is still
     busy after its retries is read once by Gemini when a Gemini key is set; so is a HEIC
-    photo, which Claude doesn't take. A setup problem or a refusal never falls back: those
-    are answers, not a busy moment. The scan is one read either way, counted once (the
-    limiter counts the request, not the calls) and with one usage record: a failed Claude
-    call records none.
+    photo, which Claude doesn't take, and so is a Claude setup problem (400 credit too low,
+    401 key, 403, 404 model): the Anthropic credit is prepaid, and running out must not fail
+    every scan until it is topped up. The setup problem still raises the API's alarm
+    ("setup_status", "setup_error" below). A refusal never falls back: that is an answer,
+    not our setup. The scan is one read either way, counted once (the limiter counts the
+    request, not the calls) and with one usage record: a failed Claude call records none.
     """
     from insidelabel.extraction.providers import claude
     read["reader"] = "claude"
@@ -1003,14 +1006,20 @@ def _read_with_claude(images, api_key, on_attempt, usage, read):
         return _read_with_gemini(images, api_key, on_attempt, usage)
     try:
         return _with_retries(lambda: claude.call_claude(images, usage=usage), on_attempt=on_attempt)
+    except VisionConfigError as e:
+        if not gemini_key:
+            raise
+        log.error("Claude setup problem: reading with Gemini: %s", e)
+        read.update({"reader": "gemini", "fallback": "gemini", "fallback_why": "setup",
+                     "setup_status": getattr(e, "status", None) or "no_key", "setup_error": str(e)})
     except VisionUnavailable:
         if not gemini_key:
             raise
         log.warning("Claude unavailable after its retries: reading with Gemini")
         read.update({"reader": "gemini", "fallback": "gemini", "fallback_why": "unavailable"})
-        if usage is not None:
-            usage.clear()
-        return _read_with_gemini(images, api_key, on_attempt, usage)
+    if usage is not None:
+        usage.clear()
+    return _read_with_gemini(images, api_key, on_attempt, usage)
 
 
 def _read_with_gemini(images, api_key, on_attempt, usage):

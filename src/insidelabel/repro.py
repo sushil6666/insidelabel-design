@@ -180,7 +180,10 @@ def read_lines(timings, request=None):
         r = t["read"]
         line = f"read {r.get('model')}" + (f" · reader {r['reader']}" if r.get("reader") else "")
         if r.get("fallback"):
-            line += f" · {r['fallback']} read it instead ({r.get('fallback_why')})"
+            why = r.get("fallback_why")
+            if why == "setup" and r.get("setup_status"):
+                why = f"setup {r['setup_status']}"
+            line += f" · {r['fallback']} read it instead ({why})"
         if r.get("reader", "gemini") == "gemini":
             line += (f" · thinking {r.get('thinking_level')} · media {r.get('media_resolution') or 'default'}"
                      f" · split {'on' if r.get('split_front') else 'off'}")

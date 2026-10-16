@@ -4396,6 +4396,16 @@ are counted differently; `batch_scan --reader claude` measures it). No RECITATIO
 0 allergen misses. Fail = nothing changes. On a pass, with Sushil's yes and the Google credit used up: the key and
 `INSIDELABEL_READER=claude` on the server, restart, watch a week; going back is `INSIDELABEL_READER=gemini`.
 
+- **Follow-up (advisor, 2026-10-16): a Claude setup problem falls back to Gemini.** The PR review asked for it before
+  merge (#170 merged without it); Sushil: "build the fix". The Anthropic credit is prepaid, and at zero the API
+  answers 400 ("credit balance is too low"), so with point 4 as merged every scan would have failed until a top-up.
+  Now, with `GEMINI_API_KEY` set, a Claude setup problem (400, 401, 403, 404, or no `ANTHROPIC_API_KEY`) is read
+  once by Gemini, never retried on Claude: `timings.read` says `"fallback_why": "setup"` with `"setup_status"`, the
+  scan is counted once with Gemini's usage only, and the setup alarm still fires (`claude_config:<status>`, at most
+  once an hour, `repro.py list`). With no Gemini key it is the 503 it was. A refusal still never falls back.
+  Also noted from the review: fill_back() runs on every answer, Gemini's too, so an old stored answer missing a
+  nullable required key now replays instead of failing to parse.
+
 ---
 
 ### D-193 · A faster read: tokens recorded, three read switches, all off `LOCKED` (2026-10-10)
