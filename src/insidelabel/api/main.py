@@ -329,8 +329,23 @@ mimetypes.add_type("application/manifest+json", ".webmanifest")
 mimetypes.add_type("text/javascript", ".js")        # module scripts refuse other types
 mimetypes.add_type("video/mp4", ".mp4")            # the film on home (web/film/); some systems lack these
 mimetypes.add_type("image/webp", ".webp")
+# 2026-10-17 (Sushil's phone still on web-80 after two restarts, a day after web-81 went
+# live): with no Cache-Control, Chrome keeps a file it saved for about a tenth of its
+# age without asking, and the service worker's network-first fetch is answered from that
+# copy. "no-cache" makes every open ask; an unchanged file is a small 304 (ETag), so a
+# deploy reaches everyone on their next open.
+NO_CACHE = {"Cache-Control": "no-cache"}
+
+
+class _RevalidatedFiles(StaticFiles):
+    async def get_response(self, path, scope):
+        response = await super().get_response(path, scope)
+        response.headers.update(NO_CACHE)
+        return response
+
+
 if os.path.isdir(WEB_DIR):
-    app.mount("/app", StaticFiles(directory=WEB_DIR, html=True), name="app")
+    app.mount("/app", _RevalidatedFiles(directory=WEB_DIR, html=True), name="app")
 
     # D-102: the public pages around the app - landing, privacy, about. Plain
     # HTML in web/site/, linted with the app's wording rules (tests/test_web.py).
@@ -344,7 +359,7 @@ if os.path.isdir(WEB_DIR):
         full = os.path.join(SITE_DIR, name)
         if not os.path.exists(full):
             return RedirectResponse("/app/")
-        return FileResponse(full)
+        return FileResponse(full, headers=NO_CACHE)
 
     for _path in _SITE_PAGES:
         app.add_api_route(_path, (lambda p: (lambda: _site_page(p)))(_path), methods=["GET"],
