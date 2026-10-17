@@ -89,6 +89,16 @@ class ReportRequest(BaseModel):
     note: Optional[str] = Field(None, max_length=2000)
 
 
+class SearchRequest(BaseModel):
+    """
+    D-204: search the packs we've checked, by name. A POST, so the words never land in a
+    URL or an access log; the server matches them and keeps nothing of them.
+    """
+
+    q: str = Field("", max_length=200)
+    device_id: Optional[str] = Field(None, max_length=64)
+
+
 class AgreeRequest(BaseModel):
     """D-105: this install accepts this version of "Before you start"."""
 

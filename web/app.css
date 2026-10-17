@@ -330,6 +330,29 @@ ul.plain li + li { margin-top: 6px; }
 }
 .list a:active { background: var(--surface-2); }
 
+/* D-204: search the packs we've checked, on Home under Scan. A row is the pack's name, size and
+   published date, with its picture when there is one; nothing else, so no colour on a row. */
+.search { gap: 8px; }
+.search-input {
+  width: 100%; min-height: var(--tap); padding: 10px 14px; border: 1px solid var(--field-line); border-radius: var(--r-md);
+  background: var(--surface); color: var(--ink); font: inherit;
+}
+.search-results:empty { display: none; }
+.search-results li.muted { padding: 12px 14px; }
+.search-row {
+  position: relative; display: flex; align-items: center; gap: 12px; width: 100%; min-height: var(--tap);
+  padding: 8px 28px 8px 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer;
+}
+.search-row::after {
+  content: ""; position: absolute; right: 0; top: calc(50% - 10px); width: 20px; height: 20px; background: currentColor; opacity: .55;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 5.5l6.5 6.5-6.5 6.5'/%3E%3C/svg%3E") center / contain no-repeat;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 5.5l6.5 6.5-6.5 6.5'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+.search-row:active { background: var(--surface-2); }
+.search-pic { width: 44px; height: 44px; flex: none; object-fit: cover; border-radius: var(--r-md); background: var(--surface-2); }
+.search-words { display: flex; flex-direction: column; min-width: 0; }
+.search-words strong { overflow-wrap: anywhere; }
+
 label { font-weight: 600; }
 input[type=text], input:not([type]), input[inputmode], select, textarea {
   width: 100%; min-height: var(--tap); padding: 10px 14px; border: 1px solid var(--field-line); border-radius: var(--r-md);

@@ -12,7 +12,7 @@
 //    beyond the headline the user was shown.
 
 // Bump together with VERSION in sw.js: a report then says which shell was cached.
-export const APP_VERSION = "web-80";
+export const APP_VERSION = "web-81";
 
 // ------------------------------------------------------------------ storage
 // localStorage can throw (private mode, blocked site data); the app must still work.
@@ -308,6 +308,12 @@ export async function allergenList() {
 export const compareRequest = payload =>
   call("/compare", { method: "POST", headers: { "Content-Type": "application/json" },
                      body: JSON.stringify(payload) });
+
+// D-204: search the packs we've checked. The words go in the body, never the URL, and are
+// not put in the trail (only the path is), so a problem report never carries them.
+export const searchRequest = q =>
+  call("/search", { method: "POST", headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ q, device_id: deviceId() }) });
 
 export const reportRequest = payload =>
   call("/report", { method: "POST", headers: { "Content-Type": "application/json" },

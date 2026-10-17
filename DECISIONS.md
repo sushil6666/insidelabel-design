@@ -4828,6 +4828,55 @@ recommended one entry point with the two forms kept behind it; built by the advi
   "Report a problem".
 - App only, web-79; `tests/test_web.py`.
 
+
+### D-204 · Search the packs we've checked, by name `LOCKED` (2026-10-17)
+D-059 (LOCKED) already made name search free forever, and migration 002 built a trigram index for it; nothing used
+either. The plan (an advisor's, from a look at competitors that took no feature, screen or words from them, STATE.md
+2026-09-27) offered four picks. **Sushil, 2026-10-17:** "Accept D-204 with your four picks, plus these changes", in
+his words:
+
+1. "Infant packs are left out of search for now (no row, no "Add to shop list"). A searchable infant formula with a
+   shop-list button, without the pack in hand, is closer to the promotion the IMS Act bars; it waits for the lawyer's
+   answer on D-200. Supplements and other foods are in."
+2. "Search matches the brand as well as the name (and variant): brands.name is a separate table and the 002 trigram
+   index is on products.name only, so "Amul" or "Britannia" must still find their packs. Order: match quality first,
+   then name. Never order by products.scan_count."
+3. "No-match words: "We haven't checked this one yet. Scan the pack in the shop to check it." (Not "it'll be here for
+   the next person": a pack with no barcode never enters the catalogue, D-107, and a new pack waits for review.)"
+4. ""Reviewed" means a published version, whoever published it (a person on /review or the D-117 agents). "Checked on
+   <date>" is that version's published date."
+5. "Search is rate limited like the other free endpoints (D-095); an empty or one-letter query returns nothing (no way
+   to list the whole catalogue); the search words are never stored with a device id (a count at most)."
+6. "Keep: no findings, colours or allergen marks on rows (a row without a mark would read as "free from"); the box on
+   Home under Scan; "Add to shop list" from a search result."
+
+What was built (branch `d204-name-search`, app web-81):
+
+- **`POST /search {q, device_id}`.** A POST so the words never sit in a URL or an access log. Only published, current
+  versions with a barcode (D-028, D-107); infant packs are dropped by the stored kind (`_catalogue_kind`, the same one
+  Compare uses). Matching runs on brand, name and variant joined: `pg_trgm` `word_similarity` where the extension is
+  installed (any real server, migration 002), so a misspelt brand still finds its pack; on the embedded test server,
+  every word must appear and `store._match_score()` orders the rows. Order: match quality, then pack name, then id;
+  nothing about the findings and never `scan_count` (a test reads the code). Up to 20 rows.
+- **A row** is brand, name, variant, quantity, "Checked on <date>" (`verified_at`, the publish date, not a later D-175
+  photo match) and the pack picture (D-182). No finding, colour, count or allergen mark (`screen.search_row`).
+- **Nothing kept.** The words are matched and dropped: not logged, not in the app's trail (only the path is), not in
+  any table. Searching writes no row. Rate limit bucket `search`, the same numbers as `lookup` (120 per install and
+  600 per address in 10 minutes). Fewer than 2 letters or digits returns nothing.
+- **Opening a row** is `/scan` with the barcode and `barcode_source: "search"` (barcode only, else 422
+  `bad_search_open`): the reviewed result a barcode hit gives, at no AI cost, its scan row `resolved_via = 'search'`
+  (migration 029). An infant or unpublished pack opened this way gets 404 `not_in_catalogue` with the no-match words.
+  The result starts with "From our catalogue: the pack we checked on <date>." and "Recipes and sizes change, so check
+  the pack in the shop.", then the people cards as on any hit (D-060, D-188), and offers "Add to my shop list" (D-130).
+  No "Scan again" (D-146 is for the scanner).
+- **The Shop list card** now says "Planned before the shop. Scan each pack in the shop to confirm." (it said "Checked
+  from a screen"), since a search result can be on it too.
+- **Not in this change:** filters, additive pages, Devanagari search, Compare from search.
+- **Tests:** `tests/test_search.py`, at least one for each of 1 to 5 (both infant switch positions; brand-only and
+  variant matches; order with a large `scan_count` on the weaker match; the no-match words; a pack in review never
+  shows and an agent-published one does; the publish date over a later photo match; empty and one-letter queries; the
+  rate limit per install and per address; no scan row, log line or table holding the words; GET refused).
+
 ---
 
 ## Open and pending

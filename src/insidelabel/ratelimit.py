@@ -55,6 +55,10 @@ RULES = {
              "ip": [(60, 600), (400, DAY)]},
     # Barcode-only lookups: a catalogue read, no model call.
     "lookup": {"device": [(120, 600)], "ip": [(600, 600)]},
+    # D-204: name search, a catalogue read like a lookup. The app asks as the user types
+    # (after a pause), so a few words cost a few requests; this stops a script walking
+    # the catalogue two letters at a time, not a person.
+    "search": {"device": [(120, 600)], "ip": [(600, 600)]},
     # Problem reports: people report once; the app's crash reporter already
     # sends each error once per session.
     "problem": {"device": [(10, 3_600)], "ip": [(60, 3_600)]},
@@ -76,7 +80,8 @@ RULES = {
 
 SCAN_TEXT = ("You've checked a lot of packs in a short time. Please wait about {minutes} "
              "minute{s} and try again.")
-PROBLEM_TEXT = "We've had a lot of reports from this phone just now. Please try again later."
+SEARCH_TEXT = "That's a lot of searches in a short time. Please wait about {minutes} minute{s} and try again."
+PROBLEM_TEXT ="We've had a lot of reports from this phone just now. Please try again later."
 SEND_TEXT = "You've sent us a lot of packs today. Please try again tomorrow."
 FEEDBACK_TEXT = "Thank you for all the feedback today. Please send more tomorrow."
 FORGET_TEXT = "That was tried a few times just now. Please try again in an hour."
