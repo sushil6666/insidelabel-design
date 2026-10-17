@@ -785,3 +785,13 @@ def test_a_still_the_phone_cannot_read_still_goes_to_the_server_and_leaves_a_tra
     assert shoot.index('note?.({ still: "unread"', local) < server        # a local error is caught before the send
     for step in ('still: "taken"', 'still: "failed"', 'still: "server"', 'still: "unsupported"'):
         assert step in cam, step
+
+
+def test_app_and_site_files_are_checked_on_every_open():
+    # 2026-10-17: with no Cache-Control a phone kept web-80 for hours after web-81 went live.
+    for path in ("/app/", "/app/sw.js", "/app/lib.js", "/app/app.js", "/app/app.css", "/", "/privacy"):
+        r = c.get(path)
+        assert r.status_code == 200 and r.headers["cache-control"] == "no-cache", path
+    etag = c.get("/app/lib.js").headers["etag"]
+    again = c.get("/app/lib.js", headers={"If-None-Match": etag})
+    assert again.status_code == 304 and again.headers["cache-control"] == "no-cache"
