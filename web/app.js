@@ -13,6 +13,7 @@ import {
   profiles, record, reportRequest, saveProfiles, scanRequest, sendToUsRequest, store, trailSnapshot,
   accessRequest, agreeRequest, checkPhotoRequest, feedbackRequest, termsRequest,
   updatesRequest, forgetRequest, clearTrail, packPhoto, savePackPhoto, sidePhotoRequest, saveSidePhoto,
+  searchRequest,
 } from "./lib.js";
 import { barcodeSupported, labelCameraSupported, startLabelCamera, startScanner } from "./camera.js";
 import { icon, kindIcon, spot } from "./icons.js";
@@ -349,6 +350,7 @@ async function home() {
           el("span", { class: "scan-cta-title" }, "Scan here"),
           el("span", { class: "scan-cta-icon", "aria-hidden": "true" }, icon("forward"))),
         scanLoop())),
+      searchBox(),                        // D-204: on Home, under Scan
       updates,
       checkingFor(),
       shopListCard(),
@@ -479,9 +481,65 @@ function scans() {
           button("Scan a pack", () => { resetPending(); go("scan"); }, "primary")));
 }
 
-// D-130: packs planned from a screen, to scan from the pack in the shop. Kept
-// on this phone only, like history (D-074); the server sees one list at a time,
-// when "Scan it now" sends it with the pack.
+// D-204: search the packs we've checked, by name. The server matches and words everything
+// (lenses/screen.py); a row is the pack's name, size and published date only: no finding,
+// colour or allergen mark (Sushil, 2026-10-17). Asked after a short pause in typing, and only
+// from 2 letters, as the server refuses fewer.
+function searchBox() {
+  const list = el("ul", { class: "list search-results", "aria-live": "polite" });
+  let timer = null, asked = 0;
+  const run = async q => {
+    const mine = ++asked;
+    try {
+      const { body } = await searchRequest(q);
+      if (mine !== asked) return;                       // a newer search is on its way
+      list.replaceChildren(...(body.results.length ? body.results.map(searchRow)
+                               : body.none ? [el("li", { class: "muted" }, body.none)] : []));
+    } catch (e) {
+      if (mine === asked) list.replaceChildren(el("li", { class: "muted" }, apiMessage(e)));
+    }
+  };
+  const input = el("input", {
+    type: "search", class: "search-input", placeholder: "Search packs we've checked",
+    "aria-label": "Search packs we've checked", autocomplete: "off", enterkeyhint: "search",
+    oninput: () => {
+      clearTimeout(timer);
+      const q = input.value.trim();
+      if (q.replace(/[^\p{L}\p{N}]/gu, "").length < 2) { asked++; list.replaceChildren(); return; }
+      timer = setTimeout(() => run(q), 250);
+    },
+  });
+  return el("div", { class: "search stack", role: "search" }, input, list);
+}
+
+function searchRow(r) {
+  const name = productName(r) + (r.quantity ? `, ${r.quantity}` : "");     // the brand once, as everywhere
+  return el("li", {},
+    el("button", { type: "button", class: "search-row", onclick: () => openFromSearch(r.barcode) },
+      r.pack_picture && el("img", { src: r.pack_picture.url, alt: "", class: "search-pic", loading: "lazy" }),
+      el("span", { class: "search-words" },
+        el("strong", {}, name),
+        el("span", { class: "muted" }, r.checked))));
+}
+
+// D-204: a search result opens the reviewed result a barcode hit gives, at no AI cost. It is
+// not "looked up" from the scanner, so it offers no "Scan again" (D-146).
+async function openFromSearch(code) {
+  resetPending();
+  pending.barcode = code;
+  pending.barcodeSource = "search";
+  show(working("Opening this pack…", false, null, "barcode"));
+  try {
+    const { body } = await scanRequest({ barcode: code, barcodeSource: "search" });
+    finish(body);
+  } catch (e) {
+    show(apiErrorView(e, () => openFromSearch(code)));
+  }
+}
+
+// D-130: packs planned before the shop (from a screen, or D-204 from a search), to scan from
+// the pack in the shop. Kept on this phone only, like history (D-074); the server sees one list
+// at a time, when "Scan it now" sends it with the pack.
 function shopList() { return store.get("shoplist", []); }
 
 function shopListCard() {
@@ -489,7 +547,7 @@ function shopListCard() {
   if (!items.length) return null;
   return el("div", { class: "card" },
     el("h2", {}, "Your shop list"),
-    el("p", { class: "muted" }, "Checked from a screen. Scan each pack in the shop to confirm."),
+    el("p", { class: "muted" }, "Planned before the shop. Scan each pack in the shop to confirm."),
     el("ul", { class: "list" }, items.map(x => el("li", {},
       el("a", { href: `#/result/${encodeURIComponent(x.id)}` }, el("strong", {}, productName(x.product))),
       el("div", { class: "row wrap" },
@@ -1668,6 +1726,9 @@ function result(id, sub, tileId) {
   if (s.from_screen) put(kinded("div", "info", { class: "card", role: "note" },
     el("strong", {}, s.from_screen.title), el("p", {}, s.from_screen.text),
     s.from_screen.pack && el("p", {}, s.from_screen.pack)));
+  // D-204: opened from a search, maybe far from the pack. Said in the same place.
+  if (s.from_search) put(kinded("div", "info", { class: "card", role: "note" },
+    s.from_search.title && el("strong", {}, s.from_search.title), el("p", {}, s.from_search.text)));
 
   // 2. The headline finding (D-061), in the report voice: a heading, not an alarm.
   put(el("h2", { class: "headline h-serif" }, s.headline.text));

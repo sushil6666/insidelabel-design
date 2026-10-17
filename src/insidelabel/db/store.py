@@ -129,6 +129,25 @@ def build_findings(ingredients, verdict, claim_check, engine_version):
     return out
 
 
+def _match_score(words, hay):
+    """
+    D-204, without pg_trgm: how well the query matches the joined brand, name and variant.
+    A whole word counts more than the start of a word, and that more than a word inside
+    another; the share of the pack's words the query covers breaks ties, so "good day" puts
+    "Good Day" above "Good Day Choco Chip Cookies". Only the words decide; no finding does.
+    """
+    have = (hay or "").split()
+    score = 0.0
+    for w in words.split():
+        if w in have:
+            score += 1.0
+        elif any(h.startswith(w) for h in have):
+            score += 0.6
+        elif any(w in h for h in have):
+            score += 0.3
+    return score + (0.5 * len(words.split()) / len(have) if have else 0.0)
+
+
 # ---------------------------------------------------------------- store
 
 
@@ -277,9 +296,78 @@ class Store:
                      LEFT JOIN categories k ON k.id = p.category_id
                     WHERE v.id = %s""", (product_version_id,)).fetchone()
 
+    # -- D-204: search the packs we have checked, by name ----------------
+
+    SEARCH_MIN_CHARS = 2         # no query shorter than this lists anything
+    SEARCH_MAX_CHARS = 60
+    SEARCH_TRGM_FLOOR = 0.3      # word_similarity below this is not a match
+
+    @staticmethod
+    def search_words(q):
+        """
+        D-204: the query as it is matched: lower case, punctuation to spaces, spaces collapsed.
+        None when fewer than SEARCH_MIN_CHARS letters or digits remain, so an empty or
+        one-letter query can never list the catalogue.
+        """
+        q = re.sub(r"\W+", " ", (q or "").lower()).strip()[:Store.SEARCH_MAX_CHARS].strip()
+        return q if len(re.sub(r"[\W_]", "", q)) >= Store.SEARCH_MIN_CHARS else None
+
+    def _has_trgm(self, conn):
+        if not hasattr(self, "_trgm"):
+            self._trgm = conn.execute(
+                "SELECT 1 FROM pg_extension WHERE extname = 'pg_trgm'").fetchone() is not None
+        return self._trgm
+
+    def search(self, q, limit=60):
+        """
+        D-204: published, current versions whose brand, name or variant match `q`, best match
+        first, then by pack name. Never ordered by scan_count or by anything the findings say.
+        The words are matched and dropped: nothing here stores them.
+
+        With pg_trgm (any real install, migration 002), word_similarity on the joined brand,
+        name and variant, so a misspelt "britania gud day" still finds its pack. Without it
+        (the embedded test server), every word must appear and _match_score() orders the rows.
+        Rows carry pack_kind and category_code so the caller can leave a kind out (D-204: infant).
+        """
+        words = self.search_words(q)
+        if words is None:
+            return []
+        hay = "lower(concat_ws(' ', b.name, p.name, p.variant))"
+        cols = (f"""p.id AS product_id, p.barcode, p.name, p.variant, b.name AS brand,
+                    p.net_qty_value, p.net_qty_unit, v.verified_at, v.pack_kind, v.pack_kind_evidence,
+                    k.code AS category_code, {hay} AS hay, """ + self._PACK_PICTURE)
+        joins = """FROM products p
+                   JOIN product_versions v ON v.product_id = p.id AND v.is_current
+                   LEFT JOIN brands b ON b.id = p.brand_id
+                   LEFT JOIN categories k ON k.id = p.category_id"""
+        # D-028: only a published version is current, but say so here too; D-107: no barcode,
+        # no catalogue entry, so a row without one can't be opened and never shows.
+        served = "v.status = 'published' AND p.barcode IS NOT NULL"
+        with self._connect() as conn:
+            if self._has_trgm(conn):
+                return conn.execute(
+                    f"""SELECT {cols}, word_similarity(%(q)s, {hay}) AS match
+                          {joins}
+                         WHERE {served}
+                           AND (word_similarity(%(q)s, {hay}) >= %(floor)s OR {hay} LIKE %(like)s)
+                         ORDER BY match DESC, lower(p.name), p.id
+                         LIMIT %(limit)s""",
+                    {"q": words, "floor": self.SEARCH_TRGM_FLOOR, "like": f"%{words}%",
+                     "limit": limit}).fetchall()
+            parts = words.split()
+            rows = conn.execute(
+                f"""SELECT {cols} {joins}
+                     WHERE {served} AND """ + " AND ".join(f"{hay} LIKE %s" for _ in parts),
+                [f"%{w}%" for w in parts]).fetchall()
+        for r in rows:
+            r["match"] = _match_score(words, r["hay"])
+        rows.sort(key=lambda r: (-r["match"], (r["name"] or "").lower(), r["product_id"]))
+        return rows[:limit]
+
     # -- writes --------------------------------------------------------
 
-    def record_cache_hit(self, hit, device_id=None, latency_ms=None, trace=None):
+    def record_cache_hit(self, hit, device_id=None, latency_ms=None, trace=None, via="barcode"):
+        """via: 'barcode', or D-204's 'search' when the pack was opened from a search."""
         with self._connect() as conn:
             uid = self._user(conn, device_id)
             conn.execute("UPDATE products SET scan_count = scan_count + 1 WHERE id = %s",
@@ -287,8 +375,8 @@ class Store:
             sid = conn.execute(
                 """INSERT INTO scans (user_id, product_version_id, resolved_via, cache_hit, outcome,
                                       latency_ms, ai_cost_paise)
-                   VALUES (%s, %s, 'barcode', true, 'verdict', %s, 0) RETURNING id""",
-                (uid, hit["product_version_id"], latency_ms)).fetchone()["id"]
+                   VALUES (%s, %s, %s, true, 'verdict', %s, 0) RETURNING id""",
+                (uid, hit["product_version_id"], via, latency_ms)).fetchone()["id"]
             self._set_trace(conn, sid, trace)
             return sid
 

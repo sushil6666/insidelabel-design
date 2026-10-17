@@ -1439,6 +1439,39 @@ SCREEN_TEXT = ("Listings can be out of date or show another size or flavour. "
 SCREEN_PACK = "We also checked this pack in a shop on {day}; the allergen lines above include it."
 SCREEN_NOTE = ("A screen isn't added to our catalogue: we only add packs read from the pack itself. "
                "Add it to your shop list and scan the pack when you're there.")
+# D-204: search the packs we've checked. "Checked on" is the date the version was published,
+# by a person on /review or by the D-117 agents. Sushil chose the no-match words (2026-10-17):
+# a pack with no barcode never enters the catalogue (D-107) and a new one waits for review,
+# so they promise nothing about it appearing later.
+SEARCH_CHECKED = "Checked on {day}"
+SEARCH_NONE = "We haven't checked this one yet. Scan the pack in the shop to check it."
+SEARCH_RESULT_TITLE = "From our catalogue: the pack we checked on {day}."
+SEARCH_RESULT_TEXT = "Recipes and sizes change, so check the pack in the shop."
+SEARCH_LIMIT = 20                      # rows shown; the store may find more
+
+
+def search_row(row):
+    """
+    D-204: one search result. The pack's name, size, the published date and its picture:
+    no finding, colour, count or allergen mark, so the list can't read as a ranking or as
+    "free from" (Sushil, 2026-10-17).
+    """
+    qty = ""
+    if row.get("net_qty_value") is not None and row.get("net_qty_unit"):
+        n = row["net_qty_value"]
+        qty = f"{int(n) if float(n).is_integer() else float(n):g} {row['net_qty_unit']}"
+    day = row["verified_at"].date().isoformat()
+    return {
+        "barcode": row["barcode"],
+        "brand": row.get("brand"),
+        "name": row["name"],
+        "variant": row.get("variant"),
+        "quantity": qty or None,
+        "checked_on": day,
+        "checked": SEARCH_CHECKED.format(day=_day(day)),
+    }
+
+
 SCREEN_HEADLINE_UNREAD = "We couldn't read an ingredient list on this screen."
 SCREEN_RETAKE = ("Take a screenshot that shows the whole ingredient list, zoomed in, "
                  "or photograph the pack in the shop.")
@@ -1480,8 +1513,17 @@ def build(**kw):
     The `screen` block of a /scan response (_build() below), with D-188's split of the
     people: `people` holds the cards for the top of the result, a match or a line we can't
     confirm; `for_you` holds a child's age line; `for_you_note` the "may contain" reminder.
+    from_search: D-204, a catalogue pack opened from a search, maybe far from the pack itself.
     """
+    from_search = kw.pop("from_search", False)
     out = _build(**kw)
+    if from_search and out["state"] == "result":
+        # D-204: first thing under the people lines, as D-130's screen card: where it came from.
+        team = (kw.get("catalogue") or {}).get("team_verified")
+        out["from_search"] = {"title": SEARCH_RESULT_TITLE.format(day=_day(team)) if team else None,
+                              "text": SEARCH_RESULT_TEXT}
+        if "shop_list" in pack_kind.parts((kw.get("kind") or {}).get("code", "food")):
+            out["shop_list"] = True           # the app offers "Add to my shop list"
     cards, quiet, note = split_people(out["people"])
     for p in cards:
         if p["status"] in ("contains", "may_contain", "uncertain", "cannot_confirm"):

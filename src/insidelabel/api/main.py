@@ -76,6 +76,7 @@ from insidelabel.extraction.schemas import (  # noqa: E402
     ForgetRequest,
     ProblemRequest,
     ReportRequest,
+    SearchRequest,
     SendToUsRequest,
     AnalyzeResponse,
     ClaimCheckRequest,
@@ -718,6 +719,35 @@ def regulator_row(ins: str):
     return {"basis": regulators.BASIS, **r}
 
 
+# ---------------------------------------------------------------------------
+# D-204: search the packs we've checked, by name (D-059: free forever)
+# ---------------------------------------------------------------------------
+def _searchable(hit):
+    """
+    D-204: an infant food is left out of search (Sushil, 2026-10-17): a searchable formula
+    with a shop-list button, without the pack in hand, is closer to the promotion the IMS Act
+    bars. It waits for the lawyer's answer on D-200. Supplements and other foods are in.
+    """
+    return _catalogue_kind(hit)["code"] != "infant"
+
+
+@app.post("/search")
+def search(req: SearchRequest, request: Request):
+    """
+    Published packs whose brand, name or variant match `q`, best match first, then by name;
+    never by scan_count or anything the findings say. Rows carry no finding, colour or
+    allergen mark. An empty or one-letter query returns nothing, so the catalogue can't be
+    listed. The words are matched and dropped: not logged, not stored, with a device id or
+    without one.
+    """
+    _rate_limit(request, "search", req.device_id, ratelimit.SEARCH_TEXT)
+    if STORE is None or STORE.search_words(req.q) is None:
+        return {"results": [], "none": None}
+    rows = [r for r in (_persist(STORE.search, req.q) or []) if _searchable(r)]
+    results = [result_screen.search_row(r) | _pack_picture(r) for r in rows[:result_screen.SEARCH_LIMIT]]
+    return {"results": results, "none": None if results else result_screen.SEARCH_NONE}
+
+
 @app.exception_handler(HTTPException)
 def http_exception_handler(request, exc):
     detail = exc.detail
@@ -1086,13 +1116,14 @@ def _stored_veg_mark(hit):
 
 
 def _catalogue_result(hit, avoid_codes, who, compare_regulators, profiles=(), screen_pack=None,
-                      rechecked_on=None, now=None):
+                      rechecked_on=None, now=None, from_search=False):
     """
     A result built from a reviewed catalogue version. The engine re-runs on the
     stored ingredient list, so the verdict always reflects the current rules and
     tables, not the ones in force when the pack was first reviewed.
     rechecked_on: D-175, this scan's photo matched the version for free (an ISO date).
     now: the time the 15 days are counted to (tests; a replay of the original scan).
+    from_search: D-204, opened from a search, so the screen says where it came from.
     """
     ingredients = hit["ingredients"]
     raw = ", ".join(ingredients)
@@ -1151,7 +1182,7 @@ def _catalogue_result(hit, avoid_codes, who, compare_regulators, profiles=(), sc
         "screen": result_screen.build(
             verdict=verdict, display=display, claim_check=claim_check, extracted=extracted,
             reliability=reliability, profiles=profiles, allergen_confidence=1.0,
-            allergen_reliable=True, catalogue=catalogue, screen_pack=screen_pack,
+            allergen_reliable=True, catalogue=catalogue, screen_pack=screen_pack, from_search=from_search,
             nutrition=hit.get("nutrition"), kind=kind, veg_mark=_stored_veg_mark(hit), product_name=hit["name"],
             # D-139: no reading from the catalogue; the published name still says tablet or powder.
             nutra_input={"product": {"name": hit["name"], "variant": hit["variant"]}}) | _pack_picture(hit),
@@ -1708,9 +1739,15 @@ async def scan(
     # D-104: where the barcode came from. The app offers only the live scanner
     # and a photo read by /check-photo; typed numbers aren't accepted from it.
     barcode_source = barcode_source if barcode_source and barcode_source.strip() else None
-    if barcode_source not in (None, "camera", "photo"):
+    # D-204: "search", a barcode the app got from /search, for opening that published pack
+    # with nothing else sent. It is our catalogue's own code, so it is never typed (D-104).
+    if barcode_source not in (None, "camera", "photo", "search"):
         raise HTTPException(status_code=422, detail={
-            "error": "bad_barcode_source", "detail": 'barcode_source is "camera" or "photo".'})
+            "error": "bad_barcode_source", "detail": 'barcode_source is "camera", "photo" or "search".'})
+    from_search = barcode_source == "search"
+    if from_search and not lookup_only:
+        raise HTTPException(status_code=422, detail={
+            "error": "bad_search_open", "detail": "A pack opened from a search is sent with its barcode only."})
     # D-146: what the user said about the digits, kept with the scan as supporting evidence
     # for a reviewer (never instead of D-143's check). Nothing is kept for a dropped code.
     barcode_answer = barcode_answer if barcode_answer and barcode_answer.strip() else None
@@ -1816,6 +1853,12 @@ async def scan(
     # unchanged barcode gets noticed, and how the D-073 allergy re-check works.
     if barcode and not images and replay is None:
         hit = _persist(STORE.find_current, barcode) if STORE else None
+        if from_search and hit is not None and not _searchable(hit):
+            # D-204: an infant pack can't be opened from a search, whatever the app sends.
+            hit = None
+        if hit is None and from_search:
+            raise HTTPException(status_code=404, detail={
+                "error": "not_in_catalogue", "detail": result_screen.SEARCH_NONE})
         if hit is None:
             # D-146: nothing is stored for a code not in the catalogue; the app shows its
             # digits back to be checked against the pack before the ingredients photo.
@@ -1825,9 +1868,11 @@ async def scan(
                 "hint": "Photograph the back of the pack (the ingredient list).",
                 "barcode_check": result_screen.barcode_check(barcode),
             })
-        result = _catalogue_result(hit, avoid_codes, who, compare_regulators, people, screen_pack)
+        result = _catalogue_result(hit, avoid_codes, who, compare_regulators, people, screen_pack,
+                                   from_search=from_search)
         result["scan_id"] = _str(_persist(STORE.record_cache_hit, hit, device_id=device_id,
-                                          latency_ms=_ms(t0), trace=tr))
+                                          latency_ms=_ms(t0), trace=tr,
+                                          via="search" if from_search else "barcode"))
         return result
 
     # D-100: the front alone, for a pack the catalogue already has. The answer
