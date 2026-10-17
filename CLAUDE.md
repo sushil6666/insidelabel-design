@@ -87,6 +87,13 @@ INSIDELABEL_DB=… python tools/release_check.py --with-tests     # beta release
 INSIDELABEL_DB=… python tools/health_report.py --out <scratch>/health.json   # snapshot for the health report page
 ```
 
+## Tests and CI
+
+- GitHub runs the full suite on every PR and push to `main` (`.github/workflows/tests.yml`, no keys).
+  While building, run only the tests near the change (`python -m pytest -q tests/test_<area>.py`);
+  push and let CI do the full run. Sushil merges only with a green tick; a red one goes back to the build.
+- Update the test count above only when it changes, from CI's summary line.
+
 ## Code conventions
 
 - Match the surrounding style: explanatory module docstrings that say *why*,
