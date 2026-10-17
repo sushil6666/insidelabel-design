@@ -87,6 +87,43 @@ def test_an_infant_pack_never_shows_in_search_and_cannot_be_opened_from_one(env,
     assert c.post("/scan", data={"barcode": infant}).json()["pack_kind"]["code"] == "infant"
 
 
+# D-204 follow-up (2026-10-17): medical words come before infant words in data/pack_kinds.json, so a
+# preterm or hypoallergenic infant formula is special_medical; it, and an adult food for special
+# medical purpose, stay out of search exactly as an infant pack does.
+MEDICAL = {
+    "preterm": ("Preterm Formula", ("Milk solids", "Lactose", "Whey protein"),
+                [st("Infant formula", "front"), st("For the preterm baby", "front")], "13.1"),
+    "hypoallergenic": ("HA Formula", ("Hydrolysed whey protein", "Maltodextrin"),
+                       [st("Infant formula", "front"), st("Hypoallergenic formula", "front")], "13.1"),
+    "adult_fsmp": ("Renal Feed", ("Maltodextrin", "Milk protein", "Vegetable oil"),
+                   [st("Food for special medical purpose", "front"),
+                    st("For the dietary management of chronic kidney disease")], "13.3"),
+}
+WORDS = {("infant_on", "preterm"): "Pelvaro", ("infant_on", "hypoallergenic"): "Quindle",
+         ("infant_on", "adult_fsmp"): "Rostiva", ("infant_off", "preterm"): "Sambrix",
+         ("infant_off", "hypoallergenic"): "Tuvelin", ("infant_off", "adult_fsmp"): "Umbrash"}
+
+
+@pytest.mark.parametrize("switch", ["infant_on", "infant_off"])
+@pytest.mark.parametrize("pack", list(MEDICAL))
+def test_a_special_medical_pack_never_shows_in_search_and_cannot_be_opened_from_one(env, switch, pack, request):
+    request.getfixturevalue(switch)
+    word = WORDS[(switch, pack)]                     # one far-apart word each, so fuzzy matching can't mix them
+    name, ingredients, statements, category = MEDICAL[pack]
+    medical = publish(env, f"{word} {name}", ingredients=ingredients, statements=statements, category=category)
+    assert c.post("/scan", data={"barcode": medical}).json()["pack_kind"]["code"] == "special_medical"
+    food = publish(env, f"{word} Crackers")
+    assert [x["barcode"] for x in search(word.lower())["results"]] == [food]
+    r = open_from_search(medical)
+    assert r.status_code == 404
+    assert r.json()["error"] == "not_in_catalogue" and r.json()["detail"] == screen.SEARCH_NONE
+    assert "shop_list" not in json.dumps(r.json())
+
+
+def test_the_kinds_left_out_of_search():
+    assert set(main._NOT_SEARCHED) == {"infant", "special_medical"}
+
+
 # ---------------------------------------------------------------- 2. brand, order, never scan_count
 
 def test_the_brand_alone_finds_its_packs(env):
