@@ -722,13 +722,20 @@ def regulator_row(ins: str):
 # ---------------------------------------------------------------------------
 # D-204: search the packs we've checked, by name (D-059: free forever)
 # ---------------------------------------------------------------------------
+_NOT_SEARCHED = ("infant", "special_medical")
+
+
 def _searchable(hit):
     """
-    D-204: an infant food is left out of search (Sushil, 2026-10-17): a searchable formula
-    with a shop-list button, without the pack in hand, is closer to the promotion the IMS Act
-    bars. It waits for the lawyer's answer on D-200. Supplements and other foods are in.
+    D-204: infant foods and special medical foods are left out of search, as a row and when
+    opened with barcode_source "search". A searchable formula with a shop-list button, without
+    the pack in hand, is closer to the promotion the IMS Act bars; it waits for the lawyer's
+    answer on D-200. data/pack_kinds.json puts medical words before infant words, so a preterm,
+    hypoallergenic or other special medical infant formula is special_medical, not infant
+    (D-204 follow-up, 2026-10-17); a food for special medical purpose is also used under
+    medical supervision. Supplements and other foods are in.
     """
-    return _catalogue_kind(hit)["code"] != "infant"
+    return _catalogue_kind(hit)["code"] not in _NOT_SEARCHED
 
 
 @app.post("/search")
@@ -1854,7 +1861,7 @@ async def scan(
     if barcode and not images and replay is None:
         hit = _persist(STORE.find_current, barcode) if STORE else None
         if from_search and hit is not None and not _searchable(hit):
-            # D-204: an infant pack can't be opened from a search, whatever the app sends.
+            # D-204: an infant or special medical pack can't be opened from a search, whatever the app sends.
             hit = None
         if hit is None and from_search:
             raise HTTPException(status_code=404, detail={

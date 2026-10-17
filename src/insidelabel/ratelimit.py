@@ -81,7 +81,7 @@ RULES = {
 SCAN_TEXT = ("You've checked a lot of packs in a short time. Please wait about {minutes} "
              "minute{s} and try again.")
 SEARCH_TEXT = "That's a lot of searches in a short time. Please wait about {minutes} minute{s} and try again."
-PROBLEM_TEXT ="We've had a lot of reports from this phone just now. Please try again later."
+PROBLEM_TEXT = "We've had a lot of reports from this phone just now. Please try again later."
 SEND_TEXT = "You've sent us a lot of packs today. Please try again tomorrow."
 FEEDBACK_TEXT = "Thank you for all the feedback today. Please send more tomorrow."
 FORGET_TEXT = "That was tried a few times just now. Please try again in an hour."
