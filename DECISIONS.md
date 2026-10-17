@@ -4876,6 +4876,18 @@ What was built (branch `d204-name-search`, app web-81):
   variant matches; order with a large `scan_count` on the weaker match; the no-match words; a pack in review never
   shows and an agent-published one does; the publish date over a later photo match; empty and one-letter queries; the
   rate limit per install and per address; no scan row, log line or table holding the words; GET refused).
+- **Follow-up, 2026-10-17 (records):** the six numbered points above are the advisor's reply, which Sushil accepted by
+  pasting it on 2026-10-17 ("Accept D-204 with your four picks, plus these changes"). They are not his own words, as
+  the entry's "in his words" says. This line corrects that; the entry stays as written (append-only).
+- **Follow-up, 2026-10-17 (special medical foods out of search):** the advisor found that `data/pack_kinds.json` puts
+  medical words before infant words, so a preterm, hypoallergenic or other special medical infant formula is
+  `special_medical`, not `infant`, and still showed in search with "Add to my shop list", the IMS Act concern point 1
+  was meant to stop; a food for special medical purpose is also used under medical supervision. Sushil said yes by
+  sending that paste (2026-10-17). `_searchable()` in `api/main.py` now leaves out `infant` and `special_medical`
+  (`_NOT_SEARCHED`), both as rows and when opened with `barcode_source` "search" (404 `not_in_catalogue`, the no-match
+  words). Point 1 reads, for both kinds: no row, no "Add to my shop list". Tests: a preterm infant formula, a
+  hypoallergenic one and an adult FSMP, each never shown and refused from search, with the infant switch on and off.
+  Also: `PROBLEM_TEXT =` in `ratelimit.py` got its space back. No app change.
 
 ---
 
