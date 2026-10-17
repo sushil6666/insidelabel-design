@@ -1,0 +1,41 @@
+# The full test suite on GitHub, so a build session runs only the tests near its change
+# and nobody waits on a 13-minute local run before a merge (Sushil, 2026-10-17: "yes").
+# No keys or secrets: the tests use their own embedded Postgres (pgserver) and fake every
+# model call. Merge a PR only with a green tick.
+name: tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  pytest:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Tesseract (the OCR fallback, D-093)
+        run: sudo apt-get update -q && sudo apt-get install -y -q tesseract-ocr
+      - name: Install
+        run: pip install -e ".[dev]" -r requirements.txt
+      - name: Full suite
+        run: python -m pytest -q -p no:cacheprovider 2>&1 | tee pytest.txt; exit ${PIPESTATUS[0]}
+      - name: No silent skips
+        # A missing package turns whole files into skips and the run still looks green.
+        # The cloud session skips 10 today (no gold photos); more means something didn't install.
+        run: |
+          skipped=$(grep -oE '[0-9]+ skipped' pytest.txt | tail -1 | grep -oE '[0-9]+' || echo 0)
+          echo "skipped: $skipped"
+          test "$skipped" -le 12
