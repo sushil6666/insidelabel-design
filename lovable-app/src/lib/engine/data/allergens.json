@@ -1,0 +1,169 @@
+{
+  "_meta": {
+    "table": "allergens",
+    "version": "0.1",
+    "purpose": "Allergen detection for avoid-list profiles (D-071). Deterministic alias matching over the ingredient list and the printed allergen_statement that prompt.py already extracts. No prompt change needed.",
+    "basis": "FSS (Labelling and Display) Regulations 2020, reg. 5(14): mandatory declaration of cereals containing gluten, crustaceans, milk, eggs, fish, peanut and tree nuts, soybeans, and sulphite at 10 mg/kg or more. Cross-contact ('may contain') wording is not fixed; FSSAI's FAQ accepts any wording with similar meaning.",
+    "verify": true,
+    "verify_note": "Confirm the reg. 5(14) category list against the current consolidated regulation text before public launch.",
+    "output_states": {
+      "contains": "Found in the ingredient list or the 'contains' part of the allergen line.",
+      "may_contain": "Found in a cross-contact statement ('may contain', 'traces', 'same facility', 'shared equipment').",
+      "uncertain": "An ingredient could come from this allergen but the label doesn't say (e.g. lecithin with no source named).",
+      "not_listed": "Not found anywhere we read. NEVER rendered as 'free from' or 'safe'.",
+      "cannot_confirm": "Scan confidence below the allergen gate. We don't guess."
+    },
+    "rule": "Never output 'free from', 'allergen-free' or 'safe' for an allergen. The strongest negative statement allowed is 'isn't listed'.",
+    "not_included": "Coconut is not in the FSSAI list and is not treated as a tree nut here. Refined oils are matched conservatively (groundnut oil counts as peanut)."
+  },
+
+  "cross_contact_triggers": [
+    "may contain", "may also contain", "might contain", "can contain", "traces of", "trace of",
+    "same facility", "same premises", "same plant", "same line", "shared equipment",
+    "shared facility", "facility that", "facility which", "facility where",
+    "manufactured in a", "processed in a", "produced in a", "packed in a",
+    "made in a factory", "handles", "also processes"
+  ],
+
+  "allergens": [
+    {
+      "code": "gluten",
+      "label": "gluten (wheat, barley, rye or oats)",
+      "short": "gluten",
+      "fssai_mandatory": true,
+      "aliases": [
+        "wheat", "maida", "atta", "sooji", "suji", "semolina", "rava", "rawa", "dalia",
+        "barley", "jau", "rye", "oats", "oat", "spelt", "durum", "bulgur", "couscous",
+        "seitan", "gluten", "malt", "malt extract", "barley malt", "malted"
+      ],
+      "exclude": ["buckwheat", "gluten free", "gluten-free"],
+      "ambiguous": ["modified starch", "hydrolysed vegetable protein", "hydrolyzed vegetable protein", "cereal extract"],
+      "statement_words": ["gluten", "wheat", "barley", "rye", "oats", "oat", "cereals"]
+    },
+    {
+      "code": "milk",
+      "label": "milk",
+      "short": "milk",
+      "fssai_mandatory": true,
+      "aliases": [
+        "milk", "milk solids", "milk powder", "skimmed milk", "whey", "casein", "caseinate",
+        "lactose", "butter", "ghee", "cream", "cheese", "curd", "dahi", "paneer", "khoya",
+        "khoa", "mawa", "condensed milk", "yoghurt", "yogurt", "milk fat", "dairy",
+        "buttermilk", "malai", "lactalbumin", "milk protein"
+      ],
+      "exclude": [
+        "cocoa butter", "coconut milk", "coconut cream", "peanut butter", "nut butter",
+        "shea butter", "almond milk", "soy milk", "soya milk", "oat milk", "milk thistle",
+        "cream of tartar", "non-dairy", "non dairy"
+      ],
+      "ambiguous": ["albumin", "non-dairy creamer"],
+      "statement_words": ["milk", "dairy", "lactose"]
+    },
+    {
+      "code": "egg",
+      "label": "egg",
+      "short": "egg",
+      "fssai_mandatory": true,
+      "aliases": ["egg", "eggs", "egg powder", "egg white", "egg yolk", "albumen", "ovalbumin", "mayonnaise"],
+      "exclude": ["eggless", "egg-free", "egg free", "eggplant"],
+      "ambiguous": ["albumin", "lysozyme", "1105"],
+      "statement_words": ["egg", "eggs"]
+    },
+    {
+      "code": "peanut",
+      "label": "peanut (groundnut)",
+      "short": "peanut",
+      "fssai_mandatory": true,
+      "aliases": ["peanut", "peanuts", "groundnut", "groundnuts", "moongphali", "mungfali", "arachis"],
+      "exclude": [],
+      "ambiguous": ["nuts", "mixed nuts", "nut paste"],
+      "statement_words": ["peanut", "peanuts", "groundnut", "groundnuts"]
+    },
+    {
+      "code": "tree_nuts",
+      "label": "tree nuts (almond, cashew, pistachio, walnut and others)",
+      "short": "tree nuts",
+      "fssai_mandatory": true,
+      "aliases": [
+        "almond", "almonds", "badam", "cashew", "cashews", "kaju", "pistachio", "pistachios",
+        "pista", "walnut", "walnuts", "akhrot", "hazelnut", "hazelnuts", "pecan", "macadamia",
+        "brazil nut", "pine nut", "pine nuts", "chilgoza", "praline", "marzipan"
+      ],
+      "exclude": ["nutmeg", "coconut", "water chestnut", "butternut"],
+      "ambiguous": ["nuts", "mixed nuts", "dry fruits", "dry fruit", "nut paste"],
+      "statement_words": ["tree nuts", "tree nut", "nuts", "almond", "cashew", "pistachio", "walnut", "hazelnut"]
+    },
+    {
+      "code": "soy",
+      "label": "soy",
+      "short": "soy",
+      "fssai_mandatory": true,
+      "aliases": [
+        "soy", "soya", "soybean", "soybeans", "soyabean", "soya bean", "soy lecithin",
+        "soya lecithin", "soy protein", "soya protein", "soya chunks", "tofu", "edamame",
+        "miso", "soy sauce", "soya sauce"
+      ],
+      "exclude": [],
+      "ambiguous": ["lecithin", "322", "hydrolysed vegetable protein", "hydrolyzed vegetable protein", "textured vegetable protein", "vegetable protein"],
+      "ambiguous_cleared_by": ["sunflower lecithin", "sunflower", "rapeseed lecithin"],
+      "statement_words": ["soy", "soya", "soybean", "soybeans"]
+    },
+    {
+      "code": "fish",
+      "label": "fish",
+      "short": "fish",
+      "fssai_mandatory": true,
+      "aliases": ["fish", "anchovy", "anchovies", "tuna", "sardine", "sardines", "mackerel", "salmon", "cod", "fish sauce", "fish oil", "surimi"],
+      "exclude": ["shellfish"],
+      "ambiguous": [],
+      "statement_words": ["fish"]
+    },
+    {
+      "code": "crustacean",
+      "label": "crustaceans (prawn, shrimp, crab)",
+      "short": "crustaceans",
+      "fssai_mandatory": true,
+      "aliases": ["prawn", "prawns", "shrimp", "shrimps", "crab", "lobster", "crayfish", "krill", "jhinga"],
+      "exclude": [],
+      "ambiguous": ["shellfish"],
+      "statement_words": ["crustacean", "crustaceans", "shellfish", "prawn", "shrimp", "crab"]
+    },
+    {
+      "code": "sulphite",
+      "label": "sulphites",
+      "short": "sulphites",
+      "fssai_mandatory": true,
+      "note": "FSSAI requires declaration only at 10 mg/kg or more. The ingredient list does not show the amount, so presence is reported as 'contains'.",
+      "aliases": [
+        "sulphite", "sulfite", "sulphites", "sulfites", "metabisulphite", "metabisulfite",
+        "bisulphite", "bisulfite", "sulphur dioxide", "sulfur dioxide",
+        "220", "221", "222", "223", "224", "225", "226", "227", "228"
+      ],
+      "exclude": [],
+      "ambiguous": [],
+      "statement_words": ["sulphite", "sulphites", "sulfite", "sulfites", "sulphur dioxide", "sulfur dioxide"]
+    },
+    {
+      "code": "sesame",
+      "label": "sesame (til)",
+      "short": "sesame",
+      "fssai_mandatory": false,
+      "note": "Not in the FSSAI mandatory list, so labels may not declare it. Offered because families ask for it; a 'not listed' result is weaker here.",
+      "aliases": ["sesame", "til", "gingelly", "tahini"],
+      "exclude": [],
+      "ambiguous": [],
+      "statement_words": ["sesame"]
+    },
+    {
+      "code": "mustard",
+      "label": "mustard (sarson, rai)",
+      "short": "mustard",
+      "fssai_mandatory": false,
+      "note": "Not in the FSSAI mandatory list, so labels may not declare it.",
+      "aliases": ["mustard", "sarson", "rai"],
+      "exclude": [],
+      "ambiguous": [],
+      "statement_words": ["mustard"]
+    }
+  ]
+}
