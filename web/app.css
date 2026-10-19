@@ -255,7 +255,7 @@ select:focus-visible, textarea:focus-visible { outline: 3px solid var(--ring); o
 .loop .ln1 { top: 6.2em; width: 6.2em; } .loop .ln2 { top: 7.2em; width: 4.8em; } .loop .ln3 { top: 8.2em; width: 5.6em; }
 .loop .res { position: absolute; left: 0; right: 0; bottom: .4em; display: flex; align-items: center; gap: .8em; padding: .8em 1em;
              border-radius: 1.2em; background: #ffffff; box-shadow: 0 1em 1.8em -1em rgba(0, 0, 0, .5); }
-.loop .tick { flex: none; width: 2em; height: 2em; border-radius: 50%; background: #e2f4e8; color: #047a45;
+.loop .tick { flex: none; width: 2em; height: 2em; border-radius: 50%; background: var(--gold-soft); color: var(--gold-ink);
               display: flex; align-items: center; justify-content: center; }
 .loop .tick .icon { width: 1.3em; height: 1.3em; stroke-width: 3; }
 .loop .rl { display: grid; gap: .4em; flex: 1; }
@@ -477,7 +477,7 @@ q { quotes: "“" "”"; }
 /* D-104: the tick or cross under each photo. */
 .check { display: flex; align-items: flex-start; gap: 6px; margin: 6px 0 0; padding: 8px 12px; border-radius: var(--r-md); font-weight: 600; }
 .check .icon { width: 20px; height: 20px; margin-top: 1px; stroke-width: 2.4; }
-.check.ok { background: var(--mint); color: var(--ink); }
+.check.ok { background: var(--gold-soft); color: var(--gold-ink); }
 .check.bad { background: var(--problem-bg); color: var(--problem); }
 .check.unknown { background: var(--problem-bg); color: var(--problem); font-weight: 400; }
 
@@ -832,7 +832,7 @@ details[open]:not(.look) > summary::after { transform: rotate(180deg); }
            background: radial-gradient(circle at 40% 40%, #f6c58a, #d38a3c 60%, #a8642a); box-shadow: 0 2px 6px rgb(0 0 0 / .25); }
 .ex-net { position: absolute; left: 9%; bottom: 7%; font: 600 7px/1 var(--font); opacity: .9; }
 .ex-ok { position: absolute; top: 6px; right: 6px; width: 24px; height: 24px; border-radius: 50%; display: grid;
-         place-items: center; background: var(--brand); color: var(--brand-ink); box-shadow: var(--e-1); }
+         place-items: center; background: var(--gold); color: var(--gold-ink); box-shadow: var(--e-1); }
 .ex-ok .icon { width: 15px; height: 15px; stroke-width: 2.6; }
 .label-cam .example-shot .ex-photo { max-width: 150px; }
 .examples { display: grid; gap: var(--sp-2); }
@@ -899,10 +899,10 @@ details[open]:not(.look) > summary::after { transform: rotate(180deg); }
 .kmsg > :not(.kind-icon) { grid-column: 2; }
 .kmsg > .kind-icon + * { margin-top: 0; }
 .k-problem { background: var(--problem-bg); color: var(--problem); border-color: var(--problem); }
-.k-avoid, .k-notpermitted { background: var(--stop-bg); color: var(--ink); border-color: var(--stop); }
+.k-avoid, .k-notpermitted { background: var(--stop-bg); color: var(--stop); border-color: var(--stop); }
 .k-worth { background: var(--unsure-bg); color: var(--unsure); border-color: var(--unsure-line); }
 .k-info { background: var(--calm-bg); color: var(--calm); border-color: var(--calm); }
-.k-done { background: var(--mint); color: var(--ink); border-color: var(--brand); }
+.k-done { background: var(--gold-soft); color: var(--gold-ink); border-color: var(--gold); }
 .card.k-problem, .card.k-notpermitted, .card.k-worth, .card.k-info { border-left-width: 6px; }
 .kmsg:not(.card):not(.check) { background: none; }     /* a line of text: the symbol and ink only */
 .error.kmsg:empty { display: none; }
@@ -1398,8 +1398,8 @@ label.btn:has(> .icon) { gap: 8px; }
    turns once (grey-blue, D-169: never red, never a shake). */
 .photos-in { display: flex; align-items: center; gap: 10px; }
 .photos-in .kind-icon { width: 1.1em; height: 1.1em; stroke-width: 2.6; flex: none; vertical-align: 0; }
-.spot.k-done { background: var(--brand-soft); }
-.spot.k-done .icon { color: var(--brand); stroke-width: 2.4; }
+.spot.k-done { background: var(--gold-soft); }
+.spot.k-done .icon { color: var(--gold-ink); stroke-width: 2.4; }
 @media (prefers-reduced-motion: no-preference) {
   .shot-review :is(.taken figure, > .thumb) { animation: photo-in var(--d-reveal) var(--ease-enter) both;
                                                animation-delay: calc(var(--i, 0) * 90ms); }
@@ -1617,9 +1617,9 @@ main.wrap { overflow-x: clip; }
 @media (prefers-reduced-motion: no-preference) {
   .pack-thumb img:not([hidden]) { animation: img-settle 240ms var(--ease-enter) both; }
 }
-/* A thank-you's check: done's green, filled. */
-.spot.k-done { background: var(--brand); }
-.spot.k-done .icon { color: var(--brand-ink); }
+/* A thank-you's check: done's gold, filled. */
+.spot.k-done { background: var(--gold); }
+.spot.k-done .icon { color: var(--gold-ink); }
 /* Worth knowing's source line in the secondary text colour. */
 .note-text .src { color: var(--ink-2); }
 @media (prefers-color-scheme: dark) { .person-line.stop details summary { color: var(--ink); } }
@@ -1729,3 +1729,32 @@ main.wrap { overflow-x: clip; }
 .range-bar .rb-val { position: absolute; top: 0; transform: translateX(-50%); font-size: var(--fs-xs); font-weight: 700;
   line-height: 1; color: var(--ink); white-space: nowrap; }
 .sbs-cell .range-bar { margin-top: var(--sp-2); }
+
+/* Board v6, approved: each kind has its own shape as well as its colour, so meaning never
+   depends on colour alone. The four shapes that differ from the drawn icons are masked here
+   so they cannot drift from the board: a diamond is "On your avoid list", a circle with a
+   question mark is "Worth a look", a hexagon with an i is "Information", a square is a photo
+   or app problem. The triangle ("Not permitted in India") and the check (done) stay the drawn
+   icons; the check takes done's gold below. */
+.ki-avoid { --ki-shape: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='5.2' y='5.2' width='13.6' height='13.6' rx='3' transform='rotate(45 12 12)' fill='none' stroke='black' stroke-width='2'/%3E%3Cpath d='M12 8.2v4.4' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3Ccircle cx='12' cy='15.7' r='1' fill='black'/%3E%3C/svg%3E"); }
+.ki-worth { --ki-shape: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='9' fill='none' stroke='black' stroke-width='2'/%3E%3Cpath d='M9.4 9.2a2.6 2.6 0 1 1 4.5 1.9c-.9.8-1.7 1.2-1.7 2.3v.3' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3Ccircle cx='12.2' cy='16.6' r='1' fill='black'/%3E%3C/svg%3E"); }
+.ki-info { --ki-shape: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpolygon points='2.5,12 7,4.5 17,4.5 21.5,12 17,19.5 7,19.5' fill='none' stroke='black' stroke-width='2' stroke-linejoin='round'/%3E%3Cpath d='M12 10.6v5.2' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3Ccircle cx='12' cy='7.6' r='1.1' fill='black'/%3E%3C/svg%3E"); }
+.ki-problem { --ki-shape: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='4' y='4' width='16' height='16' rx='2.5' fill='none' stroke='black' stroke-width='2'/%3E%3Crect x='10' y='10' width='4' height='4' rx='1' fill='black'/%3E%3C/svg%3E"); }
+:is(.ki-avoid, .ki-worth, .ki-info, .ki-problem) :is(path, circle) { display: none; }
+:is(.ki-avoid, .ki-worth, .ki-info, .ki-problem) {
+  background: currentColor;
+  -webkit-mask: var(--ki-shape) center / contain no-repeat;
+          mask: var(--ki-shape) center / contain no-repeat;
+}
+/* Done's check follows the board's gold: progress only, never a verdict. */
+:is(.k-done, .check.ok, .photos-in) .kind-icon, .spot.k-done .icon { color: var(--gold-ink); }
+/* Completion and scan progress use gold in both themes. Brand stays on actions.
+   Count summaries are information, so their existing blue override stays intact. */
+.kind-icon.ki-done { color: var(--gold-ink); }
+.progress span { background: var(--gold); }
+.tallies .progress span { background: var(--calm); }
+.segs i.on::after, .step-dots i.done, .step-dots b,
+.track span.done, .track span.now::after { background: var(--gold); }
+.track span.now { background: var(--line); background: color-mix(in srgb, var(--gold) 30%, var(--line)); }
+/* Soft gold keeps the check readable in dark mode as well as light mode. */
+.spot.k-done, .ex-ok { background: var(--gold-soft); color: var(--gold-ink); }
